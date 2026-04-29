@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Article;
+use App\Models\Language;
+use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -69,6 +72,74 @@ class AiAssistantController extends Controller
         }
 
         return response()->json(['result' => $result]);
+    }
+
+    /**
+     * Translate all text fields of a page or article in one shot.
+     * POST /admin/ai/translate-content
+     *
+     * Body: { type: 'page'|'article', id: int, target_language_id: int }
+     * Returns: { result: { title, excerpt?, body?, seo_title?, seo_description? } }
+     */
+    public function translateContent(Request $request)
+    {
+        $request->validate([
+            'type'               => 'required|in:page,article',
+            'id'                 => 'required|integer',
+            'target_language_id' => 'required|exists:languages,id',
+        ]);
+
+        $targetLang = Language::findOrFail($request->integer('target_language_id'));
+        $targetName = $targetLang->name; // e.g. "English", "Türkçe"
+
+        if ($request->type === 'page') {
+            $model = Page::with('language', 'seo')->findOrFail($request->id);
+            $sourceLang = $model->language?->name ?? 'unknown';
+
+            $fields = [
+                'title' => $model->title,
+            ];
+
+            if ($model->seo?->meta_title) $fields['seo_title'] = $model->seo->meta_title;
+            if ($model->seo?->meta_description) $fields['seo_description'] = $model->seo->meta_description;
+        } else {
+            $model = Article::with('language', 'seo')->findOrFail($request->id);
+            $sourceLang = $model->language?->name ?? 'unknown';
+
+            $fields = ['title' => $model->title];
+            if ($model->excerpt) $fields['excerpt'] = $model->excerpt;
+            if ($model->body)    $fields['body']    = substr($model->body, 0, 8000); // truncate for AI
+            if ($model->seo?->meta_title)       $fields['seo_title']       = $model->seo->meta_title;
+            if ($model->seo?->meta_description) $fields['seo_description'] = $model->seo->meta_description;
+        }
+
+        $fieldsJson = json_encode($fields, JSON_UNESCAPED_UNICODE);
+
+        $prompt = <<<PROMPT
+        You are a professional translator. Translate the following JSON fields from {$sourceLang} to {$targetName}.
+        Return ONLY a valid JSON object with the same keys, with values translated. Do not add explanations.
+        Do not translate HTML tags inside values — only translate the text content.
+
+        Input:
+        {$fieldsJson}
+        PROMPT;
+
+        $raw = $this->callAi(trim($prompt));
+
+        // Attempt to extract JSON from the response
+        $decoded = null;
+        if (preg_match('/\{.*\}/s', $raw, $matches)) {
+            $decoded = json_decode($matches[0], true);
+        }
+
+        if (! is_array($decoded)) {
+            return response()->json([
+                'error' => 'AI geçerli JSON döndürmedi.',
+                'raw'   => $raw,
+            ], 422);
+        }
+
+        return response()->json(['result' => $decoded]);
     }
 
     protected function callAi(string $prompt): string

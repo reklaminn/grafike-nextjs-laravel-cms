@@ -17,6 +17,7 @@
         ['route' => 'admin.redirects.index', 'icon' => 'fa-exchange-alt', 'label' => 'Yönlendirmeler', 'match' => 'admin.redirects'],
         ['route' => 'admin.sitemap.index', 'icon' => 'fa-sitemap', 'label' => 'Sitemap', 'match' => 'admin.sitemap'],
         ['route' => 'admin.languages.index', 'icon' => 'fa-globe', 'label' => 'Diller', 'match' => 'admin.languages'],
+        ['route' => 'admin.translations.index', 'icon' => 'fa-language', 'label' => 'Çeviriler', 'match' => 'admin.translations'],
     ];
 
     $designItems = [

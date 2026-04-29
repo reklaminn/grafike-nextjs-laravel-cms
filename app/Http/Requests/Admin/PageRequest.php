@@ -27,6 +27,7 @@ class PageRequest extends FormRequest
                 Rule::unique('pages', 'slug')->ignore($pageId),
             ],
             'parent_id' => ['nullable', 'exists:pages,id'],
+            'root_page_id' => ['nullable', 'exists:pages,id'],
             'language_id' => ['required', 'exists:languages,id'],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
             'template' => ['nullable', 'string', 'max:100'],

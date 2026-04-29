@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Concerns\AddsHttpCacheHeaders;
 use App\Http\Resources\Api\PageResource;
 use App\Models\Page;
 use App\Models\Site;
@@ -11,6 +12,8 @@ use App\Services\SeoManager\SeoManager;
 
 class PageController extends Controller
 {
+    use AddsHttpCacheHeaders;
+
     public function __construct(protected SeoManager $seoManager) {}
 
     public function show(string $slug)
@@ -31,7 +34,7 @@ class PageController extends Controller
 
             abort_if(! $page, 404);
 
-            return PageResource::make($page);
+            return $this->pageResponse($page);
         }
 
         $resolved = $this->seoManager->resolve($slug);
@@ -51,13 +54,13 @@ class PageController extends Controller
 
             abort_if(! $page, 404);
 
-            return PageResource::make($page);
+            return $this->pageResponse($page);
         }
 
         if (($resolved['type'] ?? null) === 'redirect') {
             return response()->json([
-                'type' => 'redirect',
-                'url' => $resolved['url'],
+                'type'        => 'redirect',
+                'url'         => $resolved['url'],
                 'status_code' => $resolved['status_code'],
             ]);
         }
@@ -68,6 +71,17 @@ class PageController extends Controller
 
         $entity->loadMissing(['seo', 'language', 'parent', 'site.theme']);
 
-        return PageResource::make($entity);
+        return $this->pageResponse($entity);
+    }
+
+    private function pageResponse(Page $page)
+    {
+        $lastModified = $page->seo?->updated_at ?? $page->updated_at;
+
+        return $this->cachedResponse(
+            PageResource::make($page),
+            $lastModified,
+            "page-{$page->id}",
+        );
     }
 }

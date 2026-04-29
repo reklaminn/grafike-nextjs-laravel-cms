@@ -328,5 +328,10 @@
             </div>
         </div>
 
+        {{-- Translation panel (edit only) --}}
+        @if(isset($article) && $article->exists)
+            @include('admin.articles._translations-panel')
+        @endif
+
     </div>{{-- /sidebar --}}
 </div>

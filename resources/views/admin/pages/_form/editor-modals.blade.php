@@ -128,6 +128,23 @@
 
         <template x-if="settingsBlock">
             <div class="mt-5 space-y-4">
+                {{-- Per-block validation error summary --}}
+                <template x-if="settingsBlock && fieldErrors[settingsBlock.id] && Object.keys(fieldErrors[settingsBlock.id]).length > 0">
+                    <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-red-800 mb-1">
+                            <i class="fas fa-circle-exclamation"></i>
+                            Bu blokta doğrulama hatası var — İçerik sekmesinden düzeltin:
+                        </div>
+                        <ul class="list-disc list-inside space-y-0.5">
+                            <template x-for="[fld, msgs] in Object.entries(fieldErrors[settingsBlock.id] || {})" :key="fld">
+                                <template x-for="msg in msgs" :key="msg">
+                                    <li class="text-xs text-red-700" x-text="msg"></li>
+                                </template>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+
                 <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
                     <button type="button" @click="settingsTab = 'content'" class="rounded-lg px-3 py-1.5 text-xs font-medium"
                             :class="settingsTab === 'content' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
@@ -231,11 +248,23 @@
 
                             <template x-if="(fieldSchema.type || 'text') !== 'repeater'">
                                 <div>
-                                    <label class="mb-1 block text-xs font-medium text-gray-600"
+                                    <label class="mb-1 block text-xs font-medium transition-colors"
+                                           :class="(fieldErrors[settingsBlock.id] || {})[fieldName] ? 'text-red-600' : 'text-gray-600'"
                                            x-text="fieldLabel(fieldName, fieldSchema)"></label>
-                                    <div x-data="blockFieldInput(settingsBlock.content, fieldName, fieldSchema)">
+                                    <div x-data="blockFieldInput(settingsBlock.content, fieldName, fieldSchema)"
+                                         :class="(fieldErrors[settingsBlock.id] || {})[fieldName] ? 'ring-2 ring-red-300 rounded-lg' : ''">
                                         @include('admin.pages._form._field-types')
                                     </div>
+                                    <template x-if="(fieldErrors[settingsBlock.id] || {})[fieldName]">
+                                        <div class="mt-1 space-y-0.5">
+                                            <template x-for="errMsg in ((fieldErrors[settingsBlock.id] || {})[fieldName] || [])" :key="errMsg">
+                                                <p class="text-xs text-red-600 flex items-center gap-1">
+                                                    <i class="fas fa-circle-exclamation text-[10px]"></i>
+                                                    <span x-text="errMsg"></span>
+                                                </p>
+                                            </template>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                         </div>

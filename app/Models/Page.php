@@ -70,6 +70,26 @@ class Page extends Model implements HasMedia
         return $this->belongsTo(Language::class);
     }
 
+    /**
+     * Other language versions of this page.
+     * All pages sharing the same root_page_id are translation siblings.
+     */
+    public function translations()
+    {
+        return $this->hasMany(Page::class, 'root_page_id', 'root_page_id')
+            ->where('id', '!=', $this->id)
+            ->with('language');
+    }
+
+    /**
+     * The canonical (source) page this was translated from.
+     * When root_page_id == id, this IS the source page.
+     */
+    public function translationSource()
+    {
+        return $this->belongsTo(Page::class, 'root_page_id');
+    }
+
     public function seo()
     {
         return $this->morphOne(SeoEntry::class, 'seoable');

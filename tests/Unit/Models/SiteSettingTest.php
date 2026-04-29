@@ -77,7 +77,7 @@ class SiteSettingTest extends TestCase
         // First call caches
         SiteSetting::get('cache_test');
 
-        // Verify cache exists
-        $this->assertTrue(Cache::has('setting_cache_test'));
+        // Verify cache exists — key format is "setting_{siteId}_{key}", siteId null → ""
+        $this->assertTrue(Cache::has('setting__cache_test'));
     }
 }

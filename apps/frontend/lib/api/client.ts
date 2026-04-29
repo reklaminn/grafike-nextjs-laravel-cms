@@ -13,20 +13,17 @@ import {
   mockHeaderMenuPayload,
   mockPagePayload,
   mockSettingsPayload,
-  mockSitePayload
+  mockSitePayload,
 } from "@/lib/api/mock-data";
 
 const API_BASE_URL = process.env.CMS_API_URL;
 
-type ResourceEnvelope<T> = {
-  data: T;
-};
+type ResourceEnvelope<T> = { data: T };
 
 function unwrapResource<T>(payload: T | ResourceEnvelope<T>): T {
   if (payload && typeof payload === "object" && "data" in payload) {
     return (payload as ResourceEnvelope<T>).data;
   }
-
   return payload as T;
 }
 
@@ -35,21 +32,31 @@ async function getSiteHostHeader(): Promise<string | null> {
   return requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
 }
 
-async function fetchJson<T>(path: string, fallback: T, wrapped = true): Promise<T> {
-  if (!API_BASE_URL) {
-    return fallback;
-  }
+/**
+ * Core fetch helper.
+ *
+ * @param tags  Next.js cache tags — used by revalidateTag() in the ISR webhook.
+ */
+async function fetchJson<T>(
+  path: string,
+  fallback: T,
+  wrapped = true,
+  tags?: string[],
+): Promise<T> {
+  if (!API_BASE_URL) return fallback;
 
   try {
     const siteHost = await getSiteHostHeader();
+
     const response = await fetch(`${API_BASE_URL}${path}`, {
       headers: siteHost ? { "X-Site-Host": siteHost } : undefined,
-      next: { revalidate: 60 }
+      next: {
+        revalidate: 60,
+        ...(tags && tags.length > 0 ? { tags } : {}),
+      },
     });
 
-    if (!response.ok) {
-      return fallback;
-    }
+    if (!response.ok) return fallback;
 
     const payload = (await response.json()) as T | ResourceEnvelope<T>;
     return wrapped ? unwrapResource<T>(payload) : (payload as T);
@@ -58,27 +65,47 @@ async function fetchJson<T>(path: string, fallback: T, wrapped = true): Promise<
   }
 }
 
-export async function getSitePayload(): Promise<SitePayload> {
-  return fetchJson<SitePayload>("/api/v1/site", mockSitePayload);
+// ─── Site & Settings ──────────────────────────────────────────────────────────
+
+export async function getSitePayload(lang?: string): Promise<SitePayload> {
+  const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return fetchJson<SitePayload>(`/api/v1/site${qs}`, mockSitePayload, true, [
+    "site",
+    "settings",
+  ]);
 }
 
 export async function getSettingsPayload(): Promise<SettingsPayload> {
-  return fetchJson<SettingsPayload>("/api/v1/settings", mockSettingsPayload, false);
+  return fetchJson<SettingsPayload>("/api/v1/settings", mockSettingsPayload, false, [
+    "settings",
+  ]);
 }
 
+// ─── Menus ────────────────────────────────────────────────────────────────────
+
 export async function getMenuPayload(location: string): Promise<MenuPayload> {
-  return fetchJson<MenuPayload>(`/api/v1/menus/${location}`, mockHeaderMenuPayload);
+  return fetchJson<MenuPayload>(`/api/v1/menus/${location}`, mockHeaderMenuPayload, true, [
+    "menus",
+    `menu-${location}`,
+  ]);
 }
 
 export async function getMenusPayload(): Promise<MenusPayload> {
-  return fetchJson<MenusPayload>("/api/v1/menus", [mockHeaderMenuPayload]);
+  return fetchJson<MenusPayload>("/api/v1/menus", [mockHeaderMenuPayload], true, ["menus"]);
 }
 
-export async function getPagePayload(slug: string): Promise<PagePayload | null> {
+// ─── Pages ────────────────────────────────────────────────────────────────────
+
+export async function getPagePayload(slug: string, lang?: string): Promise<PagePayload | null> {
   const fallback = mockPagePayload(slug);
-
-  return fetchJson<PagePayload | null>(`/api/v1/pages/${slug}`, fallback);
+  const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return fetchJson<PagePayload | null>(`/api/v1/pages/${slug}${qs}`, fallback, true, [
+    "pages",
+    `page-${slug}`,
+  ]);
 }
+
+// ─── Articles ─────────────────────────────────────────────────────────────────
 
 export type GetArticlesOptions = {
   pageId?: number;
@@ -91,23 +118,40 @@ export type GetArticlesOptions = {
 
 export async function getArticles(options: GetArticlesOptions = {}): Promise<ArticleListPayload> {
   const params = new URLSearchParams();
-  if (options.pageId)      params.set("page_id",      String(options.pageId));
-  if (options.siteId)      params.set("site_id",       String(options.siteId));
-  if (options.lang)        params.set("lang",           options.lang);
+  if (options.pageId)       params.set("page_id",      String(options.pageId));
+  if (options.siteId)       params.set("site_id",       String(options.siteId));
+  if (options.lang)         params.set("lang",           options.lang);
   if (options.featuredOnly) params.set("featured_only", "1");
-  if (options.limit)       params.set("limit",          String(options.limit));
-  if (options.page)        params.set("page",           String(options.page));
+  if (options.limit)        params.set("limit",          String(options.limit));
+  if (options.page)         params.set("page",           String(options.page));
 
-  const qs = params.toString();
+  const qs   = params.toString();
   const path = `/api/v1/articles${qs ? `?${qs}` : ""}`;
 
-  return fetchJson<ArticleListPayload>(path, { data: [], meta: { current_page: 1, per_page: 12, total: 0, last_page: 1 } }, false);
+  return fetchJson<ArticleListPayload>(
+    path,
+    { data: [], meta: { current_page: 1, per_page: 12, total: 0, last_page: 1 } },
+    false,
+    // Tag includes page_id so article-list blocks on a specific page revalidate correctly
+    ["articles", ...(options.pageId ? [`articles-page-${options.pageId}`] : [])],
+  );
 }
 
-export async function getArticle(slug: string): Promise<ArticleDetailPayload | null> {
-  return fetchJson<ArticleDetailPayload | null>(`/api/v1/articles/${slug}`, null);
+export async function getArticle(slug: string, lang?: string): Promise<ArticleDetailPayload | null> {
+  const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+  return fetchJson<ArticleDetailPayload | null>(
+    `/api/v1/articles/${slug}${qs}`,
+    null,
+    true,
+    ["articles", `article-${slug}`],
+  );
 }
+
+// ─── Forms ────────────────────────────────────────────────────────────────────
 
 export async function getForm(formId: number | string): Promise<FormPayload | null> {
-  return fetchJson<FormPayload | null>(`/api/v1/forms/${formId}`, null);
+  return fetchJson<FormPayload | null>(`/api/v1/forms/${formId}`, null, true, [
+    "forms",
+    `form-${formId}`,
+  ]);
 }

@@ -13,6 +13,9 @@
         @include('admin.pages._form.sidebar.publish')
         @include('admin.pages._form.sidebar.cover')
         @include('admin.pages._form.sidebar.options')
+        @if(isset($page))
+            @include('admin.pages._form.sidebar.translations')
+        @endif
         @include('admin.pages._form.sidebar.revisions')
     </div>
 

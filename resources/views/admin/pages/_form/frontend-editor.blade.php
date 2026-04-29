@@ -1,6 +1,30 @@
 @if($editorData->shouldRenderFrontendEditor())
+@php
+    // Build per-block field error map: { blockId => { fieldName => ['msg',...] } }
+    // Server errors arrive as "sections.block_0.fieldName" — map index → block UUID.
+    $blockFieldErrors = [];
+    if ($errors->any()) {
+        $oldJson = old('sections_json');
+        if ($oldJson) {
+            $decodedOld = json_decode((string) $oldJson, true);
+            if (is_array($decodedOld)) {
+                $flatBlocks = \App\Support\FrontendSections::flattenBlocks($decodedOld);
+                foreach ($errors->toArray() as $errorKey => $messages) {
+                    if (preg_match('/^sections\.block_(\d+)\.(.+)$/', $errorKey, $m)) {
+                        $idx     = (int) $m[1];
+                        $field   = $m[2];
+                        $blockId = $flatBlocks[$idx]['id'] ?? null;
+                        if ($blockId) {
+                            $blockFieldErrors[$blockId][$field] = $messages;
+                        }
+                    }
+                }
+            }
+        }
+    }
+@endphp
 <div x-show="builderMode === 'frontend'" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-     x-data="frontendSectionEditor({{ \Illuminate\Support\Js::from($editorData->frontendSectionEditorPayload()) }})"
+     x-data="{ ...frontendSectionEditor({{ \Illuminate\Support\Js::from($editorData->frontendSectionEditorPayload()) }}), fieldErrors: {{ \Illuminate\Support\Js::from($blockFieldErrors) }} }"
      x-on:frontend-block-focus.window="focusBlock($event.detail.blockId)">
 
     {{-- Editor header --}}
@@ -232,7 +256,9 @@
                                             <template x-for="(block, blockIndex) in (column.blocks || [])" :key="block._uid">
                                                 <div class="rounded-lg border bg-white px-3 py-2"
                                                      :id="'builder-block-' + block.id"
-                                                     :class="block.is_active === false ? 'border-gray-200 opacity-60' : 'border-indigo-200'">
+                                                     :class="fieldErrors[block.id] && Object.keys(fieldErrors[block.id]).length
+                                                         ? 'border-red-300 ring-1 ring-red-200'
+                                                         : (block.is_active === false ? 'border-gray-200 opacity-60' : 'border-indigo-200')">
 
                                                     {{-- Block: single-line header --}}
                                                     <div class="flex items-center gap-2">
@@ -244,6 +270,14 @@
                                                         <span x-show="block.render_mode && block.render_mode !== 'html'"
                                                               class="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 flex-shrink-0"
                                                               x-text="block.render_mode"></span>
+                                                        {{-- Error badge --}}
+                                                        <template x-if="fieldErrors[block.id] && Object.keys(fieldErrors[block.id]).length">
+                                                            <span class="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600 flex-shrink-0"
+                                                                  :title="Object.keys(fieldErrors[block.id]).join(', ') + ' alanında hata'">
+                                                                <i class="fas fa-circle-exclamation mr-0.5"></i>
+                                                                <span x-text="Object.keys(fieldErrors[block.id]).length + ' hata'"></span>
+                                                            </span>
+                                                        </template>
 
                                                         {{-- Block actions --}}
                                                         <div class="flex items-center gap-0.5 flex-shrink-0">

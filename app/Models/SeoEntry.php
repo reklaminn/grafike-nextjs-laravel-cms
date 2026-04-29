@@ -13,13 +13,19 @@ class SeoEntry extends Model
         'seoable_id', 'seoable_type', 'slug', 'language_id', 'meta_title',
         'meta_description', 'meta_keywords', 'h1_override', 'canonical_url',
         'hreflang_tags', 'is_noindex', 'page_css', 'page_js', 'legacy_id',
+        'schema_type', 'structured_data',
+        'og_image', 'og_type',
+        'sitemap_priority', 'sitemap_changefreq', 'sitemap_exclude',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_noindex' => 'boolean',
-            'hreflang_tags' => 'array',
+            'is_noindex'       => 'boolean',
+            'sitemap_exclude'  => 'boolean',
+            'sitemap_priority' => 'float',
+            'hreflang_tags'    => 'array',
+            'structured_data'  => 'array',
         ];
     }
 

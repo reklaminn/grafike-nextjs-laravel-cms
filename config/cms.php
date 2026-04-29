@@ -2,7 +2,8 @@
 
 return [
     'name' => env('CMS_NAME', 'Grafike CMS'),
-    'frontend_url' => env('CMS_FRONTEND_URL', 'http://127.0.0.1:3000'),
+    'frontend_url'      => env('CMS_FRONTEND_URL', 'http://127.0.0.1:3000'),
+    'revalidate_secret' => env('CMS_REVALIDATE_SECRET', ''),
     'version' => '2.0.0',
     'default_language' => env('CMS_DEFAULT_LANGUAGE', 'tr'),
     'default_language_id' => env('CMS_DEFAULT_LANGUAGE_ID', 1),

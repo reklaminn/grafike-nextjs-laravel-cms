@@ -29,6 +29,7 @@ class ArticleResource extends JsonResource
                 'display_date'    => $article->display_date?->toDateString()
                     ?? $article->published_at?->toDateString(),
                 'published_at'    => $article->published_at?->toAtomString(),
+                'updated_at'      => $article->updated_at?->toAtomString(),
                 'listing_variant' => $article->listing_variant,
                 'detail_variant'  => $article->detail_variant,
                 'is_featured'     => (bool) $article->is_featured,
@@ -60,10 +61,14 @@ class ArticleResource extends JsonResource
                 'slug'  => $article->page?->slug,
             ],
             'seo' => [
-                'title'       => $article->seo?->meta_title ?: $article->title,
-                'description' => $article->seo?->meta_description ?: ($article->excerpt ?: ''),
-                'canonical'   => $article->seo?->canonical_url ?: url($article->slug),
-                'noindex'     => (bool) ($article->seo?->is_noindex ?? false),
+                'title'           => $article->seo?->meta_title       ?: $article->title,
+                'description'     => $article->seo?->meta_description ?: ($article->excerpt ?: ''),
+                'canonical'       => $article->seo?->canonical_url     ?: url($article->slug),
+                'noindex'         => (bool) ($article->seo?->is_noindex ?? false),
+                'og_image'        => $article->seo?->og_image ?: ($article->getFirstMediaUrl('cover') ?: null),
+                'og_type'         => $article->seo?->og_type  ?: 'article',
+                'hreflang_tags'   => $article->seo?->hreflang_tags   ?: [],
+                'structured_data' => $article->seo?->structured_data ?: null,
             ],
         ];
     }

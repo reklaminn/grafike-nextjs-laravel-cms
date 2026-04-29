@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\AiAssistantController;
+use App\Http\Controllers\Admin\TranslationController;
 use Illuminate\Support\Facades\Route;
 
 // Admin Auth Routes
@@ -43,10 +44,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('pages/{page}/migrate-to-sections', [PageController::class, 'migrateToSections'])->name('pages.migrate-to-sections');
         Route::get('pages/{page}/migrate-preview', [PageController::class, 'migratePreview'])->name('pages.migrate-preview');
         Route::post('pages/{page}/revisions/{revision}/restore', [PageController::class, 'restoreRevision'])->name('pages.restore-revision');
+        Route::get('pages/{page}/create-translation', [PageController::class, 'createTranslation'])->name('pages.create-translation');
 
         // Articles CRUD
         Route::resource('articles', ArticleController::class);
         Route::delete('articles/{article}/cover', [ArticleController::class, 'destroyCover'])->name('articles.cover-destroy');
+        Route::get('articles/{article}/create-translation', [ArticleController::class, 'createTranslation'])->name('articles.create-translation');
 
         // Menus CRUD
         Route::resource('menus', MenuController::class);
@@ -67,6 +70,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('seo/{seoEntry}/edit', [SeoController::class, 'edit'])->name('seo.edit');
         Route::put('seo/{seoEntry}', [SeoController::class, 'update'])->name('seo.update');
         Route::delete('seo/{seoEntry}', [SeoController::class, 'destroy'])->name('seo.destroy');
+        // AJAX: Generate structured data / hreflang
+        Route::post('seo/{seoEntry}/generate-structured-data', [SeoController::class, 'generateStructuredData'])->name('seo.generate-structured-data');
+        Route::post('seo/{seoEntry}/generate-hreflang', [SeoController::class, 'generateHreflang'])->name('seo.generate-hreflang');
 
         // Redirects Management
         Route::resource('redirects', RedirectController::class)->except('show');
@@ -145,9 +151,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('ai/translate', [AiAssistantController::class, 'translate'])->name('ai.translate');
         Route::post('ai/rewrite', [AiAssistantController::class, 'rewrite'])->name('ai.rewrite');
         Route::post('ai/generate-meta', [AiAssistantController::class, 'generateMeta'])->name('ai.generate-meta');
+        Route::post('ai/translate-content', [AiAssistantController::class, 'translateContent'])->name('ai.translate-content');
+
+        // Translation management
+        Route::get('translations', [TranslationController::class, 'index'])->name('translations.index');
+        Route::post('translations/bulk', [TranslationController::class, 'bulk'])->name('translations.bulk');
 
         // Settings
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+        // Business / LocalBusiness structured data settings
+        Route::get('settings/business', [SettingsController::class, 'business'])->name('settings.business');
+        Route::put('settings/business', [SettingsController::class, 'updateBusiness'])->name('settings.business.update');
+
+        // Crawl / robots / llms settings
+        Route::get('settings/crawl', [SettingsController::class, 'crawl'])->name('settings.crawl');
+        Route::put('settings/crawl', [SettingsController::class, 'updateCrawl'])->name('settings.crawl.update');
     });
 });

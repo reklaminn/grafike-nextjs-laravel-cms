@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Concerns\AddsHttpCacheHeaders;
 use App\Http\Controllers\Api\Concerns\ResolvesApiLanguage;
 use App\Http\Resources\Api\ArticleCollection;
 use App\Http\Resources\Api\ArticleResource;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Cache;
 
 class ArticleController extends Controller
 {
-    use ResolvesApiLanguage;
+    use AddsHttpCacheHeaders, ResolvesApiLanguage;
 
     public function __construct(protected SeoManager $seoManager) {}
 
@@ -58,7 +59,13 @@ class ArticleController extends Controller
 
         $entity->loadMissing(['page', 'seo', 'language', 'author', 'media']);
 
-        return ArticleResource::make($entity);
+        $lastModified = $entity->seo?->updated_at ?? $entity->updated_at;
+
+        return $this->cachedResponse(
+            ArticleResource::make($entity),
+            $lastModified,
+            "article-{$entity->id}",
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────

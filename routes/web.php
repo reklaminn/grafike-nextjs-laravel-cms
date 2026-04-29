@@ -2,22 +2,42 @@
 
 use App\Http\Controllers\Frontend\FormSubmissionController;
 use App\Http\Controllers\Frontend\FrontendController;
+use App\Http\Controllers\Frontend\LlmsController;
 use App\Http\Controllers\Frontend\MemberAuthController;
 use App\Http\Controllers\Frontend\PageUnlockController;
 use App\Http\Controllers\Frontend\ReviewController;
+use App\Http\Controllers\Frontend\RobotsController;
 use App\Http\Controllers\Frontend\SitemapController;
+use App\Http\Controllers\Frontend\WellKnownController;
 use Illuminate\Support\Facades\Route;
 
 // Sitemap
 Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
-// robots.txt (dynamic)
-Route::get('robots.txt', function () {
-    $content = "User-agent: *\nAllow: /\n";
-    $content .= 'Sitemap: ' . url('sitemap.xml') . "\n";
+// Dynamic robots.txt — respects admin AI-bot policy settings
+Route::get('robots.txt', RobotsController::class)->name('robots');
 
-    return response($content, 200)->header('Content-Type', 'text/plain');
-});
+// LLM discovery files (llmstxt.org spec)
+Route::get('llms.txt',      [LlmsController::class, 'index'])->name('llms');
+Route::get('llms-full.txt', [LlmsController::class, 'full'])->name('llms.full');
+
+// AI discovery files (ai.txt + MCP manifest)
+Route::get('ai.txt',                    [WellKnownController::class, 'aiTxt'])->name('ai.txt');
+Route::get('.well-known/ai.txt',        [WellKnownController::class, 'aiTxt'])->name('well-known.ai-txt');
+Route::get('.well-known/mcp.json',      [WellKnownController::class, 'mcpJson'])->name('well-known.mcp');
+
+// IndexNow key file — served dynamically from admin settings
+// The key must match SiteSetting: services.indexnow_key
+Route::get('{key}.txt', function (string $key) {
+    $storedKey = \App\Models\SiteSetting::get('services.indexnow_key', '');
+
+    if (empty($storedKey) || $key !== $storedKey) {
+        abort(404);
+    }
+
+    return response($storedKey, 200)
+        ->header('Content-Type', 'text/plain');
+})->where('key', '[a-zA-Z0-9]{8,128}')->name('indexnow.key');
 
 // Language switch
 Route::get('lang/{code}', function (string $code) {

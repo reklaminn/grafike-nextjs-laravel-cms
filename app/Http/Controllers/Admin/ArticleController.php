@@ -102,7 +102,7 @@ class ArticleController extends Controller
 
     public function edit(Article $article)
     {
-        $article->load(['page', 'language', 'seo', 'media', 'form']);
+        $article->load(['page', 'language', 'seo', 'media', 'form', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
         $pages     = Page::orderBy('title')->get(['id', 'title']);
@@ -166,6 +166,41 @@ class ArticleController extends Controller
         return redirect()
             ->route('admin.articles.index')
             ->with('success', 'Yazı başarıyla silindi.');
+    }
+
+    // ─── Translation ─────────────────────────────────────────────────────────
+
+    /**
+     * Show "create translation" form pre-filled with source article data.
+     * GET /admin/articles/{article}/create-translation?lang={language_id}
+     */
+    public function createTranslation(Article $article, Request $request)
+    {
+        $article->load(['page', 'language', 'seo', 'translations.language']);
+
+        $languages = Language::where('is_active', true)->get();
+        $pages     = Page::orderBy('title')->get(['id', 'title']);
+        $forms     = Form::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $admins    = Admin::orderBy('name')->get(['id', 'name']);
+
+        // Languages that already have a translation
+        $usedLanguageIds = $article->translations->pluck('language_id')
+            ->push($article->language_id)
+            ->unique();
+
+        $availableLanguages = $languages->whereNotIn('id', $usedLanguageIds)->values();
+
+        $targetLanguageId = $request->integer('lang') ?: $availableLanguages->first()?->id;
+
+        return view('admin.articles.create-translation', compact(
+            'article',
+            'languages',
+            'availableLanguages',
+            'targetLanguageId',
+            'pages',
+            'forms',
+            'admins',
+        ));
     }
 
     /**

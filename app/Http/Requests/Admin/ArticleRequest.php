@@ -27,6 +27,7 @@ class ArticleRequest extends FormRequest
             'excerpt' => ['nullable', 'string', 'max:1000'],
             'extra_info' => ['nullable', 'string'],
             'page_id' => ['nullable', 'exists:pages,id'],
+            'parent_article_id' => ['nullable', 'exists:articles,id'],
             'language_id' => ['required', 'exists:languages,id'],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
             'sort_order' => ['nullable', 'integer', 'min:0'],

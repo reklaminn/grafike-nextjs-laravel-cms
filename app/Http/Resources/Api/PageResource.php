@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api;
 
 use App\Models\Page;
 use App\Models\SectionTemplate;
+use App\Services\Seo\StructuredDataGenerator;
 use App\Support\FrontendSections;
 use App\Support\LegacyLayoutToSections;
 use Illuminate\Http\Request;
@@ -35,16 +36,45 @@ class PageResource extends JsonResource
                 'language' => $page->language?->code,
             ],
             'seo' => [
-                'title' => $page->seo?->meta_title ?: $page->title,
-                'description' => $page->seo?->meta_description ?: '',
-                'canonical' => $page->seo?->canonical_url ?: url($page->slug ?: '/'),
-                'noindex' => (bool) ($page->seo?->is_noindex ?? false),
+                'title'           => $page->seo?->meta_title       ?: $page->title,
+                'description'     => $page->seo?->meta_description ?: '',
+                'keywords'        => $page->seo?->meta_keywords     ?: '',
+                'canonical'       => $page->seo?->canonical_url     ?: url($page->slug ?: '/'),
+                'noindex'         => (bool) ($page->seo?->is_noindex ?? false),
+                'og_image'        => $page->seo?->og_image          ?: $page->getFirstMediaUrl('cover') ?: null,
+                'og_type'         => $page->seo?->og_type           ?: 'website',
+                'hreflang_tags'   => $page->seo?->hreflang_tags     ?: [],
+                'structured_data' => $this->resolveStructuredData($page),
+                'schema_type'     => $page->seo?->schema_type       ?: null,
             ],
             'breadcrumbs' => $this->buildBreadcrumbs($page),
             'theme' => [
                 'slug' => $themeSlug,
             ],
         ];
+    }
+
+    /**
+     * Return the stored structured_data, or auto-generate a FAQPage schema
+     * if the page has FAQ-type sections and no structured_data is stored.
+     */
+    protected function resolveStructuredData(Page $page): ?array
+    {
+        // Admin has already set explicit structured data — use it
+        if (! empty($page->seo?->structured_data)) {
+            return $page->seo->structured_data;
+        }
+
+        // Auto-detect FAQ blocks from sections_json
+        $sectionsJson = $page->sections_json ?? [];
+        if (! empty($sectionsJson)) {
+            $faqSchema = app(StructuredDataGenerator::class)->detectFaqBlocks($sectionsJson);
+            if ($faqSchema !== null) {
+                return $faqSchema;
+            }
+        }
+
+        return null;
     }
 
     protected function resolveRenderableSections(Page $page): array

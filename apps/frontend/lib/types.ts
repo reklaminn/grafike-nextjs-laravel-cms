@@ -54,7 +54,29 @@ export type SettingsPayload = {
       address: string;
     };
     social: Record<string, string>;
-    services: Record<string, string>;
+    services: {
+      google_analytics_id?: string;
+      google_tag_manager_id?: string;
+      recaptcha_site_key?: string;
+      google_site_verification?: string;
+      bing_site_verification?: string;
+      indexnow_key?: string;
+      [key: string]: string | undefined;
+    };
+    business?: {
+      name?: string;
+      type?: string;
+      address_street?: string;
+      address_city?: string;
+      address_postal_code?: string;
+      address_country?: string;
+      telephone?: string;
+      email?: string;
+      geo_lat?: string;
+      geo_lng?: string;
+      opening_hours?: string;         // JSON string  e.g. [{"days":"Mo-Fr","hours":"09:00-18:00"}]
+      organization_json_ld?: string;  // pre-built JSON-LD from admin
+    };
   };
 };
 
@@ -198,6 +220,7 @@ export type ArticleDetail = {
   content_json: ArticleBlock[];
   display_date: string | null;
   published_at: string | null;
+  updated_at: string | null;
   listing_variant: string | null;
   detail_variant: string | null;
   is_featured: boolean;
@@ -210,7 +233,29 @@ export type ArticleDetailPayload = {
   author: { id: number; name: string } | null;
   language: { id: number; code: string; locale: string; name: string } | null;
   page: { id: number; title: string; slug: string } | null;
-  seo: { title: string; description: string; canonical: string; noindex: boolean };
+  seo: {
+    title: string;
+    description: string;
+    canonical: string;
+    noindex: boolean;
+    og_image?: string | null;
+    og_type?: string;
+    hreflang_tags?: Record<string, string>;
+    structured_data?: object | null;
+  };
+};
+
+export type PageSeoData = {
+  title: string;
+  description: string;
+  keywords?: string;
+  canonical: string;
+  noindex?: boolean;
+  og_image?: string | null;
+  og_type?: string;
+  hreflang_tags?: Record<string, string>;
+  structured_data?: object | null;
+  schema_type?: string | null;
 };
 
 export type PagePayload = {
@@ -222,12 +267,9 @@ export type PagePayload = {
     sections: PageSection[];
     region_version?: number;
     regions?: PageRegions;
+    breadcrumbs?: Array<{ title: string; slug: string; url: string }>;
   };
-  seo: {
-    title: string;
-    description: string;
-    canonical: string;
-  };
+  seo: PageSeoData;
   theme?: {
     slug: string;
   };

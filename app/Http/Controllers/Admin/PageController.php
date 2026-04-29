@@ -93,6 +93,11 @@ class PageController extends Controller
 
         $page = Page::create($data);
 
+        // If root_page_id was not provided, this page IS the root of its own translation group
+        if (empty($page->root_page_id)) {
+            $page->updateQuietly(['root_page_id' => $page->id]);
+        }
+
         // Handle cover image
         if ($request->hasFile('cover_image')) {
             $page->addMediaFromRequest('cover_image')
@@ -109,7 +114,7 @@ class PageController extends Controller
 
     public function edit(Page $page)
     {
-        $page->load(['language', 'parent', 'seo', 'children', 'media', 'site.theme']);
+        $page->load(['language', 'parent', 'seo', 'children', 'media', 'site.theme', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
         $parentPages = Page::where('id', '!=', $page->id)
@@ -193,6 +198,47 @@ class PageController extends Controller
             ->route('admin.pages.edit', $page)
             ->with('success', 'Sayfa başarıyla güncellendi.')
             ->with('preview_refresh', now()->timestamp);
+    }
+
+    // ─── Translation ─────────────────────────────────────────────────────────
+
+    /**
+     * Show the "create translation" form pre-filled with source page data.
+     * GET /admin/pages/{page}/create-translation?lang={language_id}
+     */
+    public function createTranslation(Page $page, Request $request)
+    {
+        $page->load(['language', 'seo', 'translations.language']);
+
+        $languages = Language::where('is_active', true)->get();
+        $parentPages = Page::whereNull('parent_id')
+            ->orderBy('title')
+            ->get(['id', 'title', 'language_id']);
+
+        $availableFrontendSectionTemplates = SectionTemplate::query()
+            ->when($page->site?->theme_id, fn ($q, $id) => $q->where('theme_id', $id))
+            ->active()->orderBy('name')->get()->values();
+
+        // Languages that already have a translation
+        $usedLanguageIds = $page->translations->pluck('language_id')
+            ->push($page->language_id)
+            ->unique();
+
+        $availableLanguages = $languages->whereNotIn('id', $usedLanguageIds)->values();
+
+        // Pre-select language from query string
+        $targetLanguageId = $request->integer('lang') ?: $availableLanguages->first()?->id;
+
+        $editorData = PageEditorData::for(null, $availableFrontendSectionTemplates);
+
+        return view('admin.pages.create-translation', compact(
+            'page',
+            'languages',
+            'availableLanguages',
+            'targetLanguageId',
+            'parentPages',
+            'editorData',
+        ));
     }
 
     public function destroy(Page $page)

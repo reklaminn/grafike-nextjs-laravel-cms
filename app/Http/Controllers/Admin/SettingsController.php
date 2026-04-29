@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Frontend\RobotsController;
 use App\Models\SiteSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class SettingsController extends Controller
 {
@@ -29,5 +31,109 @@ class SettingsController extends Controller
         return redirect()
             ->route('admin.settings.index')
             ->with('success', 'Ayarlar başarıyla güncellendi.');
+    }
+
+    // ─── Business / LocalBusiness structured data ─────────────────────────────
+
+    public function business()
+    {
+        $settings = SiteSetting::all()->pluck('value', 'key');
+
+        $businessTypes = [
+            'Organization'       => 'Organization (Genel)',
+            'LocalBusiness'      => 'LocalBusiness (Yerel İşletme)',
+            'Store'              => 'Store (Mağaza)',
+            'Restaurant'         => 'Restaurant (Restoran)',
+            'Hotel'              => 'Hotel (Otel)',
+            'MedicalBusiness'    => 'MedicalBusiness (Sağlık)',
+            'LegalService'       => 'LegalService (Hukuk)',
+            'FinancialService'   => 'FinancialService (Finans)',
+            'EducationalOrganization' => 'EducationalOrganization (Eğitim)',
+            'AutoDealer'         => 'AutoDealer (Oto Galeri)',
+        ];
+
+        return view('admin.settings.business', compact('settings', 'businessTypes'));
+    }
+
+    public function updateBusiness(Request $request)
+    {
+        $request->validate([
+            'business.name'                => 'nullable|string|max:255',
+            'business.type'                => 'nullable|string|max:100',
+            'business.address_street'      => 'nullable|string|max:500',
+            'business.address_city'        => 'nullable|string|max:100',
+            'business.address_postal_code' => 'nullable|string|max:20',
+            'business.address_country'     => 'nullable|string|max:10',
+            'business.telephone'           => 'nullable|string|max:50',
+            'business.email'               => 'nullable|email|max:255',
+            'business.geo_lat'             => 'nullable|numeric|between:-90,90',
+            'business.geo_lng'             => 'nullable|numeric|between:-180,180',
+            'business.opening_hours'       => 'nullable|string|max:2000',
+            'business.organization_json_ld' => ['nullable', 'string', 'max:10000', function ($attr, $val, $fail) {
+                if ($val && ! json_validate($val)) {
+                    $fail('Özel JSON-LD alanı geçerli JSON formatında olmalıdır.');
+                }
+            }],
+        ]);
+
+        $fields = [
+            'name', 'type', 'address_street', 'address_city',
+            'address_postal_code', 'address_country', 'telephone', 'email',
+            'geo_lat', 'geo_lng', 'opening_hours', 'organization_json_ld',
+        ];
+
+        foreach ($fields as $field) {
+            SiteSetting::set("business.{$field}", $request->input("business.{$field}", ''));
+        }
+
+        // Bust API cache
+        Cache::forget('api_settings');
+
+        return redirect()
+            ->route('admin.settings.business')
+            ->with('success', 'İşletme bilgileri güncellendi. Yapısal veri (JSON-LD) sitede güncellenecek.');
+    }
+
+    // ─── Crawl / robots / llms ─────────────────────────────────────────────────
+
+    public function crawl()
+    {
+        $settings = SiteSetting::all()->pluck('value', 'key');
+        $aiBots   = RobotsController::AI_BOTS;
+
+        return view('admin.settings.crawl', compact('settings', 'aiBots'));
+    }
+
+    public function updateCrawl(Request $request)
+    {
+        $request->validate([
+            'crawl.allow_ai_bots'     => 'nullable|boolean',
+            'crawl.crawl_delay'       => 'nullable|integer|min:0|max:60',
+            'crawl.robots_custom'     => 'nullable|string|max:5000',
+            'crawl.llms_description'  => 'nullable|string|max:500',
+        ]);
+
+        // General AI toggle
+        SiteSetting::set('crawl.allow_ai_bots', $request->boolean('crawl.allow_ai_bots') ? '1' : '0', 'crawl');
+
+        // Per-bot overrides
+        foreach (array_keys(RobotsController::AI_BOTS) as $bot) {
+            $key = 'crawl.bot_' . strtolower(str_replace(['-', ' '], '_', $bot));
+            $val = $request->has("bot.{$bot}") ? '1' : '0';
+            SiteSetting::set($key, $val, 'crawl');
+        }
+
+        SiteSetting::set('crawl.crawl_delay',    $request->input('crawl.crawl_delay', 0), 'crawl');
+        SiteSetting::set('crawl.robots_custom',  $request->input('crawl.robots_custom', ''), 'crawl');
+        SiteSetting::set('crawl.llms_description', $request->input('crawl.llms_description', ''), 'crawl');
+
+        // Bust caches
+        Cache::forget('robots_txt');
+        Cache::forget('llms_txt');
+        Cache::forget('llms_full_txt');
+
+        return redirect()
+            ->route('admin.settings.crawl')
+            ->with('success', 'Tarama ayarları güncellendi. robots.txt ve llms.txt önbelleği temizlendi.');
     }
 }
