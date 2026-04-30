@@ -67,6 +67,14 @@ x-app-labels: &app-labels
   traefik.enable: "true"
   traefik.docker.network: traefik_proxy
 
+  # ── HTTP → HTTPS global redirect ───────────────────────────────────────────
+  traefik.http.routers.http-catchall.rule: "HostRegexp(`{host:.+}`)"
+  traefik.http.routers.http-catchall.entrypoints: web
+  traefik.http.routers.http-catchall.middlewares: https-redirect
+  traefik.http.routers.http-catchall.priority: "1"
+  traefik.http.middlewares.https-redirect.redirectscheme.scheme: https
+  traefik.http.middlewares.https-redirect.redirectscheme.permanent: "true"
+
   # ── Backend router: /admin ──────────────────────────────────────────────────
   traefik.http.routers.grafike-admin.rule: "Host(`${APP_DOMAIN}`) && PathPrefix(`/admin`)"
   traefik.http.routers.grafike-admin.entrypoints: websecure
