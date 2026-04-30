@@ -1,27 +1,15 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * NO-OP — content_json is included in database/migrations/tenant/0002_create_articles_table.php
+     *
+     * `articles` is a tenant table; the column is baked into the tenant migration from the start.
      */
-    public function up(): void
-    {
-        Schema::table('articles', function (Blueprint $table) {
-            // Stores block-based content (array of block objects).
-            // The `body` column keeps rendered HTML for backward compat with the template engine.
-            $table->json('content_json')->nullable()->after('body');
-        });
-    }
+    public function up(): void {}
 
-    public function down(): void
-    {
-        Schema::table('articles', function (Blueprint $table) {
-            $table->dropColumn('content_json');
-        });
-    }
+    public function down(): void {}
 };

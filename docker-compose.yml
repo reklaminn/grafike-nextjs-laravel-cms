@@ -252,6 +252,10 @@ services:
       --query-cache-size=0
     volumes:
       - grafike_mariadb_data:/var/lib/mysql
+      # init.sh runs once on first container creation:
+      #   - sets utf8mb4 on the central DB
+      #   - grants the app user CREATE/DROP DATABASE for tenant provisioning
+      - ./docker/mysql/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s

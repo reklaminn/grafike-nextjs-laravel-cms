@@ -24,13 +24,9 @@ class Language extends Model
         return $query->where('is_active', true);
     }
 
-    public function pages()
-    {
-        return $this->hasMany(Page::class);
-    }
-
-    public function articles()
-    {
-        return $this->hasMany(Article::class);
-    }
+    // NOTE: pages() and articles() relations are intentionally omitted.
+    // Language lives in the central DB; pages/articles live in per-tenant DBs.
+    // Cross-DB HasMany relations cannot be satisfied by Eloquent's single-connection
+    // query builder. Resolve the association at the application layer instead:
+    //   $pages = Page::where('language_id', $language->id)->get();  // inside tenant context
 }
