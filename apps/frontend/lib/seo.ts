@@ -4,7 +4,7 @@
  * Canonical URL base comes from NEXT_PUBLIC_SITE_URL env var.
  */
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000").replace(/\/$/, "");
 
 export function canonicalUrl(path: string): string {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
