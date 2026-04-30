@@ -47,7 +47,7 @@ x-app-common: &app-common
     dockerfile: Dockerfile
   restart: unless-stopped
   env_file:
-    - .env.hostinger
+    - .env
   environment:
     <<: *app-env
   depends_on:
@@ -119,7 +119,7 @@ services:
     restart: unless-stopped
     command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
     env_file:
-      - .env.hostinger
+      - .env
     environment:
       <<: *app-env
     depends_on:
@@ -140,7 +140,7 @@ services:
     restart: unless-stopped
     command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
     env_file:
-      - .env.hostinger
+      - .env
     environment:
       <<: *app-env
     depends_on:

@@ -5,7 +5,7 @@ Bu kurulum dosyasi mevcut `traefik_proxy` agini ve harici MariaDB sunucusunu kul
 ## 1. Ortam dosyasini hazirla
 
 ```bash
-cp .env.hostinger.example .env.hostinger
+cp .env.hostinger.example .env
 ```
 
 Su alanlari doldur:
@@ -42,26 +42,26 @@ docker network create traefik_proxy
 ## 3. Uygulamayi ayağa kaldir
 
 ```bash
-docker compose --env-file .env.hostinger -f docker-compose.hostinger.yml up -d --build
+docker compose -f docker-compose.hostinger.yml up -d --build
 ```
 
 ## 4. Migrasyonlari dogrula
 
 ```bash
-docker compose --env-file .env.hostinger -f docker-compose.hostinger.yml logs -f app
+docker compose -f docker-compose.hostinger.yml logs -f app
 ```
 
 Gerekirse elle calistir:
 
 ```bash
-docker compose --env-file .env.hostinger -f docker-compose.hostinger.yml exec app php artisan migrate --force
+docker compose -f docker-compose.hostinger.yml exec app php artisan migrate --force
 ```
 
 ## 5. Guncelleme
 
 ```bash
 git pull
-docker compose --env-file .env.hostinger -f docker-compose.hostinger.yml up -d --build
+docker compose -f docker-compose.hostinger.yml up -d --build
 ```
 
 ## Notlar
