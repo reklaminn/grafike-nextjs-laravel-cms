@@ -55,8 +55,11 @@
                 </label>
                 <input type="text" name="domain" value="{{ old('domain') }}" required
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono @error('domain') border-red-400 @enderror"
-                       placeholder="nuhcicek.com.tr">
-                <p class="text-xs text-gray-400 mt-1">www. varyantı otomatik eklenir. Protokol yazmayın.</p>
+                       placeholder="nuhcicek.com.tr veya firma1.{{ env('APP_DOMAIN') }}">
+                <p class="text-xs text-gray-400 mt-1">
+                    <strong>Özel domain:</strong> <code class="font-mono">nuhcicek.com.tr</code> — www. varyantı otomatik eklenir.<br>
+                    <strong>Subdomain:</strong> <code class="font-mono">firma1.{{ env('APP_DOMAIN') }}</code> — www. eklenmez, DNS wildcard (<code>*.{{ env('APP_DOMAIN') }}</code>) yeterli.
+                </p>
                 @error('domain')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                 @enderror

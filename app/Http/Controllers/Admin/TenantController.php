@@ -55,11 +55,17 @@ class TenantController extends Controller
             ],
         ]);
 
-        // Register primary domain (without www)
+        // Register primary domain
         $tenant->domains()->create(['domain' => $domain]);
 
-        // Auto-add www. variant if it does not already start with www.
-        if (! str_starts_with($domain, 'www.')) {
+        // Auto-add www. variant only for root custom domains (e.g. nuhcicek.com.tr).
+        // Skip for subdomain tenants (e.g. firma1.grafike.site) — the wildcard DNS
+        // record (*.grafike.site) only covers one level, so www.firma1.grafike.site
+        // would not resolve and Let's Encrypt would not be able to issue a cert for it.
+        $centralDomain = env('APP_DOMAIN', '');
+        $isSubdomainTenant = $centralDomain && str_ends_with($domain, '.' . $centralDomain);
+
+        if (! str_starts_with($domain, 'www.') && ! $isSubdomainTenant) {
             $tenant->domains()->create(['domain' => 'www.' . $domain]);
         }
 
