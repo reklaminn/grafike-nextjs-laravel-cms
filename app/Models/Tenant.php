@@ -12,23 +12,12 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     use HasDatabase, HasDomains;
 
     /**
-     * Custom columns stored in the JSON `data` column.
-     * Access via $tenant->name, $tenant->theme_id, etc.
+     * Real DB columns on the `tenants` table (everything else goes into `data` JSON).
+     * stancl stores all custom attributes in the JSON `data` column unless listed here.
      */
     public static function getCustomColumns(): array
     {
-        return [
-            'id',
-        ];
-    }
-
-    /**
-     * Meta fields stored in the `data` JSON column.
-     * e.g. $tenant->name, $tenant->status, $tenant->theme_id
-     */
-    protected function getDataColumn(): string
-    {
-        return 'data';
+        return ['id'];
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
