@@ -11,6 +11,16 @@ const SUPPORTED_LOCALES: string[] = (
   .map((l) => l.trim())
   .filter(Boolean);
 
+const BACKEND_PATH_PREFIXES = [
+  "/admin",
+  "/api",
+  "/build",
+  "/storage",
+  "/vendor",
+  "/livewire",
+  "/up",
+];
+
 function detectLocaleInPath(pathname: string): string | null {
   return (
     SUPPORTED_LOCALES.find(
@@ -21,6 +31,10 @@ function detectLocaleInPath(pathname: string): string | null {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (BACKEND_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return NextResponse.next();
+  }
 
   const detectedLocale = detectLocaleInPath(pathname);
 

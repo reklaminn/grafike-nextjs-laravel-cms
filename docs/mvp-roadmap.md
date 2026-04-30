@@ -19,6 +19,36 @@ Bu kararın sebebi:
 
 ---
 
+## Son Durum Notu — 2026-04-30
+
+Aktif çalışma branch'i: `feat/multi-tenant`.
+
+Canlı deploy durumu:
+
+- Hostinger VPS üzerinde Docker deploy başarıyla ayağa kaldırıldı.
+- Deploy için tek env kaynağı `.env` olarak netleştirildi.
+- `.env.hostinger` runtime akışından çıkarıldı; gerekiyorsa sadece örnek dosya olarak kullanılacak.
+- `docker-compose.yml` ve `docker-compose.hostinger.yml` `.env` dosyasını container runtime'a da geçiriyor.
+- Next.js Docker build için URL fallback'leri eklendi; boş `NEXT_PUBLIC_SITE_URL` build'i kırmıyor.
+- Rebase sonrası VPS'te branch ayrışması `git fetch origin` + `git reset --hard origin/feat/multi-tenant` ile çözüldü.
+
+Canlı deploy komutu:
+
+```bash
+git fetch origin
+git reset --hard origin/feat/multi-tenant
+docker compose up -d --build
+```
+
+Kaldığımız yer:
+
+- Multi-tenant Docker deploy hattı çalışır duruma geldi.
+- Sıradaki teknik kontrol: canlıda admin giriş, tenant/site seçici, Laravel API, Next.js frontend render ve Traefik route doğrulaması.
+- Sıradaki ürün geliştirme odağı: Faz 1.5 kalanlarını netleştirip tamamlamak; özellikle live preview, schema visual builder, eksik placeholder uyarıları ve section template editör olgunlaştırması.
+- Sentry Next.js instrumentation uyarıları build'i durdurmuyor; ayrı bir teknik borç olarak temizlenecek.
+
+---
+
 ## ✅ Tamamlanan Geliştirmeler
 
 ### Admin Edit Screen — 5 Aksiyon Serisi (`/admin/pages/{id}/edit`)
