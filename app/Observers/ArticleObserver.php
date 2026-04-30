@@ -51,7 +51,6 @@ class ArticleObserver
     {
         try {
             $siteUrl = rtrim(config('app.url', ''), '/');
-            $siteId  = $article->site_id ?? null;
 
             $locale = $article->language?->code ?? config('cms.default_language', 'tr');
 
@@ -61,7 +60,7 @@ class ArticleObserver
                 ? "/{$locale}/{$parentSlug}/{$article->slug}"
                 : "/{$locale}/{$article->slug}";
 
-            app(IndexNowNotifier::class)->ping($siteUrl . $urlPath, $siteId);
+            app(IndexNowNotifier::class)->ping($siteUrl . $urlPath);
         } catch (\Throwable) {
             // Non-fatal
         }

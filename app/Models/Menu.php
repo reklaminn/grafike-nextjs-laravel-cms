@@ -9,7 +9,7 @@ class Menu extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['site_id', 'name', 'slug', 'location', 'theme_variant', 'language_id', 'is_active'];
+    protected $fillable = ['name', 'slug', 'location', 'theme_variant', 'language_id', 'is_active'];
 
     protected function casts(): array
     {
@@ -19,11 +19,6 @@ class Menu extends Model
     public function items()
     {
         return $this->hasMany(MenuItem::class);
-    }
-
-    public function site()
-    {
-        return $this->belongsTo(Site::class);
     }
 
     public function language()

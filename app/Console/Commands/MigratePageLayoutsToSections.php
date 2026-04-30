@@ -11,7 +11,6 @@ class MigratePageLayoutsToSections extends Command
 {
     protected $signature = 'cms:migrate-page-layouts
         {--page= : Sadece belirli page ID}
-        {--site= : Sadece belirli site ID}
         {--theme= : Eşleme için tema slug}
         {--force : sections_json dolu olsa da tekrar yaz}
         {--dry-run : Yazmadan sadece özet göster}';
@@ -24,10 +23,6 @@ class MigratePageLayoutsToSections extends Command
 
         if ($pageId = $this->option('page')) {
             $query->whereKey($pageId);
-        }
-
-        if ($siteId = $this->option('site')) {
-            $query->where('site_id', $siteId);
         }
 
         if (! $this->option('force')) {

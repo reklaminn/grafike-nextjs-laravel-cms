@@ -65,26 +65,12 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('sites', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 255);
-            $table->string('slug', 255)->unique();
-            $table->string('domain', 255)->nullable()->unique();
-            $table->foreignId('theme_id')->nullable()->constrained('themes')->nullOnDelete();
-            $table->foreignId('site_template_id')->nullable()->constrained('site_templates')->nullOnDelete();
-            $table->json('tokens_json')->nullable();
-            $table->json('settings_json')->nullable();
-            $table->longText('custom_css')->nullable();
-            $table->longText('custom_js')->nullable();
-            $table->enum('status', ['draft', 'active', 'archived'])->default('draft');
-            $table->boolean('is_primary')->default(false);
-            $table->timestamps();
-        });
+        // NOTE: 'sites' table removed — replaced by stancl/tenancy's 'tenants' + 'domains' tables.
+        // Tenant metadata (name, theme_id, status) is stored in the 'data' JSON column on tenants.
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('sites');
         Schema::dropIfExists('site_templates');
         Schema::dropIfExists('page_templates');
         Schema::dropIfExists('section_templates');

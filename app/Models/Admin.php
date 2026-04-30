@@ -12,6 +12,9 @@ class Admin extends Authenticatable
 {
     use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
+    /** Central DB — admins are global across all tenants */
+    protected $connection = 'central';
+
     protected $guard_name = 'admin';
 
     protected $fillable = [

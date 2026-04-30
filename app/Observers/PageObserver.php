@@ -80,13 +80,12 @@ class PageObserver
     {
         try {
             $siteUrl = rtrim(config('app.url', ''), '/');
-            $siteId  = $page->site_id ?? null;
 
             // Build one URL per active locale
             $codes = Language::active()->pluck('code')->toArray() ?: [config('cms.default_language', 'tr')];
             $urls  = array_map(fn (string $c) => "{$siteUrl}/{$c}/{$page->slug}", $codes);
 
-            app(IndexNowNotifier::class)->pingBatch($urls, $siteId);
+            app(IndexNowNotifier::class)->pingBatch($urls);
         } catch (\Throwable) {
             // Non-fatal
         }

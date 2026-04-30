@@ -9,6 +9,9 @@ class Language extends Model
 {
     use HasFactory;
 
+    /** Central DB — languages are shared across all tenants */
+    protected $connection = 'central';
+
     protected $fillable = ['name', 'code', 'locale', 'is_active', 'direction', 'sort_order'];
 
     protected function casts(): array
