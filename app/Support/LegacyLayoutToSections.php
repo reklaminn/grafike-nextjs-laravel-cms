@@ -46,7 +46,7 @@ class LegacyLayoutToSections
         $query = SectionTemplate::query()
             ->whereNotNull('legacy_module_key');
 
-        $themeId = $theme?->id ?? $page->site?->theme_id;
+        $themeId = $theme?->id ?? tenancy()->tenant?->theme_id;
 
         if ($themeId) {
             $themedTemplates = (clone $query)

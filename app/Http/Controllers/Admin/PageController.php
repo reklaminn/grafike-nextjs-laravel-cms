@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PageRequest;
+use App\Models\Article;
 use App\Models\Language;
 use App\Models\Page;
 use App\Models\PageRevision;
@@ -114,7 +115,7 @@ class PageController extends Controller
 
     public function edit(Page $page)
     {
-        $page->load(['language', 'parent', 'seo', 'children', 'media', 'site.theme', 'translations.language']);
+        $page->load(['language', 'parent', 'seo', 'children', 'media', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
         $parentPages = Page::where('id', '!=', $page->id)
@@ -129,16 +130,19 @@ class PageController extends Controller
             ->get()
             ->keyBy('id');
 
+        // In tenant context the current tenant's theme_id filters section templates.
+        // tenancy()->tenant is the Tenant model instance set by stancl middleware.
+        $tenantThemeId = tenancy()->tenant?->theme_id;
+
         $availableFrontendSectionTemplates = SectionTemplate::query()
-            ->when($page->site?->theme_id, fn ($query, $themeId) => $query->where('theme_id', $themeId))
+            ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
             ->active()
             ->orderBy('name')
             ->get()
             ->values();
 
-        $siteArticles = $page->site
-            ? $page->site->articles()->latest('published_at')->limit(10)->get()
-            : collect();
+        // Articles live in the tenant DB — no site() relation needed.
+        $siteArticles = Article::latest('published_at')->limit(10)->get();
 
         $frontendEditorSections = FrontendSections::flattenBlocks($page->sections_json);
         $frontendRegions = FrontendSections::normalize($page->sections_json);
