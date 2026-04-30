@@ -12,6 +12,9 @@ class SectionTemplate extends Model implements HasMedia
 {
     use HasFactory, SoftDeletes, InteractsWithMedia;
 
+    /** Central DB — section templates are shared across all tenants */
+    protected $connection = 'central';
+
     protected $fillable = [
         'theme_id',
         'type',

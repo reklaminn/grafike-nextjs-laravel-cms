@@ -9,6 +9,9 @@ class PageTemplate extends Model
 {
     use HasFactory;
 
+    /** Central DB — page templates are shared across all tenants */
+    protected $connection = 'central';
+
     protected $fillable = [
         'theme_id',
         'name',
@@ -32,11 +35,6 @@ class PageTemplate extends Model
     public function theme()
     {
         return $this->belongsTo(Theme::class);
-    }
-
-    public function pages()
-    {
-        return $this->hasMany(Page::class);
     }
 
     public function scopeActive($query)

@@ -14,7 +14,7 @@ class Page extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia, HasRecursiveRelationships;
 
     protected $fillable = [
-        'site_id', 'title', 'parent_id', 'language_id', 'root_page_id', 'status',
+        'title', 'parent_id', 'language_id', 'root_page_id', 'status',
         'show_in_menu', 'sort_order', 'slug', 'external_url', 'link_target',
         'module_type', 'template', 'page_template_id', 'page_template', 'frontend_variant',
         'layout_json', 'sections_json', 'custom_css', 'custom_js',
@@ -43,11 +43,6 @@ class Page extends Model implements HasMedia
     public function parent()
     {
         return $this->belongsTo(Page::class, 'parent_id');
-    }
-
-    public function site()
-    {
-        return $this->belongsTo(Site::class);
     }
 
     public function children()

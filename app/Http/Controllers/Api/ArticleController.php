@@ -21,20 +21,21 @@ class ArticleController extends Controller
     public function index(Request $request): ArticleCollection
     {
         $perPage  = min(max((int) $request->integer('limit', 12), 1), 50);
-        $siteId   = $request->integer('site_id') ?: null;
         $pageId   = $request->integer('page_id') ?: null;
         $language = $this->resolveLanguage($request->query('lang'));
         $featured = $request->boolean('featured_only');
 
+        // Tenant context is established by stancl middleware.
+        // All Article queries run on the current tenant's DB — no site_id filter needed.
         $cacheEnabled = config('cms.cache.enabled', true);
         $cacheTtl     = (int) config('cms.cache.ttl', 600);
         $cacheKey     = 'api.articles.' . md5(serialize($request->only(
-            'limit', 'page', 'site_id', 'page_id', 'lang', 'featured_only'
+            'limit', 'page', 'page_id', 'lang', 'featured_only'
         )));
 
         $paginator = $cacheEnabled
-            ? Cache::remember($cacheKey, $cacheTtl, fn () => $this->buildQuery($siteId, $pageId, $language?->id, $featured)->paginate($perPage)->withQueryString())
-            : $this->buildQuery($siteId, $pageId, $language?->id, $featured)->paginate($perPage)->withQueryString();
+            ? Cache::remember($cacheKey, $cacheTtl, fn () => $this->buildQuery($pageId, $language?->id, $featured)->paginate($perPage)->withQueryString())
+            : $this->buildQuery($pageId, $language?->id, $featured)->paginate($perPage)->withQueryString();
 
         return new ArticleCollection($paginator);
     }
@@ -70,12 +71,11 @@ class ArticleController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────
 
-    private function buildQuery(?int $siteId, ?int $pageId, ?int $languageId, bool $featured)
+    private function buildQuery(?int $pageId, ?int $languageId, bool $featured)
     {
         return Article::query()
             ->published()
             ->with(['page', 'language', 'author', 'media'])
-            ->when($siteId,     fn ($q) => $q->where('site_id', $siteId))
             ->when($pageId,     fn ($q) => $q->where('page_id', $pageId))
             ->when($languageId, fn ($q) => $q->where('language_id', $languageId))
             ->when($featured,   fn ($q) => $q->featured())

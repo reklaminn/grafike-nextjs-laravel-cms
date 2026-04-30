@@ -1,3 +1,5 @@
+@include('admin.partials.active-tenant-selector')
+
 @php
     $currentRoute = request()->route()?->getName() ?? '';
 
@@ -29,6 +31,7 @@
     ];
 
     $systemItems = [
+        ['route' => 'admin.tenants.index', 'icon' => 'fa-building', 'label' => 'Siteler', 'match' => 'admin.tenants'],
         ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield', 'label' => 'Yöneticiler', 'match' => 'admin.admin-users'],
         ['route' => 'admin.roles.index', 'icon' => 'fa-key', 'label' => 'Roller/Yetkiler', 'match' => 'admin.roles'],
         ['route' => 'admin.maintenance.index', 'icon' => 'fa-database', 'label' => 'DB Bakım', 'match' => 'admin.maintenance'],

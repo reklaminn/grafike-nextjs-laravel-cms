@@ -1,32 +1,15 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * NO-OP — included in database/migrations/tenant/0001_create_pages_table.php
+     *
+     * `page_revisions` is a tenant table (references tenant `pages`).
      */
-    public function up(): void
-    {
-        Schema::create('page_revisions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('page_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('admin_id')->nullable()->constrained('admins')->nullOnDelete();
-            $table->json('snapshot');
-            $table->string('reason')->nullable();
-            $table->timestamp('created_at')->nullable()->useCurrent();
-            $table->index(['page_id', 'created_at']);
-        });
-    }
+    public function up(): void {}
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('page_revisions');
-    }
+    public function down(): void {}
 };

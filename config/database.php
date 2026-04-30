@@ -115,6 +115,28 @@ return [
 
         /*
         |--------------------------------------------------------------------------
+        | Central (Main) Database Connection
+        |--------------------------------------------------------------------------
+        | Used by stancl/tenancy as the central app database.
+        | Contains: tenants, domains, admins, themes, section_templates, languages,
+        | permissions, roles, currencies, activity_log — shared across all tenants.
+        */
+        'central' => [
+            'driver'    => env('DB_DRIVER', 'mariadb'),
+            'host'      => env('DB_HOST', '127.0.0.1'),
+            'port'      => env('DB_PORT', '3306'),
+            'database'  => env('DB_DATABASE', 'grafike_main'),
+            'username'  => env('DB_USERNAME', 'root'),
+            'password'  => env('DB_PASSWORD', ''),
+            'charset'   => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix'    => '',
+            'strict'    => true,
+            'engine'    => null,
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
         | Legacy ASP CMS Database Connection (grafike-db1)
         |--------------------------------------------------------------------------
         | Used by migrate:legacy:* commands to read data from the old CMS database.

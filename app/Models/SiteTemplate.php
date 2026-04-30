@@ -9,6 +9,9 @@ class SiteTemplate extends Model
 {
     use HasFactory;
 
+    /** Central DB — site templates are shared across all tenants */
+    protected $connection = 'central';
+
     protected $fillable = [
         'theme_id',
         'name',
@@ -30,11 +33,6 @@ class SiteTemplate extends Model
     public function theme()
     {
         return $this->belongsTo(Theme::class);
-    }
-
-    public function sites()
-    {
-        return $this->hasMany(Site::class);
     }
 
     public function scopeActive($query)

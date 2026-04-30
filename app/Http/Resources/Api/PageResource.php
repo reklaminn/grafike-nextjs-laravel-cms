@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api;
 
 use App\Models\Page;
 use App\Models\SectionTemplate;
+use App\Models\Theme;
 use App\Services\Seo\StructuredDataGenerator;
 use App\Support\FrontendSections;
 use App\Support\LegacyLayoutToSections;
@@ -16,10 +17,14 @@ class PageResource extends JsonResource
     {
         /** @var Page $page */
         $page = $this->resource;
-        $rawSections = $this->resolveRenderableSections($page);
-        $sections = $this->enrichSections(FrontendSections::flattenBlocks($rawSections));
+        // Theme is resolved from the current tenant's metadata (stancl/tenancy).
+        $tenant = tenancy()->tenant ?? null;
+        $theme  = $tenant?->theme_id ? Theme::find($tenant->theme_id) : null;
+
+        $rawSections  = $this->resolveRenderableSections($page, $theme);
+        $sections     = $this->enrichSections(FrontendSections::flattenBlocks($rawSections));
         $regionLayout = $this->enrichRegionBlocks($rawSections);
-        $themeSlug = $page->site?->theme?->slug ?: 'porto-furniture';
+        $themeSlug    = $theme?->slug ?: 'porto-furniture';
 
         return [
             'page' => [
@@ -77,7 +82,7 @@ class PageResource extends JsonResource
         return null;
     }
 
-    protected function resolveRenderableSections(Page $page): array
+    protected function resolveRenderableSections(Page $page, ?Theme $theme): array
     {
         $sections = $page->sections_json;
 
@@ -90,7 +95,7 @@ class PageResource extends JsonResource
         }
 
         if (! empty($page->layout_json)) {
-            return LegacyLayoutToSections::convert($page, $page->site?->theme);
+            return LegacyLayoutToSections::convert($page, $theme);
         }
 
         return [];

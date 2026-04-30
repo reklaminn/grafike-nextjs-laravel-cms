@@ -22,6 +22,7 @@
         "spatie/laravel-sitemap": "^7.4",
         "spatie/laravel-sluggable": "^3.8",
         "spatie/laravel-translatable": "^6.13",
+        "stancl/tenancy": "^3.10",
         "staudenmeir/laravel-adjacency-list": "^1.25"
     },
     "require-dev": {

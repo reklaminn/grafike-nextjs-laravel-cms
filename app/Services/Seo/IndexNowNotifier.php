@@ -23,15 +23,15 @@ class IndexNowNotifier
     private const ENDPOINT = 'https://api.indexnow.org/indexnow';
 
     /** Notify IndexNow about a single URL. */
-    public function ping(string $url, ?int $siteId = null): void
+    public function ping(string $url): void
     {
-        $this->pingBatch([$url], $siteId);
+        $this->pingBatch([$url]);
     }
 
     /** Notify IndexNow about multiple URLs (max 10 000 per call). */
-    public function pingBatch(array $urls, ?int $siteId = null): void
+    public function pingBatch(array $urls): void
     {
-        $key = SiteSetting::get('services.indexnow_key', '', $siteId);
+        $key = SiteSetting::get('services.indexnow_key', '');
 
         if (empty($key) || empty($urls)) {
             return;

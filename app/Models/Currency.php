@@ -9,6 +9,9 @@ class Currency extends Model
 {
     use HasFactory;
 
+    /** Central DB — currencies are global across all tenants */
+    protected $connection = 'central';
+
     protected $fillable = ['name', 'code', 'symbol', 'exchange_rate', 'is_default', 'is_active'];
 
     protected function casts(): array

@@ -9,6 +9,9 @@ class Theme extends Model
 {
     use HasFactory;
 
+    /** Central DB — themes are shared across all tenants */
+    protected $connection = 'central';
+
     protected $fillable = [
         'name',
         'slug',
@@ -44,11 +47,6 @@ class Theme extends Model
     public function siteTemplates()
     {
         return $this->hasMany(SiteTemplate::class);
-    }
-
-    public function sites()
-    {
-        return $this->hasMany(Site::class);
     }
 
     public function scopeActive($query)

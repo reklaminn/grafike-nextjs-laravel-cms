@@ -21,8 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'admin.auth' => \App\Http\Middleware\AdminAuthenticate::class,
-            'member.auth' => \App\Http\Middleware\MemberAuthenticate::class,
+            'admin.auth'      => \App\Http\Middleware\AdminAuthenticate::class,
+            'member.auth'     => \App\Http\Middleware\MemberAuthenticate::class,
+            'tenant.admin'    => \App\Http\Middleware\InitializeTenancyForAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
