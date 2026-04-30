@@ -94,15 +94,20 @@ services:
       - "traefik.http.middlewares.grafike-headers.headers.STSIncludeSubdomains=true"
       - "traefik.http.middlewares.grafike-headers.headers.STSPreload=true"
 
-      # ── Frontend catch-all (everything not matched above) ──────────────────
-      # Priority 10 — always loses to the backend routers at priority 200.
-      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
-      - "traefik.http.routers.grafike-frontend.entrypoints=websecure"
-      - "traefik.http.routers.grafike-frontend.tls=true"
-      - "traefik.http.routers.grafike-frontend.tls.certresolver=mytlschallenge"
-      - "traefik.http.routers.grafike-frontend.service=grafike-frontend-svc"
-      - "traefik.http.routers.grafike-frontend.priority=10"
-      - "traefik.http.services.grafike-frontend-svc.loadbalancer.server.port=3000"
+      # ── Tenant domain catch-all ────────────────────────────────────────────
+      # Matches ANY domain that is NOT graficms.grafike.site (priority 1 =
+      # lowest, so the explicit /admin|/api|/assets routers always win for
+      # the CMS domain). All tenant custom domains (nuhcicek.com.tr, etc.)
+      # fall through here → Laravel port 80 → stancl reads the Host header
+      # → looks up domain in the `domains` table → initialises the tenant DB.
+      # Traefik requests a Let's Encrypt certificate for each new hostname
+      # automatically via the HTTP-01 challenge.
+      - "traefik.http.routers.grafike-tenants.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.grafike-tenants.entrypoints=websecure"
+      - "traefik.http.routers.grafike-tenants.tls=true"
+      - "traefik.http.routers.grafike-tenants.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-tenants.service=grafike-lb"
+      - "traefik.http.routers.grafike-tenants.priority=1"
 
   # ── Queue worker ─────────────────────────────────────────────────────────────
   queue:

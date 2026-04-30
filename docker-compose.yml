@@ -109,6 +109,20 @@ x-app-labels: &app-labels
   traefik.http.middlewares.grafike-headers.headers.STSIncludeSubdomains: "true"
   traefik.http.middlewares.grafike-headers.headers.STSPreload: "true"
 
+  # ── Tenant domain catch-all ─────────────────────────────────────────────────
+  # Matches ANY domain that is NOT graficms.grafike.site (priority 1 = lowest,
+  # so the explicit /admin|/api|/assets routers at priority 200 always win for
+  # the CMS domain). All tenant custom domains (nuhcicek.com.tr, etc.) fall
+  # through here → Laravel port 80 → stancl reads the Host header → looks up
+  # the domain in the `domains` table → initialises the tenant DB connection.
+  # Traefik requests a Let's Encrypt cert for each new hostname automatically.
+  traefik.http.routers.grafike-tenants.rule: "HostRegexp(`{host:.+}`)"
+  traefik.http.routers.grafike-tenants.entrypoints: websecure
+  traefik.http.routers.grafike-tenants.tls: "true"
+  traefik.http.routers.grafike-tenants.tls.certresolver: mytlschallenge
+  traefik.http.routers.grafike-tenants.service: grafike-lb
+  traefik.http.routers.grafike-tenants.priority: "1"
+
 x-app-common: &app-common
   build:
     context: .

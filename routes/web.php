@@ -15,3 +15,6 @@ use Illuminate\Support\Facades\Route;
 
 // Health check (already defined via withRouting health: '/up')
 // Admin routes are in routes/admin.php (loaded via withRouting->then callback)
+
+// Root redirect — central domain has no public-facing page; send visitors to the admin panel.
+Route::redirect('/', '/admin', 301);
