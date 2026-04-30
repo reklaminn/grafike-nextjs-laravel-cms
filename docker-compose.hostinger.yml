@@ -1,4 +1,6 @@
 services:
+
+  # ── Single app container (Hostinger single-VPS deployment) ───────────────────
   app:
     build:
       context: .
@@ -13,7 +15,7 @@ services:
       APP_URL: ${APP_URL}
       APP_KEY: ${APP_KEY}
       DB_CONNECTION: mariadb
-      DB_HOST: ${DB_HOST}
+      DB_HOST: ${DB_HOST:-mariadb-admindb}
       DB_PORT: ${DB_PORT:-3306}
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
@@ -37,20 +39,52 @@ services:
       SESSION_SAME_SITE: lax
       CMS_CACHE_ENABLED: ${CMS_CACHE_ENABLED:-true}
       CMS_CACHE_TTL: ${CMS_CACHE_TTL:-600}
+      TENANCY_DB_PREFIX: ${TENANCY_DB_PREFIX:-tenant_}
+      CENTRAL_DOMAIN: ${APP_DOMAIN}
     depends_on:
       redis:
         condition: service_started
     volumes:
       - grafike_storage_app:/var/www/html/storage/app
       - grafike_storage_logs:/var/www/html/storage/logs
+    networks:
+      - app_net
+      - traefik_proxy
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
-      - "traefik.http.routers.grafike.rule=Host(`${APP_DOMAIN}`)"
-      - "traefik.http.routers.grafike.entrypoints=websecure"
-      - "traefik.http.routers.grafike.tls=true"
-      - "traefik.http.routers.grafike.tls.certresolver=mytlschallenge"
-      - "traefik.http.services.grafike.loadbalancer.server.port=80"
+
+      # ── /admin → Laravel ──────────────────────────────────────────────────
+      - "traefik.http.routers.grafike-admin.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.grafike-admin.entrypoints=websecure"
+      - "traefik.http.routers.grafike-admin.tls=true"
+      - "traefik.http.routers.grafike-admin.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-admin.service=grafike-lb"
+      - "traefik.http.routers.grafike-admin.middlewares=grafike-headers@docker"
+      - "traefik.http.routers.grafike-admin.priority=200"
+
+      # ── /api → Laravel ────────────────────────────────────────────────────
+      - "traefik.http.routers.grafike-api.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.grafike-api.entrypoints=websecure"
+      - "traefik.http.routers.grafike-api.tls=true"
+      - "traefik.http.routers.grafike-api.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-api.service=grafike-lb"
+      - "traefik.http.routers.grafike-api.middlewares=grafike-headers@docker"
+      - "traefik.http.routers.grafike-api.priority=200"
+
+      # ── Static assets + health → Laravel ──────────────────────────────────
+      - "traefik.http.routers.grafike-assets.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
+      - "traefik.http.routers.grafike-assets.entrypoints=websecure"
+      - "traefik.http.routers.grafike-assets.tls=true"
+      - "traefik.http.routers.grafike-assets.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-assets.service=grafike-lb"
+      - "traefik.http.routers.grafike-assets.middlewares=grafike-headers@docker"
+      - "traefik.http.routers.grafike-assets.priority=200"
+
+      # ── Load balancer service ──────────────────────────────────────────────
+      - "traefik.http.services.grafike-lb.loadbalancer.server.port=80"
+
+      # ── Security headers middleware ────────────────────────────────────────
       - "traefik.http.middlewares.grafike-headers.headers.SSLRedirect=true"
       - "traefik.http.middlewares.grafike-headers.headers.STSSeconds=315360000"
       - "traefik.http.middlewares.grafike-headers.headers.browserXSSFilter=true"
@@ -59,11 +93,18 @@ services:
       - "traefik.http.middlewares.grafike-headers.headers.SSLHost=${APP_DOMAIN}"
       - "traefik.http.middlewares.grafike-headers.headers.STSIncludeSubdomains=true"
       - "traefik.http.middlewares.grafike-headers.headers.STSPreload=true"
-      - "traefik.http.routers.grafike.middlewares=grafike-headers@docker"
-    networks:
-      - app_net
-      - traefik_proxy
 
+      # ── Frontend catch-all (everything not matched above) ──────────────────
+      # Priority 10 — always loses to the backend routers at priority 200.
+      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
+      - "traefik.http.routers.grafike-frontend.entrypoints=websecure"
+      - "traefik.http.routers.grafike-frontend.tls=true"
+      - "traefik.http.routers.grafike-frontend.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-frontend.service=grafike-frontend-svc"
+      - "traefik.http.routers.grafike-frontend.priority=10"
+      - "traefik.http.services.grafike-frontend-svc.loadbalancer.server.port=3000"
+
+  # ── Queue worker ─────────────────────────────────────────────────────────────
   queue:
     build:
       context: .
@@ -75,11 +116,9 @@ services:
       - .env
     environment:
       APP_ENV: production
-      APP_DEBUG: "false"
-      APP_URL: ${APP_URL}
       APP_KEY: ${APP_KEY}
       DB_CONNECTION: mariadb
-      DB_HOST: ${DB_HOST}
+      DB_HOST: ${DB_HOST:-mariadb-admindb}
       DB_PORT: ${DB_PORT:-3306}
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
@@ -90,13 +129,19 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    # Dockerfile HEALTHCHECK tests nginx; queue workers don't run nginx → always unhealthy.
+    healthcheck:
+      disable: true
     depends_on:
       redis:
         condition: service_started
+    volumes:
+      - grafike_storage_app:/var/www/html/storage/app
+      - grafike_storage_logs:/var/www/html/storage/logs
     networks:
       - app_net
-      - traefik_proxy
 
+  # ── Scheduler ────────────────────────────────────────────────────────────────
   scheduler:
     build:
       context: .
@@ -108,11 +153,9 @@ services:
       - .env
     environment:
       APP_ENV: production
-      APP_DEBUG: "false"
-      APP_URL: ${APP_URL}
       APP_KEY: ${APP_KEY}
       DB_CONNECTION: mariadb
-      DB_HOST: ${DB_HOST}
+      DB_HOST: ${DB_HOST:-mariadb-admindb}
       DB_PORT: ${DB_PORT:-3306}
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
@@ -123,13 +166,18 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    healthcheck:
+      disable: true
     depends_on:
       redis:
         condition: service_started
+    volumes:
+      - grafike_storage_app:/var/www/html/storage/app
+      - grafike_storage_logs:/var/www/html/storage/logs
     networks:
       - app_net
-      - traefik_proxy
 
+  # ── Redis ────────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: ${REDIS_CONTAINER_NAME:-grafike_cms_redis}
