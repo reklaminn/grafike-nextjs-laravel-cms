@@ -11,6 +11,7 @@ use App\Observers\MenuObserver;
 use App\Observers\PageObserver;
 use App\Observers\SiteSettingObserver;
 use App\View\Composers\FrontendComposer;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,6 +30,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS scheme for all generated URLs when running behind a
+        // reverse proxy (Traefik) in production. This is the belt-and-suspenders
+        // companion to trustProxies() in bootstrap/app.php: even if Traefik
+        // does not forward X-Forwarded-Proto, URLs will still be https://.
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
+
         // Register model observers for cache invalidation
         Page::observe(PageObserver::class);
         Article::observe(ArticleObserver::class);
