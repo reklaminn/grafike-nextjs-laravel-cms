@@ -32,7 +32,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_SUPPORTED_LOCALES=${NEXT_PUBLIC_SUPPORTED_LOCALES} \
     NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}
 
-RUN npm run build
+RUN NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}" \
+    NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:3000}" \
+    npm run build
 
 # ─── Stage 3: Runtime ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner

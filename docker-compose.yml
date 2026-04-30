@@ -158,8 +158,8 @@ services:
       context: ./apps/frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL:-https://${APP_DOMAIN:-localhost}}
-        NEXT_PUBLIC_API_URL: ${APP_URL:-https://${APP_DOMAIN:-localhost}}
+        NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL:-http://localhost:3000}
+        NEXT_PUBLIC_API_URL: ${APP_URL:-http://localhost:3000}
         NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-tr}
         NEXT_PUBLIC_SUPPORTED_LOCALES: ${NEXT_PUBLIC_SUPPORTED_LOCALES:-tr}
         NEXT_PUBLIC_APP_ENV: production
@@ -169,8 +169,8 @@ services:
       NODE_ENV: production
       # SSR internal API calls go directly to app1 (bypasses Traefik)
       CMS_API_URL: http://app1:80
-      NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL:-https://${APP_DOMAIN:-localhost}}
-      NEXT_PUBLIC_API_URL: ${APP_URL:-https://${APP_DOMAIN:-localhost}}
+      NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL:-http://localhost:3000}
+      NEXT_PUBLIC_API_URL: ${APP_URL:-http://localhost:3000}
       NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-tr}
       NEXT_PUBLIC_SUPPORTED_LOCALES: ${NEXT_PUBLIC_SUPPORTED_LOCALES:-tr}
       REVALIDATE_SECRET: ${CMS_REVALIDATE_SECRET}
