@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SitemapController;
 use App\Http\Controllers\Admin\SmtpProfileController;
+use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CurrencyController;
@@ -37,6 +38,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('admin.auth')->group(function () {
         // Dashboard
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        // ── Tenant Management (central DB — no tenant.admin middleware needed) ──
+        Route::resource('tenants', TenantController::class)->except('edit');
+        Route::post('tenants/{tenant}/provision', [TenantController::class, 'provision'])->name('tenants.provision');
+        Route::post('tenants/{tenant}/switch',    [TenantController::class, 'switchTo'])->name('tenants.switch');
+        Route::post('tenants/clear-active',       [TenantController::class, 'clearActive'])->name('tenants.clear-active');
+
+        // ── Tenant-scoped routes (require active tenant in session) ───────────
+        Route::middleware('tenant.admin')->group(function () {
 
         // Pages CRUD
         Route::resource('pages', PageController::class);
@@ -168,5 +178,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Crawl / robots / llms settings
         Route::get('settings/crawl', [SettingsController::class, 'crawl'])->name('settings.crawl');
         Route::put('settings/crawl', [SettingsController::class, 'updateCrawl'])->name('settings.crawl.update');
+
+        }); // end: tenant.admin middleware group
     });
 });
