@@ -1,22 +1,3 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Grafike CMS — High-Availability Docker Compose
-#
-# Architecture:
-#   3 identical app containers (app1/app2/app3) all serve ALL tenant sites.
-#   Traefik health-checks each container; if one crashes the other two continue
-#   serving 100% of traffic — no site goes down.
-#
-#   MariaDB and Traefik run in separate containers on the same VPS and are NOT
-#   defined here. They are reached via the shared `traefik_proxy` and `app_net`
-#   external networks / host references.
-#
-#   ┌─ Traefik (external) ──────────────────────────────────────────────────────┐
-#   │   app1 (Laravel) ─┐                                                       │
-#   │   app2 (Laravel) ─┼──→ all tenants → Redis → MariaDB (external)           │
-#   │   app3 (Laravel) ─┘                                                       │
-#   └───────────────────────────────────────────────────────────────────────────┘
-# ─────────────────────────────────────────────────────────────────────────────
-
 x-app-env: &app-env
   APP_ENV: production
   APP_DEBUG: "false"
@@ -182,8 +163,8 @@ services:
       NODE_ENV: production
       # SSR internal API calls go directly to app1 (bypasses Traefik)
       CMS_API_URL: http://app1:80
-      NEXT_PUBLIC_SITE_URL: https://${FRONTEND_DOMAIN}
-      NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}
+      NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL}
+      NEXT_PUBLIC_API_URL: ${APP_URL}
       NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-tr}
       NEXT_PUBLIC_SUPPORTED_LOCALES: ${NEXT_PUBLIC_SUPPORTED_LOCALES:-tr}
       REVALIDATE_SECRET: ${CMS_REVALIDATE_SECRET}
@@ -196,7 +177,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
-      - "traefik.http.routers.grafike-frontend.rule=Host(`${FRONTEND_DOMAIN}`)"
+      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`)"
       - "traefik.http.routers.grafike-frontend.entrypoints=websecure"
       - "traefik.http.routers.grafike-frontend.tls=true"
       - "traefik.http.routers.grafike-frontend.tls.certresolver=mytlschallenge"
