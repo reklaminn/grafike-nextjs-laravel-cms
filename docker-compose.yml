@@ -73,7 +73,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
 
-      - "traefik.http.routers.grafike.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/admin`) || PathPrefix(`/api/v1`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
+      - "traefik.http.routers.grafike.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
       - "traefik.http.routers.grafike.entrypoints=websecure"
       - "traefik.http.routers.grafike.tls=true"
       - "traefik.http.routers.grafike.tls.certresolver=mytlschallenge"
@@ -184,7 +184,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
-      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
       - "traefik.http.routers.grafike-frontend.entrypoints=websecure"
       - "traefik.http.routers.grafike-frontend.tls=true"
       - "traefik.http.routers.grafike-frontend.tls.certresolver=mytlschallenge"
