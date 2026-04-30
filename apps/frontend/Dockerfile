@@ -15,8 +15,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build-time env vars (NEXT_PUBLIC_* baked into JS bundle)
-ARG NEXT_PUBLIC_SITE_URL
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ARG NEXT_PUBLIC_API_URL=http://localhost:3000
 ARG NEXT_PUBLIC_DEFAULT_LOCALE=tr
 ARG NEXT_PUBLIC_SUPPORTED_LOCALES=tr
 ARG NEXT_PUBLIC_APP_ENV=production
