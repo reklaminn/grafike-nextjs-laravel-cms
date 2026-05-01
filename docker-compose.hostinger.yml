@@ -41,6 +41,8 @@ services:
       CMS_CACHE_TTL: ${CMS_CACHE_TTL:-600}
       TENANCY_DB_PREFIX: ${TENANCY_DB_PREFIX:-tenant_}
       CENTRAL_DOMAIN: ${APP_DOMAIN}
+      SENTRY_LARAVEL_DSN: ${SENTRY_LARAVEL_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
     depends_on:
       redis:
         condition: service_started
@@ -53,6 +55,16 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy"
+
+      # ── HTTP → HTTPS global redirect ──────────────────────────────────────
+      # Catches ALL http:// requests (any host) and permanently redirects to https://.
+      # Entrypoint name 'web' is Traefik's standard port-80 entrypoint.
+      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=https-redirect"
+      - "traefik.http.routers.http-catchall.priority=1"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
 
       # ── /admin → Laravel ──────────────────────────────────────────────────
       - "traefik.http.routers.grafike-admin.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/admin`)"

@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\Theme;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Stancl\Tenancy\Database\DatabaseManager;
+use Stancl\Tenancy\Jobs\CreateDatabase;
+use Stancl\Tenancy\Jobs\DeleteDatabase;
 
 class TenantController extends Controller
 {
@@ -32,7 +36,7 @@ class TenantController extends Controller
     }
 
     /**
-     * Create a tenant + domain records (does NOT run migrations yet — use provision).
+     * Create a tenant + domain records, then provision its database.
      */
     public function store(Request $request)
     {
@@ -46,26 +50,59 @@ class TenantController extends Controller
         // Normalise domain (strip protocol / trailing slash)
         $domain = strtolower(preg_replace('#^https?://#', '', rtrim($validated['domain'], '/')));
 
-        $tenant = Tenant::create([
-            'id'   => $validated['slug'],
-            'data' => [
-                'name'     => $validated['name'],
-                'status'   => 'active',
-                'theme_id' => $validated['theme_id'] ?? null,
-            ],
-        ]);
+        $tenant = tenancy()->central(function () use ($validated, $domain) {
+            return DB::connection('central')->transaction(function () use ($validated, $domain) {
+                // Insert explicitly into the central table. This avoids both
+                // stancl creation events and Eloquent key casting edge cases.
+                DB::connection('central')->table('tenants')->insert([
+                    'id'         => $validated['slug'],
+                    'data'       => json_encode([
+                        'name'     => $validated['name'],
+                        'status'   => 'active',
+                        'theme_id' => $validated['theme_id'] ?? null,
+                    ], JSON_THROW_ON_ERROR),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
-        // Register primary domain (without www)
-        $tenant->domains()->create(['domain' => $domain]);
+                $tenant = Tenant::query()->findOrFail($validated['slug']);
 
-        // Auto-add www. variant if it does not already start with www.
-        if (! str_starts_with($domain, 'www.')) {
-            $tenant->domains()->create(['domain' => 'www.' . $domain]);
+                if ((string) $tenant->getTenantKey() !== (string) $validated['slug']) {
+                    throw new \RuntimeException("Tenant ID kaydedilemedi. Beklenen: {$validated['slug']}, gelen: {$tenant->getTenantKey()}");
+                }
+
+                // Register primary domain. Keep tenant_id explicit so Eloquent
+                // relation key casting can never turn string slugs into 0.
+                $this->createTenantDomain($validated['slug'], $domain);
+
+                // Auto-add www. variant only for root custom domains (e.g. nuhcicek.com.tr).
+                // Skip for subdomain tenants (e.g. firma1.grafike.site) — the wildcard DNS
+                // record (*.grafike.site) only covers one level, so www.firma1.grafike.site
+                // would not resolve and Let's Encrypt would not be able to issue a cert for it.
+                $centralDomain = env('APP_DOMAIN', '');
+                $isSubdomainTenant = $centralDomain && str_ends_with($domain, '.' . $centralDomain);
+
+                if (! str_starts_with($domain, 'www.') && ! $isSubdomainTenant) {
+                    $this->createTenantDomain($validated['slug'], 'www.' . $domain);
+                }
+
+                return $tenant;
+            });
+        });
+
+        try {
+            $this->provisionTenantDatabase($tenant);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('admin.tenants.show', $tenant)
+                ->with('warning', "Tenant «{$tenant->name}» oluşturuldu ancak veritabanı/migration adımı başarısız oldu: {$e->getMessage()}");
         }
 
         return redirect()
             ->route('admin.tenants.show', $tenant)
-            ->with('success', "Tenant «{$tenant->name}» oluşturuldu. Şimdi veritabanını hazırlamak için Provision butonuna tıklayın.");
+            ->with('success', "Tenant «{$tenant->name}» oluşturuldu. Veritabanı ve migrationlar otomatik çalıştırıldı.");
     }
 
     /**
@@ -80,22 +117,22 @@ class TenantController extends Controller
     }
 
     /**
-     * Run tenant migrations (provision the tenant DB).
-     * Calls `php artisan tenants:migrate --tenants={id}`.
+     * (Re-)run tenant migrations on an existing tenant DB.
+     *
+     * This action is useful when:
+     *  - New tenant migrations were added and need to be applied to existing tenants
+     *  - The initial provisioning failed (e.g. DB permissions not yet granted)
      */
     public function provision(Tenant $tenant)
     {
         try {
-            \Artisan::call('tenants:migrate', [
-                '--tenants' => [$tenant->id],
-                '--force'   => true,
-            ]);
-            $output = \Artisan::output();
+            $this->provisionTenantDatabase($tenant);
+            $output = Artisan::output();
         } catch (\Throwable $e) {
             return back()->with('error', 'Migration hatası: ' . $e->getMessage());
         }
 
-        return back()->with('success', "Tenant «{$tenant->name}» veritabanı hazır.\n" . $output);
+        return back()->with('success', "Tenant «{$tenant->name}» migrationları çalıştırıldı.\n" . $output);
     }
 
     /**
@@ -148,15 +185,72 @@ class TenantController extends Controller
      */
     public function destroy(Tenant $tenant)
     {
+        $tenantId = (string) $tenant->getTenantKey();
+        $databaseWarning = null;
+
         // End active session if this tenant was selected
-        if (session('active_tenant') === $tenant->id) {
+        if ((string) session('active_tenant') === $tenantId) {
             session()->forget('active_tenant');
         }
 
-        $tenant->delete(); // stancl cascades domain deletion
+        try {
+            $tenant->database()->makeCredentials();
+            $databaseName = $tenant->database()->getName();
+
+            if ($tenant->database()->manager()->databaseExists($databaseName)) {
+                (new DeleteDatabase($tenant))->handle();
+            } else {
+                $databaseWarning = "Tenant veritabanı zaten yoktu: {$databaseName}";
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            $databaseWarning = 'Tenant veritabanı silinemedi: ' . $e->getMessage();
+        }
+
+        // Delete the central tenant/domain records without firing stancl's
+        // TenantDeleted pipeline again; database cleanup was handled above.
+        Tenant::withoutEvents(function () use ($tenant) {
+            $tenant->delete(); // domains cascade by FK
+        });
+
+        $message = "Tenant «{$tenantId}» silindi.";
+        if ($databaseWarning) {
+            $message .= ' ' . $databaseWarning;
+        }
 
         return redirect()
             ->route('admin.tenants.index')
-            ->with('success', "Tenant «{$tenant->id}» silindi. Veritabanı manuel silinmesi gerekebilir.");
+            ->with('success', $message);
+    }
+
+    private function createTenantDomain(string $tenantId, string $domain): void
+    {
+        DB::connection('central')->table('domains')->insert([
+            'domain'    => $domain,
+            'tenant_id' => $tenantId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function provisionTenantDatabase(Tenant $tenant): void
+    {
+        tenancy()->central(function () use ($tenant) {
+            if (! $tenant->getTenantKey()) {
+                throw new \RuntimeException('Tenant ID boş görünüyor; veritabanı oluşturulamadı.');
+            }
+
+            $tenant->database()->makeCredentials();
+            $databaseName = $tenant->database()->getName();
+
+            if (! $tenant->database()->manager()->databaseExists($databaseName)) {
+                (new CreateDatabase($tenant))->handle(app(DatabaseManager::class));
+            }
+
+            Artisan::call('tenants:migrate', [
+                '--tenants' => [$tenant->getTenantKey()],
+                '--force'   => true,
+            ]);
+        });
     }
 }

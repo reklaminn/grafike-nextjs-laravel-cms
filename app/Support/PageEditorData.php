@@ -92,7 +92,8 @@ final class PageEditorData
             return 'legacy';
         }
 
-        return $this->page->site ? 'frontend' : 'legacy';
+        // Pages always belong to the current tenant — default to frontend builder.
+        return 'frontend';
     }
 
     public function showBuilderToggle(): bool
@@ -109,10 +110,8 @@ final class PageEditorData
             return true;
         }
 
-        if (! $this->page->site) {
-            return true;
-        }
-
+        // In tenant context every page belongs to the current tenant,
+        // so the "orphan page" case no longer applies → no toggle needed.
         return false;
     }
 
@@ -123,6 +122,7 @@ final class PageEditorData
             return true;
         }
 
-        return $this->page->site !== null || ! empty($this->initialRegions()['regions']['body'] ?? []);
+        // Pages are always edited within tenant context — always render the frontend editor.
+        return true;
     }
 }

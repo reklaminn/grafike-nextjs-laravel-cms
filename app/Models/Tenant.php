@@ -11,24 +11,32 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 {
     use HasDatabase, HasDomains;
 
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
     /**
-     * Custom columns stored in the JSON `data` column.
-     * Access via $tenant->name, $tenant->theme_id, etc.
+     * The tenant ID is a string slug supplied explicitly by the admin.
+     * stancl's GeneratesIds trait implements getIncrementing()/getKeyType()
+     * itself, so properties alone are not enough when id_generator is null.
      */
-    public static function getCustomColumns(): array
+    public function getIncrementing(): bool
     {
-        return [
-            'id',
-        ];
+        return false;
+    }
+
+    public function getKeyType(): string
+    {
+        return 'string';
     }
 
     /**
-     * Meta fields stored in the `data` JSON column.
-     * e.g. $tenant->name, $tenant->status, $tenant->theme_id
+     * Real DB columns on the `tenants` table (everything else goes into `data` JSON).
+     * stancl stores all custom attributes in the JSON `data` column unless listed here.
      */
-    protected function getDataColumn(): string
+    public static function getCustomColumns(): array
     {
-        return 'data';
+        return ['id'];
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
