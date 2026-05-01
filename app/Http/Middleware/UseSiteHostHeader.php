@@ -14,10 +14,10 @@ class UseSiteHostHeader
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $siteHost = $request->headers->get('X-Site-Host');
+        $siteHost = $this->resolveSiteHost($request);
 
         if ($siteHost && $this->isInternalDockerHost($request->getHost())) {
-            $siteHost = strtolower(preg_replace('#^https?://#', '', rtrim($siteHost, '/')));
+            $siteHost = $this->normalizeHost($siteHost);
 
             if ($siteHost !== '') {
                 $request->headers->set('host', $siteHost);
@@ -27,6 +27,35 @@ class UseSiteHostHeader
         }
 
         return $next($request);
+    }
+
+    private function resolveSiteHost(Request $request): ?string
+    {
+        return $request->headers->get('X-Site-Host')
+            ?: $request->headers->get('X-Forwarded-Host')
+            ?: $this->hostFromUrl(config('app.frontend_url'))
+            ?: $this->hostFromUrl(env('CMS_FRONTEND_URL'))
+            ?: $this->hostFromUrl(config('app.url'));
+    }
+
+    private function normalizeHost(?string $host): string
+    {
+        if (! $host) {
+            return '';
+        }
+
+        $host = explode(',', $host)[0];
+
+        return strtolower(preg_replace('#^https?://#', '', rtrim(trim($host), '/')));
+    }
+
+    private function hostFromUrl(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        return parse_url($url, PHP_URL_HOST) ?: $url;
     }
 
     private function isInternalDockerHost(string $host): bool
