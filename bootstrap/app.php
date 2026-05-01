@@ -20,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Trust Traefik (and any Docker reverse proxy) so Laravel correctly
         // detects HTTPS from the X-Forwarded-Proto header. Without this,
-        // Laravel generates http:// URLs and browsers show mixed-content warnings.
+        // $request->secure() always returns false behind a TLS-terminating proxy.
         $middleware->trustProxies(
             at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR
@@ -28,6 +28,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PORT
                 | Request::HEADER_X_FORWARDED_PROTO,
         );
+
+        $middleware->web(prepend: [
+            // ForceHttps must be first so every subsequent middleware and
+            // controller already runs on a guaranteed-HTTPS request.
+            \App\Http\Middleware\ForceHttps::class,
+        ]);
 
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,

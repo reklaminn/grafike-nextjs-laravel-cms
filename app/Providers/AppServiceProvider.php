@@ -30,11 +30,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force HTTPS scheme for all generated URLs when running behind a
-        // reverse proxy (Traefik) in production. This is the belt-and-suspenders
-        // companion to trustProxies() in bootstrap/app.php: even if Traefik
-        // does not forward X-Forwarded-Proto, URLs will still be https://.
-        if (config('app.env') === 'production') {
+        // Force HTTPS for all generated URLs (form actions, redirects, route()
+        // helper, asset() calls) whenever APP_URL is configured with https://.
+        // Keying off APP_URL is more reliable than APP_ENV: it works even if
+        // the config cache was built in a different environment, and it
+        // automatically disables itself in local dev (where APP_URL = http://).
+        if (str_starts_with(config('app.url', ''), 'https://')) {
             URL::forceScheme('https');
         }
 
