@@ -15,20 +15,16 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $stats = Cache::remember('dashboard.stats', 60, function () {
-            $mediaSize = Media::sum('size');
-
-            return [
-                'total_pages'          => Page::count(),
-                'published_pages'      => Page::where('status', 'published')->count(),
-                'total_articles'       => Article::count(),
-                'published_articles'   => Article::where('status', 'published')->count(),
-                'total_media'          => Media::count(),
-                'total_media_size'     => $mediaSize,
-                'new_submissions'      => FormSubmission::where('status', 'new')->count(),
-                'today_submissions'    => FormSubmission::whereDate('created_at', today())->count(),
-            ];
-        });
+        $stats = [
+            'total_pages'          => Page::count(),
+            'published_pages'      => Page::where('status', 'published')->count(),
+            'total_articles'       => Article::count(),
+            'published_articles'   => Article::where('status', 'published')->count(),
+            'total_media'          => Media::count(),
+            'total_media_size'     => Media::sum('size'),
+            'new_submissions'      => FormSubmission::where('status', 'new')->count(),
+            'today_submissions'    => FormSubmission::whereDate('created_at', today())->count(),
+        ];
 
         $health = $this->systemHealth();
 

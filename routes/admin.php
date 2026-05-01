@@ -36,9 +36,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // Protected Admin Routes
     Route::middleware('admin.auth')->group(function () {
-        // Dashboard
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-
         // ── Tenant Management (central DB — no tenant.admin middleware needed) ──
         Route::resource('tenants', TenantController::class)->except('edit');
         Route::post('tenants/{tenant}/provision', [TenantController::class, 'provision'])->name('tenants.provision');
@@ -47,6 +44,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // ── Tenant-scoped routes (require active tenant in session) ───────────
         Route::middleware('tenant.admin')->group(function () {
+
+        // Dashboard
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         // Pages CRUD
         Route::resource('pages', PageController::class);
