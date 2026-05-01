@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ThemeRequest;
 use App\Models\Theme;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 
 class ThemeController extends Controller
 {
@@ -47,7 +49,7 @@ class ThemeController extends Controller
 
     public function store(ThemeRequest $request)
     {
-        $theme = Theme::create($request->validated());
+        $theme = Theme::create($this->withUploadedAssets($request, $request->validated()));
 
         return redirect()
             ->route('admin.themes.edit', $theme)
@@ -61,7 +63,7 @@ class ThemeController extends Controller
 
     public function update(ThemeRequest $request, Theme $theme)
     {
-        $theme->update($request->validated());
+        $theme->update($this->withUploadedAssets($request, $request->validated()));
 
         return redirect()
             ->route('admin.themes.edit', $theme)
@@ -75,5 +77,63 @@ class ThemeController extends Controller
         return redirect()
             ->route('admin.themes.index')
             ->with('success', 'Tema silindi.');
+    }
+
+    private function withUploadedAssets(ThemeRequest $request, array $data): array
+    {
+        $assets = $data['assets_json'] ?? ['css' => [], 'js' => []];
+        $assets['css'] = $this->normalizeAssetList($assets['css'] ?? []);
+        $assets['js'] = $this->normalizeAssetList($assets['js'] ?? []);
+
+        foreach ($request->file('css_files', []) as $file) {
+            if ($file instanceof UploadedFile) {
+                $assets['css'][] = $this->storeThemeAsset($file, $data['slug'] ?? 'theme', 'css');
+            }
+        }
+
+        foreach ($request->file('js_files', []) as $file) {
+            if ($file instanceof UploadedFile) {
+                $assets['js'][] = $this->storeThemeAsset($file, $data['slug'] ?? 'theme', 'js');
+            }
+        }
+
+        $data['assets_json'] = [
+            'css' => array_values(array_unique($assets['css'])),
+            'js' => array_values(array_unique($assets['js'])),
+        ];
+
+        unset($data['css_files'], $data['js_files']);
+
+        return $data;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function normalizeAssetList(mixed $paths): array
+    {
+        if (! is_array($paths)) {
+            return [];
+        }
+
+        return collect($paths)
+            ->filter(fn ($path) => is_string($path) && trim($path) !== '')
+            ->map(fn (string $path) => trim($path))
+            ->values()
+            ->all();
+    }
+
+    private function storeThemeAsset(UploadedFile $file, string $themeSlug, string $type): string
+    {
+        $safeSlug = Str::slug($themeSlug) ?: 'theme';
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $safeName = Str::slug($originalName) ?: $type;
+        $extension = strtolower($file->getClientOriginalExtension() ?: $type);
+        $filename = now()->format('YmdHis') . '-' . Str::random(6) . '-' . $safeName . '.' . $extension;
+        $path = $file->storeAs("themes/{$safeSlug}/{$type}", $filename, 'public');
+
+        return tenancy()->initialized
+            ? "/tenancy/assets/{$path}"
+            : "/storage/{$path}";
     }
 }
