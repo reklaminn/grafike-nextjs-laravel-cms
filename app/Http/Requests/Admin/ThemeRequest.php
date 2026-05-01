@@ -37,7 +37,7 @@ class ThemeRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('themes', 'slug')->ignore($themeId)],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('central.themes', 'slug')->ignore($themeId)],
             'engine' => ['required', Rule::in(['nextjs-basic-html', 'nextjs-component', 'legacy-blade'])],
             'description' => ['nullable', 'string'],
             'preview_image' => ['nullable', 'string', 'max:500'],

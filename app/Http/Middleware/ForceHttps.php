@@ -14,14 +14,6 @@ class ForceHttps
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // DEBUG: write to a file every time this middleware runs.
-        // We'll grep this file to prove the middleware actually executed.
-        @file_put_contents(
-            '/var/www/html/storage/logs/force-https.log',
-            date('c').' '.$request->getMethod().' '.$request->fullUrl().' env='.app()->environment().PHP_EOL,
-            FILE_APPEND
-        );
-
         $skip = in_array(app()->environment(), ['local', 'testing'], true)
             || $this->isInternalDockerHost($request->getHost());
 
@@ -52,7 +44,9 @@ class ForceHttps
 
     private function isInternalDockerHost(string $host): bool
     {
-        return in_array(strtolower($host), [
+        $host = strtolower(explode(':', $host)[0]);
+
+        return in_array($host, [
             'app1',
             'app2',
             'app3',

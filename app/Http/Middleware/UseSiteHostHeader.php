@@ -45,8 +45,9 @@ class UseSiteHostHeader
         }
 
         $host = explode(',', $host)[0];
+        $host = preg_replace('#^https?://#', '', rtrim(trim($host), '/'));
 
-        return strtolower(preg_replace('#^https?://#', '', rtrim(trim($host), '/')));
+        return strtolower(explode(':', $host)[0]);
     }
 
     private function hostFromUrl(?string $url): ?string
@@ -60,7 +61,7 @@ class UseSiteHostHeader
 
     private function isInternalDockerHost(string $host): bool
     {
-        return in_array(strtolower($host), [
+        return in_array($this->normalizeHost($host), [
             'app1',
             'app2',
             'app3',

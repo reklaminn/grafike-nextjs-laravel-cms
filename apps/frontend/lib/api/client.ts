@@ -20,6 +20,14 @@ const API_BASE_URL = process.env.CMS_API_URL;
 const FALLBACK_SITE_HOST = process.env.NEXT_PUBLIC_SITE_URL
   ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host
   : null;
+const INTERNAL_API_HOSTS = new Set([
+  "app1",
+  "app2",
+  "app3",
+  "grafike_cms_app1",
+  "grafike_cms_app2",
+  "grafike_cms_app3",
+]);
 
 type ResourceEnvelope<T> = { data: T };
 
@@ -33,8 +41,9 @@ function unwrapResource<T>(payload: T | ResourceEnvelope<T>): T {
 async function getSiteHostHeader(): Promise<string | null> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const normalizedHost = host?.split(",")[0]?.trim().split(":")[0]?.toLowerCase();
 
-  if (host && !["app1", "app2", "app3", "grafike_cms_app1", "grafike_cms_app2", "grafike_cms_app3"].includes(host)) {
+  if (host && normalizedHost && !INTERNAL_API_HOSTS.has(normalizedHost)) {
     return host;
   }
 
