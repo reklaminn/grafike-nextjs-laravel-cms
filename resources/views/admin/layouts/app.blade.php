@@ -21,6 +21,26 @@
     @stack('styles')
 </head>
 <body class="h-full" x-data="{ sidebarOpen: true, mobileMenuOpen: false }">
+@php
+    $visitSiteUrl = rtrim(config('cms.frontend_url'), '/') ?: url('/');
+    $activeTenantId = session('active_tenant');
+
+    if ($activeTenantId) {
+        try {
+            $activeTenantDomain = tenancy()->central(
+                fn () => \App\Models\Tenant::with('domains')->find($activeTenantId)?->domains->first()?->domain
+            );
+
+            if ($activeTenantDomain) {
+                $visitSiteUrl = str_starts_with($activeTenantDomain, 'http')
+                    ? $activeTenantDomain
+                    : 'https://' . $activeTenantDomain;
+            }
+        } catch (\Throwable) {
+            $visitSiteUrl = rtrim(config('cms.frontend_url'), '/') ?: url('/');
+        }
+    }
+@endphp
 
 <div class="min-h-full">
     <!-- Mobile sidebar backdrop -->
@@ -87,7 +107,7 @@
 
                 <div class="flex items-center gap-4">
                     <!-- Visit site -->
-                    <a href="{{ url('/') }}" target="_blank"
+                    <a href="{{ $visitSiteUrl }}" target="_blank"
                        class="text-sm text-gray-500 hover:text-indigo-600 flex items-center gap-1">
                         <i class="fas fa-external-link-alt"></i>
                         <span class="hidden sm:inline">Siteyi Gör</span>

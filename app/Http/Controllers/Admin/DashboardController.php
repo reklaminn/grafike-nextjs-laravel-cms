@@ -9,6 +9,7 @@ use App\Models\Page;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Redis;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
@@ -90,6 +91,17 @@ class DashboardController extends Controller
 
     private function checkQueue(): array
     {
+        $connection = config('queue.default');
+        $driver = config("queue.connections.{$connection}.driver", $connection);
+
+        if ($driver === 'redis') {
+            return $this->checkRedisQueue($connection);
+        }
+
+        if ($driver === 'sync') {
+            return ['status' => 'ok', 'label' => 'Kuyruk', 'detail' => 'Sync çalışıyor'];
+        }
+
         try {
             $pending = DB::table('jobs')->count();
             $failed  = DB::table('failed_jobs')->count();
@@ -102,6 +114,28 @@ class DashboardController extends Controller
         } catch (Throwable) {
             // jobs table might not exist yet
             return ['status' => 'ok', 'label' => 'Kuyruk', 'detail' => 'Kontrol edilemiyor'];
+        }
+    }
+
+    private function checkRedisQueue(string $queueConnection): array
+    {
+        try {
+            $config = config("queue.connections.{$queueConnection}", []);
+            $redisConnection = $config['connection'] ?? 'default';
+            $queue = $config['queue'] ?? 'default';
+            $redis = Redis::connection($redisConnection);
+
+            $pending = (int) $redis->llen("queues:{$queue}");
+            $delayed = (int) $redis->zcard("queues:{$queue}:delayed");
+            $reserved = (int) $redis->zcard("queues:{$queue}:reserved");
+
+            return [
+                'status' => 'ok',
+                'label' => 'Kuyruk',
+                'detail' => "Redis: {$pending} bekliyor, {$delayed} gecikmiş, {$reserved} işleniyor",
+            ];
+        } catch (Throwable) {
+            return ['status' => 'error', 'label' => 'Kuyruk', 'detail' => 'Redis bağlantı hatası'];
         }
     }
 
