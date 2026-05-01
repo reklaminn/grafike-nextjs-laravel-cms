@@ -76,7 +76,7 @@ class TenantController extends Controller
 
                 // Register primary domain. Keep tenant_id explicit so Eloquent
                 // relation key casting can never turn string slugs into 0.
-                $this->createTenantDomain($tenant, $domain);
+                $this->createTenantDomain($validated['slug'], $domain);
 
                 // Auto-add www. variant only for root custom domains (e.g. nuhcicek.com.tr).
                 // Skip for subdomain tenants (e.g. firma1.grafike.site) — the wildcard DNS
@@ -86,7 +86,7 @@ class TenantController extends Controller
                 $isSubdomainTenant = $centralDomain && str_ends_with($domain, '.' . $centralDomain);
 
                 if (! str_starts_with($domain, 'www.') && ! $isSubdomainTenant) {
-                    $this->createTenantDomain($tenant, 'www.' . $domain);
+                    $this->createTenantDomain($validated['slug'], 'www.' . $domain);
                 }
 
                 return $tenant;
@@ -226,13 +226,13 @@ class TenantController extends Controller
             ->with('success', $message);
     }
 
-    private function createTenantDomain(Tenant $tenant, string $domain): void
+    private function createTenantDomain(string $tenantId, string $domain): void
     {
         $domainModel = config('tenancy.domain_model');
 
         $domainModel::query()->create([
             'domain'    => $domain,
-            'tenant_id' => (string) $tenant->getTenantKey(),
+            'tenant_id' => $tenantId,
         ]);
     }
 

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\UseSiteHostHeader;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -21,6 +22,7 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 Route::middleware([
     'web',
+    UseSiteHostHeader::class,
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(base_path('routes/tenant_web.php'));
@@ -28,6 +30,7 @@ Route::middleware([
 Route::prefix('api')
     ->middleware([
         'api',
+        UseSiteHostHeader::class,
         InitializeTenancyByDomain::class,
         PreventAccessFromCentralDomains::class,
     ])
