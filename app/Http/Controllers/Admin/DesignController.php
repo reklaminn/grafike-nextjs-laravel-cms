@@ -7,6 +7,7 @@ use App\Models\DesignAsset;
 use App\Models\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class DesignController extends Controller
 {
@@ -60,7 +61,7 @@ class DesignController extends Controller
             'assets.*.id' => 'required_with:assets|exists:design_assets,id',
             'assets.*.content' => 'nullable|string|max:500000',
             'theme_assets' => 'nullable|array',
-            'theme_assets.*.id' => 'required_with:theme_assets|exists:themes,id',
+            'theme_assets.*.id' => ['required_with:theme_assets', Rule::exists('central.themes', 'id')],
             'theme_assets.*.css_paths' => 'nullable|string|max:500000',
             'theme_assets.*.js_paths' => 'nullable|string|max:500000',
         ]);

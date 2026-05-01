@@ -40,7 +40,7 @@ class SectionTemplateRequest extends FormRequest
         $templateId = $this->route('section_template')?->id;
 
         return [
-            'theme_id' => ['required', 'exists:themes,id'],
+            'theme_id' => ['required', Rule::exists('central.themes', 'id')],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9][a-z0-9_-]*$/'],
             'variation' => [
