@@ -52,23 +52,20 @@ class TenantController extends Controller
 
         $tenant = tenancy()->central(function () use ($validated, $domain) {
             return DB::connection('central')->transaction(function () use ($validated, $domain) {
-                // Provisioning is handled explicitly below. Bypassing the
-                // TenantCreated event avoids the admin request crashing inside
-                // stancl's synchronous CreateDatabase/MigrateDatabase pipeline.
-                $tenant = Tenant::withoutEvents(function () use ($validated) {
-                    $tenant = new Tenant();
-                    $tenant->forceFill([
-                        'id'   => $validated['slug'],
-                        'data' => [
-                            'name'     => $validated['name'],
-                            'status'   => 'active',
-                            'theme_id' => $validated['theme_id'] ?? null,
-                        ],
-                    ]);
-                    $tenant->save();
+                // Insert explicitly into the central table. This avoids both
+                // stancl creation events and Eloquent key casting edge cases.
+                DB::connection('central')->table('tenants')->insert([
+                    'id'         => $validated['slug'],
+                    'data'       => json_encode([
+                        'name'     => $validated['name'],
+                        'status'   => 'active',
+                        'theme_id' => $validated['theme_id'] ?? null,
+                    ], JSON_THROW_ON_ERROR),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
-                    return $tenant;
-                });
+                $tenant = Tenant::query()->findOrFail($validated['slug']);
 
                 if ((string) $tenant->getTenantKey() !== (string) $validated['slug']) {
                     throw new \RuntimeException("Tenant ID kaydedilemedi. Beklenen: {$validated['slug']}, gelen: {$tenant->getTenantKey()}");
@@ -228,11 +225,11 @@ class TenantController extends Controller
 
     private function createTenantDomain(string $tenantId, string $domain): void
     {
-        $domainModel = config('tenancy.domain_model');
-
-        $domainModel::query()->create([
+        DB::connection('central')->table('domains')->insert([
             'domain'    => $domain,
             'tenant_id' => $tenantId,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 

@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // - prepend(): adds to global middleware stack (runs before group middleware)
         // - prependToGroup('web'): adds to web group (runs on all web routes)
         // - prependToGroup('api'): adds to api group (runs on all api routes)
+        $middleware->prepend(\App\Http\Middleware\UseSiteHostHeader::class);
         $middleware->prepend(\App\Http\Middleware\ForceHttps::class);
         $middleware->prependToGroup('web', \App\Http\Middleware\ForceHttps::class);
         $middleware->prependToGroup('api', \App\Http\Middleware\ForceHttps::class);
