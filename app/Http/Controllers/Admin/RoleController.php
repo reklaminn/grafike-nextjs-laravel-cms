@@ -15,6 +15,7 @@ class RoleController extends Controller
     protected function getPermissionGroups(): array
     {
         return [
+            'tenants' => ['label' => 'Siteler', 'actions' => ['view', 'create', 'edit', 'delete', 'switch', 'provision']],
             'pages' => ['label' => 'Sayfalar', 'actions' => ['view', 'create', 'edit', 'delete']],
             'articles' => ['label' => 'Yazılar', 'actions' => ['view', 'create', 'edit', 'delete']],
             'menus' => ['label' => 'Menüler', 'actions' => ['view', 'create', 'edit', 'delete']],
