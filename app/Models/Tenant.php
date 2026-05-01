@@ -68,6 +68,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->domains()->first()?->domain;
     }
 
+    public function adminAccesses()
+    {
+        return $this->hasMany(AdminTenantAccess::class, 'tenant_id', 'id');
+    }
+
+    public function admins()
+    {
+        return $this->belongsToMany(Admin::class, 'admin_tenant_access', 'tenant_id', 'admin_id')
+            ->withPivot(['role', 'is_default'])
+            ->withTimestamps();
+    }
+
     // ─── Scopes ───────────────────────────────────────────────────────────────
 
     public function scopeActive($query)

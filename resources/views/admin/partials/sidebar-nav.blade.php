@@ -2,6 +2,7 @@
 
 @php
     $currentRoute = request()->route()?->getName() ?? '';
+    $isAgencyAdmin = auth('admin')->user()?->isAgencyAdmin() ?? false;
 
     $navItems = [
         ['route' => 'admin.dashboard', 'icon' => 'fa-tachometer-alt', 'label' => 'Dashboard', 'match' => 'admin.dashboard'],
@@ -32,12 +33,17 @@
 
     $systemItems = [
         ['route' => 'admin.tenants.index', 'icon' => 'fa-building', 'label' => 'Siteler', 'match' => 'admin.tenants'],
-        ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield', 'label' => 'Yöneticiler', 'match' => 'admin.admin-users'],
-        ['route' => 'admin.roles.index', 'icon' => 'fa-key', 'label' => 'Roller/Yetkiler', 'match' => 'admin.roles'],
-        ['route' => 'admin.maintenance.index', 'icon' => 'fa-database', 'label' => 'DB Bakım', 'match' => 'admin.maintenance'],
-        ['route' => 'admin.activity-log.index', 'icon' => 'fa-history', 'label' => 'Aktivite Log', 'match' => 'admin.activity-log'],
         ['route' => 'admin.settings.index', 'icon' => 'fa-cog', 'label' => 'Ayarlar', 'match' => 'admin.settings'],
     ];
+
+    if ($isAgencyAdmin) {
+        array_splice($systemItems, 1, 0, [
+            ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield', 'label' => 'Yöneticiler', 'match' => 'admin.admin-users'],
+            ['route' => 'admin.roles.index', 'icon' => 'fa-key', 'label' => 'Roller/Yetkiler', 'match' => 'admin.roles'],
+            ['route' => 'admin.maintenance.index', 'icon' => 'fa-database', 'label' => 'DB Bakım', 'match' => 'admin.maintenance'],
+            ['route' => 'admin.activity-log.index', 'icon' => 'fa-history', 'label' => 'Aktivite Log', 'match' => 'admin.activity-log'],
+        ]);
+    }
 @endphp
 
 <!-- Main navigation -->

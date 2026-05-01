@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -23,7 +24,22 @@ class InitializeTenancyForAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $admin = Auth::guard('admin')->user();
         $tenantId = session('active_tenant');
+
+        if ($admin && ! $admin->isAgencyAdmin()) {
+            if (! $tenantId || ! $admin->canAccessTenant($tenantId)) {
+                $tenantId = $admin->defaultTenantId();
+
+                if ($tenantId) {
+                    session(['active_tenant' => $tenantId]);
+                } else {
+                    session()->forget('active_tenant');
+
+                    abort(403, 'Bu yöneticiye atanmış site bulunmuyor.');
+                }
+            }
+        }
 
         if ($tenantId) {
             try {

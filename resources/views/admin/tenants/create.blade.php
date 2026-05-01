@@ -80,6 +80,58 @@
             </div>
         </div>
 
+        <div class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+            <label class="flex items-start gap-3">
+                <input type="checkbox"
+                       name="create_company_admin"
+                       value="1"
+                       {{ old('create_company_admin') ? 'checked' : '' }}
+                       class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span>
+                    <span class="block font-semibold text-gray-800">Firma yöneticisi oluştur</span>
+                    <span class="block text-xs text-gray-500 mt-1">
+                        Bu kullanıcı sadece oluşturulan siteye atanır ve girişte varsayılan olarak bu site açılır.
+                    </span>
+                </span>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ad Soyad</label>
+                    <input type="text" name="company_admin_name" value="{{ old('company_admin_name') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 @error('company_admin_name') border-red-400 @enderror"
+                           placeholder="Firma Yetkilisi">
+                    @error('company_admin_name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
+                    <input type="text" name="company_admin_username" value="{{ old('company_admin_username') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 @error('company_admin_username') border-red-400 @enderror"
+                           placeholder="firmaadmin">
+                    @error('company_admin_username')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+                    <input type="email" name="company_admin_email" value="{{ old('company_admin_email') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 @error('company_admin_email') border-red-400 @enderror"
+                           placeholder="yetkili@firma.com">
+                    @error('company_admin_email')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div></div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                    <input type="password" name="company_admin_password"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 @error('company_admin_password') border-red-400 @enderror">
+                    @error('company_admin_password')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Şifre Tekrar</label>
+                    <input type="password" name="company_admin_password_confirmation"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+        </div>
+
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
             <i class="fas fa-info-circle mr-1"></i>
             <strong>Sonraki adım:</strong> Site oluşturulduktan sonra <em>Provision</em> butonuna tıklayarak

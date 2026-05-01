@@ -53,6 +53,14 @@ class AuthController extends Controller
                 'last_login_at' => now(),
             ]);
 
+            if (! $admin->isAgencyAdmin()) {
+                $defaultTenantId = $admin->defaultTenantId();
+
+                if ($defaultTenantId) {
+                    session(['active_tenant' => $defaultTenantId]);
+                }
+            }
+
             return redirect()->intended(route('admin.dashboard'));
         }
 

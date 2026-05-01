@@ -54,6 +54,7 @@
         </div>
 
         {{-- Provision --}}
+        @if($canManageTenants)
         <div class="bg-white rounded-xl shadow-sm border p-5">
             <h2 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
                 <i class="fas fa-database text-green-500"></i> Veritabanı Provision
@@ -72,8 +73,10 @@
                 </button>
             </form>
         </div>
+        @endif
 
         {{-- Edit --}}
+        @if($canManageTenants)
         <div class="bg-white rounded-xl shadow-sm border p-5">
             <h2 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
                 <i class="fas fa-edit text-blue-500"></i> Site Bilgilerini Güncelle
@@ -113,6 +116,7 @@
                 </button>
             </form>
         </div>
+        @endif
     </div>
 
     {{-- Right: Quick actions --}}
@@ -147,6 +151,7 @@
         </div>
 
         {{-- Artisan info --}}
+        @if($canManageTenants)
         <div class="bg-gray-50 rounded-xl border p-4 text-xs text-gray-500 font-mono space-y-1">
             <p class="font-semibold text-gray-600 mb-2 font-sans text-xs uppercase">Artisan komutları</p>
             <p>php artisan tenants:migrate</p>
@@ -155,8 +160,10 @@
             <p class="pl-2 text-gray-400">"db:seed --class=TenantSeeder"</p>
             <p class="pl-2 text-gray-400">--tenants={{ $tenant->id }}</p>
         </div>
+        @endif
 
         {{-- Danger zone --}}
+        @if($canManageTenants)
         <div class="bg-white rounded-xl shadow-sm border border-red-100 p-5">
             <h2 class="font-semibold text-red-600 mb-2 text-sm flex items-center gap-2">
                 <i class="fas fa-exclamation-triangle"></i> Tehlikeli Bölge
@@ -171,6 +178,7 @@
                 </button>
             </form>
         </div>
+        @endif
     </div>
 </div>
 @endsection

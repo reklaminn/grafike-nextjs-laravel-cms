@@ -143,19 +143,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('currencies', CurrencyController::class)->except('show');
         Route::post('currencies/fetch-rates', [CurrencyController::class, 'fetchRates'])->name('currencies.fetch-rates');
 
-        // Admin Users
-        Route::resource('admin-users', AdminUserController::class)->except('show');
-        Route::post('admin-users/{admin_user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('admin-users.toggle-status');
+        Route::middleware('agency.admin')->group(function () {
+            // Admin Users
+            Route::resource('admin-users', AdminUserController::class)->except('show');
+            Route::post('admin-users/{admin_user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('admin-users.toggle-status');
 
-        // Roles & Permissions
-        Route::resource('roles', RoleController::class)->except('show');
+            // Roles & Permissions
+            Route::resource('roles', RoleController::class)->except('show');
 
-        // Maintenance / DB Cleanup
-        Route::get('maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
-        Route::post('maintenance/cleanup', [MaintenanceController::class, 'cleanup'])->name('maintenance.cleanup');
+            // Maintenance / DB Cleanup
+            Route::get('maintenance', [MaintenanceController::class, 'index'])->name('maintenance.index');
+            Route::post('maintenance/cleanup', [MaintenanceController::class, 'cleanup'])->name('maintenance.cleanup');
 
-        // Activity Log
-        Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+            // Activity Log
+            Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+        });
 
         // AI Assistant API
         Route::post('ai/translate', [AiAssistantController::class, 'translate'])->name('ai.translate');

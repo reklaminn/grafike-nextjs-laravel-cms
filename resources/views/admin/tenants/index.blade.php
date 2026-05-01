@@ -7,10 +7,12 @@
         <h1 class="text-2xl font-bold text-gray-800">Siteler</h1>
         <p class="text-sm text-gray-500 mt-1">Her site ayrı bir veritabanında izole çalışır (stancl/tenancy)</p>
     </div>
-    <a href="{{ route('admin.tenants.create') }}"
-       class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
-        <i class="fas fa-plus mr-1"></i> Yeni Site
-    </a>
+    @if($canManageTenants)
+        <a href="{{ route('admin.tenants.create') }}"
+           class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
+            <i class="fas fa-plus mr-1"></i> Yeni Site
+        </a>
+    @endif
 </div>
 
 @if(session('active_tenant'))
@@ -33,10 +35,12 @@
     </div>
     <h3 class="text-gray-700 font-medium mb-2">Henüz site yok</h3>
     <p class="text-gray-500 text-sm mb-4">İlk müşteri sitenizi oluşturun</p>
-    <a href="{{ route('admin.tenants.create') }}"
-       class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-        <i class="fas fa-plus mr-2"></i> Yeni Site Oluştur
-    </a>
+    @if($canManageTenants)
+        <a href="{{ route('admin.tenants.create') }}"
+           class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+            <i class="fas fa-plus mr-2"></i> Yeni Site Oluştur
+        </a>
+    @endif
 </div>
 @else
 <div class="bg-white rounded-xl shadow-sm border overflow-hidden">

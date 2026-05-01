@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\AdminTenantAccess;
 use App\Models\Tenant;
 use App\Models\Theme;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Stancl\Tenancy\Database\DatabaseManager;
 use Stancl\Tenancy\Jobs\CreateDatabase;
@@ -21,9 +24,18 @@ class TenantController extends Controller
      */
     public function index()
     {
-        $tenants = Tenant::with('domains')->latest()->get();
+        $admin = Auth::guard('admin')->user();
 
-        return view('admin.tenants.index', compact('tenants'));
+        $tenants = Tenant::with('domains')
+            ->when($admin && ! $admin->isAgencyAdmin(), function ($query) use ($admin) {
+                $query->whereIn('id', $admin->tenantAccesses()->select('tenant_id'));
+            })
+            ->latest()
+            ->get();
+
+        $canManageTenants = $admin?->isAgencyAdmin() ?? false;
+
+        return view('admin.tenants.index', compact('tenants', 'canManageTenants'));
     }
 
     /**
@@ -31,6 +43,8 @@ class TenantController extends Controller
      */
     public function create()
     {
+        $this->authorizeAgencyAdmin();
+
         $themes = Theme::active()->orderBy('name')->get();
 
         return view('admin.tenants.create', compact('themes'));
@@ -43,10 +57,17 @@ class TenantController extends Controller
     {
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
-            'slug'     => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('tenants', 'id')],
+            'slug'     => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('central.tenants', 'id')],
             'domain'   => 'required|string|max:253',
-            'theme_id' => 'nullable|exists:themes,id',
+            'theme_id' => ['nullable', Rule::exists('central.themes', 'id')],
+            'create_company_admin' => 'nullable|boolean',
+            'company_admin_name' => 'required_if:create_company_admin,1|nullable|string|max:255',
+            'company_admin_username' => ['required_if:create_company_admin,1', 'nullable', 'string', 'max:255', Rule::unique('central.admins', 'username')],
+            'company_admin_email' => ['required_if:create_company_admin,1', 'nullable', 'email', 'max:255', Rule::unique('central.admins', 'email')],
+            'company_admin_password' => 'required_if:create_company_admin,1|nullable|string|min:6|confirmed',
         ]);
+
+        $this->authorizeAgencyAdmin();
 
         // Normalise domain (strip protocol / trailing slash)
         $domain = strtolower(preg_replace('#^https?://#', '', rtrim($validated['domain'], '/')));
@@ -87,6 +108,10 @@ class TenantController extends Controller
                     $this->createTenantDomain($validated['slug'], 'www.' . $domain);
                 }
 
+                if (! empty($validated['create_company_admin'])) {
+                    $this->createCompanyAdminForTenant($validated);
+                }
+
                 return $tenant;
             });
         });
@@ -111,10 +136,13 @@ class TenantController extends Controller
      */
     public function show(Tenant $tenant)
     {
+        $this->authorizeTenantAccess($tenant);
+
         $tenant->load('domains');
         $themes = Theme::active()->orderBy('name')->get();
+        $canManageTenants = Auth::guard('admin')->user()?->isAgencyAdmin() ?? false;
 
-        return view('admin.tenants.show', compact('tenant', 'themes'));
+        return view('admin.tenants.show', compact('tenant', 'themes', 'canManageTenants'));
     }
 
     /**
@@ -126,6 +154,8 @@ class TenantController extends Controller
      */
     public function provision(Tenant $tenant)
     {
+        $this->authorizeAgencyAdmin();
+
         try {
             $this->provisionTenantDatabase($tenant);
             $output = Artisan::output();
@@ -142,6 +172,8 @@ class TenantController extends Controller
      */
     public function switchTo(Tenant $tenant)
     {
+        $this->authorizeTenantAccess($tenant);
+
         session(['active_tenant' => $tenant->id]);
 
         return redirect()
@@ -164,9 +196,11 @@ class TenantController extends Controller
      */
     public function update(Request $request, Tenant $tenant)
     {
+        $this->authorizeAgencyAdmin();
+
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
-            'theme_id' => 'nullable|exists:themes,id',
+            'theme_id' => ['nullable', Rule::exists('central.themes', 'id')],
             'status'   => 'required|in:active,suspended',
         ]);
 
@@ -186,6 +220,8 @@ class TenantController extends Controller
      */
     public function destroy(Tenant $tenant)
     {
+        $this->authorizeAgencyAdmin();
+
         $tenantId = (string) $tenant->getTenantKey();
         $databaseWarning = null;
 
@@ -232,6 +268,33 @@ class TenantController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    private function createCompanyAdminForTenant(array $validated): void
+    {
+        $admin = Admin::create([
+            'name' => $validated['company_admin_name'],
+            'username' => $validated['company_admin_username'],
+            'email' => $validated['company_admin_email'],
+            'password' => $validated['company_admin_password'],
+        ]);
+
+        AdminTenantAccess::create([
+            'admin_id' => $admin->id,
+            'tenant_id' => $validated['slug'],
+            'role' => 'owner',
+            'is_default' => true,
+        ]);
+    }
+
+    private function authorizeAgencyAdmin(): void
+    {
+        abort_unless(Auth::guard('admin')->user()?->isAgencyAdmin(), 403);
+    }
+
+    private function authorizeTenantAccess(Tenant $tenant): void
+    {
+        abort_unless(Auth::guard('admin')->user()?->canAccessTenant($tenant), 403);
     }
 
     private function provisionTenantDatabase(Tenant $tenant): void
