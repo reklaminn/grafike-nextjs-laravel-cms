@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Stancl\Tenancy\Database\DatabaseManager;
 use Stancl\Tenancy\Jobs\CreateDatabase;
+use Stancl\Tenancy\Jobs\DeleteDatabase;
 
 class TenantController extends Controller
 {
@@ -69,8 +70,13 @@ class TenantController extends Controller
                     return $tenant;
                 });
 
-                // Register primary domain
-                $tenant->domains()->create(['domain' => $domain]);
+                if ((string) $tenant->getTenantKey() !== (string) $validated['slug']) {
+                    throw new \RuntimeException("Tenant ID kaydedilemedi. Beklenen: {$validated['slug']}, gelen: {$tenant->getTenantKey()}");
+                }
+
+                // Register primary domain. Keep tenant_id explicit so Eloquent
+                // relation key casting can never turn string slugs into 0.
+                $this->createTenantDomain($tenant, $domain);
 
                 // Auto-add www. variant only for root custom domains (e.g. nuhcicek.com.tr).
                 // Skip for subdomain tenants (e.g. firma1.grafike.site) — the wildcard DNS
@@ -80,7 +86,7 @@ class TenantController extends Controller
                 $isSubdomainTenant = $centralDomain && str_ends_with($domain, '.' . $centralDomain);
 
                 if (! str_starts_with($domain, 'www.') && ! $isSubdomainTenant) {
-                    $tenant->domains()->create(['domain' => 'www.' . $domain]);
+                    $this->createTenantDomain($tenant, 'www.' . $domain);
                 }
 
                 return $tenant;
@@ -182,16 +188,52 @@ class TenantController extends Controller
      */
     public function destroy(Tenant $tenant)
     {
+        $tenantId = (string) $tenant->getTenantKey();
+        $databaseWarning = null;
+
         // End active session if this tenant was selected
-        if (session('active_tenant') === $tenant->id) {
+        if ((string) session('active_tenant') === $tenantId) {
             session()->forget('active_tenant');
         }
 
-        $tenant->delete(); // stancl cascades domain deletion
+        try {
+            $tenant->database()->makeCredentials();
+            $databaseName = $tenant->database()->getName();
+
+            if ($tenant->database()->manager()->databaseExists($databaseName)) {
+                (new DeleteDatabase($tenant))->handle();
+            } else {
+                $databaseWarning = "Tenant veritabanı zaten yoktu: {$databaseName}";
+            }
+        } catch (\Throwable $e) {
+            report($e);
+            $databaseWarning = 'Tenant veritabanı silinemedi: ' . $e->getMessage();
+        }
+
+        // Delete the central tenant/domain records without firing stancl's
+        // TenantDeleted pipeline again; database cleanup was handled above.
+        Tenant::withoutEvents(function () use ($tenant) {
+            $tenant->delete(); // domains cascade by FK
+        });
+
+        $message = "Tenant «{$tenantId}» silindi.";
+        if ($databaseWarning) {
+            $message .= ' ' . $databaseWarning;
+        }
 
         return redirect()
             ->route('admin.tenants.index')
-            ->with('success', "Tenant «{$tenant->id}» silindi. Veritabanı manuel silinmesi gerekebilir.");
+            ->with('success', $message);
+    }
+
+    private function createTenantDomain(Tenant $tenant, string $domain): void
+    {
+        $domainModel = config('tenancy.domain_model');
+
+        $domainModel::query()->create([
+            'domain'    => $domain,
+            'tenant_id' => (string) $tenant->getTenantKey(),
+        ]);
     }
 
     private function provisionTenantDatabase(Tenant $tenant): void
