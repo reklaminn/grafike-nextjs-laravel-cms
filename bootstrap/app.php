@@ -29,11 +29,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PROTO,
         );
 
-        // ForceHttps as a GLOBAL middleware (not just web group) so it runs
-        // before any web/api group middleware. Using prepend() here instead of
-        // web(prepend:) because the named-parameter form of web() is not
-        // available in all Laravel 11 patch versions.
+        // Register ForceHttps in EVERY way Laravel 12 supports, so it runs
+        // regardless of which group the request is dispatched through.
+        // - prepend(): adds to global middleware stack (runs before group middleware)
+        // - prependToGroup('web'): adds to web group (runs on all web routes)
+        // - prependToGroup('api'): adds to api group (runs on all api routes)
         $middleware->prepend(\App\Http\Middleware\ForceHttps::class);
+        $middleware->prependToGroup('web', \App\Http\Middleware\ForceHttps::class);
+        $middleware->prependToGroup('api', \App\Http\Middleware\ForceHttps::class);
 
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,

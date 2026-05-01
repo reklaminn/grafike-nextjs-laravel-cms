@@ -29,8 +29,6 @@ class ForceHttps
 
         if (! $skip) {
             // Force URL generator state on EVERY request, unconditionally.
-            // Use the actual request host so tenant subdomains/custom domains
-            // all generate correct HTTPS URLs against their own domain.
             URL::forceScheme('https');
             URL::forceRootUrl('https://' . $request->getHost());
 
@@ -40,6 +38,16 @@ class ForceHttps
             }
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        // DEBUG: prove this middleware actually ran. Remove once HTTPS issue is resolved.
+        if (method_exists($response, 'headers')) {
+            $response->headers->set('X-ForceHttps-Ran', $skip ? 'skipped' : 'yes');
+            $response->headers->set('X-ForceHttps-Env', app()->environment());
+            $response->headers->set('X-ForceHttps-Host', $request->getHost());
+            $response->headers->set('X-ForceHttps-Secure', $request->secure() ? 'yes' : 'no');
+        }
+
+        return $response;
     }
 }
