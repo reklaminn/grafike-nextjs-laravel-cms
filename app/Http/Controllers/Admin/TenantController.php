@@ -71,7 +71,7 @@ class TenantController extends Controller
 
         return redirect()
             ->route('admin.tenants.show', $tenant)
-            ->with('success', "Tenant «{$tenant->name}» oluşturuldu. Şimdi veritabanını hazırlamak için Provision butonuna tıklayın.");
+            ->with('success', "Tenant «{$tenant->name}» oluşturuldu. Veritabanı ve migrationlar otomatik çalıştırıldı.");
     }
 
     /**
@@ -86,8 +86,12 @@ class TenantController extends Controller
     }
 
     /**
-     * Run tenant migrations (provision the tenant DB).
-     * Calls `php artisan tenants:migrate --tenants={id}`.
+     * (Re-)run tenant migrations on an existing tenant DB.
+     *
+     * The DB itself is created automatically by the TenantCreated event pipeline
+     * (Jobs\CreateDatabase + Jobs\MigrateDatabase). This action is useful when:
+     *  - New tenant migrations were added and need to be applied to existing tenants
+     *  - The initial auto-migration failed (e.g. DB permissions not yet granted)
      */
     public function provision(Tenant $tenant)
     {
@@ -101,7 +105,7 @@ class TenantController extends Controller
             return back()->with('error', 'Migration hatası: ' . $e->getMessage());
         }
 
-        return back()->with('success', "Tenant «{$tenant->name}» veritabanı hazır.\n" . $output);
+        return back()->with('success', "Tenant «{$tenant->name}» migrationları çalıştırıldı.\n" . $output);
     }
 
     /**

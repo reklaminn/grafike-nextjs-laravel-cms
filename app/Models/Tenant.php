@@ -12,6 +12,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     use HasDatabase, HasDomains;
 
     /**
+     * The tenant ID is a string slug (e.g. "nuhcicek") supplied explicitly by
+     * the admin on creation. We must override the GeneratesIds trait here
+     * because config('tenancy.id_generator') = null leaves the
+     * UniqueIdentifierGenerator unbound, which makes getIncrementing() return
+     * true — causing Eloquent to treat the key as an auto-increment integer
+     * and silently cast the slug to 0.
+     */
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    /**
      * Real DB columns on the `tenants` table (everything else goes into `data` JSON).
      * stancl stores all custom attributes in the JSON `data` column unless listed here.
      */
