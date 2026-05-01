@@ -22,7 +22,8 @@ class ForceHttps
             FILE_APPEND
         );
 
-        $skip = in_array(app()->environment(), ['local', 'testing'], true);
+        $skip = in_array(app()->environment(), ['local', 'testing'], true)
+            || $this->isInternalDockerHost($request->getHost());
 
         if (! $skip) {
             URL::forceScheme('https');
@@ -47,5 +48,17 @@ class ForceHttps
         }
 
         return $response;
+    }
+
+    private function isInternalDockerHost(string $host): bool
+    {
+        return in_array(strtolower($host), [
+            'app1',
+            'app2',
+            'app3',
+            'grafike_cms_app1',
+            'grafike_cms_app2',
+            'grafike_cms_app3',
+        ], true);
     }
 }

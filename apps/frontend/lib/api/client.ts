@@ -17,6 +17,9 @@ import {
 } from "@/lib/api/mock-data";
 
 const API_BASE_URL = process.env.CMS_API_URL;
+const FALLBACK_SITE_HOST = process.env.NEXT_PUBLIC_SITE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host
+  : null;
 
 type ResourceEnvelope<T> = { data: T };
 
@@ -29,7 +32,13 @@ function unwrapResource<T>(payload: T | ResourceEnvelope<T>): T {
 
 async function getSiteHostHeader(): Promise<string | null> {
   const requestHeaders = await headers();
-  return requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+
+  if (host && !["app1", "app2", "app3", "grafike_cms_app1", "grafike_cms_app2", "grafike_cms_app3"].includes(host)) {
+    return host;
+  }
+
+  return FALLBACK_SITE_HOST;
 }
 
 /**
@@ -49,7 +58,12 @@ async function fetchJson<T>(
     const siteHost = await getSiteHostHeader();
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: siteHost ? { "X-Site-Host": siteHost } : undefined,
+      headers: siteHost
+        ? {
+            "X-Site-Host": siteHost,
+            "X-Forwarded-Host": siteHost,
+          }
+        : undefined,
       next: {
         revalidate: 60,
         ...(tags && tags.length > 0 ? { tags } : {}),

@@ -33,7 +33,7 @@ class UseSiteHostHeader
     {
         return $request->headers->get('X-Site-Host')
             ?: $request->headers->get('X-Forwarded-Host')
-            ?: $this->hostFromUrl(config('app.frontend_url'))
+            ?: $this->hostFromUrl(config('cms.frontend_url'))
             ?: $this->hostFromUrl(env('CMS_FRONTEND_URL'))
             ?: $this->hostFromUrl(config('app.url'));
     }
