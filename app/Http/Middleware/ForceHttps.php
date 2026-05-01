@@ -8,35 +8,36 @@ use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Two responsibilities:
+ * Brute-force HTTPS enforcement middleware.
  *
- * 1. Force the URL generator's scheme + root URL on EVERY request.
- *    AppServiceProvider::boot() also does this, but that has been observed
- *    to be insufficient in some Laravel 12 + multi-tenant setups where the
- *    URL generator state is reset somewhere between boot and view rendering.
- *    Doing it again here in middleware guarantees URLs are always https://.
+ * Runs as a global middleware on every request. Three responsibilities:
  *
- * 2. Redirect any plain-HTTP request to HTTPS at PHP level (works regardless
- *    of whether Traefik's http-catchall router is configured).
+ * 1. Force URL::scheme('https') on every request, no conditions.
+ * 2. Force URL::rootUrl('https://<host>') based on the actual request host
+ *    (so multi-tenant subdomains and custom domains all get the right root).
+ * 3. 301-redirect any plain-HTTP request to HTTPS at PHP level, regardless
+ *    of whether Traefik did it.
  *
- * Skipped in local / testing environments so artisan serve still works.
+ * Skipped only when APP_ENV=local|testing so artisan serve still works.
  */
 class ForceHttps
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Force URL generator state on EVERY request, not just at boot.
-        // We can't trust the service provider boot to persist through the
-        // entire request lifecycle.
-        $appUrl = config('app.url') ?: env('APP_URL', '');
-        if (str_starts_with((string) $appUrl, 'https://')) {
-            URL::forceScheme('https');
-            URL::forceRootUrl($appUrl);
-        }
+        // Skip in local/testing only — production, staging, etc. all force HTTPS.
+        $skip = in_array(app()->environment(), ['local', 'testing'], true);
 
-        // Redirect HTTP → HTTPS in production.
-        if (! $request->secure() && app()->isProduction()) {
-            return redirect()->secure($request->getRequestUri(), 301);
+        if (! $skip) {
+            // Force URL generator state on EVERY request, unconditionally.
+            // Use the actual request host so tenant subdomains/custom domains
+            // all generate correct HTTPS URLs against their own domain.
+            URL::forceScheme('https');
+            URL::forceRootUrl('https://' . $request->getHost());
+
+            // Redirect HTTP → HTTPS at PHP level (independent of Traefik config).
+            if (! $request->secure()) {
+                return redirect()->secure($request->getRequestUri(), 301);
+            }
         }
 
         return $next($request);
