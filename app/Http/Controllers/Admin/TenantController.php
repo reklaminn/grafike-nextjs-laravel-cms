@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\Theme;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Stancl\Tenancy\Database\DatabaseManager;
@@ -251,6 +252,27 @@ class TenantController extends Controller
                 '--tenants' => [$tenant->getTenantKey()],
                 '--force'   => true,
             ]);
+
+            tenancy()->initialize($tenant);
+            try {
+                $this->ensureTenantStorageDirectories();
+            } finally {
+                tenancy()->end();
+            }
         });
+    }
+
+    private function ensureTenantStorageDirectories(): void
+    {
+        foreach ([
+            storage_path('app'),
+            storage_path('app/public'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+        ] as $path) {
+            File::ensureDirectoryExists($path, 0775, true);
+        }
     }
 }

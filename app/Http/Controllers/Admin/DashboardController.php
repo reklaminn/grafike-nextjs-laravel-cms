@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Models\FormSubmission;
 use App\Models\Page;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
@@ -59,7 +59,10 @@ class DashboardController extends Controller
     private function checkStorage(): array
     {
         try {
+            $this->ensureStorageDirectories();
+
             $writable = is_writable(storage_path('app'));
+
             return [
                 'status' => $writable ? 'ok' : 'warning',
                 'label'  => 'Depolama',
@@ -67,6 +70,20 @@ class DashboardController extends Controller
             ];
         } catch (Throwable) {
             return ['status' => 'error', 'label' => 'Depolama', 'detail' => 'Kontrol edilemiyor'];
+        }
+    }
+
+    private function ensureStorageDirectories(): void
+    {
+        foreach ([
+            storage_path('app'),
+            storage_path('app/public'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+        ] as $path) {
+            File::ensureDirectoryExists($path, 0775, true);
         }
     }
 
