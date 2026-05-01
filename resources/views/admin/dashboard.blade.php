@@ -105,14 +105,16 @@
                             default   => 'Hata',
                         };
                     @endphp
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
+                    <div class="grid grid-cols-[minmax(100px,1fr)_auto] items-center gap-3">
+                        <div class="flex min-w-0 items-center gap-2">
                             <span class="w-2 h-2 rounded-full {{ $dot }} flex-shrink-0"></span>
-                            <span class="text-sm text-gray-700">{{ $check['label'] }}</span>
+                            <span class="truncate text-sm text-gray-700">{{ $check['label'] }}</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs text-gray-400">{{ $check['detail'] }}</span>
-                            <span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ $badge }}">
+                        <div class="flex min-w-0 items-center justify-end gap-2">
+                            <span class="max-w-[150px] truncate text-right text-xs text-gray-400" title="{{ $check['detail'] }}">
+                                {{ $check['detail'] }}
+                            </span>
+                            <span class="inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ $badge }}">
                                 {{ $label }}
                             </span>
                         </div>
