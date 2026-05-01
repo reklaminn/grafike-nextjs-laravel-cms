@@ -29,11 +29,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PROTO,
         );
 
-        $middleware->web(prepend: [
-            // ForceHttps must be first so every subsequent middleware and
-            // controller already runs on a guaranteed-HTTPS request.
-            \App\Http\Middleware\ForceHttps::class,
-        ]);
+        // ForceHttps as a GLOBAL middleware (not just web group) so it runs
+        // before any web/api group middleware. Using prepend() here instead of
+        // web(prepend:) because the named-parameter form of web() is not
+        // available in all Laravel 11 patch versions.
+        $middleware->prepend(\App\Http\Middleware\ForceHttps::class);
 
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
