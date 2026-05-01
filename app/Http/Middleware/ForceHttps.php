@@ -9,30 +9,25 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Brute-force HTTPS enforcement middleware.
- *
- * Runs as a global middleware on every request. Three responsibilities:
- *
- * 1. Force URL::scheme('https') on every request, no conditions.
- * 2. Force URL::rootUrl('https://<host>') based on the actual request host
- *    (so multi-tenant subdomains and custom domains all get the right root).
- * 3. 301-redirect any plain-HTTP request to HTTPS at PHP level, regardless
- *    of whether Traefik did it.
- *
- * Skipped only when APP_ENV=local|testing so artisan serve still works.
  */
 class ForceHttps
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Skip in local/testing only — production, staging, etc. all force HTTPS.
+        // DEBUG: write to a file every time this middleware runs.
+        // We'll grep this file to prove the middleware actually executed.
+        @file_put_contents(
+            '/var/www/html/storage/logs/force-https.log',
+            date('c').' '.$request->getMethod().' '.$request->fullUrl().' env='.app()->environment().PHP_EOL,
+            FILE_APPEND
+        );
+
         $skip = in_array(app()->environment(), ['local', 'testing'], true);
 
         if (! $skip) {
-            // Force URL generator state on EVERY request, unconditionally.
             URL::forceScheme('https');
-            URL::forceRootUrl('https://' . $request->getHost());
+            URL::forceRootUrl('https://'.$request->getHost());
 
-            // Redirect HTTP → HTTPS at PHP level (independent of Traefik config).
             if (! $request->secure()) {
                 return redirect()->secure($request->getRequestUri(), 301);
             }
@@ -40,12 +35,15 @@ class ForceHttps
 
         $response = $next($request);
 
-        // DEBUG: prove this middleware actually ran. Remove once HTTPS issue is resolved.
-        if (method_exists($response, 'headers')) {
+        // FIX: $response->headers is a PROPERTY, not a method. Use direct
+        // property access wrapped in a try/catch to handle any response type.
+        try {
             $response->headers->set('X-ForceHttps-Ran', $skip ? 'skipped' : 'yes');
             $response->headers->set('X-ForceHttps-Env', app()->environment());
             $response->headers->set('X-ForceHttps-Host', $request->getHost());
             $response->headers->set('X-ForceHttps-Secure', $request->secure() ? 'yes' : 'no');
+        } catch (\Throwable $e) {
+            // Some response types may not support headers — ignore.
         }
 
         return $response;
