@@ -17,6 +17,7 @@ class Page extends Model implements HasMedia
         'title', 'parent_id', 'language_id', 'root_page_id', 'status',
         'show_in_menu', 'sort_order', 'slug', 'external_url', 'link_target',
         'module_type', 'template', 'page_template_id', 'page_template', 'frontend_variant',
+        'system_key', 'is_system',
         'layout_json', 'sections_json', 'custom_css', 'custom_js',
         'is_password_protected', 'page_password', 'show_social_share',
         'show_facebook_comments', 'show_breadcrumb', 'view_count', 'legacy_id',
@@ -32,7 +33,13 @@ class Page extends Model implements HasMedia
             'show_social_share' => 'boolean',
             'show_facebook_comments' => 'boolean',
             'show_breadcrumb' => 'boolean',
+            'is_system' => 'boolean',
         ];
+    }
+
+    public function isSystemPage(): bool
+    {
+        return (bool) $this->is_system || filled($this->system_key);
     }
 
     public function getParentKeyName(): string

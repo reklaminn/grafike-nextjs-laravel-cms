@@ -22,15 +22,7 @@ class PageController extends Controller
         // No site_id filter needed — the DB connection is the isolation boundary.
 
         if ($slug === 'home') {
-            $homepageId = SiteSetting::get('cms.homepage_id', config('cms.homepage_id'));
-            $page = Page::query()
-                ->where(fn ($query) => $query
-                    ->where('legacy_id', $homepageId)
-                    ->orWhere('id', $homepageId)
-                )
-                ->published()
-                ->with(['seo', 'language', 'parent'])
-                ->first();
+            $page = $this->resolveHomepage();
 
             abort_if(! $page, 404);
 
@@ -77,5 +69,36 @@ class PageController extends Controller
             $lastModified,
             "page-{$page->id}",
         );
+    }
+
+    private function resolveHomepage(): ?Page
+    {
+        $homepageId = SiteSetting::get('cms.homepage_id', config('cms.homepage_id'));
+
+        if ($homepageId) {
+            $page = Page::query()
+                ->where(fn ($query) => $query
+                    ->where('legacy_id', $homepageId)
+                    ->orWhere('id', $homepageId)
+                )
+                ->published()
+                ->with(['seo', 'language', 'parent'])
+                ->first();
+
+            if ($page) {
+                return $page;
+            }
+        }
+
+        return Page::query()
+            ->where(fn ($query) => $query
+                ->where('system_key', 'home')
+                ->orWhere('slug', 'home')
+            )
+            ->published()
+            ->orderByDesc('system_key')
+            ->orderBy('sort_order')
+            ->with(['seo', 'language', 'parent'])
+            ->first();
     }
 }

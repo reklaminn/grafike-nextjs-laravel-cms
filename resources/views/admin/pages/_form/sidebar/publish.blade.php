@@ -52,6 +52,24 @@
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                    placeholder="default">
         </div>
+
+        <label class="flex items-start gap-3 rounded-lg bg-indigo-50 px-3 py-3 text-sm">
+            <input type="checkbox" name="is_homepage" value="1"
+                   class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                   {{ old('is_homepage', isset($page, $homepageId) && (string) $homepageId === (string) $page->id) ? 'checked' : '' }}>
+            <span>
+                <span class="block font-medium text-indigo-900">Bu sayfayı anasayfa yap</span>
+                <span class="mt-0.5 block text-xs text-indigo-700">Seçili olduğunda frontend <code>/tr</code> veya <code>/en</code> kök adresinde bu sayfayı açar. Slug yine doğrudan URL olarak kullanılabilir.</span>
+            </span>
+        </label>
+
+        @isset($page)
+            @if($page->isSystemPage())
+                <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <strong>Sistem sayfası:</strong> Bu sayfa silinemez. Tasarım ve içerik değişiklikleri bu düzenleme ekranından yapılır.
+                </div>
+            @endif
+        @endisset
     </div>
 
     <div class="mt-6 flex gap-3">

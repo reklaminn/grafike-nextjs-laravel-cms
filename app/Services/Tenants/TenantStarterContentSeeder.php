@@ -30,15 +30,17 @@ class TenantStarterContentSeeder
             $home = $this->createHomePage($tenantName);
             $about = $this->createAboutPage($tenantName);
             $contact = $this->createContactPage();
+            $notFound = $this->createNotFoundPage($tenantName);
+            $serverError = $this->createServerErrorPage($tenantName);
 
-            foreach ([$home, $about, $contact] as $page) {
+            foreach ([$home, $about, $contact, $notFound, $serverError] as $page) {
                 $page->forceFill(['root_page_id' => $page->id])->save();
             }
 
             $this->seedArticles($home, $now);
             $this->seedMenu([$home, $about, $contact]);
             $this->seedSettings($tenantName, $home);
-            $this->seedSeo($tenantName, [$home, $about, $contact]);
+            $this->seedSeo($tenantName, [$home, $about, $contact, $notFound, $serverError]);
         });
     }
 
@@ -53,6 +55,8 @@ class TenantStarterContentSeeder
             'language_id' => null,
             'template' => 'starter-home',
             'frontend_variant' => 'starter-home',
+            'system_key' => 'home',
+            'is_system' => true,
             'show_breadcrumb' => false,
             'sections_json' => $this->sections([
                 $this->row('home_hero', [
@@ -141,6 +145,56 @@ class TenantStarterContentSeeder
         ]);
     }
 
+    private function createNotFoundPage(string $tenantName): Page
+    {
+        return Page::create([
+            'title' => '404 - Sayfa Bulunamadı',
+            'slug' => '404',
+            'status' => 'published',
+            'show_in_menu' => false,
+            'sort_order' => 98,
+            'language_id' => null,
+            'template' => 'system-404',
+            'frontend_variant' => 'system-404',
+            'system_key' => 'not_found',
+            'is_system' => true,
+            'show_breadcrumb' => false,
+            'sections_json' => $this->sections([
+                $this->row('not_found_content', [
+                    $this->block('not_found_block', 'rich-text', 'system-message', 1, [
+                        'title' => 'Aradığınız sayfa bulunamadı',
+                        'body_html' => "<p>{$tenantName} sitesinde bu adrese ait bir sayfa bulunamadı. Menüden farklı bir sayfaya geçebilir veya ana sayfaya dönebilirsiniz.</p><p><a href=\"/\" class=\"btn btn-primary\">Ana sayfaya dön</a></p>",
+                    ]),
+                ]),
+            ]),
+        ]);
+    }
+
+    private function createServerErrorPage(string $tenantName): Page
+    {
+        return Page::create([
+            'title' => '500 - Sistem Hatası',
+            'slug' => '500',
+            'status' => 'published',
+            'show_in_menu' => false,
+            'sort_order' => 99,
+            'language_id' => null,
+            'template' => 'system-500',
+            'frontend_variant' => 'system-500',
+            'system_key' => 'server_error',
+            'is_system' => true,
+            'show_breadcrumb' => false,
+            'sections_json' => $this->sections([
+                $this->row('server_error_content', [
+                    $this->block('server_error_block', 'rich-text', 'system-message', 1, [
+                        'title' => 'Geçici bir sorun oluştu',
+                        'body_html' => "<p>{$tenantName} sitesinde işlem sırasında beklenmeyen bir hata oluştu. Lütfen kısa süre sonra tekrar deneyin.</p><p><a href=\"/\" class=\"btn btn-primary\">Ana sayfaya dön</a></p>",
+                    ]),
+                ]),
+            ]),
+        ]);
+    }
+
     private function seedArticles(Page $home, Carbon $now): void
     {
         $articles = [
@@ -222,6 +276,8 @@ class TenantStarterContentSeeder
         SiteSetting::set('site.address', 'Firma adresi buraya gelecek.', 'contact');
         SiteSetting::set('site.footer_text', "© {$tenantName}", 'general');
         SiteSetting::set('cms.homepage_id', (string) $home->id, 'cms');
+        SiteSetting::set('cms.not_found_page_id', (string) Page::where('system_key', 'not_found')->value('id'), 'cms');
+        SiteSetting::set('cms.server_error_page_id', (string) Page::where('system_key', 'server_error')->value('id'), 'cms');
     }
 
     /**
@@ -244,8 +300,9 @@ class TenantStarterContentSeeder
                 },
                 'og_type' => 'website',
                 'schema_type' => $page->slug === 'iletisim' ? 'LocalBusiness' : 'WebPage',
-                'sitemap_priority' => $page->slug === 'home' ? 1.0 : 0.8,
+                'sitemap_priority' => $page->slug === 'home' ? 1.0 : ($page->is_system ? 0.1 : 0.8),
                 'sitemap_changefreq' => 'weekly',
+                'is_noindex' => in_array($page->system_key, ['not_found', 'server_error'], true),
             ]);
         }
     }

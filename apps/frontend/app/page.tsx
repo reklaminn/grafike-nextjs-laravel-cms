@@ -6,7 +6,7 @@ type RootPageProps = {
 };
 
 /**
- * Root page (/): redirect to /{defaultLocale}/home.
+ * Root page (/): redirect to /{defaultLocale}.
  * The middleware already handles non-prefixed paths, but this acts as a
  * belt-and-suspenders fallback (and avoids a 404 flash before middleware fires).
  */
@@ -16,5 +16,5 @@ export default async function RootPage({ searchParams }: RootPageProps) {
   const tenantId = Array.isArray(tenant) ? tenant[0] : tenant;
   const qs = tenantId ? `?tenant=${encodeURIComponent(tenantId)}` : "";
 
-  redirect(`/${DEFAULT_LOCALE}/home${qs}`);
+  redirect(`/${DEFAULT_LOCALE}${qs}`);
 }

@@ -91,6 +91,12 @@
                                             {{ $page->title }}
                                         </a>
                                         <p class="text-xs text-gray-400">/{{ $page->slug }}</p>
+                                        @if($page->isSystemPage())
+                                            <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                                <i class="fas fa-lock"></i>
+                                                {{ $page->system_key === 'home' ? 'Default Anasayfa' : 'Sistem Sayfası' }}
+                                            </span>
+                                        @endif
                                         @if($page->parent)
                                             <p class="text-xs text-gray-400">
                                                 <i class="fas fa-level-up-alt fa-rotate-90 mr-1"></i>{{ $page->parent->title }}
@@ -134,16 +140,22 @@
                                        title="Düzenle">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('admin.pages.destroy', $page) }}"
-                                          onsubmit="return confirm('Bu sayfayı silmek istediğinize emin misiniz?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                                                title="Sil">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
+                                    @if($page->isSystemPage())
+                                        <span class="p-2 text-gray-300" title="Sistem sayfası silinemez">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                    @else
+                                        <form method="POST" action="{{ route('admin.pages.destroy', $page) }}"
+                                              onsubmit="return confirm('Bu sayfayı silmek istediğinize emin misiniz?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                                    title="Sil">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

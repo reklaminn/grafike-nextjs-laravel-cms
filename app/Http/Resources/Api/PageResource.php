@@ -25,6 +25,7 @@ class PageResource extends JsonResource
         $sections     = $this->enrichSections(FrontendSections::flattenBlocks($rawSections));
         $regionLayout = $this->enrichRegionBlocks($rawSections);
         $themeSlug    = $theme?->slug ?: 'porto-furniture';
+        $breadcrumbs  = $this->buildBreadcrumbs($page);
 
         return [
             'page' => [
@@ -39,6 +40,7 @@ class PageResource extends JsonResource
                 'region_version' => $regionLayout['version'] ?? 2,
                 'regions' => $regionLayout['regions'] ?? [],
                 'language' => $page->language?->code,
+                'breadcrumbs' => $breadcrumbs,
             ],
             'seo' => [
                 'title'           => $page->seo?->meta_title       ?: $page->title,
@@ -52,7 +54,7 @@ class PageResource extends JsonResource
                 'structured_data' => $this->resolveStructuredData($page),
                 'schema_type'     => $page->seo?->schema_type       ?: null,
             ],
-            'breadcrumbs' => $this->buildBreadcrumbs($page),
+            'breadcrumbs' => $breadcrumbs,
             'theme' => [
                 'slug' => $themeSlug,
             ],

@@ -31,7 +31,8 @@ function detectLocaleInPath(pathname: string): string | null {
 
 function tenantPreviewId(request: NextRequest): string | null {
   const tenant = request.nextUrl.searchParams.get("tenant")
-    ?? request.nextUrl.searchParams.get("tenant_id");
+    ?? request.nextUrl.searchParams.get("tenant_id")
+    ?? request.cookies.get("grafike_preview_tenant")?.value;
 
   if (!tenant || !/^[a-zA-Z0-9_-]+$/.test(tenant)) {
     return null;
@@ -59,6 +60,13 @@ export function middleware(request: NextRequest) {
     // Path already has a valid locale prefix — let it through, but stamp the header.
     const response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set("x-locale", detectedLocale);
+    if (tenant && request.nextUrl.searchParams.has("tenant")) {
+      response.cookies.set("grafike_preview_tenant", tenant, {
+        path: "/",
+        maxAge: 60 * 60,
+        sameSite: "lax",
+      });
+    }
     return response;
   }
 
@@ -67,6 +75,13 @@ export function middleware(request: NextRequest) {
   url.pathname = `/${DEFAULT_LOCALE}${pathname}`;
   const response = NextResponse.redirect(url, { status: 308 });
   response.headers.set("x-locale", DEFAULT_LOCALE);
+  if (tenant && request.nextUrl.searchParams.has("tenant")) {
+    response.cookies.set("grafike_preview_tenant", tenant, {
+      path: "/",
+      maxAge: 60 * 60,
+      sameSite: "lax",
+    });
+  }
   return response;
 }
 

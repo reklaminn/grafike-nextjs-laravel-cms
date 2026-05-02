@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { RegionLayoutRenderer } from "@/components/sections/region-layout-renderer";
-import { SectionRenderer } from "@/components/sections/section-renderer";
+import { CmsPageContent } from "@/components/pages/cms-page-content";
 import { ArticleBlockRenderer } from "@/components/articles/article-block-renderer";
 import {
   getArticle,
@@ -12,8 +11,7 @@ import {
   getSettingsPayload,
   getSitePayload,
 } from "@/lib/api/client";
-import { getRenderableSections } from "@/lib/sections/region-sections";
-import { buildMetadata, buildJsonLd, canonicalUrl } from "@/lib/seo";
+import { buildMetadata, canonicalUrl } from "@/lib/seo";
 
 type CatchAllPageProps = {
   params: Promise<{ locale: string; slug?: string[] }>;
@@ -115,88 +113,15 @@ export default async function CatchAllPage({ params }: CatchAllPageProps) {
   const payload = await getPagePayload(slug, locale);
 
   if (payload?.page) {
-    const pageId     = payload.page.id;
-    const jsonLdData = payload.seo?.structured_data ?? null;
-
-    // BreadcrumbList — from breadcrumbs returned by API
-    const crumbs = payload.page.breadcrumbs ?? [];
-    const breadcrumbJsonLd =
-      crumbs.length > 1
-        ? {
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            itemListElement: crumbs.map((c, i) => ({
-              "@type": "ListItem",
-              position: i + 1,
-              name: c.title,
-              item: canonicalUrl(c.url),
-            })),
-          }
-        : null;
-
-    // WebSite + SearchAction — emitted only on the homepage
-    const isHomepage = slug === "home";
-    const websiteJsonLd = isHomepage
-      ? {
-          "@context": "https://schema.org",
-          "@type":    "WebSite",
-          name:       settingsPayload.settings.site_title || sitePayload.site.name,
-          url:        canonicalUrl("/"),
-          inLanguage: locale,
-          potentialAction: {
-            "@type":       "SearchAction",
-            target: {
-              "@type":      "EntryPoint",
-              urlTemplate:  canonicalUrl(`/${locale}/search?q={search_term_string}`),
-            },
-            "query-input": "required name=search_term_string",
-          },
-        }
-      : null;
-
-    const allJsonLd = [jsonLdData, breadcrumbJsonLd, websiteJsonLd].filter(Boolean) as object[];
-
-    if (payload.page.regions) {
-      return (
-        <>
-          {allJsonLd.length > 0 && (
-            <script type="application/ld+json" dangerouslySetInnerHTML={buildJsonLd(allJsonLd)} />
-          )}
-          <main className="page-stack">
-            <RegionLayoutRenderer
-              regions={payload.page.regions}
-              site={sitePayload.site}
-              settings={settingsPayload.settings}
-              menus={menusPayload}
-              pageId={pageId}
-              lang={locale}
-            />
-          </main>
-        </>
-      );
-    }
-
-    const sections = getRenderableSections(payload.page.sections, payload.page.regions);
-
     return (
-      <>
-        {allJsonLd.length > 0 && (
-          <script type="application/ld+json" dangerouslySetInnerHTML={buildJsonLd(allJsonLd)} />
-        )}
-        <main className="container page-stack">
-          {sections.map((section) => (
-            <SectionRenderer
-              key={section.id}
-              section={section}
-              site={sitePayload.site}
-              settings={settingsPayload.settings}
-              menus={menusPayload}
-              pageId={pageId}
-              lang={locale}
-            />
-          ))}
-        </main>
-      </>
+      <CmsPageContent
+        payload={payload}
+        sitePayload={sitePayload}
+        settingsPayload={settingsPayload}
+        menusPayload={menusPayload}
+        slug={slug}
+        locale={locale}
+      />
     );
   }
 

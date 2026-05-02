@@ -10,6 +10,7 @@ use App\Models\Page;
 use App\Models\PageRevision;
 use App\Models\SectionTemplate;
 use App\Models\SeoEntry;
+use App\Models\SiteSetting;
 use App\Support\FrontendSections;
 use App\Support\LegacyLayoutToSections;
 use App\Support\PageEditorData;
@@ -64,7 +65,9 @@ class PageController extends Controller
 
         $editorData = PageEditorData::for(null, $availableFrontendSectionTemplates);
 
-        return view('admin.pages.create', compact('languages', 'parentPages', 'editorData'));
+        $homepageId = SiteSetting::get('cms.homepage_id');
+
+        return view('admin.pages.create', compact('languages', 'parentPages', 'editorData', 'homepageId'));
     }
 
     public function store(PageRequest $request)
@@ -107,6 +110,7 @@ class PageController extends Controller
 
         // Handle SEO
         $this->saveSeo($page, $request);
+        $this->syncHomepageSetting($page, $request);
 
         return redirect()
             ->route('admin.pages.edit', $page)
@@ -147,6 +151,7 @@ class PageController extends Controller
         $frontendEditorSections = FrontendSections::flattenBlocks($page->sections_json);
         $frontendRegions = FrontendSections::normalize($page->sections_json);
         $editorData = PageEditorData::for($page, $availableFrontendSectionTemplates);
+        $homepageId = SiteSetting::get('cms.homepage_id');
 
         return view('admin.pages.edit', compact(
             'page',
@@ -157,7 +162,8 @@ class PageController extends Controller
             'siteArticles',
             'frontendEditorSections',
             'frontendRegions',
-            'editorData'
+            'editorData',
+            'homepageId'
         ));
     }
 
@@ -197,6 +203,7 @@ class PageController extends Controller
 
         // Handle SEO
         $this->saveSeo($page, $request);
+        $this->syncHomepageSetting($page, $request);
 
         return redirect()
             ->route('admin.pages.edit', $page)
@@ -247,6 +254,10 @@ class PageController extends Controller
 
     public function destroy(Page $page)
     {
+        if ($page->isSystemPage()) {
+            return back()->with('error', 'Bu sistem sayfası silinemez. Tasarımını ve içeriğini sayfa düzenleme ekranından güncelleyebilirsiniz.');
+        }
+
         // Soft delete - children will become orphaned, warn user
         if ($page->children()->count() > 0) {
             return back()->with('error', 'Bu sayfanın alt sayfaları var. Önce alt sayfaları silin veya taşıyın.');
@@ -344,6 +355,13 @@ class PageController extends Controller
                     'is_noindex' => $request->boolean('seo_noindex'),
                 ]
             );
+        }
+    }
+
+    protected function syncHomepageSetting(Page $page, Request $request): void
+    {
+        if ($request->boolean('is_homepage')) {
+            SiteSetting::set('cms.homepage_id', (string) $page->id, 'cms');
         }
     }
 
