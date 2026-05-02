@@ -44,6 +44,7 @@ class PageRequest extends FormRequest
             'link_target' => ['nullable', Rule::in(['_self', '_blank'])],
             'layout_json' => ['nullable', 'json'],
             'sections_json' => ['nullable', 'json'],
+            'sections_json_dirty' => ['nullable', 'boolean'],
             'cover_image' => ['nullable', 'image', 'max:5120'],
 
             // SEO fields

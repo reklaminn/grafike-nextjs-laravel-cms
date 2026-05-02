@@ -101,6 +101,8 @@ class PageController extends Controller
             unset($data['sections_json']);
         }
 
+        unset($data['sections_json_dirty']);
+
         $page = Page::create($data);
 
         // If root_page_id was not provided, this page IS the root of its own translation group
@@ -199,15 +201,24 @@ class PageController extends Controller
             unset($data['layout_json']);
         }
 
-        // Parse sections_json — if empty/null (e.g. JS didn't run, redirect ate POST body),
-        // remove from data so existing DB value is NOT overwritten with null.
-        // Alpine always serialises to non-empty JSON even with empty regions,
-        // so if this arrives empty it means something went wrong upstream.
+        // Parse sections_json. If the editor reports "not dirty" but the submitted
+        // payload is empty while the DB has blocks, preserve the existing content.
+        // This protects pages from Alpine/form boundary glitches during plain saves.
         if (!empty($data['sections_json'])) {
-            $data['sections_json'] = json_decode($data['sections_json'], true);
+            $decodedSections = json_decode($data['sections_json'], true);
+            $incomingHasBlocks = count(FrontendSections::flattenBlocks($decodedSections)) > 0;
+            $existingHasBlocks = count(FrontendSections::flattenBlocks($page->sections_json)) > 0;
+
+            if (! $request->boolean('sections_json_dirty') && ! $incomingHasBlocks && $existingHasBlocks) {
+                unset($data['sections_json']);
+            } else {
+                $data['sections_json'] = $decodedSections;
+            }
         } else {
             unset($data['sections_json']);
         }
+
+        unset($data['sections_json_dirty']);
 
         $page->update($data);
 

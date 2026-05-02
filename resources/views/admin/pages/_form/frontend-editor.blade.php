@@ -360,6 +360,7 @@
     @include('admin.pages._form.editor-modals')
 
     <input type="hidden" name="sections_json" x-ref="sectionsJsonInput" :value="serializedRegions">
+    <input type="hidden" name="sections_json_dirty" x-ref="sectionsJsonDirtyInput" value="0">
 
     {{-- Ham JSON (collapsed, toggled from header button) --}}
     <div x-data="{ openFrontendJson: false }" class="mt-4">

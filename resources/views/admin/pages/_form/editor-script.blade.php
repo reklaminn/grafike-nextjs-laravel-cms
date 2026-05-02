@@ -151,10 +151,12 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
         rowSettingsTarget: null,
         rowSettingsTab: 'layout',
         rowSettingsDraft: null,
+        initialSerializedRegions: null,
 
         init() {
             this.regions = this.normalizeRegions(initialRegions);
             this.normalizeSortOrder();
+            this.initialSerializedRegions = this.serializedRegions;
 
             this.$nextTick(() => {
                 this.syncSerializedRegions();
@@ -168,6 +170,10 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
                 form.addEventListener('submit', () => {
                     this.syncSerializedRegions();
                 }, { capture: true });
+                form.addEventListener('formdata', (event) => {
+                    event.formData.set('sections_json', this.syncSerializedRegions());
+                    event.formData.set('sections_json_dirty', this.sectionsJsonIsDirty() ? '1' : '0');
+                });
 
                 this.$watch('regions', () => {
                     this.syncSerializedRegions();
@@ -189,7 +195,16 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
                 this.$refs.sectionsJsonInput.value = value;
             }
 
+            if (this.$refs?.sectionsJsonDirtyInput) {
+                this.$refs.sectionsJsonDirtyInput.value = this.sectionsJsonIsDirty() ? '1' : '0';
+            }
+
             return value;
+        },
+
+        sectionsJsonIsDirty() {
+            return this.initialSerializedRegions !== null
+                && this.serializedRegions !== this.initialSerializedRegions;
         },
 
         getTemplateById(templateId) {
