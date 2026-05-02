@@ -42,22 +42,23 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /**
-     * Return tenant name (stored in data JSON).
+     * stancl/virtualcolumn expands the JSON `data` column into normal model
+     * attributes after retrieval. Accessors must read that decoded value, not
+     * `$this->data`, because the trait clears `data` after decoding.
      */
-    public function getNameAttribute(): ?string
+    public function getNameAttribute($value): ?string
     {
-        return $this->data['name'] ?? null;
+        return $value;
     }
 
-    public function getStatusAttribute(): string
+    public function getStatusAttribute($value): string
     {
-        return $this->data['status'] ?? 'active';
+        return $value ?: 'active';
     }
 
-    public function getThemeIdAttribute(): ?int
+    public function getThemeIdAttribute($value): ?int
     {
-        $val = $this->data['theme_id'] ?? null;
-        return $val ? (int) $val : null;
+        return $value !== null && $value !== '' ? (int) $value : null;
     }
 
     /**

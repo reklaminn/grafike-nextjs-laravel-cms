@@ -205,13 +205,27 @@ class TenantController extends Controller
             'status'   => 'required|in:active,suspended',
         ]);
 
-        $tenant->update([
-            'data' => array_merge($tenant->data ?? [], [
-                'name'     => $validated['name'],
-                'theme_id' => $validated['theme_id'] ?? null,
-                'status'   => $validated['status'],
-            ]),
-        ]);
+        $tenantId = (string) $tenant->getTenantKey();
+        $currentData = DB::connection('central')
+            ->table('tenants')
+            ->where('id', $tenantId)
+            ->value('data');
+
+        $currentData = is_string($currentData)
+            ? (json_decode($currentData, true) ?: [])
+            : ((array) $currentData);
+
+        DB::connection('central')
+            ->table('tenants')
+            ->where('id', $tenantId)
+            ->update([
+                'data' => json_encode(array_merge($currentData, [
+                    'name'     => $validated['name'],
+                    'theme_id' => $validated['theme_id'] ?? null,
+                    'status'   => $validated['status'],
+                ]), JSON_THROW_ON_ERROR),
+                'updated_at' => now(),
+            ]);
 
         return back()->with('success', 'Tenant güncellendi.');
     }
