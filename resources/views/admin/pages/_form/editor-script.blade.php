@@ -202,6 +202,15 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
             return value;
         },
 
+        queueSerializedRegionsSync() {
+            if (typeof this.$nextTick === 'function') {
+                this.$nextTick(() => this.syncSerializedRegions());
+                return;
+            }
+
+            this.syncSerializedRegions();
+        },
+
         sectionsJsonIsDirty() {
             return this.initialSerializedRegions !== null
                 && this.serializedRegions !== this.initialSerializedRegions;
@@ -1183,6 +1192,8 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
                     });
                 });
             });
+
+            this.queueSerializedRegionsSync();
         },
     };
 }
