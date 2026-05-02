@@ -36,7 +36,9 @@ class InitializeTenancyForPublicApi
         $tenantId = $request->headers->get('X-Tenant-ID')
             ?: $request->headers->get('X-Tenant')
             ?: $request->query('tenant')
-            ?: $request->query('tenant_id');
+            ?: $request->query('tenant_id')
+            // Backward/typo tolerance for manual preview checks.
+            ?: $request->query('tanent');
 
         if (! is_string($tenantId) || ! preg_match('/^[a-zA-Z0-9_-]+$/', $tenantId)) {
             return null;
