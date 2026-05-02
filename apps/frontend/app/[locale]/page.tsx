@@ -9,12 +9,20 @@ type LocaleRootProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export async function generateMetadata({ params }: LocaleRootProps): Promise<Metadata> {
+function tenantFromSearchParams(searchParams?: Record<string, string | string[] | undefined>): string | null {
+  const value = searchParams?.tenant ?? searchParams?.tenant_id;
+  const tenant = Array.isArray(value) ? value[0] : value;
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
+}
+
+export async function generateMetadata({ params, searchParams }: LocaleRootProps): Promise<Metadata> {
   const { locale } = await params;
+  const tenantId = tenantFromSearchParams(await searchParams);
   const [sitePayload, settingsPayload, payload] = await Promise.all([
-    getSitePayload(locale),
-    getSettingsPayload(),
-    getPagePayload("home", locale),
+    getSitePayload(locale, { tenantId }),
+    getSettingsPayload({ tenantId }),
+    getPagePayload("home", locale, { tenantId }),
   ]);
 
   if (!payload?.seo) {
@@ -39,13 +47,14 @@ export async function generateMetadata({ params }: LocaleRootProps): Promise<Met
 }
 
 /** /{locale} renders the CMS-selected homepage without forcing /{locale}/home. */
-export default async function LocaleRootPage({ params }: LocaleRootProps) {
+export default async function LocaleRootPage({ params, searchParams }: LocaleRootProps) {
   const { locale } = await params;
+  const tenantId = tenantFromSearchParams(await searchParams);
   const [sitePayload, settingsPayload, menusPayload, payload] = await Promise.all([
-    getSitePayload(locale),
-    getSettingsPayload(),
-    getMenusPayload(),
-    getPagePayload("home", locale),
+    getSitePayload(locale, { tenantId }),
+    getSettingsPayload({ tenantId }),
+    getMenusPayload({ tenantId }),
+    getPagePayload("home", locale, { tenantId }),
   ]);
 
   if (!payload?.page) {

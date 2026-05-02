@@ -15,17 +15,26 @@ import { buildMetadata, canonicalUrl } from "@/lib/seo";
 
 type CatchAllPageProps = {
   params: Promise<{ locale: string; slug?: string[] }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function tenantFromSearchParams(searchParams?: Record<string, string | string[] | undefined>): string | null {
+  const value = searchParams?.tenant ?? searchParams?.tenant_id;
+  const tenant = Array.isArray(value) ? value[0] : value;
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
+}
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
-export async function generateMetadata({ params }: CatchAllPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: CatchAllPageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const locale   = resolvedParams.locale;
   const segments = resolvedParams.slug ?? [];
   const slug     = segments.join("/") || "home";
+  const tenantId = tenantFromSearchParams(await searchParams);
 
-  const sitePayload      = await getSitePayload(locale);
+  const sitePayload      = await getSitePayload(locale, { tenantId });
   const availableLocales = sitePayload.site.available_locales ?? [];
 
   // Hreflang: prefer DB-stored tags; fall back to URL-convention from available_locales
@@ -33,14 +42,14 @@ export async function generateMetadata({ params }: CatchAllPageProps): Promise<M
     availableLocales.map((l) => [l.locale, canonicalUrl(`/${l.code}/${slug}`)]),
   );
 
-  const [siteSettings] = await Promise.all([getSettingsPayload()]);
+  const [siteSettings] = await Promise.all([getSettingsPayload({ tenantId })]);
   const googleVerification = siteSettings.settings.services?.google_site_verification;
   const bingVerification   = siteSettings.settings.services?.bing_site_verification;
   const siteName           = siteSettings.settings.site_title || sitePayload.site.name;
   const ogLocale           = sitePayload.site.locale ?? `${locale}_${locale.toUpperCase()}`;
 
   // ── Try as Page ──────────────────────────────────────────────────────────
-  const payload = await getPagePayload(slug, locale);
+  const payload = await getPagePayload(slug, locale, { tenantId });
   if (payload?.seo) {
     const hreflang =
       payload.seo.hreflang_tags && Object.keys(payload.seo.hreflang_tags).length > 0
@@ -65,7 +74,7 @@ export async function generateMetadata({ params }: CatchAllPageProps): Promise<M
   // ── Try as Article ───────────────────────────────────────────────────────
   const lastSegment = segments[segments.length - 1];
   if (lastSegment) {
-    const detail = await getArticle(lastSegment, locale);
+    const detail = await getArticle(lastSegment, locale, { tenantId });
     if (detail) {
       const hreflang =
         detail.seo?.hreflang_tags && Object.keys(detail.seo.hreflang_tags).length > 0
@@ -97,20 +106,21 @@ export async function generateMetadata({ params }: CatchAllPageProps): Promise<M
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function CatchAllPage({ params }: CatchAllPageProps) {
+export default async function CatchAllPage({ params, searchParams }: CatchAllPageProps) {
   const resolvedParams = await params;
   const locale   = resolvedParams.locale;
   const segments = resolvedParams.slug ?? [];
   const slug     = segments.join("/") || "home";
+  const tenantId = tenantFromSearchParams(await searchParams);
 
   const [sitePayload, settingsPayload, menusPayload] = await Promise.all([
-    getSitePayload(locale),
-    getSettingsPayload(),
-    getMenusPayload(),
+    getSitePayload(locale, { tenantId }),
+    getSettingsPayload({ tenantId }),
+    getMenusPayload({ tenantId }),
   ]);
 
   // ── 1. Try as a Page ──────────────────────────────────────────────────
-  const payload = await getPagePayload(slug, locale);
+  const payload = await getPagePayload(slug, locale, { tenantId });
 
   if (payload?.page) {
     return (
@@ -129,7 +139,7 @@ export default async function CatchAllPage({ params }: CatchAllPageProps) {
   const articleSlug = segments[segments.length - 1];
   if (!articleSlug) notFound();
 
-  const detail = await getArticle(articleSlug, locale);
+  const detail = await getArticle(articleSlug, locale, { tenantId });
   if (!detail) notFound();
 
   const { article, author, page: articlePage } = detail;

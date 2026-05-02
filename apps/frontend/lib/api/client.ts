@@ -30,6 +30,9 @@ const INTERNAL_API_HOSTS = new Set([
 ]);
 
 type ResourceEnvelope<T> = { data: T };
+type PreviewOptions = {
+  tenantId?: string | null;
+};
 
 function unwrapResource<T>(payload: T | ResourceEnvelope<T>): T {
   if (payload && typeof payload === "object" && "data" in payload) {
@@ -57,6 +60,12 @@ async function getTenantPreviewHeader(): Promise<string | null> {
   return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
 }
 
+function normalizeTenantPreviewId(tenantId?: string | null): string | null {
+  const tenant = tenantId?.trim();
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
+}
+
 /**
  * Core fetch helper.
  *
@@ -67,12 +76,13 @@ async function fetchJson<T>(
   fallback: T,
   wrapped = true,
   tags?: string[],
+  options: PreviewOptions = {},
 ): Promise<T> {
   if (!API_BASE_URL) return fallback;
 
   try {
     const siteHost = await getSiteHostHeader();
-    const tenantId = await getTenantPreviewHeader();
+    const tenantId = normalizeTenantPreviewId(options.tenantId) ?? await getTenantPreviewHeader();
     const requestHeaders: Record<string, string> = {};
 
     if (siteHost) {
@@ -109,43 +119,47 @@ async function fetchJson<T>(
 
 // ─── Site & Settings ──────────────────────────────────────────────────────────
 
-export async function getSitePayload(lang?: string): Promise<SitePayload> {
+export async function getSitePayload(lang?: string, options: PreviewOptions = {}): Promise<SitePayload> {
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return fetchJson<SitePayload>(`/api/v1/site${qs}`, mockSitePayload, true, [
     "site",
     "settings",
-  ]);
+  ], options);
 }
 
-export async function getSettingsPayload(): Promise<SettingsPayload> {
+export async function getSettingsPayload(options: PreviewOptions = {}): Promise<SettingsPayload> {
   return fetchJson<SettingsPayload>("/api/v1/settings", mockSettingsPayload, false, [
     "settings",
-  ]);
+  ], options);
 }
 
 // ─── Menus ────────────────────────────────────────────────────────────────────
 
-export async function getMenuPayload(location: string): Promise<MenuPayload> {
+export async function getMenuPayload(location: string, options: PreviewOptions = {}): Promise<MenuPayload> {
   return fetchJson<MenuPayload>(`/api/v1/menus/${location}`, mockHeaderMenuPayload, true, [
     "menus",
     `menu-${location}`,
-  ]);
+  ], options);
 }
 
-export async function getMenusPayload(): Promise<MenusPayload> {
-  return fetchJson<MenusPayload>("/api/v1/menus", [mockHeaderMenuPayload], true, ["menus"]);
+export async function getMenusPayload(options: PreviewOptions = {}): Promise<MenusPayload> {
+  return fetchJson<MenusPayload>("/api/v1/menus", [mockHeaderMenuPayload], true, ["menus"], options);
 }
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 
-export async function getPagePayload(slug: string, lang?: string): Promise<PagePayload | null> {
-  const tenantId = await getTenantPreviewHeader();
+export async function getPagePayload(
+  slug: string,
+  lang?: string,
+  options: PreviewOptions = {},
+): Promise<PagePayload | null> {
+  const tenantId = normalizeTenantPreviewId(options.tenantId) ?? await getTenantPreviewHeader();
   const fallback = tenantId ? null : mockPagePayload(slug);
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return fetchJson<PagePayload | null>(`/api/v1/pages/${slug}${qs}`, fallback, true, [
     "pages",
     `page-${slug}`,
-  ]);
+  ], { tenantId });
 }
 
 // ─── Articles ─────────────────────────────────────────────────────────────────
@@ -157,6 +171,7 @@ export type GetArticlesOptions = {
   featuredOnly?: boolean;
   limit?: number;
   page?: number;
+  tenantId?: string | null;
 };
 
 export async function getArticles(options: GetArticlesOptions = {}): Promise<ArticleListPayload> {
@@ -177,24 +192,30 @@ export async function getArticles(options: GetArticlesOptions = {}): Promise<Art
     false,
     // Tag includes page_id so article-list blocks on a specific page revalidate correctly
     ["articles", ...(options.pageId ? [`articles-page-${options.pageId}`] : [])],
+    { tenantId: options.tenantId },
   );
 }
 
-export async function getArticle(slug: string, lang?: string): Promise<ArticleDetailPayload | null> {
+export async function getArticle(
+  slug: string,
+  lang?: string,
+  options: PreviewOptions = {},
+): Promise<ArticleDetailPayload | null> {
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return fetchJson<ArticleDetailPayload | null>(
     `/api/v1/articles/${slug}${qs}`,
     null,
     true,
     ["articles", `article-${slug}`],
+    options,
   );
 }
 
 // ─── Forms ────────────────────────────────────────────────────────────────────
 
-export async function getForm(formId: number | string): Promise<FormPayload | null> {
+export async function getForm(formId: number | string, options: PreviewOptions = {}): Promise<FormPayload | null> {
   return fetchJson<FormPayload | null>(`/api/v1/forms/${formId}`, null, true, [
     "forms",
     `form-${formId}`,
-  ]);
+  ], options);
 }
