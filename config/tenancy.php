@@ -122,9 +122,11 @@ return [
          * See https://tenancyforlaravel.com/docs/v3/tenancy-bootstrappers/#filesystem-tenancy-boostrapper
          */
         'root_override' => [
-            // Disks whose roots should be overridden after storage_path() is suffixed.
-            'local' => '%storage_path%/app/',
-            'public' => '%storage_path%/app/public/',
+            // Keep tenant files under storage/app so the Docker volume persists
+            // uploads across rebuilds. Do not rely on suffixing storage_path()
+            // because the deployment mounts storage/app, not storage/tenant*.
+            'local' => '%storage_path%/app/tenant_%tenant%/private/',
+            'public' => '%storage_path%/app/public/tenant_%tenant%/',
         ],
 
         /**
@@ -136,7 +138,7 @@ return [
          * edge cases, it can cause issues (like using Passport with Vapor - see #196), so
          * you may want to disable this if you are experiencing these edge case issues.
          */
-        'suffix_storage_path' => true,
+        'suffix_storage_path' => false,
 
         /**
          * By default, asset() calls are made multi-tenant too. You can use global_asset() and mix()

@@ -36,12 +36,39 @@ class TenantAssetController extends Controller
             return Storage::disk('public')->path($path);
         }
 
+        foreach ($this->fallbackPaths($path) as $fallbackPath) {
+            if (is_file($fallbackPath)) {
+                return $fallbackPath;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function fallbackPaths(string $path): array
+    {
+        $paths = [];
+
+        if (tenancy()->initialized && tenant()) {
+            $tenantKey = (string) tenant()->getTenantKey();
+
+            $paths[] = base_path("storage/app/public/tenant_{$tenantKey}/{$path}");
+            $paths[] = base_path("storage/app/public/tenant{$tenantKey}/{$path}");
+
+            // Legacy filesystem bootstrap paths from earlier config.
+            $paths[] = base_path("storage/tenant_{$tenantKey}/app/public/{$path}");
+            $paths[] = base_path("storage/tenant{$tenantKey}/app/public/{$path}");
+        }
+
         // Some theme assets are shared central theme records. If a file was
         // uploaded before/without tenant filesystem bootstrapping, keep preview
         // URLs working by falling back to central public storage.
-        $centralPath = base_path('storage/app/public/'.$path);
+        $paths[] = base_path('storage/app/public/'.$path);
 
-        return is_file($centralPath) ? $centralPath : null;
+        return array_values(array_unique($paths));
     }
 
     private function normalizePath(string $path): ?string
