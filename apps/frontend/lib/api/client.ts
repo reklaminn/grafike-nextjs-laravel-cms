@@ -139,7 +139,8 @@ export async function getMenusPayload(): Promise<MenusPayload> {
 // ─── Pages ────────────────────────────────────────────────────────────────────
 
 export async function getPagePayload(slug: string, lang?: string): Promise<PagePayload | null> {
-  const fallback = mockPagePayload(slug);
+  const tenantId = await getTenantPreviewHeader();
+  const fallback = tenantId ? null : mockPagePayload(slug);
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return fetchJson<PagePayload | null>(`/api/v1/pages/${slug}${qs}`, fallback, true, [
     "pages",

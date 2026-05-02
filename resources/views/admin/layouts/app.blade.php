@@ -24,13 +24,23 @@
 @php
     $frontendBaseUrl = rtrim(config('cms.frontend_url'), '/') ?: url('/');
     $activeTenantId = session('active_tenant') ?: Auth::guard('admin')->user()?->defaultTenantId();
+    $isAdminAuthenticated = Auth::guard('admin')->check();
     $previewTenantName = null;
+    $liveSiteUrl = null;
 
-    if ($activeTenantId) {
+    if ($isAdminAuthenticated && $activeTenantId) {
         try {
-            $previewTenantName = tenancy()->central(
-                fn () => \App\Models\Tenant::find($activeTenantId)?->name ?? $activeTenantId
+            $tenantForPreview = tenancy()->central(
+                fn () => \App\Models\Tenant::with('domains')->find($activeTenantId)
             );
+            $previewTenantName = $tenantForPreview?->name ?? $activeTenantId;
+            $tenantDomain = $tenantForPreview?->domains?->first()?->domain;
+
+            if ($tenantDomain) {
+                $liveSiteUrl = str_starts_with($tenantDomain, 'http://') || str_starts_with($tenantDomain, 'https://')
+                    ? $tenantDomain
+                    : 'https://' . $tenantDomain;
+            }
         } catch (\Throwable) {
             $previewTenantName = $activeTenantId;
         }
@@ -107,13 +117,24 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <!-- Tenant preview -->
-                    <a href="{{ $visitSiteUrl }}" target="{{ $activeTenantId ? '_blank' : '_self' }}"
-                       title="{{ $activeTenantId ? 'Preview: ' . $previewTenantName : 'Önizleme için önce site seç' }}"
-                       class="text-sm {{ $activeTenantId ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg font-medium' : 'text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-lg font-medium' }} flex items-center gap-1">
-                        <i class="fas fa-external-link-alt"></i>
-                        <span class="hidden sm:inline">{{ $activeTenantId ? 'Preview' : 'Site seç' }}</span>
-                    </a>
+                    @if($isAdminAuthenticated)
+                        <!-- Tenant preview -->
+                        <a href="{{ $visitSiteUrl }}" target="{{ $activeTenantId ? '_blank' : '_self' }}"
+                           title="{{ $activeTenantId ? 'Preview: ' . $previewTenantName : 'Önizleme için önce site seç' }}"
+                           class="text-sm {{ $activeTenantId ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg font-medium' : 'text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-lg font-medium' }} flex items-center gap-1">
+                            <i class="fas fa-eye"></i>
+                            <span class="hidden sm:inline">{{ $activeTenantId ? 'Preview' : 'Site seç' }}</span>
+                        </a>
+
+                        @if($liveSiteUrl)
+                            <a href="{{ $liveSiteUrl }}" target="_blank"
+                               title="Canlı site: {{ $liveSiteUrl }}"
+                               class="text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg font-medium flex items-center gap-1">
+                                <i class="fas fa-external-link-alt"></i>
+                                <span class="hidden sm:inline">Canlı Site</span>
+                            </a>
+                        @endif
+                    @endif
 
                     <!-- User dropdown -->
                     <div x-data="{ open: false }" class="relative">
