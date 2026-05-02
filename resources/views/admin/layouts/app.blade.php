@@ -22,23 +22,24 @@
 </head>
 <body class="h-full" x-data="{ sidebarOpen: true, mobileMenuOpen: false }">
 @php
-    $visitSiteUrl = rtrim(config('cms.frontend_url'), '/') ?: url('/');
-    $activeTenantId = session('active_tenant');
+    $frontendBaseUrl = rtrim(config('cms.frontend_url'), '/') ?: url('/');
+    $activeTenantId = session('active_tenant') ?: Auth::guard('admin')->user()?->defaultTenantId();
+    $previewTenantName = null;
 
     if ($activeTenantId) {
         try {
-            $activeTenantDomain = tenancy()->central(
-                fn () => \App\Models\Tenant::with('domains')->find($activeTenantId)?->domains->first()?->domain
+            $previewTenantName = tenancy()->central(
+                fn () => \App\Models\Tenant::find($activeTenantId)?->name ?? $activeTenantId
             );
-
-            if ($activeTenantDomain) {
-                $visitSiteUrl = str_starts_with($activeTenantDomain, 'http')
-                    ? $activeTenantDomain
-                    : 'https://' . $activeTenantDomain;
-            }
         } catch (\Throwable) {
-            $visitSiteUrl = rtrim(config('cms.frontend_url'), '/') ?: url('/');
+            $previewTenantName = $activeTenantId;
         }
+
+        $visitSiteUrl = $frontendBaseUrl . (str_contains($frontendBaseUrl, '?') ? '&' : '?') . http_build_query([
+            'tenant' => $activeTenantId,
+        ]);
+    } else {
+        $visitSiteUrl = route('admin.tenants.index');
     }
 @endphp
 
@@ -106,11 +107,12 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <!-- Visit site -->
-                    <a href="{{ $visitSiteUrl }}" target="_blank"
-                       class="text-sm text-gray-500 hover:text-indigo-600 flex items-center gap-1">
+                    <!-- Tenant preview -->
+                    <a href="{{ $visitSiteUrl }}" target="{{ $activeTenantId ? '_blank' : '_self' }}"
+                       title="{{ $activeTenantId ? 'Preview: ' . $previewTenantName : 'Önizleme için önce site seç' }}"
+                       class="text-sm {{ $activeTenantId ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg font-medium' : 'text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-lg font-medium' }} flex items-center gap-1">
                         <i class="fas fa-external-link-alt"></i>
-                        <span class="hidden sm:inline">Siteyi Gör</span>
+                        <span class="hidden sm:inline">{{ $activeTenantId ? 'Preview' : 'Site seç' }}</span>
                     </a>
 
                     <!-- User dropdown -->

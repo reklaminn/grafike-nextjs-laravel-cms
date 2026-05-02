@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Tenant;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,9 +15,10 @@ class UseSiteHostHeader
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $siteHost = $this->resolveSiteHost($request);
+        $tenantPreviewHost = $this->resolveTenantPreviewHost($request);
+        $siteHost = $tenantPreviewHost ?: $this->resolveSiteHost($request);
 
-        if ($siteHost && $this->isInternalDockerHost($request->getHost())) {
+        if ($siteHost && ($tenantPreviewHost || $this->isInternalDockerHost($request->getHost()))) {
             $siteHost = $this->normalizeHost($siteHost);
 
             if ($siteHost !== '') {
@@ -36,6 +38,23 @@ class UseSiteHostHeader
             ?: $this->hostFromUrl(config('cms.frontend_url'))
             ?: $this->hostFromUrl(env('CMS_FRONTEND_URL'))
             ?: $this->hostFromUrl(config('app.url'));
+    }
+
+    private function resolveTenantPreviewHost(Request $request): ?string
+    {
+        $tenantId = $request->headers->get('X-Tenant-ID');
+
+        if (! is_string($tenantId) || ! preg_match('/^[a-zA-Z0-9_-]+$/', $tenantId)) {
+            return null;
+        }
+
+        try {
+            return tenancy()->central(function () use ($tenantId) {
+                return Tenant::with('domains')->find($tenantId)?->domains->first()?->domain;
+            });
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function normalizeHost(?string $host): string

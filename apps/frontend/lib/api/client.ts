@@ -50,6 +50,13 @@ async function getSiteHostHeader(): Promise<string | null> {
   return FALLBACK_SITE_HOST;
 }
 
+async function getTenantPreviewHeader(): Promise<string | null> {
+  const requestHeaders = await headers();
+  const tenant = requestHeaders.get("x-tenant-id")?.trim();
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
+}
+
 /**
  * Core fetch helper.
  *
@@ -65,18 +72,30 @@ async function fetchJson<T>(
 
   try {
     const siteHost = await getSiteHostHeader();
+    const tenantId = await getTenantPreviewHeader();
+    const requestHeaders: Record<string, string> = {};
+
+    if (siteHost) {
+      requestHeaders["X-Site-Host"] = siteHost;
+      requestHeaders["X-Forwarded-Host"] = siteHost;
+    }
+
+    if (tenantId) {
+      requestHeaders["X-Tenant-ID"] = tenantId;
+    }
+
+    const cacheOptions = tenantId
+      ? { cache: "no-store" as const }
+      : {
+          next: {
+            revalidate: 60,
+            ...(tags && tags.length > 0 ? { tags } : {}),
+          },
+        };
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: siteHost
-        ? {
-            "X-Site-Host": siteHost,
-            "X-Forwarded-Host": siteHost,
-          }
-        : undefined,
-      next: {
-        revalidate: 60,
-        ...(tags && tags.length > 0 ? { tags } : {}),
-      },
+      headers: Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined,
+      ...cacheOptions,
     });
 
     if (!response.ok) return fallback;

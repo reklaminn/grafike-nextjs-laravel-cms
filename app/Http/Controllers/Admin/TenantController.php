@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\AdminTenantAccess;
 use App\Models\Tenant;
 use App\Models\Theme;
+use App\Services\Tenants\TenantStarterContentSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -319,6 +320,7 @@ class TenantController extends Controller
             tenancy()->initialize($tenant);
             try {
                 $this->ensureTenantStorageDirectories();
+                app(TenantStarterContentSeeder::class)->seed($tenant);
             } finally {
                 tenancy()->end();
             }

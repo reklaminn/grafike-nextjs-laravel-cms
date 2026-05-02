@@ -1,6 +1,13 @@
 @if(isset($page) && $page->slug)
 @php
     $previewBase = rtrim(config('cms.frontend_url'), '/') . '/' . ltrim($page->slug, '/');
+    $activeTenantId = session('active_tenant');
+
+    if ($activeTenantId) {
+        $previewBase .= (str_contains($previewBase, '?') ? '&' : '?') . http_build_query([
+            'tenant' => $activeTenantId,
+        ]);
+    }
 @endphp
 
 <div x-data="{
@@ -9,7 +16,7 @@
     base: '{{ $previewBase }}',
     ts: {{ now()->timestamp }},
     get iframeSrc() {
-        return this.base + '?preview=1&t=' + this.ts;
+        return this.base + (this.base.includes('?') ? '&' : '?') + 'preview=1&t=' + this.ts;
     },
     reload() { this.ts = Date.now(); },
     widths: { desktop: '100%', tablet: '768px', mobile: '375px' }

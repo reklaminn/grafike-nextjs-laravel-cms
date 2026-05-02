@@ -29,18 +29,35 @@ function detectLocaleInPath(pathname: string): string | null {
   );
 }
 
+function tenantPreviewId(request: NextRequest): string | null {
+  const tenant = request.nextUrl.searchParams.get("tenant")
+    ?? request.nextUrl.searchParams.get("tenant_id");
+
+  if (!tenant || !/^[a-zA-Z0-9_-]+$/.test(tenant)) {
+    return null;
+  }
+
+  return tenant;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const tenant = tenantPreviewId(request);
+
+  const requestHeaders = new Headers(request.headers);
+  if (tenant) {
+    requestHeaders.set("x-tenant-id", tenant);
+  }
 
   if (BACKEND_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   const detectedLocale = detectLocaleInPath(pathname);
 
   if (detectedLocale) {
     // Path already has a valid locale prefix — let it through, but stamp the header.
-    const response = NextResponse.next();
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set("x-locale", detectedLocale);
     return response;
   }
