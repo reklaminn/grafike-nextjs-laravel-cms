@@ -134,6 +134,7 @@ class TenancyServiceProvider extends ServiceProvider
             // SSR calls from Next.js use Docker service names such as app1.
             // Rewrite the host before Stancl attempts tenant resolution.
             \App\Http\Middleware\UseSiteHostHeader::class,
+            \App\Http\Middleware\InitializeTenancyForPublicApi::class,
 
             // Even higher priority than the initialization middleware
             Middleware\PreventAccessFromCentralDomains::class,

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\InitializeTenancyForPublicApi;
 use App\Http\Middleware\UseSiteHostHeader;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -31,7 +32,6 @@ Route::prefix('api')
     ->middleware([
         'api',
         UseSiteHostHeader::class,
-        InitializeTenancyByDomain::class,
-        PreventAccessFromCentralDomains::class,
+        InitializeTenancyForPublicApi::class,
     ])
     ->group(base_path('routes/tenant_api.php'));
