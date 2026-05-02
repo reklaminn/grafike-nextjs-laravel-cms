@@ -87,7 +87,7 @@ services:
       - "traefik.http.routers.grafike-api.priority=200"
 
       # ── Static assets + health → Laravel ──────────────────────────────────
-      - "traefik.http.routers.grafike-assets.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
+      - "traefik.http.routers.grafike-assets.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
       - "traefik.http.routers.grafike-assets.entrypoints=websecure"
       - "traefik.http.routers.grafike-assets.tls=true"
       - "traefik.http.routers.grafike-assets.tls.certresolver=mytlschallenge"

@@ -133,7 +133,7 @@ class ThemeController extends Controller
         $path = $file->storeAs("themes/{$safeSlug}/{$type}", $filename, 'public');
 
         return tenancy()->initialized
-            ? "/tenancy/assets/{$path}"
+            ? "/tenant-assets/{$path}"
             : "/storage/{$path}";
     }
 }

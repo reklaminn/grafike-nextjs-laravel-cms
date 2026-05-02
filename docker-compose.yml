@@ -100,7 +100,7 @@ x-app-labels: &app-labels
   traefik.http.routers.grafike-api.priority: "200"
 
   # ── Backend router: static assets + health ─────────────────────────────────
-  traefik.http.routers.grafike-assets.rule: "Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
+  traefik.http.routers.grafike-assets.rule: "Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
   traefik.http.routers.grafike-assets.entrypoints: websecure
   traefik.http.routers.grafike-assets.tls: "true"
   traefik.http.routers.grafike-assets.tls.certresolver: mytlschallenge
@@ -261,7 +261,7 @@ services:
       traefik.docker.network: traefik_proxy
       # Frontend catches everything on APP_DOMAIN that isn't a backend path.
       # Priority 10 (lower than backend routers at 200) so backend routes win.
-      traefik.http.routers.grafike-frontend.rule: "Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
+      traefik.http.routers.grafike-frontend.rule: "Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
       traefik.http.routers.grafike-frontend.entrypoints: websecure
       traefik.http.routers.grafike-frontend.tls: "true"
       traefik.http.routers.grafike-frontend.tls.certresolver: mytlschallenge

@@ -10,6 +10,7 @@
  *  - Load theme JS assets after interactive
  */
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { SiteShell } from "@/components/layout/site-shell";
 import { getSitePayload, getSettingsPayload } from "@/lib/api/client";
@@ -20,6 +21,46 @@ type LocaleLayoutProps = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 };
+
+function normalizeTenantPreviewId(tenantId: string | null): string | null {
+  const tenant = tenantId?.trim();
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
+}
+
+function addTenantPreviewToAssetUrl(src: string, tenantId: string | null): string {
+  if (!tenantId) return src;
+
+  try {
+    const url = src.startsWith("http://") || src.startsWith("https://")
+      ? new URL(src)
+      : new URL(src, "https://asset.local");
+
+    const isLegacyTenantAsset = url.pathname === "/tenancy/assets"
+      || url.pathname.startsWith("/tenancy/assets/");
+    const isTenantAsset = isLegacyTenantAsset
+      || url.pathname === "/tenant-assets"
+      || url.pathname.startsWith("/tenant-assets/");
+
+    if (!isTenantAsset) {
+      return src;
+    }
+
+    if (isLegacyTenantAsset) {
+      url.pathname = url.pathname.replace(/^\/tenancy\/assets/, "/tenant-assets");
+    }
+
+    if (!url.searchParams.has("tenant")) {
+      url.searchParams.set("tenant", tenantId);
+    }
+
+    return src.startsWith("http://") || src.startsWith("https://")
+      ? url.toString()
+      : `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return src;
+  }
+}
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -91,8 +132,12 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const site            = sitePayload.site;
   const settings        = settingsPayload.settings;
   const tokenStyle      = buildTokenStyle(site.tokens);
-  const themeCssAssets  = site.theme.assets?.css ?? [];
-  const themeJsAssets   = site.theme.assets?.js  ?? [];
+  const requestHeaders  = await headers();
+  const previewTenantId = normalizeTenantPreviewId(requestHeaders.get("x-tenant-id"));
+  const themeCssAssets  = (site.theme.assets?.css ?? [])
+    .map((href) => addTenantPreviewToAssetUrl(href, previewTenantId));
+  const themeJsAssets   = (site.theme.assets?.js  ?? [])
+    .map((src) => addTenantPreviewToAssetUrl(src, previewTenantId));
 
   const tokenCss = Object.entries(tokenStyle)
     .map(([prop, val]) => `${prop}: ${val}`)
