@@ -62,7 +62,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('articles/{article}/create-translation', [ArticleController::class, 'createTranslation'])->name('articles.create-translation');
 
         // Menus CRUD
-        Route::resource('menus', MenuController::class);
+        Route::resource('menus', MenuController::class)->except('show');
         Route::post('menus/{menu}/items', [MenuController::class, 'addItem'])->name('menus.add-item');
         Route::put('menus/{menu}/items/reorder', [MenuController::class, 'reorderItems'])->name('menus.reorder-items');
         Route::delete('menus/{menu}/items/{item}', [MenuController::class, 'deleteItem'])->name('menus.delete-item');

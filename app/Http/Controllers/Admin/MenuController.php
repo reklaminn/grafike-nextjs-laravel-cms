@@ -39,7 +39,7 @@ class MenuController extends Controller
 
         $menu = Menu::create([
             'name' => $request->name,
-            'slug' => Str::slug($request->name),
+            'slug' => $this->makeUniqueSlug($request->name),
             'location' => $request->location,
             'language_id' => $request->language_id,
             'is_active' => $request->boolean('is_active', true),
@@ -159,5 +159,19 @@ class MenuController extends Controller
                 $this->updateItemOrder($item['children'], $item['id']);
             }
         }
+    }
+
+    protected function makeUniqueSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name) ?: 'menu';
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (Menu::where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 }

@@ -6,7 +6,7 @@
 @section('content')
     <div class="flex items-center justify-between mb-6">
         <p class="text-sm text-gray-500">Navigasyon menülerini yönetin.</p>
-        <a href="{{ route('admin.menus.create') }}"
+        <a href="{{ route('admin.menus.create', [], false) }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
             <i class="fas fa-plus"></i> Yeni Menü
         </a>
@@ -34,11 +34,11 @@
                 </div>
 
                 <div class="mt-4 flex items-center gap-2">
-                    <a href="{{ route('admin.menus.edit', $menu) }}"
+                    <a href="{{ route('admin.menus.edit', $menu, false) }}"
                        class="flex-1 text-center px-3 py-2 bg-indigo-50 text-indigo-700 text-sm rounded-lg hover:bg-indigo-100 transition-colors">
                         <i class="fas fa-edit mr-1"></i> Düzenle
                     </a>
-                    <form method="POST" action="{{ route('admin.menus.destroy', $menu) }}"
+                    <form method="POST" action="{{ route('admin.menus.destroy', $menu, false) }}"
                           onsubmit="return confirm('Bu menüyü silmek istediğinize emin misiniz?')">
                         @csrf @method('DELETE')
                         <button type="submit" class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
