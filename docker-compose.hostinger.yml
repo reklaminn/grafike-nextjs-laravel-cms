@@ -57,14 +57,16 @@ services:
       - "traefik.docker.network=traefik_proxy"
 
       # ── HTTP → HTTPS global redirect ──────────────────────────────────────
-      # Catches ALL http:// requests (any host) and permanently redirects to https://.
-      # Entrypoint name 'web' is Traefik's standard port-80 entrypoint.
+      # Catches ALL http:// requests (any host) and redirects to https://.
+      # permanent=false → 307 Temporary Redirect (method-preserving).
+      # DO NOT use permanent=true (301): browsers convert POST → GET on 301,
+      # silently discarding form bodies (sections_json, CSRF tokens, etc.).
       - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
       - "traefik.http.routers.http-catchall.entrypoints=web"
       - "traefik.http.routers.http-catchall.middlewares=https-redirect"
       - "traefik.http.routers.http-catchall.priority=1"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=false"
 
       # ── /admin → Laravel ──────────────────────────────────────────────────
       - "traefik.http.routers.grafike-admin.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/admin`)"

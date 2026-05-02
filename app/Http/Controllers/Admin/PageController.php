@@ -86,13 +86,19 @@ class PageController extends Controller
         $data['show_facebook_comments'] = $request->boolean('show_facebook_comments');
         $data['show_breadcrumb'] = $request->boolean('show_breadcrumb');
 
-        // Parse layout_json
+        // Parse layout_json — if empty, remove from data so existing value is preserved
         if (!empty($data['layout_json'])) {
             $data['layout_json'] = json_decode($data['layout_json'], true);
+        } else {
+            unset($data['layout_json']);
         }
 
+        // Parse sections_json — if empty/null (e.g. JS didn't run, redirect ate POST body),
+        // remove from data so existing DB value is NOT overwritten with null.
         if (!empty($data['sections_json'])) {
             $data['sections_json'] = json_decode($data['sections_json'], true);
+        } else {
+            unset($data['sections_json']);
         }
 
         $page = Page::create($data);
@@ -186,13 +192,21 @@ class PageController extends Controller
         $data['show_facebook_comments'] = $request->boolean('show_facebook_comments');
         $data['show_breadcrumb'] = $request->boolean('show_breadcrumb');
 
-        // Parse layout_json
+        // Parse layout_json — if empty, remove from data so existing value is preserved
         if (!empty($data['layout_json'])) {
             $data['layout_json'] = json_decode($data['layout_json'], true);
+        } else {
+            unset($data['layout_json']);
         }
 
+        // Parse sections_json — if empty/null (e.g. JS didn't run, redirect ate POST body),
+        // remove from data so existing DB value is NOT overwritten with null.
+        // Alpine always serialises to non-empty JSON even with empty regions,
+        // so if this arrives empty it means something went wrong upstream.
         if (!empty($data['sections_json'])) {
             $data['sections_json'] = json_decode($data['sections_json'], true);
+        } else {
+            unset($data['sections_json']);
         }
 
         $page->update($data);

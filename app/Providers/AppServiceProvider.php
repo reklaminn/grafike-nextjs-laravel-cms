@@ -30,18 +30,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force both the scheme AND the root URL so all generated URLs
-        // (form actions, route(), asset(), redirect()) are always https://.
+        // Force HTTPS URLs so all generated URLs (form actions, route(), asset(),
+        // redirect()) always use https://.
         //
-        // forceScheme alone can still be overridden if the URL generator's root
-        // was already seeded with http:// from the request before our boot ran.
-        // forceRootUrl replaces the root completely — nothing can override it.
-        //
-        // We key off APP_URL so local dev (http://localhost) is unaffected.
+        // Two layers of defence:
+        //   1. If APP_URL already starts with https://, force it as the root URL —
+        //      works for both artisan commands and HTTP requests.
+        //   2. In non-local / non-testing environments ALWAYS force the scheme to
+        //      https, even when APP_URL=http:// (stale config cache after deploy).
+        //      The ForceHttps middleware will call forceRootUrl with the correct host
+        //      per-request.
         $appUrl = config('app.url', env('APP_URL', ''));
         if (str_starts_with($appUrl, 'https://')) {
             URL::forceScheme('https');
             URL::forceRootUrl($appUrl);
+        } elseif (! app()->environment(['local', 'testing'])) {
+            // Stale cache or mis-set APP_URL — still force https scheme.
+            URL::forceScheme('https');
         }
 
         // Register model observers for cache invalidation

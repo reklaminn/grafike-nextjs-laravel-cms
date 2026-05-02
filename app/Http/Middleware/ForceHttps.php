@@ -22,14 +22,16 @@ class ForceHttps
             URL::forceRootUrl('https://'.$request->getHost());
 
             if (! $request->secure()) {
-                return redirect()->secure($request->getRequestUri(), 301);
+                // Use 308 (Permanent Redirect) instead of 301 so that POST/PUT/PATCH
+                // requests preserve their HTTP method through the redirect.
+                // 301 silently converts POST → GET, discarding the request body
+                // (sections_json, form tokens, file uploads, etc.).
+                return redirect()->secure($request->getRequestUri(), 308);
             }
         }
 
         $response = $next($request);
 
-        // FIX: $response->headers is a PROPERTY, not a method. Use direct
-        // property access wrapped in a try/catch to handle any response type.
         try {
             $response->headers->set('X-ForceHttps-Ran', $skip ? 'skipped' : 'yes');
             $response->headers->set('X-ForceHttps-Env', app()->environment());
