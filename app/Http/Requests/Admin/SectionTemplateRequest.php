@@ -48,7 +48,7 @@ class SectionTemplateRequest extends FormRequest
                 'string',
                 'max:100',
                 'regex:/^[a-z0-9][a-z0-9_-]*$/',
-                Rule::unique('section_templates')
+                Rule::unique('central.section_templates')
                     ->where(fn ($query) => $query->where('theme_id', $this->input('theme_id'))
                         ->where('type', $this->input('type')))
                     ->ignore($templateId),
@@ -79,6 +79,14 @@ class SectionTemplateRequest extends FormRequest
             }
 
             foreach ($schema as $index => $field) {
+                if (in_array($index, ['menu_templates', 'menuTemplates'], true)) {
+                    if (! is_array($field)) {
+                        $v->errors()->add('schema_json', 'menu_templates alanı obje olmalı.');
+                    }
+
+                    continue;
+                }
+
                 if (! is_array($field)) {
                     $v->errors()->add('schema_json', 'Schema JSON içindeki her alan bir obje olmalı.');
                     continue;
