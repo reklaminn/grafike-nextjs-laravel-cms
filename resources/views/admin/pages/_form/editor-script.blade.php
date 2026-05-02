@@ -130,15 +130,17 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
     };
 }
 
-function frontendSectionEditor({ initialRegions = null, availableTemplates = [] }) {
+function frontendSectionEditor({ initialRegions = null, availableTemplates = [], fieldErrors = {} }) {
     return {
         regions: { header: [], body: [], footer: [] },
         regionNames: ['header', 'body', 'footer'],
         availableTemplates,
+        fieldErrors,
         pickerModalOpen: false,
         pickerSearch: '',
         pickerTarget: null,
         openBlockMenuFor: null,
+        openFrontendJson: false,
         settingsModalOpen: false,
         settingsTarget: null,
         settingsTab: 'content',

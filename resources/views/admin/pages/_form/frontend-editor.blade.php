@@ -23,8 +23,14 @@
         }
     }
 @endphp
+@php
+    $frontendEditorPayload = array_merge(
+        $editorData->frontendSectionEditorPayload(),
+        ['fieldErrors' => $blockFieldErrors],
+    );
+@endphp
 <div x-show="builderMode === 'frontend'" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-     x-data="{ ...frontendSectionEditor({{ \Illuminate\Support\Js::from($editorData->frontendSectionEditorPayload()) }}), fieldErrors: {{ \Illuminate\Support\Js::from($blockFieldErrors) }} }"
+     x-data="frontendSectionEditor({{ \Illuminate\Support\Js::from($frontendEditorPayload) }})"
      x-on:frontend-block-focus.window="focusBlock($event.detail.blockId)">
 
     {{-- Editor header --}}
@@ -51,14 +57,13 @@
         </div>
         <button type="button"
                 @click="openFrontendJson = !openFrontendJson"
-                x-data="{ openFrontendJson: false }"
                 class="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200">
             <i class="fas fa-code"></i> Ham JSON
         </button>
     </div>
 
     {{-- Ham JSON alanı --}}
-    <div x-data="{ openFrontendJson: false }">
+    <div>
         <div x-show="openFrontendJson" class="mb-4">
             <div class="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 Bu alan gelişmiş/teknik kullanım içindir.
@@ -363,7 +368,7 @@
     <input type="hidden" name="sections_json_dirty" x-ref="sectionsJsonDirtyInput" value="0">
 
     {{-- Ham JSON (collapsed, toggled from header button) --}}
-    <div x-data="{ openFrontendJson: false }" class="mt-4">
+    <div class="mt-4">
         <button type="button"
                 @click="openFrontendJson = !openFrontendJson"
                 class="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200">
