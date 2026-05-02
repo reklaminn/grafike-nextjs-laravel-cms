@@ -55,7 +55,7 @@
             <div class="mt-4 space-y-4">
                 <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                     @if(tenancy()->initialized)
-                        <strong>Tenant storage aktif:</strong> Yüklenen CSS/JS dosyaları seçili sitenin storage alanına kaydedilir ve <code>/tenancy/assets/...</code> yolu ile temaya eklenir.
+                        <strong>Tenant storage aktif:</strong> Yüklenen CSS/JS dosyaları seçili sitenin storage alanına kaydedilir ve <code>/tenant-assets/...</code> yolu ile temaya eklenir.
                     @else
                         <strong>Genel storage aktif:</strong> Aktif tenant yok. Yüklenen CSS/JS dosyaları merkezi storage alanına kaydedilir ve <code>/storage/...</code> yolu ile temaya eklenir.
                     @endif

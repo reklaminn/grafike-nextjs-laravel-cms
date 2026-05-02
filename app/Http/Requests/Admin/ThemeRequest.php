@@ -81,7 +81,17 @@ class ThemeRequest extends FormRequest
         return collect(preg_split('/\r\n|\r|\n/', $value) ?: [])
             ->map(fn (string $line) => trim($line))
             ->filter()
+            ->map(fn (string $path) => $this->normalizeAssetPath($path))
             ->values()
             ->all();
+    }
+
+    private function normalizeAssetPath(string $path): string
+    {
+        if (str_starts_with($path, '/tenancy/assets/')) {
+            return preg_replace('#^/tenancy/assets/#', '/tenant-assets/', $path) ?: $path;
+        }
+
+        return $path;
     }
 }
