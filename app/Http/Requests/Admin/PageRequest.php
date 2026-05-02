@@ -18,7 +18,8 @@ class PageRequest extends FormRequest
 
     public function rules(): array
     {
-        $pageId = $this->route('page')?->id;
+        $routePage = $this->route('page');
+        $pageId = $routePage instanceof \App\Models\Page ? $routePage->id : $routePage;
 
         return [
             'title' => ['required', 'string', 'max:255'],

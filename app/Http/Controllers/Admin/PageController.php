@@ -117,8 +117,10 @@ class PageController extends Controller
             ->with('success', 'Sayfa başarıyla oluşturuldu.');
     }
 
-    public function edit(Page $page)
+    public function edit(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
         $page->load(['language', 'parent', 'seo', 'children', 'media', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -167,8 +169,9 @@ class PageController extends Controller
         ));
     }
 
-    public function update(PageRequest $request, Page $page)
+    public function update(PageRequest $request, string $page)
     {
+        $page = $this->resolveTenantPage($page);
         $data = $request->validated();
 
         // Generate slug if not provided
@@ -217,8 +220,10 @@ class PageController extends Controller
      * Show the "create translation" form pre-filled with source page data.
      * GET /admin/pages/{page}/create-translation?lang={language_id}
      */
-    public function createTranslation(Page $page, Request $request)
+    public function createTranslation(string $page, Request $request)
     {
+        $page = $this->resolveTenantPage($page);
+
         $page->load(['language', 'seo', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -252,8 +257,10 @@ class PageController extends Controller
         ));
     }
 
-    public function destroy(Page $page)
+    public function destroy(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
         if ($page->isSystemPage()) {
             return back()->with('error', 'Bu sistem sayfası silinemez. Tasarımını ve içeriğini sayfa düzenleme ekranından güncelleyebilirsiniz.');
         }
@@ -270,8 +277,10 @@ class PageController extends Controller
             ->with('success', 'Sayfa başarıyla silindi.');
     }
 
-    public function migrateToSections(Page $page)
+    public function migrateToSections(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
         if (empty($page->layout_json) || ! is_array($page->layout_json)) {
             return back()->with('error', 'Bu sayfada dönüştürülecek legacy layout verisi bulunmuyor.');
         }
@@ -290,8 +299,10 @@ class PageController extends Controller
             ->with('preview_refresh', now()->timestamp);
     }
 
-    public function migratePreview(Page $page)
+    public function migratePreview(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
         if (empty($page->layout_json) || ! is_array($page->layout_json)) {
             return response()->json(['error' => 'Bu sayfada dönüştürülecek legacy layout verisi bulunmuyor.'], 422);
         }
@@ -302,8 +313,11 @@ class PageController extends Controller
         ]);
     }
 
-    public function restoreRevision(Page $page, PageRevision $revision)
+    public function restoreRevision(string $page, string $revision)
     {
+        $page = $this->resolveTenantPage($page);
+        $revision = PageRevision::findOrFail($revision);
+
         abort_unless($revision->page_id === $page->id, 404);
 
         Page::recordSnapshot($page, "restore-from-revision-{$revision->id}");
@@ -363,6 +377,11 @@ class PageController extends Controller
         if ($request->boolean('is_homepage')) {
             SiteSetting::set('cms.homepage_id', (string) $page->id, 'cms');
         }
+    }
+
+    protected function resolveTenantPage(string|int $page): Page
+    {
+        return Page::query()->findOrFail($page);
     }
 
     /**
