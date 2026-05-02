@@ -44,9 +44,9 @@
                 <h3 class="text-base font-semibold text-gray-800 mb-4">Öğe Ekle</h3>
 
                 <div class="flex gap-2 mb-4">
-                    <button @click="type = 'custom'" :class="type === 'custom' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-50 text-gray-600'"
+                    <button type="button" @click="type = 'custom'" :class="type === 'custom' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-50 text-gray-600'"
                             class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg">Özel Link</button>
-                    <button @click="type = 'page'" :class="type === 'page' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-50 text-gray-600'"
+                    <button type="button" @click="type = 'page'" :class="type === 'page' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-50 text-gray-600'"
                             class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg">Sayfa</button>
                 </div>
 
@@ -103,7 +103,7 @@
     document.getElementById('addItemForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);
-        fetch('{{ route("admin.menus.add-item", $menu) }}', {
+        fetch('{{ route("admin.menus.add-item", $menu, false) }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',

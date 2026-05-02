@@ -7,7 +7,7 @@
             <span class="text-xs text-gray-400">{{ $item->url ?: ($item->page ? '/' . $item->page->slug : '#') }}</span>
         </div>
         <div class="flex items-center gap-1">
-            <button onclick="if(confirm('Bu öğeyi silmek istediğinize emin misiniz?')) deleteMenuItem({{ $menu->id }}, {{ $item->id }})"
+            <button type="button" onclick="if(confirm('Bu öğeyi silmek istediğinize emin misiniz?')) deleteMenuItem('{{ route('admin.menus.delete-item', [$menu, $item], false) }}')"
                     class="p-1.5 text-gray-400 hover:text-red-600 transition-colors">
                 <i class="fas fa-trash-alt text-xs"></i>
             </button>
@@ -26,8 +26,8 @@
 @once
 @push('scripts')
 <script>
-function deleteMenuItem(menuId, itemId) {
-    fetch(`/admin/menus/${menuId}/items/${itemId}`, {
+function deleteMenuItem(url) {
+    fetch(url, {
         method: 'DELETE',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
