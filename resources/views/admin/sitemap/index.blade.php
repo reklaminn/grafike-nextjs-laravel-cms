@@ -4,7 +4,7 @@
 @section('page-title', 'Sitemap Konfigürasyonu')
 
 @section('content')
-<form method="POST" action="{{ route('admin.sitemap.update') }}">
+<form method="POST" action="{{ route('admin.sitemap.update', [], false) }}">
     @csrf
     @method('PUT')
 
@@ -16,7 +16,7 @@
                    class="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
                     <i class="fas fa-external-link-alt mr-1"></i> Sitemap'i Gör
                 </a>
-                <form method="POST" action="{{ route('admin.sitemap.refresh') }}" class="inline">
+                <form method="POST" action="{{ route('admin.sitemap.refresh', [], false) }}" class="inline">
                     @csrf
                     <button type="submit"
                             class="px-4 py-2 border border-amber-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors"

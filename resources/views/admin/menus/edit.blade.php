@@ -7,7 +7,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Menu Settings -->
         <div class="space-y-6">
-            <form method="POST" action="{{ route('admin.menus.update', $menu) }}">
+            <form method="POST" action="{{ route('admin.menus.update', $menu, false) }}">
                 @csrf @method('PUT')
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                     <h3 class="text-base font-semibold text-gray-800">Menü Ayarları</h3>

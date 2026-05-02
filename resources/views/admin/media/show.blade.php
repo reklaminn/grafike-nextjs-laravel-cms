@@ -45,7 +45,7 @@
 
         {{-- Edit Form --}}
         <div>
-            <form method="POST" action="{{ route('admin.media.update', $media) }}" class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+            <form method="POST" action="{{ route('admin.media.update', $media, false) }}" class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
                 @csrf @method('PUT')
 
                 <div>

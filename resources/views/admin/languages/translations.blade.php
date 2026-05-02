@@ -8,7 +8,7 @@
 </div>
 
 {{-- Add Translation --}}
-<form method="POST" action="{{ route('admin.languages.save-translation') }}" class="bg-white rounded-xl shadow-sm border p-5 mb-6">
+<form method="POST" action="{{ route('admin.languages.save-translation', [], false) }}" class="bg-white rounded-xl shadow-sm border p-5 mb-6">
     @csrf
     <h3 class="text-sm font-semibold text-gray-700 mb-3">Yeni Çeviri Ekle</h3>
     <div class="grid grid-cols-1 md:grid-cols-5 gap-3">

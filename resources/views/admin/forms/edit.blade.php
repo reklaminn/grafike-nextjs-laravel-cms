@@ -7,7 +7,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Form Settings -->
         <div>
-            <form method="POST" action="{{ route('admin.forms.update', $form) }}">
+            <form method="POST" action="{{ route('admin.forms.update', $form, false) }}">
                 @csrf @method('PUT')
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                     <h3 class="text-base font-semibold text-gray-800">Form Ayarları</h3>

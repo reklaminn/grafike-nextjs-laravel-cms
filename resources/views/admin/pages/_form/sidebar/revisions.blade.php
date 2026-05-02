@@ -18,7 +18,7 @@
                     </div>
                 </div>
                 <form method="POST"
-                      action="{{ route('admin.pages.restore-revision', [$page, $revision]) }}"
+                      action="{{ route('admin.pages.restore-revision', [$page, $revision], false) }}"
                       onsubmit="return confirm('Bu revizyon geri yüklensin mi?')">
                     @csrf
                     <button type="submit"

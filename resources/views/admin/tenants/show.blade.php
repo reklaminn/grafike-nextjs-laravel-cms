@@ -64,7 +64,7 @@
                 ve tüm tenant migration'larını çalıştırır.
                 Yeni migration eklendiğinde tekrar çalıştırabilirsiniz (idempotent).
             </p>
-            <form method="POST" action="{{ route('admin.tenants.provision', $tenant) }}">
+            <form method="POST" action="{{ route('admin.tenants.provision', $tenant, false) }}">
                 @csrf
                 <button type="submit"
                         class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 font-medium"
@@ -81,7 +81,7 @@
             <h2 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
                 <i class="fas fa-edit text-blue-500"></i> Site Bilgilerini Güncelle
             </h2>
-            <form method="POST" action="{{ route('admin.tenants.update', $tenant) }}" class="space-y-4">
+            <form method="POST" action="{{ route('admin.tenants.update', $tenant, false) }}" class="space-y-4">
                 @csrf @method('PUT')
 
                 <div>
@@ -131,7 +131,7 @@
             <p class="text-sm text-indigo-600 mb-3">
                 <i class="fas fa-check-circle mr-1"></i> Bu site şu an aktif.
             </p>
-            <form method="POST" action="{{ route('admin.tenants.clear-active') }}">
+            <form method="POST" action="{{ route('admin.tenants.clear-active', [], false) }}">
                 @csrf
                 <button type="submit" class="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
                     Aktifi Temizle
@@ -141,7 +141,7 @@
             <p class="text-sm text-gray-500 mb-3">
                 Bu siteyi seçin; Sayfalar, Yazılar ve Menüler bu sitenin veritabanından çalışır.
             </p>
-            <form method="POST" action="{{ route('admin.tenants.switch', $tenant) }}">
+            <form method="POST" action="{{ route('admin.tenants.switch', $tenant, false) }}">
                 @csrf
                 <button type="submit" class="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
                     <i class="fas fa-toggle-off mr-1"></i> Bu Siteyi Seç

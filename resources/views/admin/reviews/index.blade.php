@@ -78,14 +78,14 @@
                 {{-- Actions --}}
                 <div class="flex items-center gap-2 ml-4">
                     @if(!$review->is_approved)
-                        <form method="POST" action="{{ route('admin.reviews.approve', $review) }}">
+                        <form method="POST" action="{{ route('admin.reviews.approve', $review, false) }}">
                             @csrf
                             <button type="submit" class="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs hover:bg-green-100" title="Onayla">
                                 <i class="fas fa-check"></i>
                             </button>
                         </form>
                     @else
-                        <form method="POST" action="{{ route('admin.reviews.reject', $review) }}">
+                        <form method="POST" action="{{ route('admin.reviews.reject', $review, false) }}">
                             @csrf
                             <button type="submit" class="px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-lg text-xs hover:bg-yellow-100" title="Reddet">
                                 <i class="fas fa-times"></i>

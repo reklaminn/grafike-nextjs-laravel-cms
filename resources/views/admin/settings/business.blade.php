@@ -85,7 +85,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.settings.business.update') }}" class="space-y-6">
+    <form method="POST" action="{{ route('admin.settings.business.update', [], false) }}" class="space-y-6">
         @csrf @method('PUT')
 
         {{-- ─── Temel Kimlik ─────────────────────────────────────────────────────── --}}

@@ -56,7 +56,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.articles.store') }}" enctype="multipart/form-data" id="translation-form">
+    <form method="POST" action="{{ route('admin.articles.store', [], false) }}" enctype="multipart/form-data" id="translation-form">
         @csrf
 
         {{-- Translation link fields --}}

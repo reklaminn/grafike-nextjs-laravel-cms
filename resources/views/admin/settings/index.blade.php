@@ -4,7 +4,7 @@
 @section('page-title', 'Site Ayarları')
 
 @section('content')
-    <form method="POST" action="{{ route('admin.settings.update') }}">
+    <form method="POST" action="{{ route('admin.settings.update', [], false) }}">
         @csrf
         @method('PUT')
 

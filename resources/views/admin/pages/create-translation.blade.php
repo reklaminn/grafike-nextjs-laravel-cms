@@ -49,7 +49,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.pages.store') }}" enctype="multipart/form-data" id="translation-form">
+    <form method="POST" action="{{ route('admin.pages.store', [], false) }}" enctype="multipart/form-data" id="translation-form">
         @csrf
 
         {{-- Hidden: link this translation to the source page --}}

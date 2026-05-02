@@ -99,7 +99,7 @@
         </button>
     </div>
 
-    <form method="POST" action="{{ route('admin.seo.update', $seoEntry) }}" class="space-y-5">
+    <form method="POST" action="{{ route('admin.seo.update', $seoEntry, false) }}" class="space-y-5">
         @csrf @method('PUT')
 
         {{-- ─── Tab: Temel SEO ──────────────────────────────────────────────── --}}

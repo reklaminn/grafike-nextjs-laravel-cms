@@ -4,7 +4,7 @@
 @section('page-title', 'Yeni Block Şablonu')
 
 @section('content')
-    <form method="POST" action="{{ route('admin.section-templates.store') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('admin.section-templates.store', [], false) }}" enctype="multipart/form-data">
         @csrf
         @include('admin.section-templates._form')
     </form>

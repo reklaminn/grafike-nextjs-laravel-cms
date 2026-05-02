@@ -10,7 +10,7 @@
 </div>
 
 <div class="max-w-2xl">
-    <form method="POST" action="{{ route('admin.tenants.store') }}" class="space-y-6">
+    <form method="POST" action="{{ route('admin.tenants.store', [], false) }}" class="space-y-6">
         @csrf
 
         <div class="bg-white rounded-xl shadow-sm border p-6 space-y-5">

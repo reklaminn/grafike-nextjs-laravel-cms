@@ -8,7 +8,7 @@
         <a href="{{ route('admin.members.index') }}" class="text-sm text-gray-500 hover:text-gray-700">&larr; Geri</a>
     </div>
 
-    <form method="POST" action="{{ route('admin.members.update', $member) }}" class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+    <form method="POST" action="{{ route('admin.members.update', $member, false) }}" class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
         @csrf @method('PUT')
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

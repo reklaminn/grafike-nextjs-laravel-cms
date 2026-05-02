@@ -14,7 +14,7 @@
         <div><strong>Son Hit:</strong> {{ $redirect->last_hit_at?->format('d.m.Y H:i') ?? 'Hiç' }}</div>
     </div>
 
-    <form method="POST" action="{{ route('admin.redirects.update', $redirect) }}" class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+    <form method="POST" action="{{ route('admin.redirects.update', $redirect, false) }}" class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
         @csrf @method('PUT')
 
         <div>

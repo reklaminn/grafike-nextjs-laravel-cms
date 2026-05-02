@@ -222,7 +222,7 @@
                                    class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100">
                                     <i class="fas fa-pen"></i> Düzenle
                                 </a>
-                                <form method="POST" action="{{ route('admin.section-templates.duplicate', $sectionTemplate) }}">
+                                <form method="POST" action="{{ route('admin.section-templates.duplicate', $sectionTemplate, false) }}">
                                     @csrf
                                     <button type="submit"
                                             class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100">
@@ -245,14 +245,14 @@
                                 </form>
                             @else
                                 {{-- Arşivlenmiş: geri yükle + kalıcı sil --}}
-                                <form method="POST" action="{{ route('admin.section-templates.restore', $sectionTemplate) }}">
+                                <form method="POST" action="{{ route('admin.section-templates.restore', $sectionTemplate, false) }}">
                                     @csrf
                                     <button type="submit"
                                             class="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-100">
                                         <i class="fas fa-rotate-left"></i> Geri Yükle
                                     </button>
                                 </form>
-                                <form method="POST" action="{{ route('admin.section-templates.force-delete', $sectionTemplate) }}"
+                                <form method="POST" action="{{ route('admin.section-templates.force-delete', $sectionTemplate, false) }}"
                                       class="ml-auto"
                                       onsubmit="return confirm('Bu şablon kalıcı olarak silinecek. Geri alınamaz. Devam etmek istiyor musunuz?')">
                                     @csrf

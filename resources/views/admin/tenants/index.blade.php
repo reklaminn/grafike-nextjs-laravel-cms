@@ -21,7 +21,7 @@
         <i class="fas fa-circle text-indigo-500 mr-1 text-xs"></i>
         Aktif site: <strong>{{ session('active_tenant') }}</strong>
     </span>
-    <form method="POST" action="{{ route('admin.tenants.clear-active') }}">
+    <form method="POST" action="{{ route('admin.tenants.clear-active', [], false) }}">
         @csrf
         <button type="submit" class="text-indigo-500 hover:text-indigo-700 underline text-xs">Temizle</button>
     </form>
@@ -94,7 +94,7 @@
                     <div class="flex items-center justify-end gap-2">
                         {{-- Switch to this tenant --}}
                         @if(session('active_tenant') !== $tenant->id)
-                        <form method="POST" action="{{ route('admin.tenants.switch', $tenant) }}">
+                        <form method="POST" action="{{ route('admin.tenants.switch', $tenant, false) }}">
                             @csrf
                             <button type="submit"
                                     class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs hover:bg-indigo-100 font-medium"
