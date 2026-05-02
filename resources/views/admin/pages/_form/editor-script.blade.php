@@ -155,6 +155,24 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
         init() {
             this.regions = this.normalizeRegions(initialRegions);
             this.normalizeSortOrder();
+
+            this.$nextTick(() => {
+                this.syncSerializedRegions();
+
+                const form = this.$root.closest('form');
+                if (!form || form.dataset.frontendSectionsSyncBound === '1') {
+                    return;
+                }
+
+                form.dataset.frontendSectionsSyncBound = '1';
+                form.addEventListener('submit', () => {
+                    this.syncSerializedRegions();
+                }, { capture: true });
+
+                this.$watch('regions', () => {
+                    this.syncSerializedRegions();
+                });
+            });
         },
 
         get serializedRegions() {
@@ -162,6 +180,16 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
                 version: 2,
                 regions: this.serializeRegions(),
             }, null, 2);
+        },
+
+        syncSerializedRegions() {
+            const value = this.serializedRegions;
+
+            if (this.$refs?.sectionsJsonInput) {
+                this.$refs.sectionsJsonInput.value = value;
+            }
+
+            return value;
         },
 
         getTemplateById(templateId) {
