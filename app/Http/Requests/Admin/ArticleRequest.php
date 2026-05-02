@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Article;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,8 @@ class ArticleRequest extends FormRequest
 
     public function rules(): array
     {
-        $articleId = $this->route('article')?->id;
+        $routeArticle = $this->route('article');
+        $articleId = $routeArticle instanceof Article ? $routeArticle->id : $routeArticle;
 
         return [
             'title' => ['required', 'string', 'max:255'],
@@ -40,7 +42,7 @@ class ArticleRequest extends FormRequest
             'display_date' => ['nullable', 'string', 'max:100'],
             'listing_variant' => ['nullable', 'string', 'max:100'],
             'detail_variant' => ['nullable', 'string', 'max:100'],
-            'author_id' => ['nullable', 'exists:admins,id'],
+            'author_id' => ['nullable', Rule::exists('central.admins', 'id')],
             'custom_css' => ['nullable', 'string'],
             'custom_js' => ['nullable', 'string'],
             'cover_image' => ['nullable', 'image', 'max:5120'],

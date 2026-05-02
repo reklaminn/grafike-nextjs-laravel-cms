@@ -7,7 +7,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Menu Settings -->
         <div class="space-y-6">
-            <form method="POST" action="{{ route('admin.menus.update', $menu, false) }}">
+            <form method="POST" action="{{ route('admin.menus.update', $menu->id, false) }}">
                 @csrf @method('PUT')
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                     <h3 class="text-base font-semibold text-gray-800">Menü Ayarları</h3>
@@ -103,7 +103,7 @@
     document.getElementById('addItemForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);
-        fetch('{{ route("admin.menus.add-item", $menu, false) }}', {
+        fetch('{{ route("admin.menus.add-item", $menu->id, false) }}', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',

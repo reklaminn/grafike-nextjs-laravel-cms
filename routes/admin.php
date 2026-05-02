@@ -57,7 +57,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('pages/{page}/create-translation', [PageController::class, 'createTranslation'])->name('pages.create-translation');
 
         // Articles CRUD
-        Route::resource('articles', ArticleController::class);
+        Route::resource('articles', ArticleController::class)->except('show');
         Route::delete('articles/{article}/cover', [ArticleController::class, 'destroyCover'])->name('articles.cover-destroy');
         Route::get('articles/{article}/create-translation', [ArticleController::class, 'createTranslation'])->name('articles.create-translation');
 

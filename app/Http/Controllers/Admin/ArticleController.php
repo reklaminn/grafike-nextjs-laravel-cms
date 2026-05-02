@@ -96,12 +96,13 @@ class ArticleController extends Controller
         $this->saveSeo($article, $request);
 
         return redirect()
-            ->route('admin.articles.edit', $article)
+            ->route('admin.articles.edit', $article->id)
             ->with('success', 'Yazı başarıyla oluşturuldu.');
     }
 
-    public function edit(Article $article)
+    public function edit(int|string $article)
     {
+        $article = $this->findArticle($article);
         $article->load(['page', 'language', 'seo', 'media', 'form', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -112,8 +113,9 @@ class ArticleController extends Controller
         return view('admin.articles.edit', compact('article', 'languages', 'pages', 'forms', 'admins'));
     }
 
-    public function update(ArticleRequest $request, Article $article)
+    public function update(ArticleRequest $request, int|string $article)
     {
+        $article = $this->findArticle($article);
         $data = $request->validated();
 
         if (empty($data['slug'])) {
@@ -146,21 +148,23 @@ class ArticleController extends Controller
         $this->saveSeo($article, $request);
 
         return redirect()
-            ->route('admin.articles.edit', $article)
+            ->route('admin.articles.edit', $article->id)
             ->with('success', 'Yazı başarıyla güncellendi.');
     }
 
-    public function destroyCover(Article $article)
+    public function destroyCover(int|string $article)
     {
+        $article = $this->findArticle($article);
         $article->clearMediaCollection('cover');
 
         return redirect()
-            ->route('admin.articles.edit', $article)
+            ->route('admin.articles.edit', $article->id)
             ->with('success', 'Kapak görseli kaldırıldı.');
     }
 
-    public function destroy(Article $article)
+    public function destroy(int|string $article)
     {
+        $article = $this->findArticle($article);
         $article->delete();
 
         return redirect()
@@ -174,8 +178,9 @@ class ArticleController extends Controller
      * Show "create translation" form pre-filled with source article data.
      * GET /admin/articles/{article}/create-translation?lang={language_id}
      */
-    public function createTranslation(Article $article, Request $request)
+    public function createTranslation(int|string $article, Request $request)
     {
+        $article = $this->findArticle($article);
         $article->load(['page', 'language', 'seo', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -216,6 +221,11 @@ class ArticleController extends Controller
         $decoded = json_decode($json, true);
 
         return is_array($decoded) ? $decoded : null;
+    }
+
+    protected function findArticle(int|string $article): Article
+    {
+        return Article::query()->findOrFail($article);
     }
 
     protected function saveSeo(Article $article, Request $request): void

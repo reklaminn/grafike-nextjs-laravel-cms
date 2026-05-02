@@ -244,7 +244,7 @@
                         class="flex-1 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
                     <i class="fas fa-save mr-1"></i> {{ isset($article) ? 'Güncelle' : 'Oluştur' }}
                 </button>
-                <a href="{{ route('admin.articles.index') }}"
+                <a href="{{ route('admin.articles.index', [], false) }}"
                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">İptal</a>
             </div>
         </div>
@@ -257,7 +257,7 @@
                 <div class="relative mb-4 group">
                     <img src="{{ $article->getFirstMediaUrl('cover') }}"
                          class="w-full rounded-lg object-cover max-h-48" alt="">
-                    <form method="POST" action="{{ route('admin.articles.cover-destroy', $article) }}"
+                    <form method="POST" action="{{ route('admin.articles.cover-destroy', $article->id, false) }}"
                           class="absolute top-2 right-2">
                         @csrf @method('DELETE')
                         <button type="submit"

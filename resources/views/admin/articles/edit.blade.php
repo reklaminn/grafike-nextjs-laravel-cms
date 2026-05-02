@@ -27,7 +27,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.articles.update', $article, false) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('admin.articles.update', $article->id, false) }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         @include('admin.articles._form')

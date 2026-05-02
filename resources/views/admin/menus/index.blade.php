@@ -34,11 +34,11 @@
                 </div>
 
                 <div class="mt-4 flex items-center gap-2">
-                    <a href="{{ route('admin.menus.edit', $menu, false) }}"
+                    <a href="{{ route('admin.menus.edit', $menu->id, false) }}"
                        class="flex-1 text-center px-3 py-2 bg-indigo-50 text-indigo-700 text-sm rounded-lg hover:bg-indigo-100 transition-colors">
                         <i class="fas fa-edit mr-1"></i> Düzenle
                     </a>
-                    <form method="POST" action="{{ route('admin.menus.destroy', $menu, false) }}"
+                    <form method="POST" action="{{ route('admin.menus.destroy', $menu->id, false) }}"
                           onsubmit="return confirm('Bu menüyü silmek istediğinize emin misiniz?')">
                         @csrf @method('DELETE')
                         <button type="submit" class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
