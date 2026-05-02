@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Language;
 use App\Models\Page;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TranslationController extends Controller
 {
@@ -44,7 +45,7 @@ class TranslationController extends Controller
             'type'               => 'required|in:page,article',
             'ids'                => 'required|array|min:1|max:50',
             'ids.*'              => 'integer',
-            'target_language_id' => 'required|exists:languages,id',
+            'target_language_id' => ['required', Rule::exists('central.languages', 'id')],
         ]);
 
         $targetLangId = $request->integer('target_language_id');

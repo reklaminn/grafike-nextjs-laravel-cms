@@ -9,6 +9,7 @@ use App\Models\MenuItem;
 use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class MenuController extends Controller
 {
@@ -33,7 +34,7 @@ class MenuController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:50',
-            'language_id' => 'required|exists:languages,id',
+            'language_id' => ['required', Rule::exists('central.languages', 'id')],
         ]);
 
         $menu = Menu::create([
@@ -66,7 +67,7 @@ class MenuController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:50',
-            'language_id' => 'required|exists:languages,id',
+            'language_id' => ['required', Rule::exists('central.languages', 'id')],
         ]);
 
         $menu->update([

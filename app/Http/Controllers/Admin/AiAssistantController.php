@@ -8,6 +8,7 @@ use App\Models\Language;
 use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 
 class AiAssistantController extends Controller
 {
@@ -86,7 +87,7 @@ class AiAssistantController extends Controller
         $request->validate([
             'type'               => 'required|in:page,article',
             'id'                 => 'required|integer',
-            'target_language_id' => 'required|exists:languages,id',
+            'target_language_id' => ['required', Rule::exists('central.languages', 'id')],
         ]);
 
         $targetLang = Language::findOrFail($request->integer('target_language_id'));

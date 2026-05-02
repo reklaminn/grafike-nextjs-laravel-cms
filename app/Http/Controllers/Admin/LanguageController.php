@@ -3,16 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Article;
 use App\Models\Language;
+use App\Models\Page;
 use App\Models\Translation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 
 class LanguageController extends Controller
 {
     public function index()
     {
-        $languages = Language::withCount('pages', 'articles')->orderBy('sort_order')->get();
+        $languages = Language::orderBy('sort_order')->get();
+
+        if (tenancy()->initialized) {
+            $languages->each(function (Language $language): void {
+                $language->pages_count = Page::where('language_id', $language->id)->count();
+                $language->articles_count = Article::where('language_id', $language->id)->count();
+            });
+        }
 
         return view('admin.languages.index', compact('languages'));
     }
@@ -26,7 +36,7 @@ class LanguageController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:50',
-            'code' => 'required|string|max:5|unique:languages,code',
+            'code' => ['required', 'string', 'max:5', Rule::unique('central.languages', 'code')],
             'locale' => 'nullable|string|max:10',
             'direction' => 'required|in:ltr,rtl',
             'is_active' => 'boolean',
@@ -51,7 +61,7 @@ class LanguageController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:50',
-            'code' => 'required|string|max:5|unique:languages,code,' . $language->id,
+            'code' => ['required', 'string', 'max:5', Rule::unique('central.languages', 'code')->ignore($language->id)],
             'locale' => 'nullable|string|max:10',
             'direction' => 'required|in:ltr,rtl',
             'is_active' => 'boolean',
@@ -69,7 +79,10 @@ class LanguageController extends Controller
 
     public function destroy(Language $language)
     {
-        if ($language->pages()->count() > 0 || $language->articles()->count() > 0) {
+        if (tenancy()->initialized && (
+            Page::where('language_id', $language->id)->exists()
+            || Article::where('language_id', $language->id)->exists()
+        )) {
             return back()->with('error', 'Bu dile ait sayfa veya yazı var. Önce onları silin.');
         }
 
@@ -106,7 +119,7 @@ class LanguageController extends Controller
     public function saveTranslation(Request $request)
     {
         $validated = $request->validate([
-            'language_id' => 'required|exists:languages,id',
+            'language_id' => ['required', Rule::exists('central.languages', 'id')],
             'group' => 'required|string|max:50',
             'key' => 'required|string|max:255',
             'value' => 'required|string|max:5000',

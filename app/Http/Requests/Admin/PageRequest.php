@@ -28,7 +28,7 @@ class PageRequest extends FormRequest
             ],
             'parent_id' => ['nullable', 'exists:pages,id'],
             'root_page_id' => ['nullable', 'exists:pages,id'],
-            'language_id' => ['required', 'exists:languages,id'],
+            'language_id' => ['required', Rule::exists('central.languages', 'id')],
             'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
             'template' => ['nullable', 'string', 'max:100'],
             'page_template' => ['nullable', 'string', 'max:100'],
