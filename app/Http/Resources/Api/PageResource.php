@@ -143,6 +143,9 @@ class PageResource extends JsonResource
                 }
 
                 $section['template_name'] = $template->name;
+                $section['type'] = $template->type;
+                $section['variation'] = $template->variation;
+                $section['render_mode'] = $template->render_mode;
                 $section['html_template'] = $template->html_template;
                 $section['component_key'] = $template->component_key;
                 $section['schema'] = $template->schema_json ?? [];
@@ -173,6 +176,9 @@ class PageResource extends JsonResource
             }
 
             $block['template_name'] = $template->name;
+            $block['type'] = $template->type;
+            $block['variation'] = $template->variation;
+            $block['render_mode'] = $template->render_mode;
             $block['html_template'] = $template->html_template;
             $block['component_key'] = $template->component_key;
             $block['schema'] = $template->schema_json ?? [];
