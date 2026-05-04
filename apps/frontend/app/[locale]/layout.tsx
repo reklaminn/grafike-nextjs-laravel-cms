@@ -11,8 +11,8 @@
  */
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import Script from "next/script";
 import { SiteShell } from "@/components/layout/site-shell";
+import { ThemeScripts } from "@/components/layout/theme-scripts";
 import { getSitePayload, getSettingsPayload } from "@/lib/api/client";
 import { buildTokenStyle } from "@/lib/theme/tokens";
 import { buildFaviconMetadata, buildJsonLd, canonicalUrl } from "@/lib/seo";
@@ -220,10 +220,14 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
       <SiteShell>{children}</SiteShell>
 
-      {/* Theme JS — loaded after hydration */}
-      {themeJsAssets.map((src) => (
-        <Script key={src} src={src} strategy="afterInteractive" />
-      ))}
+      {/*
+        Theme JS — loaded sequentially with DOMContentLoaded polyfill.
+        ThemeScripts ensures:
+          1. Bootstrap loads fully before main.js runs (sequential, not parallel)
+          2. Scripts that use addEventListener('DOMContentLoaded', …) still fire
+             even though the event has already passed by the time afterInteractive runs.
+      */}
+      <ThemeScripts scripts={themeJsAssets} />
     </>
   );
 }
