@@ -1,60 +1,62 @@
-<!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kayıt Ol</title>
-    @vite(['resources/css/app.css'])
-</head>
-<body class="antialiased bg-gray-50 min-h-screen flex items-center justify-center">
-    <div class="max-w-md w-full mx-4">
-        <div class="text-center mb-8">
-            <a href="/" class="text-2xl font-bold text-gray-900">{{ config('cms.name', 'Grafike CMS') }}</a>
-            <h1 class="text-xl text-gray-600 mt-2">Kayıt Ol</h1>
-        </div>
+@extends('frontend.layouts.auth')
 
-        @if(session('error'))
-            <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm">{{ session('error') }}</div>
-        @endif
+@section('title', 'Kayıt Ol')
 
-        <form method="POST" action="{{ route('member.register.submit') }}" class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-            @csrf
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ad Soyad *</label>
-                <input type="text" name="name" value="{{ old('name') }}" required
-                       class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">E-posta *</label>
-                <input type="email" name="email" value="{{ old('email') }}" required
-                       class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                @error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
-                <input type="tel" name="phone" value="{{ old('phone') }}"
-                       class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Şifre *</label>
-                <input type="password" name="password" required
-                       class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                @error('password') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Şifre Tekrar *</label>
-                <input type="password" name="password_confirmation" required
-                       class="w-full px-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm">
-                Kayıt Ol
-            </button>
-        </form>
+@section('content')
+<h1 class="auth-title" style="font-size:1.1rem; font-weight:600; text-align:center; margin-bottom:1.25rem;">
+    Kayıt Ol
+</h1>
 
-        <p class="text-center text-sm text-gray-500 mt-4">
-            Zaten hesabınız var mı? <a href="{{ route('member.login') }}" class="text-indigo-600 hover:underline">Giriş Yap</a>
-        </p>
+<form method="POST" action="{{ route('member.register.submit', [], false) }}">
+    @csrf
+
+    <div class="form-group" style="margin-bottom:.85rem;">
+        <label for="name">Ad Soyad <span style="color:#dc2626;">*</span></label>
+        <input id="name" type="text" name="name" value="{{ old('name') }}"
+               required autocomplete="name">
+        @error('name')
+            <p style="color:#dc2626; font-size:.8rem; margin-top:.25rem;">{{ $message }}</p>
+        @enderror
     </div>
-</body>
-</html>
+
+    <div class="form-group" style="margin-bottom:.85rem;">
+        <label for="email">E-posta <span style="color:#dc2626;">*</span></label>
+        <input id="email" type="email" name="email" value="{{ old('email') }}"
+               required autocomplete="email">
+        @error('email')
+            <p style="color:#dc2626; font-size:.8rem; margin-top:.25rem;">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div class="form-group" style="margin-bottom:.85rem;">
+        <label for="phone">Telefon</label>
+        <input id="phone" type="tel" name="phone" value="{{ old('phone') }}"
+               autocomplete="tel">
+        @error('phone')
+            <p style="color:#dc2626; font-size:.8rem; margin-top:.25rem;">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div class="form-group" style="margin-bottom:.85rem;">
+        <label for="password">Şifre <span style="color:#dc2626;">*</span></label>
+        <input id="password" type="password" name="password"
+               required autocomplete="new-password">
+        @error('password')
+            <p style="color:#dc2626; font-size:.8rem; margin-top:.25rem;">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div class="form-group" style="margin-bottom:1rem;">
+        <label for="password_confirmation">Şifre Tekrar <span style="color:#dc2626;">*</span></label>
+        <input id="password_confirmation" type="password" name="password_confirmation"
+               required autocomplete="new-password">
+    </div>
+
+    <button type="submit" class="btn-primary">Kayıt Ol</button>
+</form>
+
+<div class="auth-footer" style="text-align:center; font-size:.85rem; color:#6b7280; margin-top:1.25rem;">
+    Zaten hesabınız var mı?
+    <a href="{{ route('member.login') }}" style="color:#6366f1; text-decoration:none;">Giriş Yap</a>
+</div>
+@endsection
