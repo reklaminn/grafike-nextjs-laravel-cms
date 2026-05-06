@@ -271,6 +271,8 @@ export type PagePayload = {
     is_password_protected?: boolean;
     is_locked?: boolean;
     has_member_only_content?: boolean;
+    is_group_restricted?: boolean;
+    required_group_names?: string[];
   };
   seo: PageSeoData;
   theme?: {

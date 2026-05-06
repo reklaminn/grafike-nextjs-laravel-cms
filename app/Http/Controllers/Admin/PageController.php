@@ -65,9 +65,10 @@ class PageController extends Controller
 
         $editorData = PageEditorData::for(null, $availableFrontendSectionTemplates);
 
-        $homepageId = SiteSetting::get('cms.homepage_id');
+        $homepageId   = SiteSetting::get('cms.homepage_id');
+        $memberGroups = \App\Models\MemberGroup::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.pages.create', compact('languages', 'parentPages', 'editorData', 'homepageId'));
+        return view('admin.pages.create', compact('languages', 'parentPages', 'editorData', 'homepageId', 'memberGroups'));
     }
 
     public function store(PageRequest $request)
@@ -160,8 +161,9 @@ class PageController extends Controller
 
         $frontendEditorSections = FrontendSections::flattenBlocks($page->sections_json);
         $frontendRegions = FrontendSections::normalize($page->sections_json);
-        $editorData = PageEditorData::for($page, $availableFrontendSectionTemplates);
-        $homepageId = SiteSetting::get('cms.homepage_id');
+        $editorData   = PageEditorData::for($page, $availableFrontendSectionTemplates);
+        $homepageId   = SiteSetting::get('cms.homepage_id');
+        $memberGroups = \App\Models\MemberGroup::where('is_active', true)->orderBy('name')->get();
 
         return view('admin.pages.edit', compact(
             'page',
@@ -173,7 +175,8 @@ class PageController extends Controller
             'frontendEditorSections',
             'frontendRegions',
             'editorData',
-            'homepageId'
+            'homepageId',
+            'memberGroups'
         ));
     }
 

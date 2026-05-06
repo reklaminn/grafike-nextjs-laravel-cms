@@ -19,8 +19,9 @@ class Page extends Model implements HasMedia
         'module_type', 'template', 'page_template_id', 'page_template', 'frontend_variant',
         'system_key', 'is_system',
         'layout_json', 'sections_json', 'custom_css', 'custom_js',
-        'is_password_protected', 'page_password', 'show_social_share',
-        'show_facebook_comments', 'show_breadcrumb', 'view_count', 'legacy_id',
+        'is_password_protected', 'page_password', 'allowed_group_ids',
+        'show_social_share', 'show_facebook_comments', 'show_breadcrumb',
+        'view_count', 'legacy_id',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class Page extends Model implements HasMedia
         return [
             'layout_json' => 'array',
             'sections_json' => 'array',
+            'allowed_group_ids' => 'array',
             'is_password_protected' => 'boolean',
             'show_in_menu' => 'boolean',
             'show_social_share' => 'boolean',

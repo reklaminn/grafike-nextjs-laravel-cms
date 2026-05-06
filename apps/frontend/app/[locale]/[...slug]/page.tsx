@@ -134,6 +134,27 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPag
       );
     }
 
+    // Group-restricted page: member is not in required group
+    if (payload.page.is_group_restricted) {
+      const groupNames = payload.page.required_group_names ?? [];
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", padding: "2rem 1rem" }}>
+          <div style={{ maxWidth: "480px", width: "100%", background: "var(--color-surface,#fff)", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: "0.75rem", padding: "2rem", boxShadow: "0 4px 24px rgba(0,0,0,.06)", textAlign: "center" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>🔐</div>
+            <h1 style={{ fontSize: "1.15rem", fontWeight: 700, marginBottom: ".5rem", color: "var(--color-heading,#111827)" }}>
+              {payload.page.title}
+            </h1>
+            <p style={{ fontSize: ".875rem", color: "var(--color-text-soft,#6b7280)", marginBottom: "1.25rem" }}>
+              Bu sayfa{groupNames.length > 0 ? ` yalnızca ${groupNames.join(", ")} üyelerine` : " belirli üye gruplarına"} özeldir.
+            </p>
+            <a href={`/${locale}/member/login`} style={{ display: "inline-block", padding: ".6rem 1.5rem", background: "var(--color-primary,#6366f1)", color: "#fff", borderRadius: ".4rem", fontWeight: 600, fontSize: ".875rem", textDecoration: "none" }}>
+              Giriş Yap
+            </a>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <CmsPageContent
         payload={payload}

@@ -174,6 +174,31 @@
                         <span class="font-medium text-gray-700">Özet:</span>
                         <span x-text="blockSummary(settingsBlock)"></span>
                     </div>
+
+                    {{-- Group restriction for block --}}
+                    @php $blockGroups = $memberGroups ?? collect(); @endphp
+                    @if($blockGroups->isNotEmpty())
+                    <div class="sm:col-span-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2.5">
+                        <p class="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
+                            <i class="fas fa-users text-purple-400"></i> Grup kısıtlaması
+                            <span class="font-normal text-purple-500">(boş = herkese açık)</span>
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            @foreach($blockGroups as $group)
+                            <label class="flex items-center gap-1.5 text-xs text-purple-800 cursor-pointer">
+                                <input type="checkbox"
+                                       :value="{{ $group->id }}"
+                                       x-model="settingsBlock.allowed_group_ids"
+                                       class="h-3.5 w-3.5 rounded border-purple-300 text-purple-600 focus:ring-purple-500">
+                                {{ $group->name }}
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+                        <span class="font-medium text-gray-700">Özet:</span>
+                        <span x-text="blockSummary(settingsBlock)"></span>
+                    </div>
                 </div>
 
                 <div x-show="settingsTab === 'content'" class="grid gap-3">

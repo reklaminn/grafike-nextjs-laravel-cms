@@ -22,17 +22,46 @@ class PageResource extends JsonResource
         $tenant = tenancy()->tenant ?? null;
         $theme  = $tenant?->theme_id ? Theme::find($tenant->theme_id) : null;
 
-        $rawSections  = $this->resolveRenderableSections($page, $theme);
-        $memberLoggedIn = Auth::guard('member')->check();
+        $rawSections    = $this->resolveRenderableSections($page, $theme);
+        $member         = Auth::guard('member')->user();
+        $memberLoggedIn = $member !== null;
+        $memberGroupId  = $member?->group_id;
 
-        // Strip member-only blocks when the visitor is not authenticated.
-        // Also track whether any were removed so the frontend can show a teaser.
-        [$filteredSections, $memberOnlyRemoved] = $memberLoggedIn
-            ? [$rawSections, 0]
-            : FrontendSections::filterBlocks(
-                $rawSections,
-                fn (array $block) => ! empty($block['is_member_only']),
-            );
+        // ── Page-level group restriction ──────────────────────────────────────
+        $allowedGroupIds   = array_filter((array) ($page->allowed_group_ids ?? []));
+        $isGroupRestricted = false;
+        $requiredGroupNames = [];
+
+        if (! empty($allowedGroupIds)) {
+            if (! $memberLoggedIn || ! in_array($memberGroupId, $allowedGroupIds, false)) {
+                $isGroupRestricted = true;
+                // Resolve group names for the frontend banner
+                $requiredGroupNames = \App\Models\MemberGroup::whereIn('id', $allowedGroupIds)
+                    ->pluck('name')
+                    ->all();
+            }
+        }
+
+        // ── Block-level filtering ──────────────────────────────────────────────
+        // Remove blocks that are member-only (visitor not logged in)
+        // OR restricted to groups the current member doesn't belong to.
+        [$filteredSections, $memberOnlyRemoved] = FrontendSections::filterBlocks(
+            $rawSections,
+            function (array $block) use ($memberLoggedIn, $memberGroupId): bool {
+                // Strip if member-only and visitor is not logged in
+                if (! empty($block['is_member_only']) && ! $memberLoggedIn) {
+                    return true;
+                }
+                // Strip if block has group restriction and member's group isn't in the list
+                $blockGroups = array_filter((array) ($block['allowed_group_ids'] ?? []));
+                if (! empty($blockGroups)) {
+                    if (! $memberLoggedIn || ! in_array($memberGroupId, $blockGroups, false)) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+        );
 
         $sections     = $this->enrichSections(FrontendSections::flattenBlocks($filteredSections));
         $regionLayout = $this->enrichRegionBlocks($filteredSections);
@@ -46,6 +75,9 @@ class PageResource extends JsonResource
             true,
         );
 
+        // When group-restricted, strip all sections (same pattern as password lock)
+        $hideSections = $isLocked || $isGroupRestricted;
+
         return [
             'page' => [
                 'id' => $page->id,
@@ -55,16 +87,16 @@ class PageResource extends JsonResource
                 'featured_image' => $page->getFirstMediaUrl('cover'),
                 'template' => $page->template ?: $page->page_template,
                 'layout' => $page->layout_json ?? [],
-                // Strip sections when page is locked — the frontend renders
-                // a password form instead of the actual page content.
-                'sections' => $isLocked ? [] : $sections,
+                'sections' => $hideSections ? [] : $sections,
                 'region_version' => $regionLayout['version'] ?? 2,
-                'regions' => $isLocked ? [] : ($regionLayout['regions'] ?? []),
+                'regions' => $hideSections ? [] : ($regionLayout['regions'] ?? []),
                 'language' => $page->language?->code,
                 'breadcrumbs' => $breadcrumbs,
                 'is_password_protected'   => $isPasswordProtected,
                 'is_locked'               => $isLocked,
                 'has_member_only_content' => $memberOnlyRemoved > 0,
+                'is_group_restricted'     => $isGroupRestricted,
+                'required_group_names'    => $requiredGroupNames,
             ],
             'seo' => [
                 'title'           => $page->seo?->meta_title       ?: $page->title,

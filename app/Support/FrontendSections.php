@@ -172,6 +172,7 @@ class FrontendSections
             'content' => $section['content'] ?? [],
             'is_active' => $section['is_active'] ?? true,
             'is_member_only' => $section['is_member_only'] ?? false,
+            'allowed_group_ids' => $section['allowed_group_ids'] ?? [],
             'sort_order' => $section['sort_order'] ?? ($index + 1),
             'wrapper_tag' => $section['wrapper_tag'] ?? null,
             'css_class' => $section['css_class'] ?? null,
