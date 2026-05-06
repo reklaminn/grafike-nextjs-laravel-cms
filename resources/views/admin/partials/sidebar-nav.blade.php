@@ -32,8 +32,10 @@
     ];
 
     $systemItems = [
-        ['route' => 'admin.tenants.index', 'icon' => 'fa-building', 'label' => 'Siteler', 'match' => 'admin.tenants'],
-        ['route' => 'admin.settings.index', 'icon' => 'fa-cog', 'label' => 'Ayarlar', 'match' => 'admin.settings'],
+        ['route' => 'admin.tenants.index',    'icon' => 'fa-building',    'label' => 'Siteler',           'match' => 'admin.tenants'],
+        ['route' => 'admin.settings.index',   'icon' => 'fa-cog',         'label' => 'Ayarlar',           'match' => 'admin.settings.index'],
+        ['route' => 'admin.settings.business','icon' => 'fa-map-marker-alt','label' => 'İşletme Bilgileri','match' => 'admin.settings.business'],
+        ['route' => 'admin.settings.crawl',   'icon' => 'fa-robot',       'label' => 'Tarama & LLM',      'match' => 'admin.settings.crawl'],
     ];
 
     if ($isAgencyAdmin) {
