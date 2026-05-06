@@ -31,6 +31,9 @@
             <input type="checkbox" name="remember" style="width:auto;">
             Beni hatırla
         </label>
+        <a href="{{ route('member.password.forgot') }}" style="color:#6366f1; text-decoration:none;">
+            Şifremi unuttum
+        </a>
     </div>
 
     <button type="submit" class="btn-primary">Giriş Yap</button>

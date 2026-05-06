@@ -268,6 +268,8 @@ export type PagePayload = {
     region_version?: number;
     regions?: PageRegions;
     breadcrumbs?: Array<{ title: string; slug: string; url: string }>;
+    is_password_protected?: boolean;
+    is_locked?: boolean;
   };
   seo: PageSeoData;
   theme?: {

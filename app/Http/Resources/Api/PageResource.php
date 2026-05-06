@@ -27,6 +27,13 @@ class PageResource extends JsonResource
         $themeSlug    = $theme?->slug ?: 'porto-furniture';
         $breadcrumbs  = $this->buildBreadcrumbs($page);
 
+        $isPasswordProtected = (bool) $page->is_password_protected;
+        $isLocked            = $isPasswordProtected && ! in_array(
+            $page->id,
+            session('unlocked_pages', []),
+            true,
+        );
+
         return [
             'page' => [
                 'id' => $page->id,
@@ -36,11 +43,15 @@ class PageResource extends JsonResource
                 'featured_image' => $page->getFirstMediaUrl('cover'),
                 'template' => $page->template ?: $page->page_template,
                 'layout' => $page->layout_json ?? [],
-                'sections' => $sections,
+                // Strip sections when page is locked — the frontend renders
+                // a password form instead of the actual page content.
+                'sections' => $isLocked ? [] : $sections,
                 'region_version' => $regionLayout['version'] ?? 2,
-                'regions' => $regionLayout['regions'] ?? [],
+                'regions' => $isLocked ? [] : ($regionLayout['regions'] ?? []),
                 'language' => $page->language?->code,
                 'breadcrumbs' => $breadcrumbs,
+                'is_password_protected' => $isPasswordProtected,
+                'is_locked' => $isLocked,
             ],
             'seo' => [
                 'title'           => $page->seo?->meta_title       ?: $page->title,

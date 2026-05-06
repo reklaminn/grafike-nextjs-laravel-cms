@@ -4,6 +4,7 @@ use App\Http\Controllers\Frontend\FormSubmissionController;
 use App\Http\Controllers\Frontend\FrontendController;
 use App\Http\Controllers\Frontend\LlmsController;
 use App\Http\Controllers\Frontend\MemberAuthController;
+use App\Http\Controllers\Frontend\MemberPasswordController;
 use App\Http\Controllers\Frontend\PageUnlockController;
 use App\Http\Controllers\Frontend\ReviewController;
 use App\Http\Controllers\Frontend\RobotsController;
@@ -66,6 +67,12 @@ Route::prefix('member')->name('member.')->group(function () {
     Route::post('login', [MemberAuthController::class, 'login'])->name('login.submit');
     Route::get('register', [MemberAuthController::class, 'showRegister'])->name('register');
     Route::post('register', [MemberAuthController::class, 'register'])->name('register.submit');
+
+    // Password reset
+    Route::get('password/forgot',        [MemberPasswordController::class, 'showForgot'])->name('password.forgot');
+    Route::post('password/email',        [MemberPasswordController::class, 'sendResetLink'])->name('password.email');
+    Route::get('password/reset/{token}', [MemberPasswordController::class, 'showReset'])->name('password.reset');
+    Route::post('password/reset',        [MemberPasswordController::class, 'reset'])->name('password.update');
 
     Route::middleware('member.auth')->group(function () {
         Route::get('profile', [MemberAuthController::class, 'profile'])->name('profile');

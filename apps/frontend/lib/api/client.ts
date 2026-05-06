@@ -92,6 +92,13 @@ async function fetchJson<T>(
     const tenantId = normalizeTenantPreviewId(options.tenantId) ?? await getTenantPreviewHeader();
     const requestHeaders: Record<string, string> = {};
 
+    // Forward the browser's Cookie header so Laravel session-based features
+    // (password-protected pages, member auth state) work in SSR context.
+    const incomingCookie = (await headers()).get("cookie");
+    if (incomingCookie) {
+      requestHeaders["Cookie"] = incomingCookie;
+    }
+
     if (siteHost) {
       requestHeaders["X-Site-Host"] = siteHost;
       requestHeaders["X-Forwarded-Host"] = siteHost;

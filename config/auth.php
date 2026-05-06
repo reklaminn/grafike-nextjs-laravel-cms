@@ -108,6 +108,15 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Tenant member password resets — uses the tenant DB connection via
+        // the Member model (Authenticatable + uses tenant connection by default).
+        'members' => [
+            'provider' => 'members',
+            'table'    => 'password_reset_tokens',
+            'expire'   => 60,
+            'throttle' => 60,
+        ],
     ],
 
     /*

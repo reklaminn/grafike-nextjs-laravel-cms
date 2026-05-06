@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { CmsPageContent } from "@/components/pages/cms-page-content";
+import { PasswordGate } from "@/components/pages/password-gate";
 import { ArticleBlockRenderer } from "@/components/articles/article-block-renderer";
 import {
   getArticle,
@@ -123,6 +124,16 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPag
   const payload = await getPagePayload(slug, locale, { tenantId });
 
   if (payload?.page) {
+    // Password-protected page: show gate form instead of content
+    if (payload.page.is_locked) {
+      return (
+        <PasswordGate
+          pageId={payload.page.id}
+          title={payload.page.title}
+        />
+      );
+    }
+
     return (
       <CmsPageContent
         payload={payload}
