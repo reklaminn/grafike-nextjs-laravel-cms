@@ -218,7 +218,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         dangerouslySetInnerHTML={buildJsonLd(globalJsonLd)}
       />
 
-      <SiteShell>{children}</SiteShell>
+      <SiteShell availableLocales={site.available_locales ?? []}>{children}</SiteShell>
 
       {/*
         Theme JS — loaded sequentially with DOMContentLoaded polyfill.
