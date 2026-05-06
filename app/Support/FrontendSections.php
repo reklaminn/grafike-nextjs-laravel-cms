@@ -112,6 +112,37 @@ class FrontendSections
         return $normalized;
     }
 
+    /**
+     * Remove blocks matching the given predicate from all regions.
+     * Returns [filtered_structure, removed_count].
+     *
+     * @param  Closure(array $block, string $region): bool  $predicate
+     * @return array{0: array, 1: int}
+     */
+    public static function filterBlocks(array|null $sections, Closure $predicate): array
+    {
+        $normalized = static::normalize($sections);
+        $removed    = 0;
+
+        foreach ($normalized['regions'] as $region => &$rows) {
+            foreach ($rows as &$row) {
+                foreach ($row['columns'] as &$column) {
+                    $before = count($column['blocks'] ?? []);
+                    $column['blocks'] = collect($column['blocks'] ?? [])
+                        ->filter(fn (array $block) => ! $predicate($block, $region))
+                        ->values()
+                        ->all();
+                    $removed += $before - count($column['blocks']);
+                }
+                unset($column);
+            }
+            unset($row);
+        }
+        unset($rows);
+
+        return [$normalized, $removed];
+    }
+
     public static function collectTemplateIds(array|null $sections): Collection
     {
         return collect(static::flattenBlocks($sections))
@@ -140,6 +171,7 @@ class FrontendSections
             'schema' => $section['schema'] ?? [],
             'content' => $section['content'] ?? [],
             'is_active' => $section['is_active'] ?? true,
+            'is_member_only' => $section['is_member_only'] ?? false,
             'sort_order' => $section['sort_order'] ?? ($index + 1),
             'wrapper_tag' => $section['wrapper_tag'] ?? null,
             'css_class' => $section['css_class'] ?? null,

@@ -270,6 +270,7 @@ export type PagePayload = {
     breadcrumbs?: Array<{ title: string; slug: string; url: string }>;
     is_password_protected?: boolean;
     is_locked?: boolean;
+    has_member_only_content?: boolean;
   };
   seo: PageSeoData;
   theme?: {

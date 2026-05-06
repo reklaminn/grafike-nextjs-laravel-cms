@@ -10,6 +10,7 @@ use App\Support\FrontendSections;
 use App\Support\LegacyLayoutToSections;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 
 class PageResource extends JsonResource
 {
@@ -22,8 +23,19 @@ class PageResource extends JsonResource
         $theme  = $tenant?->theme_id ? Theme::find($tenant->theme_id) : null;
 
         $rawSections  = $this->resolveRenderableSections($page, $theme);
-        $sections     = $this->enrichSections(FrontendSections::flattenBlocks($rawSections));
-        $regionLayout = $this->enrichRegionBlocks($rawSections);
+        $memberLoggedIn = Auth::guard('member')->check();
+
+        // Strip member-only blocks when the visitor is not authenticated.
+        // Also track whether any were removed so the frontend can show a teaser.
+        [$filteredSections, $memberOnlyRemoved] = $memberLoggedIn
+            ? [$rawSections, 0]
+            : FrontendSections::filterBlocks(
+                $rawSections,
+                fn (array $block) => ! empty($block['is_member_only']),
+            );
+
+        $sections     = $this->enrichSections(FrontendSections::flattenBlocks($filteredSections));
+        $regionLayout = $this->enrichRegionBlocks($filteredSections);
         $themeSlug    = $theme?->slug ?: 'porto-furniture';
         $breadcrumbs  = $this->buildBreadcrumbs($page);
 
@@ -50,8 +62,9 @@ class PageResource extends JsonResource
                 'regions' => $isLocked ? [] : ($regionLayout['regions'] ?? []),
                 'language' => $page->language?->code,
                 'breadcrumbs' => $breadcrumbs,
-                'is_password_protected' => $isPasswordProtected,
-                'is_locked' => $isLocked,
+                'is_password_protected'   => $isPasswordProtected,
+                'is_locked'               => $isLocked,
+                'has_member_only_content' => $memberOnlyRemoved > 0,
             ],
             'seo' => [
                 'title'           => $page->seo?->meta_title       ?: $page->title,

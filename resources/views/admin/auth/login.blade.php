@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Giriş - {{ config('cms.name', 'Grafike CMS') }}</title>
+    <title>Giriş - {{ config('cms.agency.name', config('cms.name', 'Grafike CMS')) }}</title>
+    @if(config('cms.agency.favicon_url'))
+    <link rel="icon" href="{{ config('cms.agency.favicon_url') }}">
+    @endif
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -13,10 +16,16 @@
         <div class="w-full max-w-md space-y-8">
             <!-- Logo -->
             <div class="text-center">
+                @if(config('cms.agency.logo_url'))
+                <img src="{{ config('cms.agency.logo_url') }}"
+                     alt="{{ config('cms.agency.name') }}"
+                     class="mx-auto h-14 w-auto object-contain mb-4">
+                @else
                 <div class="mx-auto w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mb-4">
-                    <span class="text-white font-bold text-2xl">G</span>
+                    <span class="text-white font-bold text-2xl">{{ mb_substr(config('cms.agency.name', 'G'), 0, 1) }}</span>
                 </div>
-                <h2 class="text-3xl font-bold tracking-tight text-gray-900">Grafike CMS</h2>
+                @endif
+                <h2 class="text-3xl font-bold tracking-tight text-gray-900">{{ config('cms.agency.name', config('cms.name', 'Grafike CMS')) }}</h2>
                 <p class="mt-2 text-sm text-gray-600">Yönetim paneline giriş yapın</p>
             </div>
 

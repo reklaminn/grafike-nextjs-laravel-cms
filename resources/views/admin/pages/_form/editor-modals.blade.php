@@ -165,7 +165,12 @@
                         <input type="checkbox" x-model="settingsBlock.is_active" class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
                         Block aktif
                     </label>
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                    <label class="flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700"
+                           title="Sadece giriş yapmış üyeler bu bloğu görebilir">
+                        <input type="checkbox" x-model="settingsBlock.is_member_only" class="h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
+                        <i class="fas fa-lock text-xs text-indigo-400 mr-0.5"></i> Sadece üyeler
+                    </label>
+                    <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 sm:col-span-2">
                         <span class="font-medium text-gray-700">Özet:</span>
                         <span x-text="blockSummary(settingsBlock)"></span>
                     </div>
