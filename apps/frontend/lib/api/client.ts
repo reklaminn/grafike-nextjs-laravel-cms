@@ -21,12 +21,19 @@ const FALLBACK_SITE_HOST = process.env.NEXT_PUBLIC_SITE_URL
   ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host
   : null;
 const INTERNAL_API_HOSTS = new Set([
+  // Multi-replica dev/staging setup
   "app1",
   "app2",
   "app3",
   "grafike_cms_app1",
   "grafike_cms_app2",
   "grafike_cms_app3",
+  // Single-container production setup (docker-compose.hostinger.yml)
+  "app",
+  "grafike_cms_app",
+  // Frontend container itself (avoid self-referential host headers)
+  "grafike_cms_frontend",
+  "frontend",
 ]);
 
 type ResourceEnvelope<T> = { data: T };
@@ -94,12 +101,20 @@ async function fetchJson<T>(
       requestHeaders["X-Tenant-ID"] = tenantId;
     }
 
+    // Prefix every tag with the site host so a revalidation for
+    // tenant-A never busts tenant-B's cache on the same Next.js instance.
+    // e.g. "page-home" → "nuhcicek.com.tr:page-home"
+    // Preview requests are never cached (no-store), so no prefixing needed there.
+    const scopedTags = tags && siteHost
+      ? tags.map((t) => `${siteHost}:${t}`)
+      : tags;
+
     const cacheOptions = tenantId
       ? { cache: "no-store" as const }
       : {
           next: {
             revalidate: 60,
-            ...(tags && tags.length > 0 ? { tags } : {}),
+            ...(scopedTags && scopedTags.length > 0 ? { tags: scopedTags } : {}),
           },
         };
 

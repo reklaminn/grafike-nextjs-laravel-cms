@@ -108,20 +108,81 @@ services:
       - "traefik.http.middlewares.grafike-headers.headers.STSIncludeSubdomains=true"
       - "traefik.http.middlewares.grafike-headers.headers.STSPreload=true"
 
-      # ── Tenant domain catch-all ────────────────────────────────────────────
-      # Matches ANY domain that is NOT graficms.grafike.site (priority 1 =
-      # lowest, so the explicit /admin|/api|/assets routers always win for
-      # the CMS domain). All tenant custom domains (nuhcicek.com.tr, etc.)
-      # fall through here → Laravel port 80 → stancl reads the Host header
-      # → looks up domain in the `domains` table → initialises the tenant DB.
-      # Traefik requests a Let's Encrypt certificate for each new hostname
-      # automatically via the HTTP-01 challenge.
-      - "traefik.http.routers.grafike-tenants.rule=HostRegexp(`{host:.+}`)"
-      - "traefik.http.routers.grafike-tenants.entrypoints=websecure"
-      - "traefik.http.routers.grafike-tenants.tls=true"
-      - "traefik.http.routers.grafike-tenants.tls.certresolver=mytlschallenge"
-      - "traefik.http.routers.grafike-tenants.service=grafike-lb"
-      - "traefik.http.routers.grafike-tenants.priority=1"
+      # ── Tenant backend paths → Laravel (any domain, priority 50) ─────────────
+      # Catches Laravel-served paths on EVERY domain (including tenant custom
+      # domains).  Higher priority than the frontend catch-all (1) so member
+      # auth, form submissions, sitemap, etc. always reach Laravel even when
+      # the request comes from nuhcicek.com.tr instead of the CMS domain.
+      # APP_DOMAIN backend paths are already handled by the priority-200 routers
+      # above; this rule only "wins" for tenant custom domains.
+      - "traefik.http.routers.grafike-backend.rule=PathPrefix(`/member`) || PathPrefix(`/api`) || PathPrefix(`/forms`) || PathPrefix(`/reviews`) || PathPrefix(`/pages`) || PathPrefix(`/lang`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/storage`) || PathPrefix(`/build`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`) || Path(`/sitemap.xml`) || Path(`/robots.txt`) || Path(`/llms.txt`) || Path(`/llms-full.txt`) || PathPrefix(`/.well-known`)"
+      - "traefik.http.routers.grafike-backend.entrypoints=websecure"
+      - "traefik.http.routers.grafike-backend.tls=true"
+      - "traefik.http.routers.grafike-backend.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-backend.service=grafike-lb"
+      - "traefik.http.routers.grafike-backend.priority=50"
+
+  # ── Next.js frontend (SSR + ISR) ─────────────────────────────────────────────
+  # Serves public pages for the CMS domain AND all tenant custom domains.
+  # SSR calls Laravel internally via CMS_API_URL (bypasses Traefik).
+  # On-demand ISR revalidation is triggered by Laravel observers via
+  # POST /api/revalidate using the REVALIDATE_SECRET shared secret.
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL:-https://localhost:3000}
+        NEXT_PUBLIC_API_URL: ${APP_URL}
+        NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-tr}
+        NEXT_PUBLIC_SUPPORTED_LOCALES: ${NEXT_PUBLIC_SUPPORTED_LOCALES:-tr}
+        NEXT_PUBLIC_APP_ENV: production
+    container_name: ${FRONTEND_CONTAINER_NAME:-grafike_cms_frontend}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Internal Docker network — bypasses Traefik for low-latency SSR API calls
+      CMS_API_URL: http://app:80
+      NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL}
+      NEXT_PUBLIC_API_URL: ${APP_URL}
+      NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-tr}
+      NEXT_PUBLIC_SUPPORTED_LOCALES: ${NEXT_PUBLIC_SUPPORTED_LOCALES:-tr}
+      REVALIDATE_SECRET: ${CMS_REVALIDATE_SECRET}
+      NEXT_PUBLIC_APP_ENV: production
+    depends_on:
+      - app
+    networks:
+      - app_net
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+
+      # ── CMS domain public pages → Next.js (priority 10) ───────────────────
+      # Non-backend paths on APP_DOMAIN go to Next.js SSR.
+      # Priority 10 loses to backend routers (200) but wins over catch-all (1).
+      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/member`) || PathPrefix(`/forms`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/storage`) || PathPrefix(`/build`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`) || Path(`/sitemap.xml`) || Path(`/robots.txt`))"
+      - "traefik.http.routers.grafike-frontend.entrypoints=websecure"
+      - "traefik.http.routers.grafike-frontend.tls=true"
+      - "traefik.http.routers.grafike-frontend.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-frontend.service=grafike-frontend-lb"
+      - "traefik.http.routers.grafike-frontend.priority=10"
+
+      # ── Tenant custom domains → Next.js (priority 1, catch-all) ──────────
+      # Any domain not already matched by a higher-priority backend router
+      # lands here.  Traefik auto-provisions a Let's Encrypt cert for each
+      # new hostname via HTTP-01 challenge.
+      # Next.js reads the Host header → calls Laravel API with X-Site-Host →
+      # stancl resolves the tenant → returns that tenant's content.
+      - "traefik.http.routers.grafike-tenant-frontend.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.grafike-tenant-frontend.entrypoints=websecure"
+      - "traefik.http.routers.grafike-tenant-frontend.tls=true"
+      - "traefik.http.routers.grafike-tenant-frontend.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-tenant-frontend.service=grafike-frontend-lb"
+      - "traefik.http.routers.grafike-tenant-frontend.priority=1"
+
+      # ── Load balancer ──────────────────────────────────────────────────────
+      - "traefik.http.services.grafike-frontend-lb.loadbalancer.server.port=3000"
 
   # ── Queue worker ─────────────────────────────────────────────────────────────
   queue:
