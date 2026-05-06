@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SitemapController;
 use App\Http\Controllers\Admin\SmtpProfileController;
+use App\Http\Controllers\Admin\TenantBackupController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
@@ -41,6 +42,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('tenants/{tenant}/provision', [TenantController::class, 'provision'])->name('tenants.provision');
         Route::post('tenants/{tenant}/switch',    [TenantController::class, 'switchTo'])->name('tenants.switch');
         Route::post('tenants/clear-active',       [TenantController::class, 'clearActive'])->name('tenants.clear-active');
+
+        // ── Tenant Backups ────────────────────────────────────────────────────
+        Route::post  ('tenants/{tenant}/backups',                    [TenantBackupController::class, 'store'])   ->name('tenants.backups.store');
+        Route::get   ('tenants/{tenant}/backups/{filename}/download',[TenantBackupController::class, 'download'])->name('tenants.backups.download');
+        Route::delete('tenants/{tenant}/backups/{filename}',         [TenantBackupController::class, 'destroy']) ->name('tenants.backups.destroy');
 
         // ── Tenant-scoped routes (require active tenant in session) ───────────
         Route::middleware('tenant.admin')->group(function () {

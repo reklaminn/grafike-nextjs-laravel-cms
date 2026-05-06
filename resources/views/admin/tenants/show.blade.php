@@ -1,3 +1,6 @@
+@php
+    $backups = app(\App\Http\Controllers\Admin\TenantBackupController::class)->backupList($tenant);
+@endphp
 @extends('admin.layouts.app')
 @section('title', ($tenant->name ?? $tenant->id) . ' — Site Detayı')
 
@@ -32,6 +35,13 @@
 
     {{-- Left: Details + actions --}}
     <div class="lg:col-span-2 space-y-6">
+
+        {{-- Backup panel --}}
+        @include('admin.tenants._backup-panel', [
+            'tenant'    => $tenant,
+            'backups'   => $backups,
+            'canManage' => $canManageTenants,
+        ])
 
         {{-- Domains --}}
         <div class="bg-white rounded-xl shadow-sm border p-5">
