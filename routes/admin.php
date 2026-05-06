@@ -187,6 +187,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('settings/crawl', [SettingsController::class, 'crawl'])->name('settings.crawl');
         Route::put('settings/crawl', [SettingsController::class, 'updateCrawl'])->name('settings.crawl.update');
 
+        // Mail template test
+        Route::post('settings/test-mail', [SettingsController::class, 'sendTestMail'])->name('settings.test-mail');
+
         }); // end: tenant.admin middleware group
     });
 });
