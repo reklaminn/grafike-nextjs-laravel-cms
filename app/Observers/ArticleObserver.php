@@ -36,6 +36,8 @@ class ArticleObserver
         }
 
         Cache::forget('sitemap_xml');
+        Cache::forget('llms_txt');
+        Cache::forget('llms_full_txt');
         Cache::forget('dashboard.stats');
 
         if ($article->page_id) {

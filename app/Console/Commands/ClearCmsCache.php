@@ -15,7 +15,9 @@ class ClearCmsCache extends Command
     {
         if ($this->option('sitemap')) {
             Cache::forget('sitemap_xml');
-            $this->info('Sitemap cache cleared.');
+            Cache::forget('llms_txt');
+            Cache::forget('llms_full_txt');
+            $this->info('Sitemap + llms.txt cache cleared.');
 
             return self::SUCCESS;
         }
@@ -30,9 +32,11 @@ class ClearCmsCache extends Command
         // Clear all CMS caches
         $this->info('Clearing all CMS caches...');
 
-        // Sitemap
+        // Sitemap + LLMs
         Cache::forget('sitemap_xml');
-        $this->line('  - Sitemap cache cleared');
+        Cache::forget('llms_txt');
+        Cache::forget('llms_full_txt');
+        $this->line('  - Sitemap + llms.txt cache cleared');
 
         // Languages
         Cache::forget('active_languages');

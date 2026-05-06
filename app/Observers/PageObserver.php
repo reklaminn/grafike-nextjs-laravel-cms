@@ -54,6 +54,8 @@ class PageObserver
         }
 
         Cache::forget('sitemap_xml');
+        Cache::forget('llms_txt');
+        Cache::forget('llms_full_txt');
         Cache::forget("layout_{$page->id}_0");
         Cache::forget("page_{$page->id}");
         Cache::forget('dashboard.stats');
