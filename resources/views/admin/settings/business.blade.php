@@ -2,55 +2,10 @@
 @section('title', 'İşletme Bilgileri')
 
 @section('content')
-<div class="max-w-3xl" x-data="{
-    generateJsonLd() {
-        const b = {
-            '@@context': 'https://schema.org',
-            '@@type': document.getElementById('business_type').value || 'Organization',
-            name: document.getElementById('business_name').value,
-            url: '{{ url('/') }}',
-            telephone: document.getElementById('business_telephone').value,
-            email: document.getElementById('business_email').value,
-        };
-
-        const street = document.getElementById('business_address_street').value;
-        if (street) {
-            b.address = {
-                '@@type': 'PostalAddress',
-                streetAddress: street,
-                addressLocality: document.getElementById('business_address_city').value,
-                postalCode: document.getElementById('business_address_postal_code').value,
-                addressCountry: document.getElementById('business_address_country').value || 'TR',
-            };
-        }
-
-        const lat = document.getElementById('business_geo_lat').value;
-        const lng = document.getElementById('business_geo_lng').value;
-        if (lat && lng) {
-            b.geo = { '@@type': 'GeoCoordinates', latitude: parseFloat(lat), longitude: parseFloat(lng) };
-        }
-
-        const hours = document.getElementById('business_opening_hours').value;
-        if (hours) {
-            try {
-                const parsed = JSON.parse(hours);
-                if (Array.isArray(parsed)) {
-                    b.openingHoursSpecification = parsed.map(h => ({
-                        '@@type': 'OpeningHoursSpecification',
-                        dayOfWeek: h.days ? h.days.split('-').map(d => d.trim()) : [],
-                        opens: h.hours ? h.hours.split('-')[0].trim() : '09:00',
-                        closes: h.hours ? (h.hours.split('-')[1] || '18:00').trim() : '18:00',
-                    }));
-                }
-            } catch {}
-        }
-
-        // Remove empty fields
-        Object.keys(b).forEach(k => { if (b[k] === '' || b[k] === null || b[k] === undefined) delete b[k]; });
-
-        document.getElementById('organization_json_ld').value = JSON.stringify(b, null, 2);
-    }
-}">
+@php
+    $siteUrl = url('/');
+@endphp
+<div class="max-w-3xl">
 
     <div class="flex items-center justify-between mb-6">
         <div>
@@ -107,7 +62,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         İşletme Türü
-                        <span class="text-gray-400 font-normal ml-1">— @@type</span>
+                        <span class="text-gray-400 font-normal ml-1">— schema type</span>
                     </label>
                     <select id="business_type" name="business[type]"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
@@ -236,7 +191,7 @@
                 <h2 class="text-base font-semibold text-gray-800">
                     <i class="fas fa-code mr-2 text-purple-500"></i>Özel Organization JSON-LD
                 </h2>
-                <button type="button" @@click="generateJsonLd()"
+                <button type="button" id="btn-generate-jsonld"
                         class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1.5">
                     <i class="fas fa-magic text-[10px]"></i> Yukarıdaki bilgilerden üret
                 </button>
@@ -249,7 +204,7 @@
             </p>
             <textarea id="organization_json_ld" name="business[organization_json_ld]" rows="12"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder='{ "@context": "https://schema.org", "@type": "Organization", "name": "..." }'
+                      placeholder='{ "context": "https://schema.org", "type": "Organization", "name": "..." }'
             >{{ old('business.organization_json_ld', $settings['business.organization_json_ld'] ?? '') }}</textarea>
         </div>
 
@@ -268,6 +223,67 @@
 
 <script>
 (function () {
+    const SITE_URL = {!! json_encode($siteUrl) !!};
+
+    // ── JSON-LD generator ────────────────────────────────────────────
+    function generateJsonLd() {
+        const ctxKey  = String.fromCharCode(64) + 'context';
+        const typeKey = String.fromCharCode(64) + 'type';
+
+        const b = {
+            [ctxKey]:  'https://schema.org',
+            [typeKey]: document.getElementById('business_type').value || 'Organization',
+            name:      document.getElementById('business_name').value,
+            url:       SITE_URL,
+            telephone: document.getElementById('business_telephone').value,
+            email:     document.getElementById('business_email').value,
+        };
+
+        const street = document.getElementById('business_address_street').value;
+        if (street) {
+            b.address = {
+                [typeKey]:       'PostalAddress',
+                streetAddress:   street,
+                addressLocality: document.getElementById('business_address_city').value,
+                postalCode:      document.getElementById('business_address_postal_code').value,
+                addressCountry:  document.getElementById('business_address_country').value || 'TR',
+            };
+        }
+
+        const lat = document.getElementById('business_geo_lat').value;
+        const lng = document.getElementById('business_geo_lng').value;
+        if (lat && lng) {
+            b.geo = { [typeKey]: 'GeoCoordinates', latitude: parseFloat(lat), longitude: parseFloat(lng) };
+        }
+
+        const hours = document.getElementById('business_opening_hours').value;
+        if (hours) {
+            try {
+                const parsed = JSON.parse(hours);
+                if (Array.isArray(parsed)) {
+                    b.openingHoursSpecification = parsed.map(function (h) {
+                        return {
+                            [typeKey]: 'OpeningHoursSpecification',
+                            dayOfWeek: h.days ? h.days.split('-').map(function (d) { return d.trim(); }) : [],
+                            opens:     h.hours ? h.hours.split('-')[0].trim() : '09:00',
+                            closes:    h.hours ? (h.hours.split('-')[1] || '18:00').trim() : '18:00',
+                        };
+                    });
+                }
+            } catch (e) {}
+        }
+
+        Object.keys(b).forEach(function (k) {
+            if (b[k] === '' || b[k] === null || b[k] === undefined) delete b[k];
+        });
+
+        document.getElementById('organization_json_ld').value = JSON.stringify(b, null, 2);
+    }
+
+    const btn = document.getElementById('btn-generate-jsonld');
+    if (btn) btn.addEventListener('click', generateJsonLd);
+
+    // ── Map preview ──────────────────────────────────────────────────
     const latEl = document.getElementById('business_geo_lat');
     const lngEl = document.getElementById('business_geo_lng');
     const wrap   = document.getElementById('map-preview-wrap');
@@ -277,7 +293,7 @@
         const lat = parseFloat(latEl.value);
         const lng = parseFloat(lngEl.value);
         if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-            iframe.src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+            iframe.src = 'https://maps.google.com/maps?q=' + lat + ',' + lng + '&z=15&output=embed';
             wrap.classList.remove('hidden');
         } else {
             wrap.classList.add('hidden');
@@ -287,7 +303,6 @@
     latEl.addEventListener('change', updateMap);
     lngEl.addEventListener('change', updateMap);
 
-    // Init on load
     if (latEl.value && lngEl.value) updateMap();
 })();
 </script>
