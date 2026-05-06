@@ -5,8 +5,8 @@
 <div class="max-w-3xl" x-data="{
     generateJsonLd() {
         const b = {
-            '@context': 'https://schema.org',
-            '@type': document.getElementById('business_type').value || 'Organization',
+            '@@context': 'https://schema.org',
+            '@@type': document.getElementById('business_type').value || 'Organization',
             name: document.getElementById('business_name').value,
             url: '{{ url('/') }}',
             telephone: document.getElementById('business_telephone').value,
@@ -16,7 +16,7 @@
         const street = document.getElementById('business_address_street').value;
         if (street) {
             b.address = {
-                '@type': 'PostalAddress',
+                '@@type': 'PostalAddress',
                 streetAddress: street,
                 addressLocality: document.getElementById('business_address_city').value,
                 postalCode: document.getElementById('business_address_postal_code').value,
@@ -27,7 +27,7 @@
         const lat = document.getElementById('business_geo_lat').value;
         const lng = document.getElementById('business_geo_lng').value;
         if (lat && lng) {
-            b.geo = { '@type': 'GeoCoordinates', latitude: parseFloat(lat), longitude: parseFloat(lng) };
+            b.geo = { '@@type': 'GeoCoordinates', latitude: parseFloat(lat), longitude: parseFloat(lng) };
         }
 
         const hours = document.getElementById('business_opening_hours').value;
@@ -36,7 +36,7 @@
                 const parsed = JSON.parse(hours);
                 if (Array.isArray(parsed)) {
                     b.openingHoursSpecification = parsed.map(h => ({
-                        '@type': 'OpeningHoursSpecification',
+                        '@@type': 'OpeningHoursSpecification',
                         dayOfWeek: h.days ? h.days.split('-').map(d => d.trim()) : [],
                         opens: h.hours ? h.hours.split('-')[0].trim() : '09:00',
                         closes: h.hours ? (h.hours.split('-')[1] || '18:00').trim() : '18:00',
@@ -107,7 +107,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         İşletme Türü
-                        <span class="text-gray-400 font-normal ml-1">— @type</span>
+                        <span class="text-gray-400 font-normal ml-1">— @@type</span>
                     </label>
                     <select id="business_type" name="business[type]"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
@@ -236,7 +236,7 @@
                 <h2 class="text-base font-semibold text-gray-800">
                     <i class="fas fa-code mr-2 text-purple-500"></i>Özel Organization JSON-LD
                 </h2>
-                <button type="button" @click="generateJsonLd()"
+                <button type="button" @@click="generateJsonLd()"
                         class="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-1.5">
                     <i class="fas fa-magic text-[10px]"></i> Yukarıdaki bilgilerden üret
                 </button>
