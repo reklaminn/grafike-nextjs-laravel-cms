@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Stancl\Tenancy\Contracts\TenantCouldNotBeIdentifiedException;
+use Stancl\Tenancy\Exceptions\TenantCouldNotBeIdentifiedOnDomainException;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -28,7 +29,18 @@ class InitializeTenancyForPublicApi
             abort(404);
         }
 
-        return app(InitializeTenancyByDomain::class)->handle($request, $next);
+        // Catch the domain-not-found exception so it becomes a clean 404 instead
+        // of an unhandled exception. This is the defensive last line — normally
+        // UseSiteHostHeader has already overridden the Host header to the real
+        // tenant domain before this middleware runs. Without the try/catch, every
+        // request that arrives with an unresolvable host (Docker internal names,
+        // stale container names, health-check pings, …) floods Sentry with
+        // TenantCouldNotBeIdentifiedOnDomainException events.
+        try {
+            return app(InitializeTenancyByDomain::class)->handle($request, $next);
+        } catch (TenantCouldNotBeIdentifiedOnDomainException) {
+            abort(404);
+        }
     }
 
     private function resolvePreviewTenantId(Request $request): ?string

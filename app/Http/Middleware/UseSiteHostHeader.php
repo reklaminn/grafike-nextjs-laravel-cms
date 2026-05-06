@@ -33,10 +33,17 @@ class UseSiteHostHeader
 
     private function resolveSiteHost(Request $request): ?string
     {
+        // Priority:
+        //  1. Explicit X-Site-Host sent by the Next.js SSR client
+        //  2. X-Forwarded-Host (set by Traefik or the SSR client)
+        //  3. CMS_FRONTEND_URL (the public site URL)
+        //  4. CENTRAL_DOMAIN env (always set in docker-compose — most reliable fallback)
+        //  5. APP_URL (Laravel's own URL — last resort)
         return $request->headers->get('X-Site-Host')
             ?: $request->headers->get('X-Forwarded-Host')
             ?: $this->hostFromUrl(config('cms.frontend_url'))
             ?: $this->hostFromUrl(env('CMS_FRONTEND_URL'))
+            ?: $this->hostFromUrl(env('CENTRAL_DOMAIN'))
             ?: $this->hostFromUrl(config('app.url'));
     }
 

@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Sentry\Laravel\Integration;
+use Stancl\Tenancy\Exceptions\TenantCouldNotBeIdentifiedOnDomainException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -52,4 +53,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);
+
+        // TenantCouldNotBeIdentifiedOnDomainException is a 404-level event
+        // (unknown domain, Docker internal hostname, health-check pings …).
+        // It is caught and turned into a clean abort(404) in
+        // InitializeTenancyForPublicApi, but we also exclude it from Sentry
+        // here so any edge case that still escapes never floods the quota.
+        $exceptions->dontReport(TenantCouldNotBeIdentifiedOnDomainException::class);
     })->create();
