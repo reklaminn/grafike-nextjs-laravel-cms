@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use App\Models\Language;
 use App\Models\Page;
 use App\Models\SeoEntry;
 use Illuminate\Http\Request;
@@ -18,8 +19,11 @@ class MaintenanceController extends Controller
         $orphans = [];
 
         // Pages without language
+        // Language is on central DB — whereDoesntHave() generates a cross-DB subquery
+        // that fails when tenant connection is active. Fetch valid IDs first instead.
+        $validLanguageIds = Language::pluck('id');
         $orphans['pages_no_language'] = Page::whereNotNull('language_id')
-            ->whereDoesntHave('language')
+            ->whereNotIn('language_id', $validLanguageIds)
             ->count();
 
         // Articles without page
@@ -68,8 +72,9 @@ class MaintenanceController extends Controller
         DB::transaction(function () use ($type, &$count) {
             switch ($type) {
                 case 'pages_no_language':
+                    $validLanguageIds = Language::pluck('id');
                     $count = Page::whereNotNull('language_id')
-                        ->whereDoesntHave('language')
+                        ->whereNotIn('language_id', $validLanguageIds)
                         ->forceDelete();
                     break;
 
