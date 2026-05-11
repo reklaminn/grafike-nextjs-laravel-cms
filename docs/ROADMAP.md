@@ -77,7 +77,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **1/7 bitti**
+### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **2/7 bitti**
 
 > Foundation. Tüm AI özelliklerinin ön koşulu.
 
@@ -85,7 +85,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 |---|---|---|
 | 3.1 ✅ | AI provider abstraction | `app/Services/Ai/` — Anthropic + OpenAI + OpenRouter adapter'ları, `AiManager`, DTOs, Facade, `php artisan ai:ping` komutu; 13 unit test geçiyor. BYOK desteği DTO'da hazır (`apiKeyOverride`). |
 | 3.2 | Model rotasyonu | Basit (SEO meta, kısa metin) → Haiku/4o-mini; karmaşık (tam sayfa, tool-use) → Sonnet/4o; her endpoint için varsayılan model |
-| 3.3 | BYOK (Bring Your Own Key) | Tenant ayarlarında "Kendi API anahtarımı kullan"; Anthropic/OpenAI/OpenRouter; encrypted storage; BYOK durumunda kotamızdan düşmez |
+| 3.3 ✅ | BYOK (Bring Your Own Key) | `Tenant` modelinde encrypted API key storage (Crypt::encryptString); `TenantAiResolver` BYOK + tenant tercihlerini uygular; admin tenant detayında "AI Ayarları" kartı (sağlayıcı seçimi, key girişi, canlı test); routes: `PUT admin/tenants/{t}/ai-settings`, `POST .../test`; 7 unit test. |
 | 3.4 | Kota & billing entegrasyonu | Aylık token + istek limiti; `ai_usage` tablosu (central DB); aşımda blok + paid plan'a yönlendirme; plan başına kota config'i |
 | 3.5 | Redis prompt caching | Aynı prompt 30 dk içinde tekrar gelirse cache → token harcanmaz |
 | 3.6 | Streaming desteği (SSE) | Uzun cevaplarda kullanıcı early stop yapabilir; admin UI'da typewriter efekti |

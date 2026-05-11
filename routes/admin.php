@@ -48,6 +48,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get   ('tenants/{tenant}/backups/{filename}/download',[TenantBackupController::class, 'download'])->name('tenants.backups.download');
         Route::delete('tenants/{tenant}/backups/{filename}',         [TenantBackupController::class, 'destroy']) ->name('tenants.backups.destroy');
 
+        // ── Tenant AI Settings (BYOK) ─────────────────────────────────────────
+        Route::put ('tenants/{tenant}/ai-settings',      [TenantController::class, 'updateAiSettings'])->name('tenants.ai-settings.update');
+        Route::post('tenants/{tenant}/ai-settings/test', [TenantController::class, 'testAiKey'])      ->name('tenants.ai-settings.test');
+
         // ── Tenant-scoped routes (require active tenant in session) ───────────
         Route::middleware('tenant.admin')->group(function () {
 

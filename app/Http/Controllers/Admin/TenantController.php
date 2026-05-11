@@ -7,6 +7,10 @@ use App\Models\Admin;
 use App\Models\AdminTenantAccess;
 use App\Models\Tenant;
 use App\Models\Theme;
+use App\Services\Ai\AiManager;
+use App\Services\Ai\Dtos\AiMessage;
+use App\Services\Ai\Dtos\AiRequest;
+use App\Services\Ai\Exceptions\AiProviderException;
 use App\Services\Tenants\TenantStarterContentSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +21,7 @@ use Illuminate\Validation\Rule;
 use Stancl\Tenancy\Database\DatabaseManager;
 use Stancl\Tenancy\Jobs\CreateDatabase;
 use Stancl\Tenancy\Jobs\DeleteDatabase;
+use Throwable;
 
 class TenantController extends Controller
 {
@@ -273,6 +278,124 @@ class TenantController extends Controller
         return redirect()
             ->route('admin.tenants.index')
             ->with('success', $message);
+    }
+
+    /**
+     * Update a tenant's AI / BYOK settings.
+     *
+     * Empty key fields are interpreted as "leave existing key untouched";
+     * pass `clear_<provider>=1` to explicitly remove the stored key.
+     */
+    public function updateAiSettings(Request $request, Tenant $tenant)
+    {
+        $this->authorizeTenantAccess($tenant);
+
+        $providers = array_keys(config('ai.providers', []));
+
+        $rules = [
+            'use_byok'           => 'nullable|boolean',
+            'preferred_provider' => ['nullable', Rule::in($providers)],
+        ];
+        foreach ($providers as $p) {
+            $rules["api_keys.{$p}"]       = 'nullable|string|max:512';
+            $rules["clear.{$p}"]          = 'nullable|boolean';
+            $rules["models.{$p}.simple"]  = 'nullable|string|max:128';
+            $rules["models.{$p}.complex"] = 'nullable|string|max:128';
+        }
+
+        $validated = $request->validate($rules);
+
+        $settings = $tenant->aiSettings();
+        $settings['use_byok']           = (bool) ($validated['use_byok'] ?? false);
+        $settings['preferred_provider'] = $validated['preferred_provider'] ?? null;
+        $settings['models']             = $settings['models'] ?? [];
+
+        foreach ($providers as $p) {
+            // Models (per provider, per tier)
+            $simple  = $validated['models'][$p]['simple']  ?? null;
+            $complex = $validated['models'][$p]['complex'] ?? null;
+            if ($simple || $complex) {
+                $settings['models'][$p] = array_filter([
+                    'simple'  => $simple,
+                    'complex' => $complex,
+                ]);
+            } else {
+                unset($settings['models'][$p]);
+            }
+
+            // API keys
+            if (! empty($validated['clear'][$p])) {
+                $tenant->setAiSettings($settings);
+                $tenant->setAiApiKey($p, null);
+                $settings = $tenant->aiSettings();
+                continue;
+            }
+            $newKey = trim((string) ($validated['api_keys'][$p] ?? ''));
+            if ($newKey !== '') {
+                $tenant->setAiSettings($settings);
+                $tenant->setAiApiKey($p, $newKey);
+                $settings = $tenant->aiSettings();
+            }
+        }
+
+        $tenant->setAiSettings($settings);
+        $tenant->save();
+
+        return redirect()
+            ->route('admin.tenants.show', $tenant)
+            ->with('success', 'AI ayarları güncellendi.');
+    }
+
+    /**
+     * Smoke-test a tenant's AI key by sending a tiny prompt. Does not
+     * mutate state. Returns JSON with status + token usage.
+     */
+    public function testAiKey(Request $request, Tenant $tenant, AiManager $manager)
+    {
+        $this->authorizeTenantAccess($tenant);
+
+        $providerName = $request->input('provider')
+            ?: $tenant->preferredAiProvider()
+            ?: $manager->defaultProvider();
+
+        $apiKey = $tenant->aiApiKey($providerName);
+        if (! $apiKey) {
+            return response()->json([
+                'ok'      => false,
+                'message' => "Bu provider için kayıtlı bir API anahtarı yok: {$providerName}.",
+            ], 422);
+        }
+
+        try {
+            $response = $manager->provider($providerName)->generate(new AiRequest(
+                model:          $manager->resolveModel('simple', $providerName),
+                messages:       [AiMessage::user('OK')],
+                system:         'Reply with the single word "ok" and nothing else.',
+                maxTokens:      10,
+                temperature:    0.0,
+                metadata:       ['source' => 'tenant.ai-test', 'tenant_id' => $tenant->getKey()],
+                apiKeyOverride: $apiKey,
+            ));
+
+            return response()->json([
+                'ok'       => true,
+                'provider' => $response->provider,
+                'model'    => $response->model,
+                'content'  => $response->content,
+                'usage'    => $response->usage->toArray(),
+            ]);
+        } catch (AiProviderException $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => $e->getMessage(),
+                'status'  => $e->statusCode,
+            ], 422);
+        } catch (Throwable $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Beklenmedik hata: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     private function createTenantDomain(string $tenantId, string $domain): void

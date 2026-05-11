@@ -127,6 +127,13 @@
             </form>
         </div>
         @endif
+
+        {{-- ─── AI Ayarları (BYOK) ─────────────────────────────────────────── --}}
+        @include('admin.tenants._ai-settings-panel', [
+            'tenant'    => $tenant,
+            'providers' => config('ai.providers'),
+            'canManage' => $canManageTenants,
+        ])
     </div>
 
     {{-- Right: Quick actions --}}
