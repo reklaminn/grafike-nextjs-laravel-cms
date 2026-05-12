@@ -125,24 +125,44 @@
 
             const data = await res.json();
 
-            if (data.result) {
+            if (res.ok && data.ok && data.result) {
                 const r = data.result;
-                // Fill title
+
+                // Fill scalar fields
                 const titleEl = document.querySelector('[name="title"]');
                 if (titleEl && r.title) titleEl.value = r.title;
 
-                // Fill SEO title / description
                 const seoTitleEl = document.querySelector('[name="seo_title"]');
                 if (seoTitleEl && r.seo_title) seoTitleEl.value = r.seo_title;
 
                 const seoDescEl = document.querySelector('[name="seo_description"]');
                 if (seoDescEl && r.seo_description) seoDescEl.value = r.seo_description;
 
+                const seoKwEl = document.querySelector('[name="seo_keywords"]');
+                if (seoKwEl && r.seo_keywords) seoKwEl.value = r.seo_keywords;
+
+                const seoH1El = document.querySelector('[name="seo_h1"]');
+                if (seoH1El && r.seo_h1) seoH1El.value = r.seo_h1;
+
+                // Push translated block content into the Alpine frontendSectionEditor
+                // via a window event — the editor listens and replaces its regions.
+                if (r.sections_json) {
+                    window.dispatchEvent(new CustomEvent('ai-translate-sections', {
+                        detail: { sections_json: r.sections_json },
+                    }));
+                }
+
                 btn.innerHTML = '<i class="fas fa-check"></i> Çevrildi';
                 btn.classList.replace('bg-indigo-600', 'bg-green-600');
                 btn.classList.replace('hover:bg-indigo-700', 'hover:bg-green-700');
             } else {
-                alert('AI hatası: ' + (data.error ?? 'Bilinmeyen hata'));
+                // Quota / generic error
+                const msg = data.error || data.message || 'Bilinmeyen hata';
+                if (data.error_code === 'quota_exceeded') {
+                    alert('AI kotanız doldu: ' + msg);
+                } else {
+                    alert('AI hatası: ' + msg);
+                }
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-magic"></i> ✨ AI ile Çevir';
             }

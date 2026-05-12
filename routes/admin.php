@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\Ai\BlockEditController as AiBlockEditController;
 use App\Http\Controllers\Admin\Ai\PageGenerateController as AiPageGenerateController;
 use App\Http\Controllers\Admin\Ai\SeoMetaController as AiSeoMetaController;
+use App\Http\Controllers\Admin\Ai\TranslateContentController as AiTranslateContentController;
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -28,7 +29,6 @@ use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CurrencyController;
-use App\Http\Controllers\Admin\AiAssistantController;
 use App\Http\Controllers\Admin\TranslationController;
 use Illuminate\Support\Facades\Route;
 
@@ -177,11 +177,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
         });
 
-        // AI Assistant API
-        Route::post('ai/translate', [AiAssistantController::class, 'translate'])->name('ai.translate');
-        Route::post('ai/rewrite', [AiAssistantController::class, 'rewrite'])->name('ai.rewrite');
-        Route::post('ai/generate-meta', [AiAssistantController::class, 'generateMeta'])->name('ai.generate-meta');
-        Route::post('ai/translate-content', [AiAssistantController::class, 'translateContent'])->name('ai.translate-content');
+        // AI translate full page/article — wired into AiModelRouter (FAZ 4.6).
+        // Legacy translate / rewrite / generate-meta endpoints were removed;
+        // their replacements live under admin.ai.* (block-edit, pages.generate)
+        // and admin.pages.ai.* (seo-meta).
+        Route::post('ai/translate-content', AiTranslateContentController::class)->name('ai.translate-content');
 
         // Translation management
         Route::get('translations', [TranslationController::class, 'index'])->name('translations.index');

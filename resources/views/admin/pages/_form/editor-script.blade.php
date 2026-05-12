@@ -167,6 +167,19 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             this.normalizeSortOrder();
             this.initialSerializedRegions = this.serializedRegions;
 
+            // Listen for AI translation results — when the translate-content
+            // endpoint returns a fully-translated sections_json (FAZ 4.6),
+            // it dispatches an "ai-translate-sections" event with the new
+            // structure; we hot-swap the editor's regions so the translated
+            // blocks render immediately.
+            window.addEventListener('ai-translate-sections', (event) => {
+                const incoming = event?.detail?.sections_json;
+                if (!incoming || typeof incoming !== 'object') return;
+                this.regions = this.normalizeRegions(incoming);
+                this.normalizeSortOrder();
+                this.syncSerializedRegions();
+            });
+
             this.$nextTick(() => {
                 this.syncSerializedRegions();
 

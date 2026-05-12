@@ -15,7 +15,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 | FAZ 1 — Multi-Tenant + Docker HA | 9 | 8 | 1 |
 | FAZ 2 — Admin Pages Refactor | 5 | 5 | 0 |
 | FAZ 3 — AI Altyapısı | 7 | 0 | 7 |
-| FAZ 4 — AI Özellikleri | 6 | 3 | 3 |
+| FAZ 4 — AI Özellikleri | 6 | 4 | 2 |
 | **Toplam plan içi** | **27** | **13** | **14** |
 | Plan dışı tamamlanan | 5+ | 5+ | — |
 
@@ -132,11 +132,9 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün) — **3/6 bitti**
+### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün) — **4/6 bitti**
 
 > Müşteriye değer üreten katman. Her madde ayrı bir release olabilir.
-
-> **⚠️ Legacy controller note:** Repo'da eski bir `app/Http/Controllers/Admin/AiAssistantController.php` mevcut (direct HTTP, no quota, no BYOK, no fallback). Routes: `admin.ai.translate`, `admin.ai.rewrite`, `admin.ai.generate-meta`, `admin.ai.translate-content`. İlk üçü dead code (frontend hiçbir yerde çağırmıyor). `admin.ai.translate-content` ise sayfa/makale çeviri ekranlarında hâlâ kullanılıyor — FAZ 4.6 (AI çevirmen) yapılırken `AiModelRouter` üzerine refactor edilip diğer üçü silinecek.
 
 | Sıra | # | Madde | Süre | Açıklama |
 |---|---|---|---|---|
@@ -145,7 +143,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 | 3 | 4.3 | **Hazır şablon galerisi** | 2 gün UI + 4-6 saat/şablon | Klinik/Avukat/Restoran/Salon/Emlak — tek tıkla site; AI değil, içerik seed'i |
 | 4 | 4.4 ✅ | **AI ile sayfa oluşturma** | bitti | `AiPageGenerator` service — central DB'deki aktif SectionTemplate'leri model'e katalog olarak verir (id + type + alanlar), AI uygun blokları seçip her birinin content'ini üretir; hallucinated template_id'ler silinir, content schema-declared key'lere filtrelenir, `FrontendSections::normalize()` ile region-based sections_json'a wrap edilir. `Admin\Ai\PageGenerateController` (POST admin/ai/pages/generate) iki modlu: preview-only (kaydetmez) ve auto_save=true (yeni Page record + benzersiz slug + edit ekranına redirect). Pages index'inde "AI ile Sayfa Oluştur" gradient buton + 2-adımlı wizard modal (prompt → önizleme blok listesi → kaydet). 10 unit test. |
 | 5 | 4.5 | **AI ile blok şablonu (SectionTemplate) oluşturma** ⭐ | 2-3 gün | Firma için: AI'a tarif → HTML template + schema_json + Tailwind class'lar |
-| 6 | 4.6 | **AI çevirmen** | 2-3 gün | Sayfa → hedef dilde yeni sayfa (parent_id ile bağlı) |
+| 6 | 4.6 ✅ | **AI çevirmen** | bitti | `AiTranslator` service — batch çeviri (tek API call'da onlarca alanı çevirir, per-field call'a göre ~50x daha ucuz). Page için title + tüm SEO alanları + `sections_json` içindeki tüm metin leaf'leri çevrilir; `media_id`/url/color/icon/template_id gibi teknik key'ler skip edilir. Article için title + excerpt + body + SEO. HTML tag'ler korunur, sadece tag'ler arasındaki metin çevrilir. `Admin\Ai\TranslateContentController` (POST admin/ai/translate-content) — legacy endpoint adını korur (geriye dönük uyumluluk), iç implementasyon `AiModelRouter` üzerine taşındı; quota + BYOK + fallback otomatik. Frontend `create-translation.blade.php` JS güncellendi: artık `sections_json` da gelir, Alpine event dispatch ile editor `regions` hot-swap olur. **Eski `AiAssistantController` silindi** — `admin.ai.translate`/`.rewrite`/`.generate-meta` dead route'lar kaldırıldı. 8 unit test (batch flow, fallback to original, sections traversal, technical-key skip, MD fenced reply, invalid JSON throw). |
 
 **Bağımlılıklar:** FAZ 3
 **Karar:** Bu özellikler **paid feature** olarak müşterilere fiyatlandırılacak. BYOK seçeneği ücretsizdir (kullanıcı kendi maliyetini öder).
