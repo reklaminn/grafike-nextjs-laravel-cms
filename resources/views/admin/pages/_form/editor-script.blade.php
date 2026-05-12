@@ -155,6 +155,13 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         rowSettingsDraft: null,
         initialSerializedRegions: null,
 
+        // AI block-edit state (FAZ 4.2)
+        aiAction: 'shorten',
+        aiCustomPrompt: '',
+        aiLoading: false,
+        aiStatus: '',
+        aiStatusOk: false,
+
         init() {
             this.regions = this.normalizeRegions(initialRegions);
             this.normalizeSortOrder();
@@ -942,6 +949,74 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             };
             this.normalizeSortOrder();
             this.closeBlockSettings();
+        },
+
+        // ── AI block-edit (FAZ 4.2) ─────────────────────────────────────
+        //
+        // Sends the current settingsDraft.content + the block's schema to
+        // the backend AI endpoint, then overwrites the draft content with
+        // the AI's rewrite. The admin sees the change immediately in the
+        // already-open settings modal and can either keep editing, "Kaydet"
+        // to commit the draft into regions, or "Vazgeç" to discard.
+        async applyAiTransform() {
+            if (!this.settingsDraft || this.aiLoading) return;
+
+            const action = this.aiAction;
+            const customPrompt = action === 'custom' ? (this.aiCustomPrompt || '').trim() : null;
+            if (action === 'custom' && !customPrompt) {
+                this.aiStatus = 'Özel komut için bir talimat yazın.';
+                this.aiStatusOk = false;
+                return;
+            }
+
+            this.aiLoading = true;
+            this.aiStatus = '';
+            this.aiStatusOk = false;
+
+            try {
+                const url = @js(route('admin.ai.block-edit', [], false));
+                const r = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action,
+                        custom_prompt: customPrompt,
+                        content: this.settingsDraft.content || {},
+                        schema: Array.isArray(this.settingsDraft.schema_json)
+                                ? this.settingsDraft.schema_json
+                                : (this.settingsDraft.schema || null),
+                        section_template_id: this.settingsDraft.section_template_id || this.settingsDraft.template_id || null,
+                    }),
+                });
+
+                const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
+
+                if (!r.ok || !data.ok) {
+                    let msg = data.message || 'AI cevap üretemedi.';
+                    if (data.error_code === 'quota_exceeded') {
+                        msg = `${data.message} (kalan ${data.limit - data.used}/${data.limit})`;
+                    }
+                    this.aiStatus = msg;
+                    this.aiStatusOk = false;
+                    return;
+                }
+
+                // Replace draft content with AI rewrite. Keep other draft
+                // metadata (is_active, member-only, etc.) untouched.
+                this.settingsDraft.content = data.content || this.settingsDraft.content;
+                this.aiStatus = 'Blok içeriği AI ile güncellendi. Kaydetmeden önce gözden geçirin.';
+                this.aiStatusOk = true;
+            } catch (e) {
+                this.aiStatus = e.message || 'Ağ hatası.';
+                this.aiStatusOk = false;
+            } finally {
+                this.aiLoading = false;
+            }
         },
 
         get settingsBlock() {

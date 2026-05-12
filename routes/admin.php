@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\Ai\BlockEditController as AiBlockEditController;
 use App\Http\Controllers\Admin\Ai\SeoMetaController as AiSeoMetaController;
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\AuthController;
@@ -67,8 +68,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('pages/{page}/revisions/{revision}/restore', [PageController::class, 'restoreRevision'])->name('pages.restore-revision');
         Route::get('pages/{page}/create-translation', [PageController::class, 'createTranslation'])->name('pages.create-translation');
 
-        // AI helpers for pages (FAZ 4.1+)
+        // AI helpers (FAZ 4.1+)
         Route::post('pages/{page}/ai/seo-meta', AiSeoMetaController::class)->name('pages.ai.seo-meta');
+        Route::post('ai/block-edit',            AiBlockEditController::class)->name('ai.block-edit');
 
         // Articles CRUD
         Route::resource('articles', ArticleController::class)->except('show');

@@ -202,6 +202,57 @@
                 </div>
 
                 <div x-show="settingsTab === 'content'" class="grid gap-3">
+
+                    {{-- ─── AI yardımcısı (FAZ 4.2) ───────────────────── --}}
+                    <div class="rounded-xl border border-indigo-100 bg-gradient-to-r from-purple-50 to-indigo-50 p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-wand-magic-sparkles text-indigo-500"></i>
+                            <span class="text-xs font-semibold text-gray-700">AI Yardımcısı</span>
+                            <span class="text-[10px] text-gray-500 ml-auto">Bu blokun içeriğini AI ile dönüştür</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-stretch">
+                            <select x-model="aiAction"
+                                    class="flex-1 min-w-[180px] px-3 py-2 border border-indigo-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500">
+                                <option value="shorten">📏 Daha kısa yaz</option>
+                                <option value="lengthen">📜 Daha uzun yaz</option>
+                                <option value="professional">💼 Profesyonel ton</option>
+                                <option value="casual">😊 Samimi ton</option>
+                                <option value="seo_optimize">🔍 SEO odaklı yaz</option>
+                                <option value="rephrase">🔄 Yeniden yaz</option>
+                                <option value="fix_typos">✏️ Sadece yazım hatalarını düzelt</option>
+                                <option value="translate_en">🇬🇧 İngilizceye çevir</option>
+                                <option value="translate_tr">🇹🇷 Türkçeye çevir</option>
+                                <option value="translate_de">🇩🇪 Almancaya çevir</option>
+                                <option value="translate_ru">🇷🇺 Rusçaya çevir</option>
+                                <option value="translate_ar">🇸🇦 Arapçaya çevir</option>
+                                <option value="custom">⚡ Özel komut</option>
+                            </select>
+                            <button type="button"
+                                    @click="applyAiTransform()"
+                                    :disabled="aiLoading"
+                                    class="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fas" :class="aiLoading ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
+                                <span x-text="aiLoading ? 'Çalışıyor…' : 'Uygula'"></span>
+                            </button>
+                        </div>
+                        <div x-show="aiAction === 'custom'" x-cloak class="mt-2">
+                            <input type="text" x-model="aiCustomPrompt"
+                                   maxlength="500"
+                                   placeholder="Örn: Cümlelerin başına emoji ekle ama içeriği değiştirme"
+                                   class="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div x-show="aiStatus" x-cloak class="mt-2 text-xs rounded-md p-2"
+                             :class="aiStatusOk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                : 'bg-red-50 text-red-700 border border-red-200'">
+                            <i class="fas" :class="aiStatusOk ? 'fa-check-circle' : 'fa-exclamation-triangle'"></i>
+                            <span x-text="aiStatus"></span>
+                        </div>
+                        <p class="mt-2 text-[10px] text-gray-500">
+                            AI sadece metin alanlarını değiştirir; medya, link ve renk gibi alanlara dokunmaz.
+                            Yanıtı Kaydet'e basana kadar uygulanmaz — beğenmezseniz Vazgeç'e basın.
+                        </p>
+                    </div>
+
                     <template x-for="[fieldName, fieldSchema] in Object.entries(settingsBlock.schema || {})" :key="fieldName">
                         <div>
                             <template x-if="(fieldSchema.type || 'text') === 'repeater'">

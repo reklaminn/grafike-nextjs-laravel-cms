@@ -15,7 +15,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 | FAZ 1 — Multi-Tenant + Docker HA | 9 | 8 | 1 |
 | FAZ 2 — Admin Pages Refactor | 5 | 5 | 0 |
 | FAZ 3 — AI Altyapısı | 7 | 0 | 7 |
-| FAZ 4 — AI Özellikleri | 6 | 1 | 5 |
+| FAZ 4 — AI Özellikleri | 6 | 2 | 4 |
 | **Toplam plan içi** | **27** | **13** | **14** |
 | Plan dışı tamamlanan | 5+ | 5+ | — |
 
@@ -132,14 +132,16 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün) — **1/6 bitti**
+### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün) — **2/6 bitti**
 
 > Müşteriye değer üreten katman. Her madde ayrı bir release olabilir.
+
+> **⚠️ Legacy controller note:** Repo'da eski bir `app/Http/Controllers/Admin/AiAssistantController.php` mevcut (direct HTTP, no quota, no BYOK, no fallback). Routes: `admin.ai.translate`, `admin.ai.rewrite`, `admin.ai.generate-meta`, `admin.ai.translate-content`. İlk üçü dead code (frontend hiçbir yerde çağırmıyor). `admin.ai.translate-content` ise sayfa/makale çeviri ekranlarında hâlâ kullanılıyor — FAZ 4.6 (AI çevirmen) yapılırken `AiModelRouter` üzerine refactor edilip diğer üçü silinecek.
 
 | Sıra | # | Madde | Süre | Açıklama |
 |---|---|---|---|---|
 | 1 | 4.1 ✅ | **AI SEO meta üretici** | bitti | `AiSeoGenerator` (sections_json/layout_json → text extract → AI), `Admin\Ai\SeoMetaController` (POST /admin/pages/{page}/ai/seo-meta); sayfa edit'inde SEO panel'inde "AI ile Üret" butonu; JSON {title, description, keywords} form alanlarına otomatik yazılır; kota aşımında 402 + kalan kota uyarısı; 8 unit test (markdown fenced JSON, chatty prefix, truncation, keyword dedup/cap, content-field filtering). |
-| 2 | 4.2 | **AI ile blok içerik düzenleme** | 2-3 gün | Blok seçilir → "daha kısa", "TR→EN", "SEO odaklı", "profesyonel" |
+| 2 | 4.2 ✅ | **AI ile blok içerik düzenleme** | bitti | `AiBlockEditor` service (12 preset action: shorten/lengthen/professional/casual/seo_optimize/rephrase/fix_typos + 5 dil çevirisi + custom prompt). Schema-aware: sadece text-tipli alanları (`string`, `text`, `longtext`, `html`, `richtext`) düzenler; `media_id`/url/color/icon gibi non-text alanlara dokunmaz. AI tip değişikliği yaparsa reddedilir (string→array yoksay). Frontend block settings modal'ında "AI Yardımcısı" kartı: action dropdown + custom prompt input + Uygula butonu; cevap settingsDraft.content'e yazılır, admin "Kaydet"e basana kadar uygulanmaz. Routes: `POST admin/ai/block-edit`. 11 unit test. |
 | 3 | 4.3 | **Hazır şablon galerisi** | 2 gün UI + 4-6 saat/şablon | Klinik/Avukat/Restoran/Salon/Emlak — tek tıkla site; AI değil, içerik seed'i |
 | 4 | 4.4 | **AI ile sayfa oluşturma** | 3-5 gün | Prompt → mevcut SectionTemplate'lerden uygun sections_json |
 | 5 | 4.5 | **AI ile blok şablonu (SectionTemplate) oluşturma** ⭐ | 2-3 gün | Firma için: AI'a tarif → HTML template + schema_json + Tailwind class'lar |
