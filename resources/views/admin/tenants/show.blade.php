@@ -128,6 +128,13 @@
         </div>
         @endif
 
+        {{-- ─── Sektör Şablonu (FAZ 4.3) ───────────────────────────────────── --}}
+        @if($canManageTenants)
+            @include('admin.tenants._industry-template-panel', [
+                'tenant' => $tenant,
+            ])
+        @endif
+
         {{-- ─── AI Kullanım Özeti ──────────────────────────────────────────── --}}
         @include('admin.tenants._ai-usage-panel', [
             'tenant'  => $tenant,
