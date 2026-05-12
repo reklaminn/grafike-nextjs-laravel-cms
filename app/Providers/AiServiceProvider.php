@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Ai\AiBlockEditor;
 use App\Services\Ai\AiManager;
 use App\Services\Ai\AiModelRouter;
+use App\Services\Ai\AiPageGenerator;
 use App\Services\Ai\AiQuotaService;
 use App\Services\Ai\AiSeoGenerator;
 use App\Services\Ai\TenantAiResolver;
@@ -64,6 +65,10 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
         $this->app->singleton(AiBlockEditor::class, function ($app) {
             return new AiBlockEditor($app->make(AiModelRouter::class));
         });
+
+        $this->app->singleton(AiPageGenerator::class, function ($app) {
+            return new AiPageGenerator($app->make(AiModelRouter::class));
+        });
     }
 
     public function provides(): array
@@ -76,6 +81,7 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             AiModelRouter::class,
             AiSeoGenerator::class,
             AiBlockEditor::class,
+            AiPageGenerator::class,
         ];
     }
 }

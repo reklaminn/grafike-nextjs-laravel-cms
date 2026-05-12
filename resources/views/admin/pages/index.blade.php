@@ -5,15 +5,27 @@
 
 @section('content')
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6"
+         x-data="aiPageWizard()">
         <div>
             <p class="text-sm text-gray-500">Tüm sayfaları yönetin, düzenleyin ve yeni sayfalar ekleyin.</p>
         </div>
-        <a href="{{ route('admin.pages.create') }}"
-           class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-            <i class="fas fa-plus"></i>
-            Yeni Sayfa
-        </a>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="open = true"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors shadow-sm">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                AI ile Sayfa Oluştur
+            </button>
+            <a href="{{ route('admin.pages.create') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                <i class="fas fa-plus"></i>
+                Yeni Sayfa
+            </a>
+        </div>
+
+        @include('admin.pages._ai-generate-modal', [
+            'languages' => $languages ?? collect(),
+        ])
     </div>
 
     <!-- Filters -->
