@@ -13,16 +13,71 @@
         <h1 class="text-2xl font-bold text-gray-800">{{ $tenant->name ?? $tenant->id }}</h1>
         <p class="text-sm text-gray-400 font-mono">ID: {{ $tenant->id }} &nbsp;·&nbsp; DB: tenant_{{ $tenant->id }}</p>
     </div>
-    <span class="ml-auto inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-        {{ $tenant->status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
-        {{ $tenant->status === 'active' ? 'Aktif' : 'Askıya Alındı' }}
+    @php $statusColor = match($tenant->status) {
+        'active'       => 'bg-green-100 text-green-700',
+        'provisioning' => 'bg-blue-100 text-blue-700',
+        'failed'       => 'bg-red-100 text-red-700',
+        default        => 'bg-yellow-100 text-yellow-700',
+    }; @endphp
+    <span class="ml-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium {{ $statusColor }}">
+        @if($tenant->status === 'provisioning')
+            <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Hazırlanıyor…
+        @elseif($tenant->status === 'active') Aktif
+        @elseif($tenant->status === 'failed') Hata
+        @else Askıya Alındı
+        @endif
     </span>
 </div>
+
+{{-- Provisioning banner — auto-refresh every 5s --}}
+@if($tenant->status === 'provisioning')
+<div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800 flex items-center gap-3" id="provisioning-banner">
+    <svg class="animate-spin h-5 w-5 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    <div>
+        <strong>Veritabanı hazırlanıyor…</strong>
+        <span class="text-blue-600"> Migrationlar çalışıyor, bu ~30-60 saniye sürebilir.</span>
+        <span class="text-blue-500 ml-2" id="refresh-counter">Otomatik yenileme: <span id="countdown">10</span>s</span>
+    </div>
+</div>
+<script>
+(function() {
+    var n = 10;
+    var el = document.getElementById('countdown');
+    var timer = setInterval(function() {
+        n--;
+        if (el) el.textContent = n;
+        if (n <= 0) { clearInterval(timer); location.reload(); }
+    }, 1000);
+})();
+</script>
+@endif
+
+@if($tenant->status === 'failed')
+<div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+    <i class="fas fa-exclamation-triangle mr-1"></i>
+    <strong>Provisioning başarısız.</strong> Log'u kontrol edin veya manuel olarak
+    <form method="POST" action="{{ route('admin.tenants.provision', $tenant) }}" class="inline">
+        @csrf <button class="underline text-red-600 hover:text-red-800">tekrar dene</button>.
+    </form>
+</div>
+@endif
 
 {{-- Flash messages --}}
 @if(session('success'))
 <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 whitespace-pre-line">
     <i class="fas fa-check-circle mr-1"></i> {{ session('success') }}
+</div>
+@endif
+@if(session('info'))
+<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+    <i class="fas fa-info-circle mr-1"></i> {{ session('info') }}
 </div>
 @endif
 @if(session('error'))

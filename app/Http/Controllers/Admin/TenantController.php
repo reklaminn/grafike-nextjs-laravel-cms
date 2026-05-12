@@ -12,6 +12,7 @@ use App\Services\Ai\AiManager;
 use App\Services\Ai\Dtos\AiMessage;
 use App\Services\Ai\Dtos\AiRequest;
 use App\Services\Ai\Exceptions\AiProviderException;
+use App\Jobs\ProvisionTenantDatabaseJob;
 use App\Services\Tenants\IndustryTemplateApplier;
 use App\Services\Tenants\TenantStarterContentSeeder;
 use Illuminate\Support\Facades\Artisan;
@@ -102,7 +103,7 @@ class TenantController extends Controller
                 // stancl creation events and Eloquent key casting edge cases.
                 $tenantData = [
                     'name'     => $validated['name'],
-                    'status'   => 'active',
+                    'status'   => 'provisioning',   // job will flip to 'active'
                     'theme_id' => $validated['theme_id'] ?? null,
                 ];
 
@@ -148,34 +149,16 @@ class TenantController extends Controller
             });
         });
 
-        try {
-            $this->provisionTenantDatabase($tenant);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return redirect()
-                ->route('admin.tenants.show', $tenant)
-                ->with('warning', "Tenant «{$tenant->name}» oluşturuldu ancak veritabanı/migration adımı başarısız oldu: {$e->getMessage()}");
-        }
-
-        // Apply industry site template if selected (runs after migrations).
-        $successNote = "Veritabanı ve migrationlar otomatik çalıştırıldı.";
-        if (! empty($validated['site_template_id'])) {
-            $siteTemplate = SiteTemplate::find($validated['site_template_id']);
-            if ($siteTemplate) {
-                try {
-                    app(IndustryTemplateApplier::class)->apply($tenant, $siteTemplate);
-                    $successNote .= " «{$siteTemplate->name}» sektör şablonu uygulandı.";
-                } catch (\Throwable $e) {
-                    report($e);
-                    $successNote .= " ⚠ Şablon uygulanamadı: {$e->getMessage()}";
-                }
-            }
-        }
+        // Dispatch async — DB creation + migrations run in the queue worker.
+        // This prevents 504 timeouts on slow provisioning (~30-60 sec).
+        ProvisionTenantDatabaseJob::dispatch(
+            $tenant->getTenantKey(),
+            $validated['site_template_id'] ?? null,
+        );
 
         return redirect()
             ->route('admin.tenants.show', $tenant)
-            ->with('success', "Tenant «{$tenant->name}» oluşturuldu. {$successNote}");
+            ->with('info', "Tenant «{$tenant->name}» oluşturuldu. Veritabanı arka planda hazırlanıyor… Sayfa otomatik güncellenecek.");
     }
 
     /**
