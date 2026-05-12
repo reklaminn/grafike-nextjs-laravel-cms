@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Ai\AiManager;
 use App\Services\Ai\AiModelRouter;
+use App\Services\Ai\AiQuotaService;
 use App\Services\Ai\TenantAiResolver;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +29,19 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             return new TenantAiResolver($app->make(AiManager::class));
         });
 
+        // Quota tracking + enforcement. Keeps usage rows in central DB
+        // and throws AiQuotaExceededException when a tenant is over its
+        // monthly limit (BYOK tenants exempt).
+        $this->app->singleton(AiQuotaService::class, function ($app) {
+            $cfg = $app['config']->get('ai', []);
+
+            return new AiQuotaService(
+                plans:       $cfg['plans']         ?? [],
+                defaultPlan: $cfg['default_plan']  ?? 'free',
+                pricing:     $cfg['pricing']       ?? [],
+            );
+        });
+
         // High-level router: feature → tier + parameters, with provider
         // fallback chain. Most application code should call this rather
         // than the raw AiManager.
@@ -35,6 +49,7 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             return new AiModelRouter(
                 manager:         $app->make(AiManager::class),
                 tenantResolver:  $app->make(TenantAiResolver::class),
+                quota:           $app->make(AiQuotaService::class),
                 config:          $app['config']->get('ai', []),
             );
         });
@@ -46,6 +61,7 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             AiManager::class,
             'ai',
             TenantAiResolver::class,
+            AiQuotaService::class,
             AiModelRouter::class,
         ];
     }

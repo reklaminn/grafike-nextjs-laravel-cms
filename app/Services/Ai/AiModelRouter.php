@@ -9,6 +9,7 @@ use App\Services\Ai\Dtos\AiResponse;
 use App\Services\Ai\Exceptions\AiProviderException;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * High-level entry point for AI calls. Combines:
@@ -39,6 +40,7 @@ class AiModelRouter
     public function __construct(
         private readonly AiManager $manager,
         private readonly TenantAiResolver $tenantResolver,
+        private readonly AiQuotaService $quota,
         private readonly array $config,
     ) {
     }
@@ -85,6 +87,10 @@ class AiModelRouter
     ): AiResponse {
         $cfg = $this->resolve($feature, $tier, $tenant);
 
+        // Enforce monthly quota BEFORE making the API call. BYOK tenants
+        // are exempt; the service handles that internally.
+        $this->quota->assertWithinQuota($tenant, estimatedTokens: $cfg['max_tokens']);
+
         $request = new AiRequest(
             model:          $cfg['model'],
             messages:       [AiMessage::user($prompt)],
@@ -100,7 +106,7 @@ class AiModelRouter
             apiKeyOverride: $cfg['api_key'],
         );
 
-        return $this->dispatch($cfg['provider'], $request, $cfg['tier']);
+        return $this->dispatchAndRecord($feature, $cfg, $request, $tenant);
     }
 
     /**
@@ -116,6 +122,8 @@ class AiModelRouter
     ): AiResponse {
         $cfg = $this->resolve($feature, $tier, $tenant);
 
+        $this->quota->assertWithinQuota($tenant, estimatedTokens: $request->maxTokens);
+
         // If the caller did not specify a model, fill it from the routed tier.
         $effective = $request->model !== ''
             ? $request
@@ -129,7 +137,7 @@ class AiModelRouter
                 apiKeyOverride: $request->apiKeyOverride ?: $cfg['api_key'],
             );
 
-        return $this->dispatch($cfg['provider'], $effective, $cfg['tier']);
+        return $this->dispatchAndRecord($feature, $cfg, $effective, $tenant);
     }
 
     /**
@@ -154,22 +162,61 @@ class AiModelRouter
 
     /**
      * Run the request against the primary provider; on transient failure
-     * walk down the fallback chain. Successful (or unrecoverable) responses
-     * return immediately.
+     * walk down the fallback chain; in either case record exactly one
+     * AiUsage row for billing/dashboard purposes.
+     *
+     * BYOK accounting: only the primary call counts as BYOK. If a tenant
+     * supplied an Anthropic key and we fall back to OpenAI, the OpenAI
+     * call uses the system key, so the row is logged with byok=false and
+     * (importantly) DOES count toward the agency quota — but this is rare
+     * by design (only transient primary failures trigger it).
      */
-    private function dispatch(string $primaryProvider, AiRequest $request, string $tier): AiResponse
-    {
-        $fallback = $this->config['fallback'] ?? ['enabled' => false];
+    private function dispatchAndRecord(
+        string $feature,
+        array $cfg,
+        AiRequest $request,
+        ?Tenant $tenant,
+    ): AiResponse {
+        $primaryProvider = $cfg['provider'];
+        $byokOnPrimary   = (bool) $cfg['byok'];
+        $tier            = $cfg['tier'];
+        $fallback        = $this->config['fallback'] ?? ['enabled' => false];
+        $baseMeta        = ['tier' => $tier, 'requested_provider' => $primaryProvider];
 
-        // No fallback configured → single shot, propagate any exception.
+        // No fallback configured → single shot, record outcome, propagate.
         if (! ($fallback['enabled'] ?? false)) {
-            return $this->manager->provider($primaryProvider)->generate($request);
+            try {
+                $response = $this->manager->provider($primaryProvider)->generate($request);
+                $this->quota->recordSuccess(
+                    tenant:        $tenant,
+                    feature:       $feature,
+                    response:      $response,
+                    byok:          $byokOnPrimary,
+                    fallbackUsed:  false,
+                    extraMetadata: $baseMeta,
+                );
+
+                return $response;
+            } catch (Throwable $e) {
+                $this->quota->recordFailure(
+                    tenant:        $tenant,
+                    feature:       $feature,
+                    provider:      $primaryProvider,
+                    model:         $request->model,
+                    error:         $e,
+                    byok:          $byokOnPrimary,
+                    extraMetadata: $baseMeta,
+                );
+                throw $e;
+            }
         }
 
         $chain        = $this->buildChain($primaryProvider, (array) ($fallback['chain'] ?? []));
         $maxAttempts  = (int) ($fallback['max_attempts'] ?? 3);
         $retryOn      = (array) ($fallback['on_status_codes'] ?? []);
         $lastError    = null;
+        $lastProvider = $primaryProvider;
+        $lastModel    = $request->model;
         $attemptCount = 0;
 
         foreach ($chain as $providerName) {
@@ -178,9 +225,6 @@ class AiModelRouter
             }
             $attemptCount++;
 
-            // Re-resolve model + key per provider. BYOK keys are scoped to
-            // the primary provider; fallbacks use the system key for that
-            // vendor so the tenant is never charged for an unfamiliar one.
             $isPrimary = $providerName === $primaryProvider;
             $effective = new AiRequest(
                 model:          $isPrimary
@@ -191,19 +235,43 @@ class AiModelRouter
                 maxTokens:      $request->maxTokens,
                 temperature:    $request->temperature,
                 metadata:       array_merge($request->metadata, [
-                    'fallback_used' => ! $isPrimary,
+                    'fallback_used'      => ! $isPrimary,
                     'attempted_provider' => $providerName,
                 ]),
                 apiKeyOverride: $isPrimary ? $request->apiKeyOverride : null,
             );
+            $lastProvider = $providerName;
+            $lastModel    = $effective->model;
 
             try {
-                return $this->manager->provider($providerName)->generate($effective);
+                $response = $this->manager->provider($providerName)->generate($effective);
+
+                // Only the primary keeps the BYOK flag; fallback servers used
+                // the agency's system key, so they DO count toward the quota.
+                $this->quota->recordSuccess(
+                    tenant:        $tenant,
+                    feature:       $feature,
+                    response:      $response,
+                    byok:          $isPrimary && $byokOnPrimary,
+                    fallbackUsed:  ! $isPrimary,
+                    extraMetadata: $baseMeta + ['served_by' => $providerName],
+                );
+
+                return $response;
             } catch (AiProviderException $e) {
                 $lastError = $e;
 
-                // Non-recoverable (auth, validation, etc) → stop immediately.
+                // Non-recoverable (auth, validation, etc) → record + stop.
                 if ($e->statusCode !== null && ! in_array($e->statusCode, $retryOn, true)) {
+                    $this->quota->recordFailure(
+                        tenant:        $tenant,
+                        feature:       $feature,
+                        provider:      $providerName,
+                        model:         $effective->model,
+                        error:         $e,
+                        byok:          $isPrimary && $byokOnPrimary,
+                        extraMetadata: $baseMeta + ['attempted_provider' => $providerName],
+                    );
                     throw $e;
                 }
 
@@ -213,14 +281,27 @@ class AiModelRouter
                     'message'         => $e->getMessage(),
                     'next_in_chain'   => $chain[array_search($providerName, $chain, true) + 1] ?? null,
                 ]);
-                // Try next provider in chain.
+                // Try next provider in chain (no row yet — we'll record on
+                // either success of next provider, or final exhaustion).
             }
         }
 
-        throw $lastError ?? new AiProviderException(
+        // Whole chain failed — record one row tagged with the last attempted
+        // provider so the dashboard can show "rate limit storm on day X".
+        $finalError = $lastError ?? new AiProviderException(
             'All AI providers in the fallback chain failed.',
             $primaryProvider,
         );
+        $this->quota->recordFailure(
+            tenant:        $tenant,
+            feature:       $feature,
+            provider:      $lastProvider,
+            model:         $lastModel,
+            error:         $finalError,
+            byok:          false, // BYOK irrelevant when nothing succeeded
+            extraMetadata: $baseMeta + ['all_providers_failed' => true, 'attempts' => $attemptCount],
+        );
+        throw $finalError;
     }
 
     /**

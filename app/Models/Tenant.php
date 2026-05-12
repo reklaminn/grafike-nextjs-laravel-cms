@@ -125,6 +125,26 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return is_string($value) && $value !== '' ? $value : null;
     }
 
+    /**
+     * Tenant's AI plan name (free | starter | pro | enterprise | …).
+     * Falls back to config('ai.default_plan') when unset.
+     */
+    public function aiPlan(): string
+    {
+        $value = $this->aiSettings()['plan'] ?? null;
+
+        return is_string($value) && $value !== ''
+            ? $value
+            : (string) config('ai.default_plan', 'free');
+    }
+
+    public function setAiPlan(string $plan): void
+    {
+        $settings         = $this->aiSettings();
+        $settings['plan'] = $plan;
+        $this->setAiSettings($settings);
+    }
+
     public function preferredAiModel(string $provider, string $tier): ?string
     {
         $value = $this->aiSettings()['models'][$provider][$tier] ?? null;

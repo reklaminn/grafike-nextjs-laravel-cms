@@ -140,7 +140,7 @@ class TenantController extends Controller
     /**
      * Show tenant details + actions.
      */
-    public function show(Tenant $tenant)
+    public function show(Tenant $tenant, \App\Services\Ai\AiQuotaService $quotaService)
     {
         $this->authorizeTenantAccess($tenant);
 
@@ -148,7 +148,20 @@ class TenantController extends Controller
         $themes = Theme::active()->orderBy('name')->get();
         $canManageTenants = Auth::guard('admin')->user()?->isAgencyAdmin() ?? false;
 
-        return view('admin.tenants.show', compact('tenant', 'themes', 'canManageTenants'));
+        // AI usage snapshot for the panel — survives gracefully if the
+        // central DB hasn't been migrated yet (e.g. fresh installs).
+        try {
+            $aiPlan  = $quotaService->planFor($tenant);
+            $aiUsage = $quotaService->currentUsage($tenant);
+        } catch (\Throwable $e) {
+            report($e);
+            $aiPlan  = ['name' => $tenant->aiPlan(), 'label' => '?', 'monthly_requests' => null, 'monthly_tokens' => null, 'monthly_cost_usd' => null];
+            $aiUsage = ['requests' => 0, 'tokens' => 0, 'cost_usd' => 0.0, 'period' => now()->format('Y-m')];
+        }
+
+        return view('admin.tenants.show', compact(
+            'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage'
+        ));
     }
 
     /**
@@ -291,10 +304,12 @@ class TenantController extends Controller
         $this->authorizeTenantAccess($tenant);
 
         $providers = array_keys(config('ai.providers', []));
+        $plans     = array_keys(config('ai.plans', []));
 
         $rules = [
             'use_byok'           => 'nullable|boolean',
             'preferred_provider' => ['nullable', Rule::in($providers)],
+            'plan'               => ['nullable', Rule::in($plans)],
         ];
         foreach ($providers as $p) {
             $rules["api_keys.{$p}"]       = 'nullable|string|max:512';
@@ -308,7 +323,15 @@ class TenantController extends Controller
         $settings = $tenant->aiSettings();
         $settings['use_byok']           = (bool) ($validated['use_byok'] ?? false);
         $settings['preferred_provider'] = $validated['preferred_provider'] ?? null;
-        $settings['models']             = $settings['models'] ?? [];
+        if (! empty($validated['plan'])) {
+            // Only agency admins should change plans; non-agency requests
+            // would have been rejected by authorizeTenantAccess() anyway,
+            // but we double-gate here in case roles widen later.
+            if (Auth::guard('admin')->user()?->isAgencyAdmin()) {
+                $settings['plan'] = $validated['plan'];
+            }
+        }
+        $settings['models'] = $settings['models'] ?? [];
 
         foreach ($providers as $p) {
             // Models (per provider, per tier)

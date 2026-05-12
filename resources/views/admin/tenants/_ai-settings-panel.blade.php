@@ -40,6 +40,31 @@
           class="space-y-5">
         @csrf @method('PUT')
 
+        {{-- Plan selector (agency only) --}}
+        @if(!empty($plans))
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <i class="fas fa-tag mr-1 text-gray-400"></i> Plan
+                </label>
+                <select name="plan"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                    @foreach($plans as $planKey => $planConfig)
+                        <option value="{{ $planKey }}" {{ $tenant->aiPlan() === $planKey ? 'selected' : '' }}>
+                            {{ $planConfig['label'] ?? ucfirst($planKey) }}
+                            @if(($planConfig['monthly_requests'] ?? null) !== null)
+                                — {{ number_format($planConfig['monthly_requests']) }} istek
+                            @else
+                                — sınırsız istek
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-400 mt-1">
+                    Plan değişikliği bir sonraki AI isteğinden itibaren geçerli olur.
+                </p>
+            </div>
+        @endif
+
         {{-- Master toggle --}}
         <label class="flex items-start gap-3 cursor-pointer">
             <input type="hidden" name="use_byok" value="0">
@@ -49,7 +74,7 @@
             <span>
                 <span class="text-sm font-medium text-gray-700">Bu site kendi API anahtarını kullansın</span>
                 <span class="block text-xs text-gray-500">
-                    Kapalıysa sistem geneline tanımlı (.env) anahtar kullanılır.
+                    Kapalıysa sistem geneline tanımlı (.env) anahtar kullanılır. BYOK aktifken kota kontrol edilmez.
                 </span>
             </span>
         </label>

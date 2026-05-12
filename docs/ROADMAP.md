@@ -77,7 +77,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **3/7 bitti, 1 ertelendi**
+### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **4/7 bitti, 1 ertelendi**
 
 > Foundation. Tüm AI özelliklerinin ön koşulu.
 
@@ -86,7 +86,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 | 3.1 ✅ | AI provider abstraction | `app/Services/Ai/` — Anthropic + OpenAI + OpenRouter adapter'ları, `AiManager`, DTOs, Facade, `php artisan ai:ping` komutu; 13 unit test geçiyor. BYOK desteği DTO'da hazır (`apiKeyOverride`). |
 | 3.2 ✅ | Model rotasyonu | `AiModelRouter` — `config('ai.features')` kataloğunda her özellik için tier + max_tokens + temperature (`seo.meta`, `page.create`, `block.template`, …). Provider fallback chain (`config('ai.fallback')`) — primary 429/5xx/timeout'ta `openai` → `openrouter` zincirinde tekrar dener; BYOK key'leri fallback'lere taşınmaz (tenant güvenliği). `ai:ping --feature=…` ile feature-mode test. 14 unit test. |
 | 3.3 ✅ | BYOK (Bring Your Own Key) | `Tenant` modelinde encrypted API key storage (Crypt::encryptString); `TenantAiResolver` BYOK + tenant tercihlerini uygular; admin tenant detayında "AI Ayarları" kartı (sağlayıcı seçimi, key girişi, canlı test); routes: `PUT admin/tenants/{t}/ai-settings`, `POST .../test`; 7 unit test. |
-| 3.4 | Kota & billing entegrasyonu | Aylık token + istek limiti; `ai_usage` tablosu (central DB); aşımda blok + paid plan'a yönlendirme; plan başına kota config'i |
+| 3.4 ✅ | Kota & billing entegrasyonu | `ai_usage` migration (central DB); `AiUsage` model; `AiQuotaService` (kota check + cost calc + usage record); 4 plan (free/starter/pro/enterprise) + `monthly_requests`/`monthly_tokens`/`monthly_cost_usd` limitleri; BYOK tenant'lar muaf; `AiModelRouter` her isteğin önünde quota check + sonra success/failure record; admin tenant show sayfasında AI Kullanım Özeti paneli (gauge bar'lar, kalan kota uyarısı); plan dropdown'u Ayarlar kartında. 15 unit test. |
 | 3.5 ⏸ | Redis prompt caching | **ERTELENDİ** — gerçek kullanım verisi olmadan optimize etmek anlamlı değil. Aşağıda "Ertelenen İşler" bölümüne bakın. |
 | 3.6 | Streaming desteği (SSE) | Uzun cevaplarda kullanıcı early stop yapabilir; admin UI'da typewriter efekti |
 | 3.7 | AI usage dashboardu | Admin: tüm tenantların kullanımı; Tenant: kendi kotasının grafik gauge'u |

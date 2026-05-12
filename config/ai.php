@@ -76,6 +76,76 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | Pricing — USD per 1,000,000 tokens
+    |----------------------------------------------------------------------
+    |
+    | Used by AiQuotaService to compute the cost of each call. Values come
+    | from each vendor's published pricing page (2026-05 snapshot); update
+    | here whenever vendor pricing changes. Models not listed cost 0 in our
+    | accounting (we still record token counts).
+    |
+    */
+    'pricing' => [
+        'anthropic' => [
+            'claude-haiku-4-5'  => ['input' => 1.00, 'output' => 5.00],
+            'claude-sonnet-4-6' => ['input' => 3.00, 'output' => 15.00],
+            'claude-opus-4'     => ['input' => 15.00, 'output' => 75.00],
+        ],
+        'openai' => [
+            'gpt-4o-mini' => ['input' => 0.15, 'output' => 0.60],
+            'gpt-4o'      => ['input' => 2.50, 'output' => 10.00],
+        ],
+        'openrouter' => [
+            'anthropic/claude-haiku-4-5'  => ['input' => 1.00, 'output' => 5.00],
+            'anthropic/claude-sonnet-4-6' => ['input' => 3.00, 'output' => 15.00],
+            'openai/gpt-4o-mini'          => ['input' => 0.15, 'output' => 0.60],
+            'openai/gpt-4o'               => ['input' => 2.50, 'output' => 10.00],
+        ],
+    ],
+
+    /*
+    |----------------------------------------------------------------------
+    | Plans — monthly quotas
+    |----------------------------------------------------------------------
+    |
+    | Each tenant has a plan (data.ai_settings.plan, defaults to
+    | `default_plan` below). AiQuotaService enforces the three limits:
+    | requests count, total tokens, and accumulated USD cost. A `null`
+    | limit means "no cap" for that dimension. Tenants on BYOK bypass all
+    | three because they pay the vendor directly.
+    |
+    */
+    'plans' => [
+        'free' => [
+            'label'            => 'Ücretsiz',
+            'monthly_requests' => 50,
+            'monthly_tokens'   => 100_000,
+            'monthly_cost_usd' => 0.50,
+        ],
+        'starter' => [
+            'label'            => 'Başlangıç',
+            'monthly_requests' => 500,
+            'monthly_tokens'   => 1_000_000,
+            'monthly_cost_usd' => 5.00,
+        ],
+        'pro' => [
+            'label'            => 'Pro',
+            'monthly_requests' => 5_000,
+            'monthly_tokens'   => 10_000_000,
+            'monthly_cost_usd' => 50.00,
+        ],
+        'enterprise' => [
+            'label'            => 'Kurumsal',
+            'monthly_requests' => null,
+            'monthly_tokens'   => null,
+            'monthly_cost_usd' => null,
+        ],
+    ],
+
+    'default_plan' => env('AI_DEFAULT_PLAN', 'free'),
+
+    /*
+    |----------------------------------------------------------------------
     | Provider fallback chain
     |----------------------------------------------------------------------
     |

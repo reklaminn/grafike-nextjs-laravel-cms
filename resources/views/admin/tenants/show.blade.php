@@ -128,10 +128,18 @@
         </div>
         @endif
 
+        {{-- ─── AI Kullanım Özeti ──────────────────────────────────────────── --}}
+        @include('admin.tenants._ai-usage-panel', [
+            'tenant'  => $tenant,
+            'plan'    => $aiPlan,
+            'usage'   => $aiUsage,
+        ])
+
         {{-- ─── AI Ayarları (BYOK) ─────────────────────────────────────────── --}}
         @include('admin.tenants._ai-settings-panel', [
             'tenant'    => $tenant,
             'providers' => config('ai.providers'),
+            'plans'     => config('ai.plans', []),
             'canManage' => $canManageTenants,
         ])
     </div>

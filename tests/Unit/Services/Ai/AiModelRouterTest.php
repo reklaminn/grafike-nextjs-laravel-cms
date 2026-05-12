@@ -4,8 +4,9 @@ namespace Tests\Unit\Services\Ai;
 
 use App\Services\Ai\AiManager;
 use App\Services\Ai\AiModelRouter;
+use App\Services\Ai\AiQuotaService;
 use App\Services\Ai\Dtos\AiResponse;
-use App\Services\Ai\Dtos\AiUsage;
+use App\Services\Ai\Dtos\AiUsage as AiUsageDto;
 use App\Services\Ai\Exceptions\AiProviderException;
 use App\Services\Ai\TenantAiResolver;
 use Illuminate\Support\Facades\Http;
@@ -60,8 +61,53 @@ class AiModelRouterTest extends TestCase
         $config   = $this->baseConfig($overrides);
         $manager  = new AiManager($config);
         $tenantR  = new TenantAiResolver($manager);
+        $quota    = $this->stubQuota();
 
-        return new AiModelRouter($manager, $tenantR, $config);
+        return new AiModelRouter($manager, $tenantR, $quota, $config);
+    }
+
+    /**
+     * Quota stub that never touches the DB. Test cases that care about
+     * quota enforcement (AiQuotaServiceTest) test the real service in
+     * isolation; the router tests only verify that calls happen in the
+     * right order and don't blow up when quota is wired in.
+     */
+    private function stubQuota(): AiQuotaService
+    {
+        return new class extends AiQuotaService {
+            public function __construct()
+            {
+                parent::__construct(plans: [], defaultPlan: 'free', pricing: []);
+            }
+
+            public function assertWithinQuota(?\App\Models\Tenant $tenant, int $estimatedTokens = 0): void
+            {
+                // no-op
+            }
+
+            public function recordSuccess(
+                ?\App\Models\Tenant $tenant,
+                string $feature,
+                AiResponse $response,
+                bool $byok = false,
+                bool $fallbackUsed = false,
+                array $extraMetadata = [],
+            ): \App\Models\AiUsage {
+                return new \App\Models\AiUsage(); // in-memory, not persisted
+            }
+
+            public function recordFailure(
+                ?\App\Models\Tenant $tenant,
+                string $feature,
+                string $provider,
+                string $model,
+                \Throwable $error,
+                bool $byok = false,
+                array $extraMetadata = [],
+            ): \App\Models\AiUsage {
+                return new \App\Models\AiUsage();
+            }
+        };
     }
 
     public function test_resolves_feature_to_tier_and_parameters(): void
@@ -301,7 +347,7 @@ class AiModelRouterTest extends TestCase
                 public function generate(\App\Services\Ai\Dtos\AiRequest $r): AiResponse
                 {
                     $this->captured = $r;
-                    return new AiResponse('ok', $r->model, 'openai', new AiUsage(1, 1));
+                    return new AiResponse('ok', $r->model, 'openai', new AiUsageDto(1, 1));
                 }
                 public function stream(\App\Services\Ai\Dtos\AiRequest $r, \Closure $f): AiResponse { throw new \BadMethodCallException(); }
             };
