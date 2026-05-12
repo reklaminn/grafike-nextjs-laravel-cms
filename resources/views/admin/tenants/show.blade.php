@@ -69,22 +69,7 @@
 </div>
 @endif
 
-{{-- Flash messages --}}
-@if(session('success'))
-<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 whitespace-pre-line">
-    <i class="fas fa-check-circle mr-1"></i> {{ session('success') }}
-</div>
-@endif
-@if(session('info'))
-<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-    <i class="fas fa-info-circle mr-1"></i> {{ session('info') }}
-</div>
-@endif
-@if(session('error'))
-<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-    <i class="fas fa-exclamation-triangle mr-1"></i> {{ session('error') }}
-</div>
-@endif
+{{-- Flash messages are handled by the layout (admin.layouts.app) --}}
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
