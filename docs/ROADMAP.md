@@ -77,7 +77,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **3/7 bitti**
+### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **3/7 bitti, 1 ertelendi**
 
 > Foundation. Tüm AI özelliklerinin ön koşulu.
 
@@ -87,9 +87,45 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 | 3.2 ✅ | Model rotasyonu | `AiModelRouter` — `config('ai.features')` kataloğunda her özellik için tier + max_tokens + temperature (`seo.meta`, `page.create`, `block.template`, …). Provider fallback chain (`config('ai.fallback')`) — primary 429/5xx/timeout'ta `openai` → `openrouter` zincirinde tekrar dener; BYOK key'leri fallback'lere taşınmaz (tenant güvenliği). `ai:ping --feature=…` ile feature-mode test. 14 unit test. |
 | 3.3 ✅ | BYOK (Bring Your Own Key) | `Tenant` modelinde encrypted API key storage (Crypt::encryptString); `TenantAiResolver` BYOK + tenant tercihlerini uygular; admin tenant detayında "AI Ayarları" kartı (sağlayıcı seçimi, key girişi, canlı test); routes: `PUT admin/tenants/{t}/ai-settings`, `POST .../test`; 7 unit test. |
 | 3.4 | Kota & billing entegrasyonu | Aylık token + istek limiti; `ai_usage` tablosu (central DB); aşımda blok + paid plan'a yönlendirme; plan başına kota config'i |
-| 3.5 | Redis prompt caching | Aynı prompt 30 dk içinde tekrar gelirse cache → token harcanmaz |
+| 3.5 ⏸ | Redis prompt caching | **ERTELENDİ** — gerçek kullanım verisi olmadan optimize etmek anlamlı değil. Aşağıda "Ertelenen İşler" bölümüne bakın. |
 | 3.6 | Streaming desteği (SSE) | Uzun cevaplarda kullanıcı early stop yapabilir; admin UI'da typewriter efekti |
 | 3.7 | AI usage dashboardu | Admin: tüm tenantların kullanımı; Tenant: kendi kotasının grafik gauge'u |
+
+---
+
+#### ⏸ Ertelenen: FAZ 3.5 — Redis Prompt Caching
+
+**Karar tarihi:** 2026-05-10
+**Atlanma gerekçesi:** Cache implementasyonu, hangi feature'larda ne kadar tekrar olduğunu bilmeden tahminle yapılır → boşa optimize etme riski. Önce gerçek müşteri-yüzlü AI feature'larını canlıya alıp 1-2 hafta veri toplamak, sonra doğru TTL'lerle cache eklemek daha doğru.
+
+**Ne yapacak (revisit edildiğinde):**
+- Cache key: `hash(tenant_id + provider + model + system + prompt + temperature + max_tokens)`
+- Tenant-scoped (tenant verisi sızmasın)
+- Per-feature TTL: `seo.meta` 24h, `page.translate` 7 gün, `page.create` no-cache (yaratıcı)
+- Stampede protection: lock + wait (10 admin aynı anda aynı promptu tetiklerse 1 API call)
+- `AiUsage` metadata'sında `cache_hit: bool` flag → dashboard'da görünür
+
+**Beklenen tasarruf (200 tenant projeksiyonu):**
+- Aylık AI maliyeti: ~$136 → ~$98 (≈ %28 indirim, ~1.300 TL/ay tasarruf)
+- Implementasyon: ~1 gün
+- ROI: çok yüksek — ama gerçek tekrar oranları ölçülmeden önce optimal TTL bilinmez
+
+**Hatırlatma tetikleyicileri — şu durumlardan biri olursa 3.5'i ele al:**
+1. **AI usage dashboardu (3.7) canlı** ve aylık AI maliyeti **$50'yi geçiyor** ise
+2. **FAZ 4.1 + 4.2** canlıya alındıktan **2 hafta sonra** (gerçek kullanım verisi birikmiş olur)
+3. Anthropic/OpenAI'dan **rate limit hatası** alınmaya başlandığında
+4. Bir tenant ayda 1000+ AI isteği yapmaya başladığında (büyük müşteri)
+5. **FAZ 3.4 (kota & billing) bitti** ve kullanıcılar "kotam çok hızlı bitti" şikayetlerine başladığında
+
+**Ön koşul:** FAZ 3.4 (billing/kota) ve FAZ 3.7 (dashboard) tamamlanmış olmalı — yoksa cache hit'i ölçemeyiz, ROI bilinemeyiz.
+
+**Implementation notları (gelecekteki ben için):**
+- Anthropic'in **built-in prompt caching**'i ile karıştırma — o ayrı bir özellik (uzun system prompt'lar için %90 indirim, ekstra Redis gerekmez, sadece API parameter). İkisi birlikte kullanılır.
+- `AiModelRouter::generate()` içinde cache lookup ekle — `AiManager` katmanına dokunma
+- Cache decorator pattern: `CachedAiProvider implements AiProvider` — wrap edebilir
+- Feature config'ine `'cache_ttl' => 1440` (dakika) field'ı ekle; 0 = cache disabled
+
+---
 
 **Bağımlılıklar:** FAZ 1 (tenant izolasyon hazır olmalı)
 **Çıktı:** Foundation katmanı hazır. Tek bir yerden tüm AI çağrıları yönetilebilir.
@@ -140,17 +176,23 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ## 🎯 Önerilen Başlangıç Sırası
 
-| Adım | Faz | Süre |
-|---|---|---|
-| 1 | **FAZ 3** (AI altyapı) | 5-7 gün |
-| 2 | **FAZ 4.1** (SEO meta üretici — ilk wow) | 1-2 gün |
-| 3 | **FAZ 4.2** (blok içerik düzenleme) | 2-3 gün |
-| 4 | **FAZ 4.3** (hazır şablon galerisi) | 2 gün UI + içerik |
-| 5 | **FAZ 4.4** (AI sayfa oluşturma) | 3-5 gün |
-| 6 | **FAZ 4.5** (AI blok şablonu) | 2-3 gün |
-| 7 | **FAZ 4.6** (AI çevirmen) | 2-3 gün |
-| 8 | FAZ 1.9 (tenant testleri) | 1-2 gün |
-| | **Toplam** | **~20-26 iş günü ≈ 4-5 hafta** |
+| Adım | Faz | Süre | Not |
+|---|---|---|---|
+| ✅ 1 | FAZ 3.1 (provider abstraction) | bitti | — |
+| ✅ 2 | FAZ 3.2 (model rotasyonu) | bitti | — |
+| ✅ 3 | FAZ 3.3 (BYOK) | bitti | — |
+| 4 | **FAZ 3.4** (kota & billing) | 1-2 gün | Müşteri parası alma için zorunlu |
+| 5 | **FAZ 4.1** (SEO meta üretici) | 1-2 gün | İlk müşteri-yüzlü AI özelliği |
+| 6 | **FAZ 4.2** (blok içerik düzenleme) | 2-3 gün | |
+| 7 | **FAZ 4.3** (hazır şablon galerisi) | 2 gün UI + içerik | AI değil, içerik seed |
+| 8 | **FAZ 4.4** (AI sayfa oluşturma) | 3-5 gün | |
+| 9 | **FAZ 4.5** (AI blok şablonu) | 2-3 gün | Firma için |
+| 10 | **FAZ 4.6** (AI çevirmen) | 2-3 gün | |
+| 11 | **FAZ 3.7** (AI usage dashboard) | 1-2 gün | Kullanım veri toplama görselleştirme |
+| 12 | **FAZ 3.5** (Redis cache) ⏸ | 1 gün | Önceki adımlardan veri toplandıktan sonra; yukarıdaki "Ertelenen" bölümünün tetikleyicilerine bak |
+| 13 | **FAZ 3.6** (streaming SSE) | 2-3 gün | UX iyileştirme; opsiyonel |
+| 14 | FAZ 1.9 (tenant testleri) | 1-2 gün | Düşük öncelik |
+| | **Kalan toplam** | **~18-24 iş günü ≈ 4 hafta** | |
 
 ---
 
