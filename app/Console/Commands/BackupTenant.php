@@ -68,6 +68,8 @@ class BackupTenant extends Command
                 ->setDbName($dbName)
                 ->setUserName(config('database.connections.central.username'))
                 ->setPassword(config('database.connections.central.password', ''))
+                ->setSkipSsl(true)
+                ->setSslFlag('skip-ssl')
                 ->dumpToFile($sqlFile);
 
             // ── 2. Storage files (tenant private + public) ───────────────────
