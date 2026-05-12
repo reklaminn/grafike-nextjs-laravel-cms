@@ -70,6 +70,7 @@ class BackupTenant extends Command
                 ->setPassword(config('database.connections.central.password', ''))
                 ->setSkipSsl(true)
                 ->setSslFlag('skip-ssl')
+                ->addExtraOption('--ssl=FALSE')
                 ->dumpToFile($sqlFile);
 
             // ── 2. Storage files (tenant private + public) ───────────────────
