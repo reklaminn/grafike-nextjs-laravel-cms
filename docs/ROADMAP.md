@@ -15,7 +15,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 | FAZ 1 — Multi-Tenant + Docker HA | 9 | 8 | 1 |
 | FAZ 2 — Admin Pages Refactor | 5 | 5 | 0 |
 | FAZ 3 — AI Altyapısı | 7 | 0 | 7 |
-| FAZ 4 — AI Özellikleri | 6 | 4 | 2 |
+| FAZ 4 — AI Özellikleri | 6 | 5 | 1 |
 | **Toplam plan içi** | **27** | **13** | **14** |
 | Plan dışı tamamlanan | 5+ | 5+ | — |
 
@@ -132,7 +132,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün) — **4/6 bitti**
+### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün) — **5/6 bitti**
 
 > Müşteriye değer üreten katman. Her madde ayrı bir release olabilir.
 
@@ -142,7 +142,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 | 2 | 4.2 ✅ | **AI ile blok içerik düzenleme** | bitti | `AiBlockEditor` service (12 preset action: shorten/lengthen/professional/casual/seo_optimize/rephrase/fix_typos + 5 dil çevirisi + custom prompt). Schema-aware: sadece text-tipli alanları (`string`, `text`, `longtext`, `html`, `richtext`) düzenler; `media_id`/url/color/icon gibi non-text alanlara dokunmaz. AI tip değişikliği yaparsa reddedilir (string→array yoksay). Frontend block settings modal'ında "AI Yardımcısı" kartı: action dropdown + custom prompt input + Uygula butonu; cevap settingsDraft.content'e yazılır, admin "Kaydet"e basana kadar uygulanmaz. Routes: `POST admin/ai/block-edit`. 11 unit test. |
 | 3 | 4.3 | **Hazır şablon galerisi** | 2 gün UI + 4-6 saat/şablon | Klinik/Avukat/Restoran/Salon/Emlak — tek tıkla site; AI değil, içerik seed'i |
 | 4 | 4.4 ✅ | **AI ile sayfa oluşturma** | bitti | `AiPageGenerator` service — central DB'deki aktif SectionTemplate'leri model'e katalog olarak verir (id + type + alanlar), AI uygun blokları seçip her birinin content'ini üretir; hallucinated template_id'ler silinir, content schema-declared key'lere filtrelenir, `FrontendSections::normalize()` ile region-based sections_json'a wrap edilir. `Admin\Ai\PageGenerateController` (POST admin/ai/pages/generate) iki modlu: preview-only (kaydetmez) ve auto_save=true (yeni Page record + benzersiz slug + edit ekranına redirect). Pages index'inde "AI ile Sayfa Oluştur" gradient buton + 2-adımlı wizard modal (prompt → önizleme blok listesi → kaydet). 10 unit test. |
-| 5 | 4.5 | **AI ile blok şablonu (SectionTemplate) oluşturma** ⭐ | 2-3 gün | Firma için: AI'a tarif → HTML template + schema_json + Tailwind class'lar |
+| 5 | 4.5 ✅ | **AI ile blok şablonu (SectionTemplate) oluşturma** ⭐ | bitti | `AiSectionTemplateGenerator` service — tarif → Tailwind CSS ile production-ready HTML + `schema_json` + `default_content_json`. Cross-validation: `{{placeholder}}`/`{{{placeholder}}}` syntax'ı schema key'leri ile auto-cross-checked (eksik schema key auto-add, orphan default key auto-remove, kullanılmayan schema key warning). type/variation otomatik slugify. `Admin\Ai\SectionTemplateGenerateController` (POST admin/ai/section-templates/generate) — preview mode + auto_save=true (is_active=false ile kaydeder, admin review sonrası açar); **agency-admin only**. SectionTemplates index'inde "AI ile Şablon Oluştur" gradient buton + 2-adımlı wizard modal: prompt + renk paleti / stil / dil hint dropdown'ları, preview adımında schema field chip'leri + warnings paneli + Tailwind CDN'li canlı iframe önizleme + HTML kaynak gösterimi. 10 unit test. |
 | 6 | 4.6 ✅ | **AI çevirmen** | bitti | `AiTranslator` service — batch çeviri (tek API call'da onlarca alanı çevirir, per-field call'a göre ~50x daha ucuz). Page için title + tüm SEO alanları + `sections_json` içindeki tüm metin leaf'leri çevrilir; `media_id`/url/color/icon/template_id gibi teknik key'ler skip edilir. Article için title + excerpt + body + SEO. HTML tag'ler korunur, sadece tag'ler arasındaki metin çevrilir. `Admin\Ai\TranslateContentController` (POST admin/ai/translate-content) — legacy endpoint adını korur (geriye dönük uyumluluk), iç implementasyon `AiModelRouter` üzerine taşındı; quota + BYOK + fallback otomatik. Frontend `create-translation.blade.php` JS güncellendi: artık `sections_json` da gelir, Alpine event dispatch ile editor `regions` hot-swap olur. **Eski `AiAssistantController` silindi** — `admin.ai.translate`/`.rewrite`/`.generate-meta` dead route'lar kaldırıldı. 8 unit test (batch flow, fallback to original, sections traversal, technical-key skip, MD fenced reply, invalid JSON throw). |
 
 **Bağımlılıklar:** FAZ 3

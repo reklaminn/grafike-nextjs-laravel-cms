@@ -7,6 +7,7 @@ use App\Services\Ai\AiManager;
 use App\Services\Ai\AiModelRouter;
 use App\Services\Ai\AiPageGenerator;
 use App\Services\Ai\AiQuotaService;
+use App\Services\Ai\AiSectionTemplateGenerator;
 use App\Services\Ai\AiSeoGenerator;
 use App\Services\Ai\AiTranslator;
 use App\Services\Ai\TenantAiResolver;
@@ -74,6 +75,10 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
         $this->app->singleton(AiTranslator::class, function ($app) {
             return new AiTranslator($app->make(AiModelRouter::class));
         });
+
+        $this->app->singleton(AiSectionTemplateGenerator::class, function ($app) {
+            return new AiSectionTemplateGenerator($app->make(AiModelRouter::class));
+        });
     }
 
     public function provides(): array
@@ -88,6 +93,7 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             AiBlockEditor::class,
             AiPageGenerator::class,
             AiTranslator::class,
+            AiSectionTemplateGenerator::class,
         ];
     }
 }

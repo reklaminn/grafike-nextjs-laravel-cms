@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\Ai\BlockEditController as AiBlockEditController;
 use App\Http\Controllers\Admin\Ai\PageGenerateController as AiPageGenerateController;
+use App\Http\Controllers\Admin\Ai\SectionTemplateGenerateController as AiSectionTemplateGenerateController;
 use App\Http\Controllers\Admin\Ai\SeoMetaController as AiSeoMetaController;
 use App\Http\Controllers\Admin\Ai\TranslateContentController as AiTranslateContentController;
 use App\Http\Controllers\Admin\ArticleController;
@@ -70,9 +71,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('pages/{page}/create-translation', [PageController::class, 'createTranslation'])->name('pages.create-translation');
 
         // AI helpers (FAZ 4.1+)
-        Route::post('pages/{page}/ai/seo-meta', AiSeoMetaController::class)->name('pages.ai.seo-meta');
-        Route::post('ai/block-edit',            AiBlockEditController::class)->name('ai.block-edit');
-        Route::post('ai/pages/generate',        AiPageGenerateController::class)->name('ai.pages.generate');
+        Route::post('pages/{page}/ai/seo-meta',       AiSeoMetaController::class)->name('pages.ai.seo-meta');
+        Route::post('ai/block-edit',                  AiBlockEditController::class)->name('ai.block-edit');
+        Route::post('ai/pages/generate',              AiPageGenerateController::class)->name('ai.pages.generate');
+        Route::post('ai/section-templates/generate',  AiSectionTemplateGenerateController::class)->name('ai.section-templates.generate');
 
         // Articles CRUD
         Route::resource('articles', ArticleController::class)->except('show');

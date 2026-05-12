@@ -4,18 +4,26 @@
 @section('page-title', 'Block Şablonları')
 
 @section('content')
-    <div class="space-y-6">
+    <div class="space-y-6" x-data="aiSectionTemplateWizard()">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
                 <p class="text-sm text-gray-500">
                     Yeni builder picker'ında görünen block şablonlarını buradan yönet.
                 </p>
             </div>
-            <a href="{{ route('admin.section-templates.create') }}"
-               class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-                <i class="fas fa-plus"></i> Yeni Block Şablonu
-            </a>
+            <div class="flex items-center gap-2">
+                <button type="button" @click="open = true"
+                        class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white hover:from-purple-700 hover:to-indigo-700 shadow-sm">
+                    <i class="fas fa-wand-magic-sparkles"></i> AI ile Şablon Oluştur
+                </button>
+                <a href="{{ route('admin.section-templates.create') }}"
+                   class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                    <i class="fas fa-plus"></i> Yeni Block Şablonu
+                </a>
+            </div>
         </div>
+
+        @include('admin.section-templates._ai-generate-modal')
 
         {{-- Filtreler --}}
         <form method="GET" class="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_220px_220px_180px_auto]">
