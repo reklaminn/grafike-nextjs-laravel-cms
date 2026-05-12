@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\Ai\AiManager;
+use App\Services\Ai\AiModelRouter;
 use App\Services\Ai\TenantAiResolver;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
@@ -26,10 +27,26 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
         $this->app->singleton(TenantAiResolver::class, function ($app) {
             return new TenantAiResolver($app->make(AiManager::class));
         });
+
+        // High-level router: feature → tier + parameters, with provider
+        // fallback chain. Most application code should call this rather
+        // than the raw AiManager.
+        $this->app->singleton(AiModelRouter::class, function ($app) {
+            return new AiModelRouter(
+                manager:         $app->make(AiManager::class),
+                tenantResolver:  $app->make(TenantAiResolver::class),
+                config:          $app['config']->get('ai', []),
+            );
+        });
     }
 
     public function provides(): array
     {
-        return [AiManager::class, 'ai', TenantAiResolver::class];
+        return [
+            AiManager::class,
+            'ai',
+            TenantAiResolver::class,
+            AiModelRouter::class,
+        ];
     }
 }

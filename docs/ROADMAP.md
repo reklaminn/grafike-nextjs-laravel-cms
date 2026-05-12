@@ -77,14 +77,14 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **2/7 bitti**
+### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **3/7 bitti**
 
 > Foundation. Tüm AI özelliklerinin ön koşulu.
 
 | # | Madde | Detay |
 |---|---|---|
 | 3.1 ✅ | AI provider abstraction | `app/Services/Ai/` — Anthropic + OpenAI + OpenRouter adapter'ları, `AiManager`, DTOs, Facade, `php artisan ai:ping` komutu; 13 unit test geçiyor. BYOK desteği DTO'da hazır (`apiKeyOverride`). |
-| 3.2 | Model rotasyonu | Basit (SEO meta, kısa metin) → Haiku/4o-mini; karmaşık (tam sayfa, tool-use) → Sonnet/4o; her endpoint için varsayılan model |
+| 3.2 ✅ | Model rotasyonu | `AiModelRouter` — `config('ai.features')` kataloğunda her özellik için tier + max_tokens + temperature (`seo.meta`, `page.create`, `block.template`, …). Provider fallback chain (`config('ai.fallback')`) — primary 429/5xx/timeout'ta `openai` → `openrouter` zincirinde tekrar dener; BYOK key'leri fallback'lere taşınmaz (tenant güvenliği). `ai:ping --feature=…` ile feature-mode test. 14 unit test. |
 | 3.3 ✅ | BYOK (Bring Your Own Key) | `Tenant` modelinde encrypted API key storage (Crypt::encryptString); `TenantAiResolver` BYOK + tenant tercihlerini uygular; admin tenant detayında "AI Ayarları" kartı (sağlayıcı seçimi, key girişi, canlı test); routes: `PUT admin/tenants/{t}/ai-settings`, `POST .../test`; 7 unit test. |
 | 3.4 | Kota & billing entegrasyonu | Aylık token + istek limiti; `ai_usage` tablosu (central DB); aşımda blok + paid plan'a yönlendirme; plan başına kota config'i |
 | 3.5 | Redis prompt caching | Aynı prompt 30 dk içinde tekrar gelirse cache → token harcanmaz |

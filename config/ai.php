@@ -54,6 +54,50 @@ return [
 
     /*
     |----------------------------------------------------------------------
+    | Feature catalogue — model rotation per use-case
+    |----------------------------------------------------------------------
+    |
+    | Each AI-using feature in the codebase declares an entry here so the
+    | AiModelRouter knows which tier/limits to apply. Calling code passes
+    | only the feature key (e.g. "seo.meta") and stays agnostic to the
+    | actual model name. Override at runtime via $router->generate(tier: …).
+    |
+    | Tier values map to the per-provider `models` table above.
+    |
+    */
+    'features' => [
+        'seo.meta'          => ['tier' => 'simple',  'max_tokens' =>  300, 'temperature' => 0.3],
+        'block.edit'        => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7],
+        'block.template'    => ['tier' => 'complex', 'max_tokens' => 2500, 'temperature' => 0.5],
+        'page.create'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.7],
+        'page.translate'    => ['tier' => 'simple',  'max_tokens' => 2500, 'temperature' => 0.3],
+        'misc.text'         => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7],
+    ],
+
+    /*
+    |----------------------------------------------------------------------
+    | Provider fallback chain
+    |----------------------------------------------------------------------
+    |
+    | When enabled, transient provider failures (rate limits, 5xx) cause
+    | the router to retry with the next provider in the chain. The first
+    | entry of the resolved primary is removed from the chain to avoid an
+    | immediate self-retry.
+    |
+    | Important: BYOK keys are NOT carried into fallback providers — those
+    | requests run on the system-level keys instead, so the tenant won't be
+    | charged for a provider they didn't sign up for.
+    |
+    */
+    'fallback' => [
+        'enabled'         => (bool) env('AI_FALLBACK_ENABLED', true),
+        'chain'           => array_filter(explode(',', (string) env('AI_FALLBACK_CHAIN', 'anthropic,openai,openrouter'))),
+        'on_status_codes' => [408, 425, 429, 500, 502, 503, 504],
+        'max_attempts'    => (int) env('AI_FALLBACK_MAX_ATTEMPTS', 3),
+    ],
+
+    /*
+    |----------------------------------------------------------------------
     | Providers
     |----------------------------------------------------------------------
     */
