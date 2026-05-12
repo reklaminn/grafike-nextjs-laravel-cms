@@ -23,7 +23,16 @@ class UseSiteHostHeader
 
             if ($siteHost !== '') {
                 $request->headers->set('host', $siteHost);
+                // Also update X-Forwarded-Host in both bags so that
+                // Symfony's Request::getHost() (which reads the TRUSTED
+                // HTTP_X_FORWARDED_HOST server var when TrustProxies is
+                // active) returns the overridden value, not the original
+                // Docker-internal service name (app1/app2/app3) that
+                // Nginx injects via `fastcgi_param HTTP_X_FORWARDED_HOST
+                // $http_host`.
+                $request->headers->set('X-Forwarded-Host', $siteHost);
                 $request->server->set('HTTP_HOST', $siteHost);
+                $request->server->set('HTTP_X_FORWARDED_HOST', $siteHost);
                 $request->server->set('SERVER_NAME', $siteHost);
             }
         }
