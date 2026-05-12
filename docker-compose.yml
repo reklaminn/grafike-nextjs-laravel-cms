@@ -259,13 +259,14 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: traefik_proxy
-      # Frontend catches everything on APP_DOMAIN that isn't a backend path.
-      # Priority 10 (lower than backend routers at 200) so backend routes win.
-      traefik.http.routers.grafike-frontend.rule: "Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
+      # Frontend catches ALL domains (tenant subdomains + APP_DOMAIN) for non-backend paths.
+      # Priority 2: higher than catch-all backend (1), lower than explicit admin/api routers (200).
+      # Backend exclusions ensure /admin, /api, /storage etc. still go to PHP.
+      traefik.http.routers.grafike-frontend.rule: "HostRegexp(`{host:.+}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
       traefik.http.routers.grafike-frontend.entrypoints: websecure
       traefik.http.routers.grafike-frontend.tls: "true"
       traefik.http.routers.grafike-frontend.tls.certresolver: mytlschallenge
-      traefik.http.routers.grafike-frontend.priority: "10"
+      traefik.http.routers.grafike-frontend.priority: "2"
       traefik.http.services.grafike-frontend.loadbalancer.server.port: "3000"
 
   # ── Redis (cache + session + queue) ─────────────────────────────────────────
