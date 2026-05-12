@@ -8,7 +8,7 @@ use App\Services\Ai\Dtos\AiRequest;
 use App\Services\Ai\Dtos\AiResponse;
 use App\Services\Ai\Dtos\AiUsage;
 use App\Services\Ai\Exceptions\AiProviderException;
-use BadMethodCallException;
+use App\Services\Ai\Streaming\AnthropicSseParser;
 use Closure;
 use Illuminate\Support\Facades\Http;
 
@@ -89,10 +89,76 @@ class AnthropicProvider implements AiProvider
 
     public function stream(AiRequest $request, Closure $onDelta): AiResponse
     {
-        // SSE streaming lands in FAZ 3.6 — keep the contract method present
-        // so callers can typecheck against it now, but disallow execution.
-        throw new BadMethodCallException(
-            'AnthropicProvider::stream() not implemented yet (planned in FAZ 3.6).',
+        $apiKey = $request->apiKeyOverride ?: ($this->config['api_key'] ?? null);
+        if (! $apiKey) {
+            throw AiProviderException::missingApiKey($this->name());
+        }
+
+        $payload = [
+            'model'       => $request->model,
+            'max_tokens'  => $request->maxTokens,
+            'temperature' => $request->temperature,
+            'messages'    => $this->normalizeMessages($request->messages),
+            'stream'      => true,
+        ];
+        if ($request->system) {
+            $payload['system'] = $request->system;
+        }
+
+        // Laravel Http facade supports Guzzle stream option; the PSR-7
+        // body stays open and we read it incrementally as the model
+        // generates tokens.
+        $response = Http::withHeaders([
+            'x-api-key'         => $apiKey,
+            'anthropic-version' => $this->config['api_version'] ?? '2023-06-01',
+            'content-type'      => 'application/json',
+            'accept'            => 'text/event-stream',
+        ])
+            ->withOptions(['stream' => true])
+            ->timeout((int) config('ai.defaults.timeout', 60))
+            ->post(rtrim($this->config['base_url'], '/').'/messages', $payload);
+
+        if ($response->failed()) {
+            // Drain whatever's left to surface a useful error body.
+            $body = (string) $response->toPsrResponse()->getBody();
+            throw AiProviderException::fromHttpFailure($this->name(), $response->status(), $body);
+        }
+
+        return $this->consumeStream($response, $request->model, $onDelta);
+    }
+
+    /**
+     * Drive the SSE parser from the open response body and assemble the
+     * final AiResponse.
+     */
+    private function consumeStream(\Illuminate\Http\Client\Response $response, string $requestedModel, Closure $onDelta): AiResponse
+    {
+        $body   = $response->toPsrResponse()->getBody();
+        $parser = new AnthropicSseParser();
+
+        while (! $body->eof()) {
+            $chunk = $body->read(4096);
+            if ($chunk === '') {
+                // No data available right now — yield once and continue
+                usleep(10_000); // 10ms
+                continue;
+            }
+            $parser->feed($chunk, $onDelta);
+        }
+
+        $state = $parser->finalState($onDelta);
+
+        return new AiResponse(
+            content:    $state['content'],
+            model:      $state['model'] ?? $requestedModel,
+            provider:   $this->name(),
+            usage:      new AiUsage(
+                inputTokens:       $state['input_tokens'],
+                outputTokens:      $state['output_tokens'],
+                cachedInputTokens: $state['cached_input_tokens'],
+            ),
+            stopReason: $state['stop_reason'],
+            raw:        ['streamed' => true],
         );
     }
 

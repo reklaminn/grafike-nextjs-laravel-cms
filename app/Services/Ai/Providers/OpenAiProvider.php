@@ -8,7 +8,7 @@ use App\Services\Ai\Dtos\AiRequest;
 use App\Services\Ai\Dtos\AiResponse;
 use App\Services\Ai\Dtos\AiUsage;
 use App\Services\Ai\Exceptions\AiProviderException;
-use BadMethodCallException;
+use App\Services\Ai\Streaming\OpenAiSseParser;
 use Closure;
 use Illuminate\Support\Facades\Http;
 
@@ -94,8 +94,80 @@ class OpenAiProvider implements AiProvider
 
     public function stream(AiRequest $request, Closure $onDelta): AiResponse
     {
-        throw new BadMethodCallException(
-            'OpenAiProvider::stream() not implemented yet (planned in FAZ 3.6).',
+        $apiKey = $request->apiKeyOverride ?: ($this->config['api_key'] ?? null);
+        if (! $apiKey) {
+            throw AiProviderException::missingApiKey($this->name());
+        }
+
+        $messages = [];
+        if ($request->system) {
+            $messages[] = ['role' => 'system', 'content' => $request->system];
+        }
+        foreach ($request->messages as $message) {
+            /** @var AiMessage $message */
+            $messages[] = ['role' => $message->role, 'content' => $message->content];
+        }
+
+        $headers = [
+            'Authorization' => 'Bearer '.$apiKey,
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'text/event-stream',
+        ];
+        if (! empty($this->config['organization'])) {
+            $headers['OpenAI-Organization'] = $this->config['organization'];
+        }
+
+        $response = Http::withHeaders($headers)
+            ->withOptions(['stream' => true])
+            ->timeout((int) config('ai.defaults.timeout', 60))
+            ->post(rtrim($this->config['base_url'], '/').'/chat/completions', [
+                'model'          => $request->model,
+                'messages'       => $messages,
+                'max_tokens'     => $request->maxTokens,
+                'temperature'    => $request->temperature,
+                'stream'         => true,
+                // Ask OpenAI to include the final usage block — vital for
+                // accurate quota accounting on streamed calls.
+                'stream_options' => ['include_usage' => true],
+            ]);
+
+        if ($response->failed()) {
+            $body = (string) $response->toPsrResponse()->getBody();
+            throw AiProviderException::fromHttpFailure($this->name(), $response->status(), $body);
+        }
+
+        return $this->consumeStream($response, $request->model, $onDelta);
+    }
+
+    private function consumeStream(\Illuminate\Http\Client\Response $response, string $requestedModel, Closure $onDelta): AiResponse
+    {
+        $body   = $response->toPsrResponse()->getBody();
+        $parser = new OpenAiSseParser();
+
+        while (! $body->eof()) {
+            $chunk = $body->read(4096);
+            if ($chunk === '') {
+                usleep(10_000);
+                continue;
+            }
+            $parser->feed($chunk, $onDelta);
+            if ($parser->isDone()) {
+                break;
+            }
+        }
+        $state = $parser->finalState($onDelta);
+
+        return new AiResponse(
+            content:    $state['content'],
+            model:      $state['model'] ?? $requestedModel,
+            provider:   $this->name(),
+            usage:      new AiUsage(
+                inputTokens:       $state['input_tokens'],
+                outputTokens:      $state['output_tokens'],
+                cachedInputTokens: $state['cached_input_tokens'],
+            ),
+            stopReason: $state['stop_reason'],
+            raw:        ['streamed' => true],
         );
     }
 }

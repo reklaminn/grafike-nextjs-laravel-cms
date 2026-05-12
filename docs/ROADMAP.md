@@ -14,7 +14,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 |---|---:|---:|---:|
 | FAZ 1 — Multi-Tenant + Docker HA | 9 | 9 | 0 |
 | FAZ 2 — Admin Pages Refactor | 5 | 5 | 0 |
-| FAZ 3 — AI Altyapısı | 7 | 5 | 2 |
+| FAZ 3 — AI Altyapısı | 7 | 6 | 1 |
 | FAZ 4 — AI Özellikleri | 6 | 6 | 0 |
 | **Toplam plan içi** | **27** | **13** | **14** |
 | Plan dışı tamamlanan | 5+ | 5+ | — |
@@ -77,7 +77,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **5/7 bitti, 1 ertelendi**
+### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **6/7 bitti, 1 ertelendi**
 
 > Foundation. Tüm AI özelliklerinin ön koşulu.
 
@@ -88,7 +88,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 | 3.3 ✅ | BYOK (Bring Your Own Key) | `Tenant` modelinde encrypted API key storage (Crypt::encryptString); `TenantAiResolver` BYOK + tenant tercihlerini uygular; admin tenant detayında "AI Ayarları" kartı (sağlayıcı seçimi, key girişi, canlı test); routes: `PUT admin/tenants/{t}/ai-settings`, `POST .../test`; 7 unit test. |
 | 3.4 ✅ | Kota & billing entegrasyonu | `ai_usage` migration (central DB); `AiUsage` model; `AiQuotaService` (kota check + cost calc + usage record); 4 plan (free/starter/pro/enterprise) + `monthly_requests`/`monthly_tokens`/`monthly_cost_usd` limitleri; BYOK tenant'lar muaf; `AiModelRouter` her isteğin önünde quota check + sonra success/failure record; admin tenant show sayfasında AI Kullanım Özeti paneli (gauge bar'lar, kalan kota uyarısı); plan dropdown'u Ayarlar kartında. 15 unit test. |
 | 3.5 ⏸ | Redis prompt caching | **ERTELENDİ** — gerçek kullanım verisi olmadan optimize etmek anlamlı değil. Aşağıda "Ertelenen İşler" bölümüne bakın. |
-| 3.6 | Streaming desteği (SSE) | Uzun cevaplarda kullanıcı early stop yapabilir; admin UI'da typewriter efekti |
+| 3.6 ✅ | Streaming desteği (SSE) | `AnthropicSseParser` + `OpenAiSseParser` — incremental chunk-safe parser'lar (mid-event split, malformed JSON tolerant, empty delta skip, token usage harvest). Anthropic + OpenAI + OpenRouter provider'larında `stream()` artık gerçek SSE (Guzzle stream + PSR-7 body read 4KB chunk). `Admin\Ai\StreamBlockEditController` (POST admin/ai/stream/block-edit) — Laravel `StreamedResponse` ile SSE format döner: `event: delta` text chunk'ları, `event: done` final usage, `event: error` failures. Quota pre-check (assertWithinQuota stream açılmadan), post-record (gerçek token count'lar message_delta event'inden). 15 unit test (parser robustness). UI integration: frontend EventSource binding sonraki minor iterasyona bırakıldı; backend altyapı production-ready. |
 | 3.7 ✅ | AI usage dashboardu | `AiUsageReporter` service — 7 agregat metod (totalsForCurrentMonth, dailyTrend, featureBreakdown, providerBreakdown, topExpensiveCalls, recentCalls, topTenants); BYOK rows cost'tan dışlanır, error rate + BYOK ratio + fallback count ayrı counter'lar. Tenant detay sayfası `/admin/tenants/{t}/ai-usage` — 4 KPI tile (delta % geçen aya kıyasla), 30 günlük günlük trend chart (bar + line dual axis), feature donut, provider bar list, BYOK/fallback widget'ları, top 10 pahalı call, son 25 istek timeline. Agency global dashboard `/admin/ai-dashboard` — aynı widget'lar tüm tenant'lar üzerinde + top 10 tenant tablosu + provider sıralama. Chart.js v4 CDN. Sidebar'a "AI Kullanım" linki (agency-admin only). 12 unit test. |
 
 ---
