@@ -15,7 +15,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 | FAZ 1 — Multi-Tenant + Docker HA | 9 | 8 | 1 |
 | FAZ 2 — Admin Pages Refactor | 5 | 5 | 0 |
 | FAZ 3 — AI Altyapısı | 7 | 0 | 7 |
-| FAZ 4 — AI Özellikleri | 6 | 0 | 6 |
+| FAZ 4 — AI Özellikleri | 6 | 1 | 5 |
 | **Toplam plan içi** | **27** | **13** | **14** |
 | Plan dışı tamamlanan | 5+ | 5+ | — |
 
@@ -132,13 +132,13 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün)
+### FAZ 4 — AI Özellikleri (6 madde, ~13-18 gün) — **1/6 bitti**
 
 > Müşteriye değer üreten katman. Her madde ayrı bir release olabilir.
 
 | Sıra | # | Madde | Süre | Açıklama |
 |---|---|---|---|---|
-| 1 | 4.1 | **AI SEO meta üretici** | 1-2 gün | Sayfa içeriğinden otomatik title/description/keywords; en hızlı ROI |
+| 1 | 4.1 ✅ | **AI SEO meta üretici** | bitti | `AiSeoGenerator` (sections_json/layout_json → text extract → AI), `Admin\Ai\SeoMetaController` (POST /admin/pages/{page}/ai/seo-meta); sayfa edit'inde SEO panel'inde "AI ile Üret" butonu; JSON {title, description, keywords} form alanlarına otomatik yazılır; kota aşımında 402 + kalan kota uyarısı; 8 unit test (markdown fenced JSON, chatty prefix, truncation, keyword dedup/cap, content-field filtering). |
 | 2 | 4.2 | **AI ile blok içerik düzenleme** | 2-3 gün | Blok seçilir → "daha kısa", "TR→EN", "SEO odaklı", "profesyonel" |
 | 3 | 4.3 | **Hazır şablon galerisi** | 2 gün UI + 4-6 saat/şablon | Klinik/Avukat/Restoran/Salon/Emlak — tek tıkla site; AI değil, içerik seed'i |
 | 4 | 4.4 | **AI ile sayfa oluşturma** | 3-5 gün | Prompt → mevcut SectionTemplate'lerden uygun sections_json |

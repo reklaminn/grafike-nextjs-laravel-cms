@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Ai\AiManager;
 use App\Services\Ai\AiModelRouter;
 use App\Services\Ai\AiQuotaService;
+use App\Services\Ai\AiSeoGenerator;
 use App\Services\Ai\TenantAiResolver;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
@@ -53,6 +54,11 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
                 config:          $app['config']->get('ai', []),
             );
         });
+
+        // Feature-level helpers — built on the router.
+        $this->app->singleton(AiSeoGenerator::class, function ($app) {
+            return new AiSeoGenerator($app->make(AiModelRouter::class));
+        });
     }
 
     public function provides(): array
@@ -63,6 +69,7 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             TenantAiResolver::class,
             AiQuotaService::class,
             AiModelRouter::class,
+            AiSeoGenerator::class,
         ];
     }
 }
