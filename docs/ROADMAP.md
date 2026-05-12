@@ -12,7 +12,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 
 | | Toplam | Bitti | Kalan |
 |---|---:|---:|---:|
-| FAZ 1 — Multi-Tenant + Docker HA | 9 | 8 | 1 |
+| FAZ 1 — Multi-Tenant + Docker HA | 9 | 9 | 0 |
 | FAZ 2 — Admin Pages Refactor | 5 | 5 | 0 |
 | FAZ 3 — AI Altyapısı | 7 | 5 | 2 |
 | FAZ 4 — AI Özellikleri | 6 | 6 | 0 |
@@ -33,7 +33,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 | 1.6 | Cache + storage izolasyonu | `config/tenancy.php:40-41` Cache + Filesystem bootstrappers |
 | 1.7 | API site_id filtreleri kaldırıldı | `app/Http/Controllers/Api/` grep: 0 sonuç |
 | 1.8 | docker-compose 3 app + Traefik HA | `docker-compose.yml` — app1/2/3 + Traefik labels + health check + Redis + MariaDB |
-| 1.9 | **Tenant testleri** ❌ | `tests/Feature/` altında tenant test yok |
+| 1.9 ✅ | Tenant testleri | `tests/Concerns/UsesSqliteCentralDb` trait (central DB'yi in-memory SQLite'a yönlendirir + `ai_usage`/`tenants`/`admins` vs schema'larını manuel kurar — production migration'lar dışında çalışabilen test ortamı). `TenantAiHelpersTest` 14 case: encryption round-trip, plan setter/getter, BYOK toggle, decrypt failure silent fallback, iki tenant'ın bağımsız key + plan'leri. `AiCrossTenantIsolationTest` 8 case: tenant A usage tenant B'ye sızmaz, A'nın kota dolması B'yi bloklamaz, BYOK kullanan A'nın istekleri B'nin sayacını bozmaz, daily trend + topTenants + global dashboard scoping correct, aynı plandaki iki tenant'ın counter'ları bağımsız. Toplam: **130 test, 335 assertion**. |
 
 ## ✅ FAZ 2 — Admin Pages Refactor (5/5) 🎉
 
