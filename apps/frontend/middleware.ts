@@ -3,6 +3,11 @@ import type { NextRequest } from "next/server";
 
 const DEFAULT_LOCALE = process.env.NEXT_PUBLIC_DEFAULT_LOCALE ?? "tr";
 
+// Central admin domain — requests here go to /admin, not tenant pages.
+const CENTRAL_HOST = process.env.NEXT_PUBLIC_SITE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host
+  : null;
+
 // Build supported locale list from env (comma-separated) or fall back to default only.
 const SUPPORTED_LOCALES: string[] = (
   process.env.NEXT_PUBLIC_SUPPORTED_LOCALES ?? DEFAULT_LOCALE
@@ -44,6 +49,14 @@ function tenantPreviewId(request: NextRequest): string | null {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const tenant = tenantPreviewId(request);
+
+  // Central domain without a tenant preview → redirect to admin panel.
+  const host = request.headers.get("host")?.split(":")[0]?.toLowerCase();
+  if (CENTRAL_HOST && host === CENTRAL_HOST && !tenant) {
+    const adminUrl = request.nextUrl.clone();
+    adminUrl.pathname = "/admin";
+    return NextResponse.redirect(adminUrl, { status: 302 });
+  }
 
   const requestHeaders = new Headers(request.headers);
   if (tenant) {
