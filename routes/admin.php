@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\Ai\PageGenerateController as AiPageGenerateContro
 use App\Http\Controllers\Admin\Ai\SectionTemplateGenerateController as AiSectionTemplateGenerateController;
 use App\Http\Controllers\Admin\Ai\SeoMetaController as AiSeoMetaController;
 use App\Http\Controllers\Admin\Ai\TranslateContentController as AiTranslateContentController;
+use App\Http\Controllers\Admin\AiDashboardController;
+use App\Http\Controllers\Admin\AiUsageController;
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -61,6 +63,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get ('industry-templates',                 [IndustryTemplateController::class, 'index'])->name('industry-templates.index');
         Route::post('tenants/{tenant}/apply-industry-template',
                                                           [IndustryTemplateController::class, 'apply'])->name('tenants.apply-industry-template');
+
+        // ── AI Usage Dashboards (FAZ 3.7) ────────────────────────────────────
+        Route::get ('tenants/{tenant}/ai-usage', [AiUsageController::class, 'show'])->name('tenants.ai-usage');
+        Route::get ('ai-dashboard',              [AiDashboardController::class, 'index'])->name('ai-dashboard');
 
         // ── Tenant-scoped routes (require active tenant in session) ───────────
         Route::middleware('tenant.admin')->group(function () {

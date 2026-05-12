@@ -41,13 +41,19 @@
             <i class="fas fa-chart-line text-emerald-500"></i> AI Kullanımı
             <span class="text-xs text-gray-400 font-normal ml-2">({{ $usage['period'] }})</span>
         </h2>
-        <span class="text-xs px-2 py-1 rounded-full
-            {{ $plan['name'] === 'enterprise' ? 'bg-purple-100 text-purple-700' :
-               ($plan['name'] === 'pro'        ? 'bg-indigo-100 text-indigo-700' :
-               ($plan['name'] === 'starter'    ? 'bg-blue-100 text-blue-700' :
-                                                  'bg-gray-100 text-gray-600')) }}">
-            <i class="fas fa-tag mr-1"></i> {{ $plan['label'] }} planı
-        </span>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('admin.tenants.ai-usage', $tenant) }}"
+               class="text-xs text-indigo-600 hover:text-indigo-800 underline">
+                <i class="fas fa-arrow-up-right-from-square text-[10px] mr-0.5"></i> Detay
+            </a>
+            <span class="text-xs px-2 py-1 rounded-full
+                {{ $plan['name'] === 'enterprise' ? 'bg-purple-100 text-purple-700' :
+                   ($plan['name'] === 'pro'        ? 'bg-indigo-100 text-indigo-700' :
+                   ($plan['name'] === 'starter'    ? 'bg-blue-100 text-blue-700' :
+                                                      'bg-gray-100 text-gray-600')) }}">
+                <i class="fas fa-tag mr-1"></i> {{ $plan['label'] }} planı
+            </span>
+        </div>
     </div>
 
     @if($byokExempt)

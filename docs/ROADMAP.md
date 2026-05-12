@@ -14,7 +14,7 @@ Bu doküman, projeye ait master plan'ın tamamlanma durumunu ve kalan iş kaleml
 |---|---:|---:|---:|
 | FAZ 1 — Multi-Tenant + Docker HA | 9 | 8 | 1 |
 | FAZ 2 — Admin Pages Refactor | 5 | 5 | 0 |
-| FAZ 3 — AI Altyapısı | 7 | 0 | 7 |
+| FAZ 3 — AI Altyapısı | 7 | 5 | 2 |
 | FAZ 4 — AI Özellikleri | 6 | 6 | 0 |
 | **Toplam plan içi** | **27** | **13** | **14** |
 | Plan dışı tamamlanan | 5+ | 5+ | — |
@@ -77,7 +77,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 
 ---
 
-### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **4/7 bitti, 1 ertelendi**
+### FAZ 3 — AI Altyapısı (7 madde, ~5-7 gün) — **5/7 bitti, 1 ertelendi**
 
 > Foundation. Tüm AI özelliklerinin ön koşulu.
 
@@ -89,7 +89,7 @@ Bu işler orijinal plan dosyasında yoktu ama yapıldı — değerli ek özellik
 | 3.4 ✅ | Kota & billing entegrasyonu | `ai_usage` migration (central DB); `AiUsage` model; `AiQuotaService` (kota check + cost calc + usage record); 4 plan (free/starter/pro/enterprise) + `monthly_requests`/`monthly_tokens`/`monthly_cost_usd` limitleri; BYOK tenant'lar muaf; `AiModelRouter` her isteğin önünde quota check + sonra success/failure record; admin tenant show sayfasında AI Kullanım Özeti paneli (gauge bar'lar, kalan kota uyarısı); plan dropdown'u Ayarlar kartında. 15 unit test. |
 | 3.5 ⏸ | Redis prompt caching | **ERTELENDİ** — gerçek kullanım verisi olmadan optimize etmek anlamlı değil. Aşağıda "Ertelenen İşler" bölümüne bakın. |
 | 3.6 | Streaming desteği (SSE) | Uzun cevaplarda kullanıcı early stop yapabilir; admin UI'da typewriter efekti |
-| 3.7 | AI usage dashboardu | Admin: tüm tenantların kullanımı; Tenant: kendi kotasının grafik gauge'u |
+| 3.7 ✅ | AI usage dashboardu | `AiUsageReporter` service — 7 agregat metod (totalsForCurrentMonth, dailyTrend, featureBreakdown, providerBreakdown, topExpensiveCalls, recentCalls, topTenants); BYOK rows cost'tan dışlanır, error rate + BYOK ratio + fallback count ayrı counter'lar. Tenant detay sayfası `/admin/tenants/{t}/ai-usage` — 4 KPI tile (delta % geçen aya kıyasla), 30 günlük günlük trend chart (bar + line dual axis), feature donut, provider bar list, BYOK/fallback widget'ları, top 10 pahalı call, son 25 istek timeline. Agency global dashboard `/admin/ai-dashboard` — aynı widget'lar tüm tenant'lar üzerinde + top 10 tenant tablosu + provider sıralama. Chart.js v4 CDN. Sidebar'a "AI Kullanım" linki (agency-admin only). 12 unit test. |
 
 ---
 

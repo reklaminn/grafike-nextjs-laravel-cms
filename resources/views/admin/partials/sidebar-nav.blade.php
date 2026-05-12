@@ -42,6 +42,7 @@
         array_splice($systemItems, 1, 0, [
             ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield', 'label' => 'Yöneticiler', 'match' => 'admin.admin-users'],
             ['route' => 'admin.roles.index', 'icon' => 'fa-key', 'label' => 'Roller/Yetkiler', 'match' => 'admin.roles'],
+            ['route' => 'admin.ai-dashboard', 'icon' => 'fa-chart-pie', 'label' => 'AI Kullanım', 'match' => 'admin.ai-dashboard'],
             ['route' => 'admin.maintenance.index', 'icon' => 'fa-database', 'label' => 'DB Bakım', 'match' => 'admin.maintenance'],
             ['route' => 'admin.activity-log.index', 'icon' => 'fa-history', 'label' => 'Aktivite Log', 'match' => 'admin.activity-log'],
         ]);
