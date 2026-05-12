@@ -78,6 +78,47 @@
                     @endforeach
                 </select>
             </div>
+
+            {{-- AI Plan --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    AI Plan
+                    <span class="ml-1 text-xs text-gray-400 font-normal">(AI özellikler için kota belirler)</span>
+                </label>
+                <select name="plan"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Seç (varsayılan: free)</option>
+                    @foreach($plans as $planKey)
+                    <option value="{{ $planKey }}" {{ old('plan') === $planKey ? 'selected' : '' }}>
+                        {{ ucfirst($planKey) }}
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Industry / Site Template --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Sektör
+                    <span class="ml-1 text-xs text-gray-400 font-normal">(opsiyonel — demo içerik ekler)</span>
+                </label>
+                <select id="industry-select"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Sektör seç</option>
+                    @foreach($industries as $code => $label)
+                    <option value="{{ $code }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div id="template-wrapper" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Site Şablonu</label>
+                <select name="site_template_id" id="template-select"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Şablon seç (opsiyonel)</option>
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Seçilirse migration sonrası hazır sayfalar ve menü otomatik oluşturulur.</p>
+            </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
@@ -155,6 +196,38 @@
 <script>
 document.getElementById('slug').addEventListener('input', function () {
     document.getElementById('db-preview').textContent = 'tenant_' + (this.value || '…');
+});
+
+// Industry → Site Template cascade
+const templatesByIndustry = @json($templatesByIndustry);
+
+document.getElementById('industry-select').addEventListener('change', function () {
+    const industry  = this.value;
+    const wrapper   = document.getElementById('template-wrapper');
+    const tplSelect = document.getElementById('template-select');
+
+    // Clear current options
+    tplSelect.innerHTML = '<option value="">Şablon seç (opsiyonel)</option>';
+
+    if (! industry || ! templatesByIndustry[industry]) {
+        wrapper.classList.add('hidden');
+        return;
+    }
+
+    const templates = templatesByIndustry[industry];
+    templates.forEach(function (tpl) {
+        const opt = document.createElement('option');
+        opt.value = tpl.id;
+        opt.textContent = tpl.name;
+        tplSelect.appendChild(opt);
+    });
+
+    wrapper.classList.remove('hidden');
+
+    // Auto-select first template if only one exists
+    if (templates.length === 1) {
+        tplSelect.value = templates[0].id;
+    }
 });
 </script>
 @endpush

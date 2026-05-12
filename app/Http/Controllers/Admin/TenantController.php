@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\AdminTenantAccess;
+use App\Models\SiteTemplate;
 use App\Models\Tenant;
 use App\Models\Theme;
 use App\Services\Ai\AiManager;
 use App\Services\Ai\Dtos\AiMessage;
 use App\Services\Ai\Dtos\AiRequest;
 use App\Services\Ai\Exceptions\AiProviderException;
+use App\Services\Tenants\IndustryTemplateApplier;
 use App\Services\Tenants\TenantStarterContentSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -51,9 +53,21 @@ class TenantController extends Controller
     {
         $this->authorizeAgencyAdmin();
 
-        $themes = Theme::active()->orderBy('name')->get();
+        $themes    = Theme::active()->orderBy('name')->get();
+        $plans     = array_keys(config('ai.plans', []));
+        $industries = SiteTemplate::INDUSTRIES;
 
-        return view('admin.tenants.create', compact('themes'));
+        // Group active templates by industry for the JS-driven selector
+        $templatesByIndustry = SiteTemplate::active()
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'industry'])
+            ->groupBy('industry')
+            ->map(fn ($group) => $group->values())
+            ->toArray();
+
+        return view('admin.tenants.create', compact(
+            'themes', 'plans', 'industries', 'templatesByIndustry'
+        ));
     }
 
     /**
@@ -61,11 +75,15 @@ class TenantController extends Controller
      */
     public function store(Request $request)
     {
+        $aiPlans = array_keys(config('ai.plans', []));
+
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'slug'     => ['required', 'string', 'max:100', 'alpha_dash', Rule::unique('central.tenants', 'id')],
             'domain'   => 'required|string|max:253',
             'theme_id' => ['nullable', Rule::exists('central.themes', 'id')],
+            'plan'     => ['nullable', Rule::in($aiPlans)],
+            'site_template_id' => ['nullable', Rule::exists('central.site_templates', 'id')],
             'create_company_admin' => 'nullable|boolean',
             'company_admin_name' => 'required_if:create_company_admin,1|nullable|string|max:255',
             'company_admin_username' => ['required_if:create_company_admin,1', 'nullable', 'string', 'max:255', Rule::unique('central.admins', 'username')],
@@ -82,13 +100,21 @@ class TenantController extends Controller
             return DB::connection('central')->transaction(function () use ($validated, $domain) {
                 // Insert explicitly into the central table. This avoids both
                 // stancl creation events and Eloquent key casting edge cases.
+                $tenantData = [
+                    'name'     => $validated['name'],
+                    'status'   => 'active',
+                    'theme_id' => $validated['theme_id'] ?? null,
+                ];
+
+                // Store initial AI plan in the data blob so quota checks
+                // work immediately after provisioning.
+                if (! empty($validated['plan'])) {
+                    $tenantData['ai_settings'] = ['plan' => $validated['plan']];
+                }
+
                 DB::connection('central')->table('tenants')->insert([
                     'id'         => $validated['slug'],
-                    'data'       => json_encode([
-                        'name'     => $validated['name'],
-                        'status'   => 'active',
-                        'theme_id' => $validated['theme_id'] ?? null,
-                    ], JSON_THROW_ON_ERROR),
+                    'data'       => json_encode($tenantData, JSON_THROW_ON_ERROR),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -132,9 +158,24 @@ class TenantController extends Controller
                 ->with('warning', "Tenant «{$tenant->name}» oluşturuldu ancak veritabanı/migration adımı başarısız oldu: {$e->getMessage()}");
         }
 
+        // Apply industry site template if selected (runs after migrations).
+        $successNote = "Veritabanı ve migrationlar otomatik çalıştırıldı.";
+        if (! empty($validated['site_template_id'])) {
+            $siteTemplate = SiteTemplate::find($validated['site_template_id']);
+            if ($siteTemplate) {
+                try {
+                    app(IndustryTemplateApplier::class)->apply($tenant, $siteTemplate);
+                    $successNote .= " «{$siteTemplate->name}» sektör şablonu uygulandı.";
+                } catch (\Throwable $e) {
+                    report($e);
+                    $successNote .= " ⚠ Şablon uygulanamadı: {$e->getMessage()}";
+                }
+            }
+        }
+
         return redirect()
             ->route('admin.tenants.show', $tenant)
-            ->with('success', "Tenant «{$tenant->name}» oluşturuldu. Veritabanı ve migrationlar otomatik çalıştırıldı.");
+            ->with('success', "Tenant «{$tenant->name}» oluşturuldu. {$successNote}");
     }
 
     /**
