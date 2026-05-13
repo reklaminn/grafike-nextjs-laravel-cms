@@ -30,15 +30,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PROTO,
         );
 
-        // Register ForceHttps in EVERY way Laravel 12 supports, so it runs
-        // regardless of which group the request is dispatched through.
-        // - prepend(): adds to global middleware stack (runs before group middleware)
-        // - prependToGroup('web'): adds to web group (runs on all web routes)
-        // - prependToGroup('api'): adds to api group (runs on all api routes)
+        // ForceHttps is registered globally (prepend) so it runs on every request
+        // BEFORE UseSiteHostHeader rewrites the Host/X-Forwarded-Host headers.
+        // At that point getHost() still returns the raw incoming host (the real
+        // public domain for browser requests, or the Docker-internal "app1" for
+        // internal Next.js → Laravel SSR calls), so isInternalDockerHost() fires
+        // correctly and SSR calls are never spuriously redirected to HTTPS.
+        //
+        // IMPORTANT — do NOT also add ForceHttps to the 'api' group.
+        // After UseSiteHostHeader updates HTTP_X_FORWARDED_HOST, a second
+        // ForceHttps run would see the real tenant domain, fail
+        // isInternalDockerHost(), find no X-Forwarded-Proto on the internal HTTP
+        // call, and emit a 308 redirect that breaks every SSR tenant/preview
+        // API call.  The global prepend already covers all routes.
         $middleware->prepend(\App\Http\Middleware\UseSiteHostHeader::class);
         $middleware->prepend(\App\Http\Middleware\ForceHttps::class);
         $middleware->prependToGroup('web', \App\Http\Middleware\ForceHttps::class);
-        $middleware->prependToGroup('api', \App\Http\Middleware\ForceHttps::class);
 
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
