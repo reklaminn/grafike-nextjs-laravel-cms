@@ -74,7 +74,8 @@ x-app-labels: &app-labels
   # 307 preserves POST/PUT/PATCH so form data reaches the HTTPS handler intact.
   # If you change this back to permanent later, use a Traefik version that sends
   # 308 (not 301) for non-GET methods — or keep permanent: "false".
-  traefik.http.routers.http-catchall.rule: "HostRegexp(`{host:.+}`)"
+  # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
+  traefik.http.routers.http-catchall.rule: "HostRegexp(`.+`)"
   traefik.http.routers.http-catchall.entrypoints: web
   traefik.http.routers.http-catchall.middlewares: https-redirect
   traefik.http.routers.http-catchall.priority: "1"
@@ -133,7 +134,8 @@ x-app-labels: &app-labels
   # through here → Laravel port 80 → stancl reads the Host header → looks up
   # the domain in the `domains` table → initialises the tenant DB connection.
   # Traefik requests a Let's Encrypt cert for each new hostname automatically.
-  traefik.http.routers.grafike-tenants.rule: "HostRegexp(`{host:.+}`)"
+  # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
+  traefik.http.routers.grafike-tenants.rule: "HostRegexp(`.+`)"
   traefik.http.routers.grafike-tenants.entrypoints: websecure
   traefik.http.routers.grafike-tenants.tls: "true"
   traefik.http.routers.grafike-tenants.tls.certresolver: mytlschallenge
@@ -262,7 +264,8 @@ services:
       # Frontend catches ALL domains (tenant subdomains + APP_DOMAIN) for non-backend paths.
       # Priority 2: higher than catch-all backend (1), lower than explicit admin/api routers (200).
       # Backend exclusions ensure /admin, /api, /storage etc. still go to PHP.
-      traefik.http.routers.grafike-frontend.rule: "HostRegexp(`{host:.+}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
+      # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
+      traefik.http.routers.grafike-frontend.rule: "HostRegexp(`.+`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
       traefik.http.routers.grafike-frontend.entrypoints: websecure
       traefik.http.routers.grafike-frontend.tls: "true"
       traefik.http.routers.grafike-frontend.tls.certresolver: mytlschallenge

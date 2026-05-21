@@ -61,7 +61,8 @@ services:
       # permanent=false → 307 Temporary Redirect (method-preserving).
       # DO NOT use permanent=true (301): browsers convert POST → GET on 301,
       # silently discarding form bodies (sections_json, CSRF tokens, etc.).
-      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
+      # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
+      - "traefik.http.routers.http-catchall.rule=HostRegexp(`.+`)"
       - "traefik.http.routers.http-catchall.entrypoints=web"
       - "traefik.http.routers.http-catchall.middlewares=https-redirect"
       - "traefik.http.routers.http-catchall.priority=1"
@@ -174,7 +175,8 @@ services:
       # new hostname via HTTP-01 challenge.
       # Next.js reads the Host header → calls Laravel API with X-Site-Host →
       # stancl resolves the tenant → returns that tenant's content.
-      - "traefik.http.routers.grafike-tenant-frontend.rule=HostRegexp(`{host:.+}`)"
+      # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
+      - "traefik.http.routers.grafike-tenant-frontend.rule=HostRegexp(`.+`)"
       - "traefik.http.routers.grafike-tenant-frontend.entrypoints=websecure"
       - "traefik.http.routers.grafike-tenant-frontend.tls=true"
       - "traefik.http.routers.grafike-tenant-frontend.tls.certresolver=mytlschallenge"
