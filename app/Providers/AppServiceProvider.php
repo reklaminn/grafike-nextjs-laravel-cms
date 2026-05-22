@@ -7,6 +7,7 @@ use App\Models\Menu;
 use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Observers\ArticleObserver;
+use App\Observers\DomainObserver;
 use App\Observers\MenuObserver;
 use App\Observers\PageObserver;
 use App\Observers\SiteSettingObserver;
@@ -14,6 +15,7 @@ use App\View\Composers\FrontendComposer;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Stancl\Tenancy\Database\Models\Domain;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -54,6 +56,12 @@ class AppServiceProvider extends ServiceProvider
         Article::observe(ArticleObserver::class);
         SiteSetting::observe(SiteSettingObserver::class);
         Menu::observe(MenuObserver::class);
+
+        // Tenant domain CRUD → regenerate the Traefik dynamic-config file so
+        // the reverse proxy picks up new tenant Host() routers (each with its
+        // own ACME HTTP-01 cert) without a Traefik restart.
+        // See app/Services/TraefikDynamicConfig.php for the file format.
+        Domain::observe(DomainObserver::class);
 
         // Register view composer for frontend layouts
         View::composer('frontend.layouts.*', FrontendComposer::class);

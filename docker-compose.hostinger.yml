@@ -49,6 +49,11 @@ services:
     volumes:
       - grafike_storage_app:/var/www/html/storage/app
       - grafike_storage_logs:/var/www/html/storage/logs
+      # Shared mount for Traefik file provider.  Laravel writes
+      # /var/traefik-dynamic/tenants.json on Domain CRUD; Traefik reads it
+      # from /etc/traefik/dynamic and hot-reloads (~2s).  Host directory
+      # ./traefik-dynamic must exist before `compose up`.
+      - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
       - traefik_proxy
@@ -169,17 +174,19 @@ services:
       - "traefik.http.routers.grafike-frontend.service=grafike-frontend-lb"
       - "traefik.http.routers.grafike-frontend.priority=10"
 
-      # ── Tenant custom domains → Next.js (priority 1, catch-all) ──────────
-      # Any domain not already matched by a higher-priority backend router
-      # lands here.  Traefik auto-provisions a Let's Encrypt cert for each
-      # new hostname via HTTP-01 challenge.
-      # Next.js reads the Host header → calls Laravel API with X-Site-Host →
-      # stancl resolves the tenant → returns that tenant's content.
+      # ── Tenant custom domains → Next.js (priority 1, LAST-RESORT fallback) ──
+      # Per-tenant Host() routers are generated dynamically by Laravel's
+      # TraefikDynamicConfig service (file provider, priority 100) and take
+      # precedence for every domain in the `domains` table.  This wildcard
+      # exists only so unknown-host requests get a clean fallback.
+      #
+      # NO cert resolver here: HostRegexp can't enumerate domains for ACME.
+      # Tenant certs are issued by the file-provider routers (per-domain
+      # HTTP-01).  Unknown-host HTTPS requests get Traefik's default cert.
       # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
       - "traefik.http.routers.grafike-tenant-frontend.rule=HostRegexp(`.+`)"
       - "traefik.http.routers.grafike-tenant-frontend.entrypoints=websecure"
       - "traefik.http.routers.grafike-tenant-frontend.tls=true"
-      - "traefik.http.routers.grafike-tenant-frontend.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.grafike-tenant-frontend.service=grafike-frontend-lb"
       - "traefik.http.routers.grafike-tenant-frontend.priority=1"
 
@@ -220,6 +227,11 @@ services:
     volumes:
       - grafike_storage_app:/var/www/html/storage/app
       - grafike_storage_logs:/var/www/html/storage/logs
+      # Shared mount for Traefik file provider.  Laravel writes
+      # /var/traefik-dynamic/tenants.json on Domain CRUD; Traefik reads it
+      # from /etc/traefik/dynamic and hot-reloads (~2s).  Host directory
+      # ./traefik-dynamic must exist before `compose up`.
+      - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
 
@@ -256,6 +268,11 @@ services:
     volumes:
       - grafike_storage_app:/var/www/html/storage/app
       - grafike_storage_logs:/var/www/html/storage/logs
+      # Shared mount for Traefik file provider.  Laravel writes
+      # /var/traefik-dynamic/tenants.json on Domain CRUD; Traefik reads it
+      # from /etc/traefik/dynamic and hot-reloads (~2s).  Host directory
+      # ./traefik-dynamic must exist before `compose up`.
+      - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
 
