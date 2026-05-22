@@ -6,6 +6,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Stancl\Tenancy\Database\Models\Domain;
+use Symfony\Component\Yaml\Yaml;
 use Throwable;
 
 /**
@@ -83,16 +84,18 @@ class TraefikDynamicConfig
         }
 
         try {
-            $config  = $this->buildConfig();
-            $payload = json_encode(
-                $config,
-                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
-            );
+            $config = $this->buildConfig();
 
-            $dest = $this->outputDir . '/tenants.json';
+            // Traefik v3 file provider reads YAML / TOML only — JSON support
+            // was dropped from v2.  Symfony Yaml dumps with `inline=8` so the
+            // nested router structures stay multi-line readable rather than
+            // collapsing to one ugly line at depth 4.
+            $payload = Yaml::dump($config, 8, 2, Yaml::DUMP_OBJECT_AS_MAP);
+
+            $dest = $this->outputDir . '/tenants.yaml';
             $tmp  = $dest . '.tmp.' . bin2hex(random_bytes(4));
 
-            if (file_put_contents($tmp, $payload . "\n", LOCK_EX) === false) {
+            if (file_put_contents($tmp, $payload, LOCK_EX) === false) {
                 throw new \RuntimeException('Failed to write tmp file: ' . $tmp);
             }
 
@@ -100,6 +103,13 @@ class TraefikDynamicConfig
             if (! rename($tmp, $dest)) {
                 @unlink($tmp);
                 throw new \RuntimeException('Failed to rename tmp -> dest');
+            }
+
+            // Clean up any legacy tenants.json from earlier deploys — leaving
+            // it lying around would confuse anyone debugging.
+            $legacyJson = $this->outputDir . '/tenants.json';
+            if (is_file($legacyJson)) {
+                @unlink($legacyJson);
             }
 
             Log::info('TraefikDynamicConfig: regenerated', [

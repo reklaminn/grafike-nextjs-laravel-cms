@@ -32,7 +32,7 @@ class SyncTraefikDomains extends Command
 
         $traefik->regenerate();
 
-        $this->info('Done. Check /var/traefik-dynamic/tenants.json (or your configured TRAEFIK_DYNAMIC_PATH).');
+        $this->info('Done. Check /var/traefik-dynamic/tenants.yaml (or your configured TRAEFIK_DYNAMIC_PATH).');
         $this->line('Traefik file provider will hot-reload within ~2 seconds; no restart required.');
 
         return self::SUCCESS;
