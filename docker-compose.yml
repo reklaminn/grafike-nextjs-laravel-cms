@@ -99,6 +99,18 @@ x-app-labels: &app-labels
   traefik.http.routers.grafike-admin.entrypoints: websecure
   traefik.http.routers.grafike-admin.tls: "true"
   traefik.http.routers.grafike-admin.tls.certresolver: mytlschallenge
+  # ACME scope: ONLY request a LE cert for graficms.grafike.site.
+  # Without this, Traefik would derive both hosts from the router rule
+  # and ask for a combined SAN cert — but cms.grafcore.com is behind
+  # Cloudflare proxy, which terminates TLS at the edge and never forwards
+  # the ALPN extension required by the TLS-ALPN-01 challenge.  The combined
+  # request fails repeatedly until the LE "5 failed authorizations per
+  # identifier per hour" rate limit kicks in.
+  #
+  # cms.grafcore.com gets its cert from the CF Origin Certificate loaded
+  # via the file provider (traefik-dynamic/certs.yaml), matched by SNI.
+  # Drop this line once graficms.grafike.site is decommissioned.
+  traefik.http.routers.grafike-admin.tls.domains[0].main: graficms.grafike.site
   traefik.http.routers.grafike-admin.service: grafike-lb
   traefik.http.routers.grafike-admin.middlewares: grafike-headers@docker
   traefik.http.routers.grafike-admin.priority: "200"
@@ -109,6 +121,8 @@ x-app-labels: &app-labels
   traefik.http.routers.grafike-api.entrypoints: websecure
   traefik.http.routers.grafike-api.tls: "true"
   traefik.http.routers.grafike-api.tls.certresolver: mytlschallenge
+  # ACME scope — see grafike-admin note above.
+  traefik.http.routers.grafike-api.tls.domains[0].main: graficms.grafike.site
   traefik.http.routers.grafike-api.service: grafike-lb
   traefik.http.routers.grafike-api.middlewares: grafike-headers@docker
   traefik.http.routers.grafike-api.priority: "200"
@@ -119,6 +133,8 @@ x-app-labels: &app-labels
   traefik.http.routers.grafike-assets.entrypoints: websecure
   traefik.http.routers.grafike-assets.tls: "true"
   traefik.http.routers.grafike-assets.tls.certresolver: mytlschallenge
+  # ACME scope — see grafike-admin note above.
+  traefik.http.routers.grafike-assets.tls.domains[0].main: graficms.grafike.site
   traefik.http.routers.grafike-assets.service: grafike-lb
   traefik.http.routers.grafike-assets.middlewares: grafike-headers@docker
   traefik.http.routers.grafike-assets.priority: "200"
