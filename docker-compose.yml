@@ -278,14 +278,15 @@ services:
       traefik.docker.network: traefik_proxy
       # Frontend catch-all (LAST-RESORT FALLBACK only).  Per-tenant Host()
       # routers from the file provider (priority 100) take precedence for
-      # known domains.  This rule still matches `graficms.grafike.site` and
-      # unknown hosts for non-backend paths; backend paths route to PHP via
-      # the explicit grafike-* routers at priority 200.
+      # known domains.  This rule matches the CMS admin domain (e.g.
+      # `cms.grafcore.com`) and unknown hosts for non-backend paths;
+      # backend paths route to PHP via the explicit grafike-* routers at
+      # priority 200.
       #
       # NO cert resolver here: HostRegexp can't enumerate domains for ACME.
-      # The static `grafike-admin` router (Host(`graficms.grafike.site`))
-      # owns the admin-domain cert; tenant certs are issued via the file
-      # provider routers (per-domain HTTP-01).
+      # The static `grafike-admin` router (Host(`${APP_DOMAIN}`)) owns the
+      # admin-domain cert; tenant certs are issued via the file provider
+      # routers (per-domain HTTP-01).
       # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
       traefik.http.routers.grafike-frontend.rule: "HostRegexp(`.+`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`))"
       traefik.http.routers.grafike-frontend.entrypoints: websecure

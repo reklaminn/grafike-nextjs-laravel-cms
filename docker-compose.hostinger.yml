@@ -75,7 +75,11 @@ services:
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=false"
 
       # ── /admin → Laravel ──────────────────────────────────────────────────
-      - "traefik.http.routers.grafike-admin.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/admin`)"
+      # LEGACY: `graficms.grafike.site` listed alongside ${APP_DOMAIN} during
+      # the cms.grafcore.com migration so both hosts reach the admin panel in
+      # parallel.  Remove the second host (here + in api/assets/frontend rules
+      # below) once the old domain is decommissioned.
+      - "traefik.http.routers.grafike-admin.rule=Host(`${APP_DOMAIN}`, `graficms.grafike.site`) && PathPrefix(`/admin`)"
       - "traefik.http.routers.grafike-admin.entrypoints=websecure"
       - "traefik.http.routers.grafike-admin.tls=true"
       - "traefik.http.routers.grafike-admin.tls.certresolver=mytlschallenge"
@@ -84,7 +88,8 @@ services:
       - "traefik.http.routers.grafike-admin.priority=200"
 
       # ── /api → Laravel ────────────────────────────────────────────────────
-      - "traefik.http.routers.grafike-api.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api`)"
+      # LEGACY graficms.grafike.site — see grafike-admin note above.
+      - "traefik.http.routers.grafike-api.rule=Host(`${APP_DOMAIN}`, `graficms.grafike.site`) && PathPrefix(`/api`)"
       - "traefik.http.routers.grafike-api.entrypoints=websecure"
       - "traefik.http.routers.grafike-api.tls=true"
       - "traefik.http.routers.grafike-api.tls.certresolver=mytlschallenge"
@@ -93,7 +98,8 @@ services:
       - "traefik.http.routers.grafike-api.priority=200"
 
       # ── Static assets + health → Laravel ──────────────────────────────────
-      - "traefik.http.routers.grafike-assets.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
+      # LEGACY graficms.grafike.site — see grafike-admin note above.
+      - "traefik.http.routers.grafike-assets.rule=Host(`${APP_DOMAIN}`, `graficms.grafike.site`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
       - "traefik.http.routers.grafike-assets.entrypoints=websecure"
       - "traefik.http.routers.grafike-assets.tls=true"
       - "traefik.http.routers.grafike-assets.tls.certresolver=mytlschallenge"
@@ -167,7 +173,8 @@ services:
       # ── CMS domain public pages → Next.js (priority 10) ───────────────────
       # Non-backend paths on APP_DOMAIN go to Next.js SSR.
       # Priority 10 loses to backend routers (200) but wins over catch-all (1).
-      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/member`) || PathPrefix(`/forms`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/storage`) || PathPrefix(`/build`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`) || Path(`/sitemap.xml`) || Path(`/robots.txt`))"
+      # LEGACY graficms.grafike.site — see grafike-admin note above.
+      - "traefik.http.routers.grafike-frontend.rule=Host(`${APP_DOMAIN}`, `graficms.grafike.site`) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/member`) || PathPrefix(`/forms`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/storage`) || PathPrefix(`/build`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`) || Path(`/sitemap.xml`) || Path(`/robots.txt`))"
       - "traefik.http.routers.grafike-frontend.entrypoints=websecure"
       - "traefik.http.routers.grafike-frontend.tls=true"
       - "traefik.http.routers.grafike-frontend.tls.certresolver=mytlschallenge"

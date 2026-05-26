@@ -20,14 +20,16 @@ return [
     /**
      * The list of domains hosting your central app (admin panel + API).
      * Tenant middleware will NOT run for requests hitting these domains.
+     *
+     * CENTRAL_DOMAIN supports a comma-separated list so a domain migration
+     * can keep both old and new admin hosts live in parallel (e.g.
+     * `cms.grafcore.com,graficms.grafike.site`).  Whitespace is trimmed,
+     * empty entries are dropped, so trailing commas are safe.
      */
-    'central_domains' => array_filter([
-        env('CENTRAL_DOMAIN', ''),          // e.g. grafike.app (admin panel)
-        '127.0.0.1',
-        'localhost',
-        '127.0.0.1:8000',
-        'localhost:8000',
-    ]),
+    'central_domains' => array_values(array_filter(array_map('trim', array_merge(
+        explode(',', (string) env('CENTRAL_DOMAIN', '')),
+        ['127.0.0.1', 'localhost', '127.0.0.1:8000', 'localhost:8000'],
+    )))),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.

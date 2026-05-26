@@ -151,11 +151,12 @@ class TraefikDynamicConfig
         ];
 
         // Pull every domain from the central tenants DB.  This includes
-        // central domains too (e.g. graficms.grafike.site if it's in
-        // `domains`), but those typically have their own static router from
-        // docker-compose labels — and even if duplicated here, Traefik just
-        // uses whichever has higher priority.  Filtering would require
-        // hardcoding the central host list, which we intentionally avoid.
+        // central domains too (e.g. cms.grafcore.com if it's accidentally
+        // inserted into `domains`), but those typically have their own
+        // static router from docker-compose labels — and even if duplicated
+        // here, Traefik just uses whichever has higher priority.  Filtering
+        // would require hardcoding the central host list, which we
+        // intentionally avoid.
         $domains = Domain::query()->orderBy('domain')->get();
 
         foreach ($domains as $domain) {
