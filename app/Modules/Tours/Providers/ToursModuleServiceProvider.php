@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Tours\Providers;
 
+use App\Modules\Tours\Events\BookingCancelled;
+use App\Modules\Tours\Events\BookingConfirmed;
+use App\Modules\Tours\Events\BookingExpired;
+use App\Modules\Tours\Events\BookingReserved;
+use App\Modules\Tours\Listeners\SendBookingNotificationListener;
+use App\Modules\Tours\Services\Booking\BookingService;
+use App\Modules\Tours\Services\Booking\CapacityLockService;
+use App\Modules\Tours\Services\Booking\QuoteService;
+use App\Modules\Tours\StateMachines\BookingStateMachine;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Stancl\Tenancy\Events\TenancyInitialized;
@@ -46,16 +55,34 @@ class ToursModuleServiceProvider extends ServiceProvider
      */
     public const SLUG = 'tours';
 
+    /**
+     * Central-context bindings — registered for every request,
+     * regardless of whether the tenant has Tours enabled.  Adding
+     * the services here lets central artisan commands (Phase 3 admin
+     * sync scripts) resolve them.
+     */
     public function register(): void
     {
-        // No central-context bindings yet.
+        $this->app->singleton(CapacityLockService::class);
+        $this->app->singleton(QuoteService::class);
+        $this->app->singleton(BookingStateMachine::class);
+        $this->app->singleton(BookingService::class);
     }
 
     public function boot(): void
     {
+        // Lifecycle event → email listener.  Bound at boot regardless
+        // of tenant so a queued event handler running in central
+        // context still finds the listener.  The actual emails go out
+        // via the tenant's SmtpProfile, which the mailable resolves
+        // lazily inside Mail::to(...).
+        Event::listen(BookingReserved::class,  SendBookingNotificationListener::class);
+        Event::listen(BookingConfirmed::class, SendBookingNotificationListener::class);
+        Event::listen(BookingCancelled::class, SendBookingNotificationListener::class);
+        Event::listen(BookingExpired::class,   SendBookingNotificationListener::class);
+
         // Tenant-scoped resource registration is deferred until a tenant
-        // is actually initialized and we know it has Tours enabled.  See
-        // bootTenant() for what runs at that point.
+        // is actually initialized and we know it has Tours enabled.
         Event::listen(TenancyInitialized::class, function (TenancyInitialized $event): void {
             $tenant = $event->tenancy->tenant;
 
@@ -69,10 +96,11 @@ class ToursModuleServiceProvider extends ServiceProvider
 
     /**
      * Called once per request when the active tenant has `tours` enabled.
-     * Phase 1+ implementation lands here.
+     * Routes load here so a "kurumsal" tenant's URL space stays free
+     * of /api/v1/tours/* endpoints it doesn't need.
      */
     protected function bootTenant(): void
     {
-        // Phase 1+: load tenant routes, views, Livewire components.
+        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
     }
 }
