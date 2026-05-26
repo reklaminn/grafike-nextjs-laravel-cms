@@ -4,6 +4,20 @@
     $currentRoute = request()->route()?->getName() ?? '';
     $isAgencyAdmin = auth('admin')->user()?->isAgencyAdmin() ?? false;
 
+    // Vertical-module flags drive conditional nav groups (Tours,
+    // Commerce, …).  Resolved from the session-selected tenant — pure
+    // central-context lookup, no tenant DB queries.
+    $activeTenantId = session('active_tenant');
+    $activeTenant   = $activeTenantId ? \App\Models\Tenant::query()->find($activeTenantId) : null;
+    $hasTours       = $activeTenant?->hasModule('tours')    ?? false;
+    $hasCommerce    = $activeTenant?->hasModule('commerce') ?? false;
+
+    $toursItems = $hasTours ? [
+        ['route' => 'admin.tours.index',           'icon' => 'fa-route',        'label' => 'Turlar',         'match' => 'admin.tours.index'],
+        ['route' => 'admin.tour-categories.index', 'icon' => 'fa-folder-tree',  'label' => 'Tur Kategorileri','match' => 'admin.tour-categories'],
+        ['route' => 'admin.tour-bookings.index',   'icon' => 'fa-ticket',       'label' => 'Rezervasyonlar', 'match' => 'admin.tour-bookings'],
+    ] : [];
+
     $navItems = [
         ['route' => 'admin.dashboard', 'icon' => 'fa-tachometer-alt', 'label' => 'Dashboard', 'match' => 'admin.dashboard'],
         ['route' => 'admin.pages.index', 'icon' => 'fa-file-alt', 'label' => 'Sayfalar', 'match' => 'admin.pages'],
@@ -57,6 +71,23 @@
         <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
     </a>
 @endforeach
+
+<!-- Tours (module-gated; only shows when active tenant has 'tours' enabled) -->
+@if(!empty($toursItems))
+<div class="my-3 border-t border-gray-200"></div>
+<div class="px-3 pt-2 pb-1">
+    <span class="text-[10px] font-semibold text-amber-500 uppercase tracking-wider" x-show="sidebarOpen" x-transition>
+        <i class="fas fa-ship mr-0.5"></i> Turizm
+    </span>
+</div>
+@foreach($toursItems as $item)
+    <a href="{{ route($item['route']) }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
+        <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
+        <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
+    </a>
+@endforeach
+@endif
 
 <!-- SEO & Diller -->
 <div class="my-3 border-t border-gray-200"></div>

@@ -81,8 +81,20 @@ class ToursModuleServiceProvider extends ServiceProvider
         Event::listen(BookingCancelled::class, SendBookingNotificationListener::class);
         Event::listen(BookingExpired::class,   SendBookingNotificationListener::class);
 
-        // Tenant-scoped resource registration is deferred until a tenant
-        // is actually initialized and we know it has Tours enabled.
+        // Admin views — registered under the `tours::` namespace so
+        // controllers reference them as `tours::admin.tours.index`
+        // without colliding with the host app's view tree.
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'tours');
+
+        // Admin routes — loaded unconditionally because they run in
+        // central context (no tenant request to gate against here);
+        // per-request gating happens via the `tenant.module:tours`
+        // middleware on the route group itself.
+        $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
+
+        // Tenant-scoped resource registration (public booking API) is
+        // deferred until a tenant is actually initialized and we know
+        // it has Tours enabled.
         Event::listen(TenancyInitialized::class, function (TenancyInitialized $event): void {
             $tenant = $event->tenancy->tenant;
 

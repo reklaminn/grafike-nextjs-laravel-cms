@@ -175,6 +175,15 @@
             'canManage'        => $canManageTenants,
         ])
 
+        {{-- ─── Iyzico Ayarları (BYOK) — sadece tours/commerce aktifse anlamlı ── --}}
+        @if($tenant->hasModule('tours') || $tenant->hasModule('commerce'))
+            @include('admin.tenants._iyzico-settings-panel', [
+                'tenant'       => $tenant,
+                'canManage'    => $canManageTenants,
+                'iyzicoStatus' => $iyzicoStatus ?? ['configured' => false, 'sandbox' => true],
+            ])
+        @endif
+
         {{-- ─── Sektör Şablonu (FAZ 4.3) ───────────────────────────────────── --}}
         @if($canManageTenants)
             @include('admin.tenants._industry-template-panel', [

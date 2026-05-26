@@ -63,6 +63,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // ── Tenant Vertical Modules (Tours, Commerce, …) ─────────────────────
         Route::put('tenants/{tenant}/modules', [TenantController::class, 'updateModules'])->name('tenants.modules.update');
 
+        // ── Tenant Iyzico Settings (BYOK) ─────────────────────────────────────
+        Route::put('tenants/{tenant}/iyzico-settings', [TenantController::class, 'updateIyzicoSettings'])->name('tenants.iyzico-settings.update');
+
         // ── Industry SiteTemplates (FAZ 4.3 gallery) ─────────────────────────
         Route::get ('industry-templates',                 [IndustryTemplateController::class, 'index'])->name('industry-templates.index');
         Route::post('tenants/{tenant}/apply-industry-template',

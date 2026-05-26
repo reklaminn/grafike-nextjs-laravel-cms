@@ -8,6 +8,7 @@ use App\Models\AdminTenantAccess;
 use App\Models\SiteTemplate;
 use App\Models\Tenant;
 use App\Models\Theme;
+use App\Modules\Payments\Services\IyzicoBYOKResolver;
 use App\Services\Ai\AiManager;
 use App\Services\Ai\Dtos\AiMessage;
 use App\Services\Ai\Dtos\AiRequest;
@@ -18,6 +19,7 @@ use App\Services\Modules\ModuleRegistry;
 use App\Services\Tenants\IndustryTemplateApplier;
 use App\Services\Tenants\TenantStarterContentSeeder;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
@@ -166,13 +168,20 @@ class TenantController extends Controller
     /**
      * Show tenant details + actions.
      */
-    public function show(Tenant $tenant, \App\Services\Ai\AiQuotaService $quotaService, ModuleRegistry $registry)
+    public function show(Tenant $tenant, \App\Services\Ai\AiQuotaService $quotaService, ModuleRegistry $registry, IyzicoBYOKResolver $iyzicoResolver)
     {
         $this->authorizeTenantAccess($tenant);
 
         $tenant->load('domains');
         $themes = Theme::active()->orderBy('name')->get();
         $canManageTenants = Auth::guard('admin')->user()?->isAgencyAdmin() ?? false;
+
+        // Iyzico BYOK status for the panel.  Resolver checks for presence
+        // without decrypting (cheap), sandbox flag is unencrypted in data.
+        $iyzicoStatus = [
+            'configured' => $iyzicoResolver->isConfigured($tenant),
+            'sandbox'    => (bool) ($tenant->getAttribute('iyzico_keys')['sandbox'] ?? config('payments.gateways.iyzico.default_sandbox', true)),
+        ];
 
         // AI usage snapshot for the panel — survives gracefully if the
         // central DB hasn't been migrated yet (e.g. fresh installs).
@@ -202,8 +211,55 @@ class TenantController extends Controller
         }
 
         return view('admin.tenants.show', compact(
-            'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage', 'availableModules'
+            'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage', 'availableModules', 'iyzicoStatus'
         ));
+    }
+
+    /**
+     * Persist Iyzico BYOK credentials on Tenant.data.iyzico_keys.
+     *
+     * Following the AI-settings pattern: an empty submitted key field
+     * means "leave the existing value untouched"; pass `clear_<field>=1`
+     * to explicitly drop the stored value.
+     */
+    public function updateIyzicoSettings(Request $request, Tenant $tenant)
+    {
+        $this->authorizeAgencyAdmin();
+
+        $validated = $request->validate([
+            'sandbox'          => 'nullable|boolean',
+            'api_key'          => 'nullable|string|max:256',
+            'secret_key'       => 'nullable|string|max:256',
+            'clear_api_key'    => 'nullable|boolean',
+            'clear_secret_key' => 'nullable|boolean',
+        ]);
+
+        $bag = $tenant->getAttribute('iyzico_keys');
+        $bag = is_array($bag) ? $bag : [];
+
+        // Sandbox flag — always overwritten (it's a checkbox).
+        $bag['sandbox'] = (bool) ($validated['sandbox'] ?? false);
+
+        // API key
+        if (! empty($validated['clear_api_key'])) {
+            unset($bag['api_key']);
+        } elseif (! empty($validated['api_key'])) {
+            $bag['api_key'] = Crypt::encryptString(trim($validated['api_key']));
+        }
+
+        // Secret key
+        if (! empty($validated['clear_secret_key'])) {
+            unset($bag['secret_key']);
+        } elseif (! empty($validated['secret_key'])) {
+            $bag['secret_key'] = Crypt::encryptString(trim($validated['secret_key']));
+        }
+
+        $tenant->setAttribute('iyzico_keys', $bag);
+        $tenant->save();
+
+        return redirect()
+            ->route('admin.tenants.show', $tenant)
+            ->with('success', 'Iyzico ayarları güncellendi.');
     }
 
     /**

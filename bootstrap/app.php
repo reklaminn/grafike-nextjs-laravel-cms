@@ -65,6 +65,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'agency.admin'    => \App\Http\Middleware\EnsureAgencyAdmin::class,
             'member.auth'     => \App\Http\Middleware\MemberAuthenticate::class,
             'tenant.admin'    => \App\Http\Middleware\InitializeTenancyForAdmin::class,
+            'tenant.module'   => \App\Http\Middleware\RequireTenantModule::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
