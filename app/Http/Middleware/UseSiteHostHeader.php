@@ -96,13 +96,26 @@ class UseSiteHostHeader
 
     private function isInternalDockerHost(string $host): bool
     {
-        return in_array($this->normalizeHost($host), [
-            'app1',
-            'app2',
-            'app3',
-            'grafike_cms_app1',
-            'grafike_cms_app2',
-            'grafike_cms_app3',
-        ], true);
+        $normalized = $this->normalizeHost($host);
+
+        // Real public domains always contain at least one dot
+        // (e.g. cms.dentistkusadasi.com, smoke-test.grafike.site).
+        // Internal Docker service names are single-word identifiers
+        // (app, app1, app2, app3, grafike_cms_app, redis, gateway, …)
+        // and so is `localhost` for local dev.
+        //
+        // Treating "no dot" as "internal" is intentionally broad so a new
+        // internal service added later (e.g. a dedicated `api` container)
+        // is detected automatically without touching this list.  No real
+        // tenant domain can ever match because TLDs require a dot.
+        //
+        // Previous bug: the list only contained app1/app2/app3 and missed
+        // the `app` service used by docker-compose.hostinger.yml's
+        // frontend (`CMS_API_URL=http://app:80`).  SSR calls landed on
+        // `app`, isInternalDockerHost returned false, X-Site-Host was
+        // ignored, and InitializeTenancyByDomain looked up tenant
+        // `domain=app` — never finding one, falling back to central and
+        // serving the demo seed instead of the real tenant content.
+        return $normalized !== '' && ! str_contains($normalized, '.');
     }
 }
