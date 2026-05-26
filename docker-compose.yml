@@ -83,7 +83,19 @@ x-app-labels: &app-labels
   traefik.http.middlewares.https-redirect.redirectscheme.permanent: "false"
 
   # ── Backend router: /admin ──────────────────────────────────────────────────
-  traefik.http.routers.grafike-admin.rule: "Host(`${APP_DOMAIN}`) && PathPrefix(`/admin`)"
+  # LEGACY: `graficms.grafike.site` OR'd alongside ${APP_DOMAIN} during the
+  # cms.grafcore.com migration so both hosts reach the admin panel in parallel.
+  # Remove the `|| Host(`graficms.grafike.site`)` clause (here + in api/assets
+  # rules below + in docker-compose.hostinger.yml frontend rule) once the old
+  # domain is decommissioned.
+  #
+  # NOTE: Traefik v3.7.x parses `Host()` with exactly one argument — the
+  # documented multi-arg form `Host(`a`, `b`)` errors out.  Use OR explicitly.
+  # The rule MUST be byte-identical to the matching rule in
+  # docker-compose.hostinger.yml's `app:` service labels — Traefik dedupes
+  # routers across the 4 app containers (app, app1, app2, app3) only when
+  # every label matches exactly.
+  traefik.http.routers.grafike-admin.rule: "(Host(`${APP_DOMAIN}`) || Host(`graficms.grafike.site`)) && PathPrefix(`/admin`)"
   traefik.http.routers.grafike-admin.entrypoints: websecure
   traefik.http.routers.grafike-admin.tls: "true"
   traefik.http.routers.grafike-admin.tls.certresolver: mytlschallenge
@@ -92,7 +104,8 @@ x-app-labels: &app-labels
   traefik.http.routers.grafike-admin.priority: "200"
 
   # ── Backend router: /api ────────────────────────────────────────────────────
-  traefik.http.routers.grafike-api.rule: "Host(`${APP_DOMAIN}`) && PathPrefix(`/api`)"
+  # LEGACY graficms.grafike.site — see grafike-admin note above.
+  traefik.http.routers.grafike-api.rule: "(Host(`${APP_DOMAIN}`) || Host(`graficms.grafike.site`)) && PathPrefix(`/api`)"
   traefik.http.routers.grafike-api.entrypoints: websecure
   traefik.http.routers.grafike-api.tls: "true"
   traefik.http.routers.grafike-api.tls.certresolver: mytlschallenge
@@ -101,7 +114,8 @@ x-app-labels: &app-labels
   traefik.http.routers.grafike-api.priority: "200"
 
   # ── Backend router: static assets + health ─────────────────────────────────
-  traefik.http.routers.grafike-assets.rule: "Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
+  # LEGACY graficms.grafike.site — see grafike-admin note above.
+  traefik.http.routers.grafike-assets.rule: "(Host(`${APP_DOMAIN}`) || Host(`graficms.grafike.site`)) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
   traefik.http.routers.grafike-assets.entrypoints: websecure
   traefik.http.routers.grafike-assets.tls: "true"
   traefik.http.routers.grafike-assets.tls.certresolver: mytlschallenge
