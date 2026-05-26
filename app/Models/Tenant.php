@@ -210,4 +210,125 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     {
         $this->setAttribute('ai_settings', $settings);
     }
+
+    // ─── Vertical modules (Tours, Commerce, Payments, …) ─────────────────────
+    //
+    // Multi-vertical support: a tenant can opt into one or more bounded
+    // contexts beyond the always-on "core" CMS. Enabled modules are stored
+    // as a string array under `data.modules` (alongside ai_settings).
+    //
+    // Module registry / definitions live in config/tenant_modules.php.
+    // The plumbing (install, uninstall, migrations, admin UI) is wired
+    // through App\Services\Modules\{ModuleRegistry,ModuleManager} and the
+    // tenant:module:* artisan commands.
+    //
+    // Backward compatibility: existing tenants have no `modules` key —
+    // enabledModules() returns [] and hasModule() returns false, so they
+    // continue to operate as pure "kurumsal core" tenants with zero
+    // behavioural change.
+
+    /**
+     * Return the list of vertical modules enabled for this tenant.
+     * Empty array means "core only" (no extra verticals).
+     *
+     * Values are normalised to lowercase strings; duplicates are stripped.
+     */
+    public function enabledModules(): array
+    {
+        $raw = $this->getAttribute('modules');
+
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $modules = [];
+        foreach ($raw as $entry) {
+            if (! is_string($entry) || $entry === '') {
+                continue;
+            }
+            $modules[] = strtolower(trim($entry));
+        }
+
+        return array_values(array_unique($modules));
+    }
+
+    /**
+     * Check whether a given vertical module is enabled for this tenant.
+     *
+     * `core` is always-on and reported as enabled even if it is not
+     * literally present in the modules array — this keeps callers simple
+     * (no special-casing required).
+     */
+    public function hasModule(string $module): bool
+    {
+        $module = strtolower(trim($module));
+
+        if ($module === '' || $module === 'core') {
+            return true;
+        }
+
+        return in_array($module, $this->enabledModules(), true);
+    }
+
+    /**
+     * Replace the modules array wholesale. Caller is responsible for
+     * dependency resolution (use ModuleManager for safe install/uninstall
+     * including dependencies and tenant DB migrations).
+     */
+    public function setEnabledModules(array $modules): void
+    {
+        $normalised = [];
+        foreach ($modules as $entry) {
+            if (! is_string($entry) || $entry === '') {
+                continue;
+            }
+            $slug = strtolower(trim($entry));
+            // `core` is implicit — never persisted.
+            if ($slug === 'core') {
+                continue;
+            }
+            $normalised[] = $slug;
+        }
+
+        $this->setAttribute('modules', array_values(array_unique($normalised)));
+    }
+
+    /**
+     * Add a single module to the enabled list (idempotent).
+     * Does NOT run migrations — use ModuleManager::install() for that.
+     */
+    public function enableModule(string $module): void
+    {
+        $module = strtolower(trim($module));
+
+        if ($module === '' || $module === 'core') {
+            return;
+        }
+
+        $modules = $this->enabledModules();
+        if (! in_array($module, $modules, true)) {
+            $modules[] = $module;
+            $this->setEnabledModules($modules);
+        }
+    }
+
+    /**
+     * Remove a module from the enabled list (idempotent).
+     * Does NOT drop tables — use ModuleManager::uninstall(..., dropTables: true).
+     */
+    public function disableModule(string $module): void
+    {
+        $module = strtolower(trim($module));
+
+        if ($module === '' || $module === 'core') {
+            return;
+        }
+
+        $modules = array_values(array_filter(
+            $this->enabledModules(),
+            fn (string $m) => $m !== $module
+        ));
+
+        $this->setEnabledModules($modules);
+    }
 }

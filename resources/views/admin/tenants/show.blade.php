@@ -168,6 +168,13 @@
         </div>
         @endif
 
+        {{-- ─── Vertical Modüller (Tours, Commerce, …) ─────────────────────── --}}
+        @include('admin.tenants._modules-panel', [
+            'tenant'           => $tenant,
+            'availableModules' => $availableModules ?? [],
+            'canManage'        => $canManageTenants,
+        ])
+
         {{-- ─── Sektör Şablonu (FAZ 4.3) ───────────────────────────────────── --}}
         @if($canManageTenants)
             @include('admin.tenants._industry-template-panel', [

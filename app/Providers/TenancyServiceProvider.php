@@ -29,8 +29,11 @@ class TenancyServiceProvider extends ServiceProvider
                     Jobs\MigrateDatabase::class,
                     // Jobs\SeedDatabase::class,
 
-                    // Your own jobs to prepare the tenant.
-                    // Provision API keys, create S3 buckets, anything you want!
+                    // After the core tenant migrations run, apply any
+                    // vertical-module migrations for modules that were
+                    // pre-enabled on this tenant.  See config/tenant_modules.php
+                    // and App\Services\Modules\ModuleManager.
+                    \App\Jobs\Tenancy\MigrateEnabledModulesJob::class,
 
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;

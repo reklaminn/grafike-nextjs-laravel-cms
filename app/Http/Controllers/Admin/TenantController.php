@@ -13,6 +13,8 @@ use App\Services\Ai\Dtos\AiMessage;
 use App\Services\Ai\Dtos\AiRequest;
 use App\Services\Ai\Exceptions\AiProviderException;
 use App\Jobs\ProvisionTenantDatabaseJob;
+use App\Services\Modules\ModuleManager;
+use App\Services\Modules\ModuleRegistry;
 use App\Services\Tenants\IndustryTemplateApplier;
 use App\Services\Tenants\TenantStarterContentSeeder;
 use Illuminate\Support\Facades\Artisan;
@@ -164,7 +166,7 @@ class TenantController extends Controller
     /**
      * Show tenant details + actions.
      */
-    public function show(Tenant $tenant, \App\Services\Ai\AiQuotaService $quotaService)
+    public function show(Tenant $tenant, \App\Services\Ai\AiQuotaService $quotaService, ModuleRegistry $registry)
     {
         $this->authorizeTenantAccess($tenant);
 
@@ -183,8 +185,24 @@ class TenantController extends Controller
             $aiUsage = ['requests' => 0, 'tokens' => 0, 'cost_usd' => 0.0, 'period' => now()->format('Y-m')];
         }
 
+        // Vertical module catalog for the "Modüller" panel.  Filtered to
+        // user-installable entries so internal modules (e.g. `payments`)
+        // and not-yet-shipped modules (e.g. `commerce` in Phase 0) stay
+        // hidden from the agency admin UI but are still toggleable via
+        // artisan for testing.
+        $availableModules = [];
+        foreach ($registry->userInstallable() as $slug) {
+            $availableModules[$slug] = [
+                'slug'        => $slug,
+                'label'       => $registry->label($slug),
+                'description' => $registry->description($slug),
+                'requires'    => $registry->requires($slug),
+                'enabled'     => $tenant->hasModule($slug),
+            ];
+        }
+
         return view('admin.tenants.show', compact(
-            'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage'
+            'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage', 'availableModules'
         ));
     }
 
@@ -391,6 +409,72 @@ class TenantController extends Controller
         return redirect()
             ->route('admin.tenants.show', $tenant)
             ->with('success', 'AI ayarları güncellendi.');
+    }
+
+    /**
+     * Toggle which vertical modules (Tours, Commerce, …) are enabled
+     * on a tenant.  Installing a module runs its tenant migrations;
+     * uninstalling only flips the flag (tables are preserved unless
+     * `php artisan tenant:module:uninstall ... --drop-tables` is used).
+     */
+    public function updateModules(Request $request, Tenant $tenant, ModuleManager $manager, ModuleRegistry $registry)
+    {
+        $this->authorizeAgencyAdmin();
+
+        // Only modules listed as user-installable in the registry can be
+        // toggled via the UI.  Internal modules (payments) are pulled
+        // in transitively by the manager; not-yet-shipped modules
+        // (commerce) require artisan access.
+        $available = $registry->userInstallable();
+
+        $validated = $request->validate([
+            'modules'   => 'array',
+            'modules.*' => ['string', Rule::in($available)],
+        ]);
+
+        $desired = array_values(array_unique($validated['modules'] ?? []));
+        $current = array_values(array_intersect($tenant->enabledModules(), $available));
+
+        $toEnable  = array_diff($desired, $current);
+        $toDisable = array_diff($current, $desired);
+
+        $errors = [];
+
+        foreach ($toEnable as $slug) {
+            try {
+                $manager->install($tenant, $slug);
+            } catch (\Throwable $e) {
+                report($e);
+                $errors[] = "[{$slug}] etkinleştirilemedi: " . $e->getMessage();
+            }
+        }
+
+        foreach ($toDisable as $slug) {
+            try {
+                // UI-side disable never drops tables — data preservation
+                // is the safe default.  Use the artisan command with
+                // `--drop-tables` for irreversible cleanup.
+                $manager->uninstall($tenant, $slug, dropTables: false);
+            } catch (\Throwable $e) {
+                report($e);
+                $errors[] = "[{$slug}] devre dışı bırakılamadı: " . $e->getMessage();
+            }
+        }
+
+        if ($errors !== []) {
+            return back()->with('error', "Modül güncellemesinde hata:\n" . implode("\n", $errors));
+        }
+
+        $changed = count($toEnable) + count($toDisable);
+        $message = $changed === 0
+            ? 'Modül seçiminde değişiklik yok.'
+            : sprintf(
+                'Modüller güncellendi (%d etkinleştirildi, %d devre dışı bırakıldı).',
+                count($toEnable),
+                count($toDisable),
+            );
+
+        return back()->with('success', $message);
     }
 
     /**

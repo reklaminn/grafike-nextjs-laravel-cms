@@ -60,6 +60,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put ('tenants/{tenant}/ai-settings',      [TenantController::class, 'updateAiSettings'])->name('tenants.ai-settings.update');
         Route::post('tenants/{tenant}/ai-settings/test', [TenantController::class, 'testAiKey'])      ->name('tenants.ai-settings.test');
 
+        // ── Tenant Vertical Modules (Tours, Commerce, …) ─────────────────────
+        Route::put('tenants/{tenant}/modules', [TenantController::class, 'updateModules'])->name('tenants.modules.update');
+
         // ── Industry SiteTemplates (FAZ 4.3 gallery) ─────────────────────────
         Route::get ('industry-templates',                 [IndustryTemplateController::class, 'index'])->name('industry-templates.index');
         Route::post('tenants/{tenant}/apply-industry-template',
