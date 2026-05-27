@@ -33,7 +33,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1) Yeni multi-stop tablosu
-        Schema::create('tour_itinerary_stops', function (Blueprint $table) {
+        Schema::createIfNotExists('tour_itinerary_stops', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('tour_itinerary_day_id')
@@ -79,15 +79,19 @@ return new class extends Migration
 
         // 2) Day tablosundan port-spesifik kolonları kaldır.
         //    Hard cut: canlı veri yok, geriye uyum derdi yok.
-        Schema::table('tour_itinerary_days', function (Blueprint $table) {
-            $table->dropColumn([
-                'location',
-                'geo_lat',
-                'geo_lng',
-                'arrival_time',
-                'departure_time',
-            ]);
-        });
+        //    Idempotent: sadece var olan kolonları drop ediyoruz ki
+        //    re-run / bad-state recovery güvenli olsun.
+        $legacyCols = ['location', 'geo_lat', 'geo_lng', 'arrival_time', 'departure_time'];
+        $toDrop     = array_values(array_filter(
+            $legacyCols,
+            fn ($col) => Schema::hasColumn('tour_itinerary_days', $col)
+        ));
+
+        if ($toDrop !== []) {
+            Schema::table('tour_itinerary_days', function (Blueprint $table) use ($toDrop) {
+                $table->dropColumn($toDrop);
+            });
+        }
     }
 
     public function down(): void

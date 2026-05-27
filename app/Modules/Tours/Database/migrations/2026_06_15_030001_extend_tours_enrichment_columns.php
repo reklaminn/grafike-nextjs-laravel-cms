@@ -27,38 +27,47 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Idempotent: her kolon ayrı hasColumn guard'ı ile koşulluyor ki
+        // re-run veya partial-fail recovery güvenli olsun.
         Schema::table('tours', function (Blueprint $table) {
-            $table->unsignedBigInteger('ship_id')
-                ->nullable()
-                ->after('tour_category_id');
+            if (! Schema::hasColumn('tours', 'ship_id')) {
+                $table->unsignedBigInteger('ship_id')
+                    ->nullable()
+                    ->after('tour_category_id');
+                $table->foreign('ship_id')
+                    ->references('id')->on('ships')
+                    ->nullOnDelete();
+                $table->index('ship_id');
+            }
 
-            $table->string('sku', 60)
-                ->nullable()
-                ->after('slug');
+            if (! Schema::hasColumn('tours', 'sku')) {
+                $table->string('sku', 60)
+                    ->nullable()
+                    ->after('slug');
+                $table->unique('sku', 'uniq_tours_sku');
+            }
 
-            $table->boolean('includes_flight')
-                ->default(false)
-                ->after('capacity_default');
+            if (! Schema::hasColumn('tours', 'includes_flight')) {
+                $table->boolean('includes_flight')
+                    ->default(false)
+                    ->after('capacity_default');
+                $table->index('includes_flight');
+            }
 
-            $table->json('flight_info')
-                ->nullable()
-                ->after('includes_flight');
+            if (! Schema::hasColumn('tours', 'flight_info')) {
+                $table->json('flight_info')
+                    ->nullable()
+                    ->after('includes_flight');
+            }
 
-            $table->unsignedBigInteger('copied_from_tour_id')
-                ->nullable()
-                ->after('structured_data_json');
-
-            $table->foreign('ship_id')
-                ->references('id')->on('ships')
-                ->nullOnDelete();
-
-            $table->foreign('copied_from_tour_id')
-                ->references('id')->on('tours')
-                ->nullOnDelete();
-
-            $table->unique('sku', 'uniq_tours_sku');
-            $table->index('ship_id');
-            $table->index('includes_flight');
+            if (! Schema::hasColumn('tours', 'copied_from_tour_id')) {
+                $table->unsignedBigInteger('copied_from_tour_id')
+                    ->nullable()
+                    ->after('structured_data_json');
+                $table->foreign('copied_from_tour_id')
+                    ->references('id')->on('tours')
+                    ->nullOnDelete();
+            }
         });
     }
 

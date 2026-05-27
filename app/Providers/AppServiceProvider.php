@@ -12,6 +12,8 @@ use App\Observers\MenuObserver;
 use App\Observers\PageObserver;
 use App\Observers\SiteSettingObserver;
 use App\View\Composers\FrontendComposer;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -65,5 +67,27 @@ class AppServiceProvider extends ServiceProvider
 
         // Register view composer for frontend layouts
         View::composer('frontend.layouts.*', FrontendComposer::class);
+
+        // Schema::createIfNotExists($table, $callback) — idempotent create.
+        //
+        // Module migrations bunu Schema::create yerine kullanır.  Tenant DB
+        // bad state'inde (table var ama `migrations` tablosunda kayıt yok)
+        // re-run güvenli olur: tablo zaten varsa create atılır, migration
+        // row Laravel migrator tarafından normal şekilde INSERT'lenir →
+        // tenant self-heals.
+        //
+        // Tasarım notu: Schema::hasTable check'i Blueprint kapanışından
+        // önce yapılır, bu yüzden boş bir Blueprint kurmaya gerek yok.
+        Schema::macro('createIfNotExists', function (string $table, \Closure $callback): void {
+            /** @var \Illuminate\Database\Schema\Builder $this */
+            if ($this->hasTable($table)) {
+                Log::info('Schema::createIfNotExists — table exists, skipping create', [
+                    'table'      => $table,
+                    'connection' => $this->getConnection()->getName(),
+                ]);
+                return;
+            }
+            $this->create($table, $callback);
+        });
     }
 }

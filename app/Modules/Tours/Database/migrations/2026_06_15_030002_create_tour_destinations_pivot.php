@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tour_destinations', function (Blueprint $table) {
+        Schema::createIfNotExists('tour_destinations', function (Blueprint $table) {
             $table->foreignId('tour_id')
                 ->constrained('tours')
                 ->cascadeOnDelete();

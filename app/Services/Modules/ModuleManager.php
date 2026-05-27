@@ -6,7 +6,9 @@ namespace App\Services\Modules;
 
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
@@ -247,6 +249,94 @@ class ModuleManager
                 'error'    => $e->getMessage(),
             ]);
             throw $e;
+        }
+
+        // Drift detection — sadece forward migrate sonrası.  Tenant DB'de
+        // bad state (table var ama migrations row yok) varsa konsola/log'a
+        // uyarı bas.  Otomatik düzeltmiyoruz çünkü row eklemek dosyaya
+        // güvenmek demek; user explicit `tenant:module:sync-migrations`
+        // ile onaylasın.
+        if (! $rollback) {
+            $this->reportDrift($tenant, $module, $path);
+        }
+    }
+
+    /**
+     * Post-migrate drift kontrolü — files vs migrations table diff'i.
+     *
+     * - Sessizce çalışır; sadece drift varsa Log::warning emit eder
+     * - Otomatik INSERT yapmaz; operator `tenant:module:sync-migrations`
+     *   komutuyla manuel olarak düzeltir (Phase 1.5.c follow-up)
+     *
+     * Tenant context'i çağrıldığında zaten `tenants:migrate` tarafından
+     * initialize edilmişti — biz sonrasında çağırıyoruz, context restore
+     * gerekiyor.  Defansif olarak yine initialize/end pattern kullanıyoruz.
+     */
+    private function reportDrift(Tenant $tenant, string $module, string $path): void
+    {
+        if (! is_dir($path)) {
+            return;
+        }
+
+        $files = [];
+        foreach (scandir($path) ?: [] as $entry) {
+            if (str_ends_with($entry, '.php')) {
+                $files[] = substr($entry, 0, -4);
+            }
+        }
+        if ($files === []) {
+            return;
+        }
+
+        $wasInitialized   = tenancy()->initialized ?? false;
+        $previousTenantId = tenancy()->tenant?->getTenantKey();
+        $needSwitch       = ! $wasInitialized || $previousTenantId !== $tenant->getTenantKey();
+
+        if ($needSwitch) {
+            if ($wasInitialized) {
+                tenancy()->end();
+            }
+            tenancy()->initialize($tenant);
+        }
+
+        try {
+            if (! Schema::hasTable('migrations')) {
+                return; // genç tenant, migrate hiç koşmadı — drift değil
+            }
+
+            $tracked    = DB::table('migrations')->whereIn('migration', $files)->pluck('migration')->all();
+            $trackedSet = array_flip($tracked);
+            $missing    = array_values(array_filter($files, fn ($f) => ! isset($trackedSet[$f])));
+
+            if ($missing !== []) {
+                Log::warning('ModuleManager: migration drift detected after migrate', [
+                    'tenant'           => $tenant->getTenantKey(),
+                    'module'           => $module,
+                    'missing_rows'     => $missing,
+                    'recovery_command' => sprintf(
+                        'php artisan tenant:module:sync-migrations %s --tenant=%s --apply',
+                        $module,
+                        $tenant->getTenantKey(),
+                    ),
+                ]);
+            }
+        } catch (Throwable $e) {
+            // Drift detection is best-effort; never fail install over it
+            Log::warning('ModuleManager: drift check failed', [
+                'tenant' => $tenant->getTenantKey(),
+                'module' => $module,
+                'error'  => $e->getMessage(),
+            ]);
+        } finally {
+            if ($needSwitch) {
+                tenancy()->end();
+                if ($wasInitialized && $previousTenantId !== null) {
+                    $prev = Tenant::query()->find($previousTenantId);
+                    if ($prev) {
+                        tenancy()->initialize($prev);
+                    }
+                }
+            }
         }
     }
 
