@@ -5,113 +5,88 @@ declare(strict_types=1);
 namespace App\Modules\Tours\Services\Booking;
 
 use App\Modules\Tours\Enums\PassengerType;
+use App\Modules\Tours\Exceptions\PriceNotAvailableException;
 use App\Modules\Tours\Exceptions\QuoteValidationException;
 use App\Modules\Tours\Models\Tour;
+use App\Modules\Tours\Models\TourCabinPrice;
 use App\Modules\Tours\Models\TourDate;
 use App\Modules\Tours\Models\TourExtra;
-use App\Modules\Tours\Models\TourPriceTier;
+use App\Modules\Tours\Models\TourPriceGroup;
 use App\Modules\Tours\Services\Booking\DTOs\BookingDraft;
 use App\Modules\Tours\Services\Booking\DTOs\PassengerDraft;
 use App\Modules\Tours\Services\Booking\DTOs\Quote;
 use App\Modules\Tours\Services\Booking\DTOs\QuoteLineItem;
+use App\Modules\Tours\Services\Booking\Pricing\CalculatorFactory;
+use App\Modules\Tours\Services\Booking\Pricing\DTOs\PassengerSet;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
- * Pure (read-only) price computation for a BookingDraft.
+ * Phase 1.5.b REWRITE.
  *
- * Inputs:
- *   - BookingDraft (passengers + extras + cabin selections)
- *   - Tour + TourDate (loaded by the caller / passed in)
+ * Pure (read-only) price computation for a BookingDraft using the new
+ * 5-dimensional pricing model:
  *
- * Output:
- *   - Quote with line-by-line breakdown + grand total
+ *   Date → TourPriceGroup (named, multi-date bundle)
+ *        → TourCabinPrice  (per-cabin 6-tier matrix + calculation method)
+ *        → PriceCalculator (3 strategies, dispatched by CalculatorFactory)
  *
- * This service NEVER writes to the database — it's safe to call from
- * a quote-preview API endpoint without side effects.  The actual
- * persistence happens in BookingService after a confirmed Quote is
- * paired with a CapacityLockService::reserve() call.
+ * Cruise vs non-cruise pricing distinction:
+ *   - Cruise (tour.type=cruise) — every passenger has a `cabin_id`,
+ *     passengers grouped by cabin, each cabin priced independently
+ *     using its TourCabinPrice row.
+ *   - Non-cruise (package / daily / ferry) — no cabin selection,
+ *     all passengers priced from a single "generic" TourCabinPrice
+ *     row (cabin_id NULL).
+ *
+ * Phase 5'te `CampaignApplier` ile entegre olacak (discount engine).
+ * Bu service NEVER writes to DB — quote-preview API endpoint'i için güvenli.
  */
 class QuoteService
 {
+    public function __construct(
+        private readonly CalculatorFactory $calculatorFactory,
+    ) {
+    }
+
     public function compute(Tour $tour, TourDate $date, BookingDraft $draft): Quote
     {
         $this->validate($tour, $date, $draft);
 
         $currency = (string) $tour->currency;
+        $lines    = [];
 
-        $lines = [];
-        $passengerTotal = 0;
+        // ─── 1. Find applicable TourPriceGroup ────────────────────────────────
+        $priceGroup = $this->resolvePriceGroup($tour, $date, $draft);
 
-        foreach ($draft->passengers as $idx => $passenger) {
-            $tier  = $this->resolveTier($tour, $passenger, $date);
-            $price = $this->passengerPrice($tour, $date, $passenger, $tier);
-
-            $lines[] = new QuoteLineItem(
-                kind:      'passenger',
-                label:     $this->passengerLabel($passenger, $tier),
-                unitPrice: $price,
-                quantity:  1,
-                subtotal:  $price,
-                meta:      [
-                    'passenger_idx' => $idx,
-                    'tier_id'       => $tier?->id,
-                    'cabin_id'      => $passenger->cabinTypeId,
-                ],
-            );
-
-            $passengerTotal += $price;
-        }
-
-        // Extras
-        $extrasTotal = 0;
-        $extraIds = collect($draft->extras)->pluck('extraId')->all();
-        $extraModels = $extraIds === []
-            ? collect()
-            : TourExtra::query()
-                ->where('tour_id', $tour->id)
-                ->active()
-                ->whereIn('id', $extraIds)
-                ->get()
-                ->keyBy('id');
-
-        foreach ($draft->extras as $sel) {
-            /** @var TourExtra|null $extra */
-            $extra = $extraModels->get($sel->extraId);
-            if (! $extra) {
-                continue;
-            }
-
-            $perUnit = (int) $extra->price;
-            // per_passenger applies the price to every passenger
-            // before applying the user-selected quantity.  Typical
-            // use-case is "havalimanı transferi: 1 kişi başına 150 TL".
-            $effectiveUnit = $extra->pricing_mode === 'per_passenger'
-                ? $perUnit * $draft->passengerCount()
-                : $perUnit;
-
-            $subtotal = $effectiveUnit * $sel->quantity;
-            $extrasTotal += $subtotal;
-
-            $lines[] = new QuoteLineItem(
-                kind:      'extra',
-                label:     (string) $extra->name,
-                unitPrice: $effectiveUnit,
-                quantity:  $sel->quantity,
-                subtotal:  $subtotal,
-                meta:      ['extra_id' => $extra->id],
+        if ($priceGroup === null) {
+            throw new PriceNotAvailableException(
+                "Bu tarih için aktif fiyat grubu tanımlanmamış (Tour ID {$tour->id}, Date {$date->id}).",
+                tourId: $tour->id,
+                tourDateId: $date->id,
+                reason: 'no_price_group',
             );
         }
 
-        // Phase 2 ships no discount / tax engine — those land in Phase 5.
+        // Override currency if the price group itself has one (Phase 5 multi-currency)
+        // Şu an Group seviyesinde currency yok; TourCabinPrice'tan alacağız aşağıda.
+
+        // ─── 2. Compute passenger costs ───────────────────────────────────────
+        $passengerTotal = $this->computePassengerCosts(
+            $tour, $date, $priceGroup, $draft, $lines, $currency,
+        );
+
+        // ─── 3. Extras ────────────────────────────────────────────────────────
+        $extrasTotal = $this->computeExtrasCosts($tour, $draft, $lines);
+
+        // ─── 4. Totals ────────────────────────────────────────────────────────
+        // Phase 5'te discount engine + tax burada uygulanır.
         $discountTotal = 0;
         $taxTotal      = 0;
 
         $total = max(0, $passengerTotal + $extrasTotal + $discountTotal + $taxTotal);
 
-        // Phase 5 will surface a per-tour deposit policy (e.g. 30% now,
-        // rest 14 days before departure).  For Phase 2 the deposit
-        // equals the full amount — the customer pays in full on
-        // booking, matching the simplest cash-flow model.
+        // Phase 5: per-tour deposit policy.  Şimdilik full payment.
         $depositDue = $total;
 
         return new Quote(
@@ -140,14 +115,14 @@ class QuoteService
             $errors[] = 'En az bir yolcu girilmeli.';
         }
 
-        // Cruise tours require every passenger to pick a cabin type;
-        // package/daily tours forbid it (data hygiene).
+        // Cruise tours: every passenger must pick a cabin
+        // Non-cruise: passengers should NOT have a cabin (data hygiene)
         foreach ($draft->passengers as $idx => $passenger) {
             if ($tour->isCruise() && $passenger->cabinTypeId === null) {
-                $errors[] = "Yolcu #" . ($idx + 1) . " için kabin seçimi zorunlu (cruise).";
+                $errors[] = 'Yolcu #' . ($idx + 1) . ' için kabin seçimi zorunlu (cruise).';
             }
             if (! $tour->isCruise() && $passenger->cabinTypeId !== null) {
-                $errors[] = "Yolcu #" . ($idx + 1) . " için kabin seçilemez (paket/günlük tur).";
+                $errors[] = 'Yolcu #' . ($idx + 1) . ' için kabin seçilemez (paket/günlük tur).';
             }
         }
 
@@ -168,72 +143,173 @@ class QuoteService
     }
 
     /**
-     * Pick the highest-priority active price tier that matches the
-     * passenger's type + cabin (cruises) + age window (conditions_json).
+     * Bu tarih için aktif TourPriceGroup'u bul.  Birden fazla grup
+     * varsa en yüksek sort_order'lı (öncelikli) alınır.
+     *
+     * Phase 5'te BookingDraft.priceGroupId opsiyonel olarak kabul edilir
+     * (müşteri sepete eklerken "Erken Rezervasyon Fiyatı vs Standart"
+     * arasında seçim yapar).
      */
-    private function resolveTier(Tour $tour, PassengerDraft $passenger, TourDate $date): ?TourPriceTier
+    private function resolvePriceGroup(Tour $tour, TourDate $date, BookingDraft $draft): ?TourPriceGroup
     {
-        $tiers = $tour->priceTiers()
+        return TourPriceGroup::query()
+            ->forTour($tour->id)
+            ->forDate($date->id)
             ->active()
-            ->where('passenger_type', $passenger->type->value)
-            ->orderByDesc('priority')
-            ->get();
+            ->orderByDesc('sort_order')
+            ->first();
+    }
 
-        $age = $this->ageFromBirthdate($passenger->dateOfBirth);
+    /**
+     * Cruise tours: cabin'lere göre grup-by, her cabin için ayrı total
+     * hesabı.  Non-cruise: tek "generic" TourCabinPrice satırı tüm
+     * passenger'lara uygulanır.
+     */
+    private function computePassengerCosts(
+        Tour $tour,
+        TourDate $date,
+        TourPriceGroup $priceGroup,
+        BookingDraft $draft,
+        array &$lines,
+        string $currency,
+    ): int {
+        $total = 0;
 
-        foreach ($tiers as $tier) {
-            // Cabin-scoped tier (cruise only)
-            if ($tier->tour_cabin_type_id !== null && $tier->tour_cabin_type_id !== $passenger->cabinTypeId) {
-                continue;
-            }
+        if ($tour->isCruise()) {
+            // Cruise: passengers grouped by cabin_id
+            $byCabin = collect($draft->passengers)
+                ->groupBy(fn (PassengerDraft $p) => (int) $p->cabinTypeId);
 
-            $conditions = is_array($tier->conditions_json) ? $tier->conditions_json : [];
-
-            if (isset($conditions['min_age']) && ($age === null || $age < (int) $conditions['min_age'])) {
-                continue;
-            }
-            if (isset($conditions['max_age']) && ($age === null || $age > (int) $conditions['max_age'])) {
-                continue;
-            }
-            if (isset($conditions['early_bird_days'])) {
-                $cutoff = $date->starts_at->copy()->subDays((int) $conditions['early_bird_days']);
-                if (now()->greaterThan($cutoff)) {
-                    continue;
+            foreach ($byCabin as $cabinId => $passengers) {
+                $cabinPrice = $priceGroup->priceForCabin($cabinId);
+                if ($cabinPrice === null) {
+                    throw new PriceNotAvailableException(
+                        "Bu fiyat grubunda cabin #{$cabinId} için fiyat tanımlanmamış.",
+                        tourId: $tour->id,
+                        tourDateId: $date->id,
+                        cabinId: $cabinId,
+                        reason: 'no_cabin_price',
+                    );
                 }
+
+                $cabinTotal = $this->priceCabin($cabinPrice, $passengers->all(), $lines);
+                $total += $cabinTotal;
+            }
+        } else {
+            // Non-cruise: single generic price row (cabin_id NULL)
+            $genericPrice = $priceGroup->priceForCabin(null);
+            if ($genericPrice === null) {
+                throw new PriceNotAvailableException(
+                    'Bu fiyat grubunda generic (kabin yok) fiyat tanımlanmamış.',
+                    tourId: $tour->id,
+                    tourDateId: $date->id,
+                    reason: 'no_generic_price',
+                );
             }
 
-            return $tier;
+            $total = $this->priceCabin($genericPrice, $draft->passengers, $lines);
         }
 
-        return null;
+        return $total;
     }
 
-    private function passengerPrice(Tour $tour, TourDate $date, PassengerDraft $passenger, ?TourPriceTier $tier): int
+    /**
+     * Bir cabin (veya generic) için verilen passengerset'i fiyatla.
+     * CalculatorFactory ile uygun strategy seç, total hesapla, line item
+     * olarak ekle.
+     *
+     * @param  TourCabinPrice $cabinPrice
+     * @param  array<int, PassengerDraft> $passengers
+     */
+    private function priceCabin(TourCabinPrice $cabinPrice, array $passengers, array &$lines): int
     {
-        if ($tier !== null) {
-            return (int) $tier->price;
+        $ages   = [];
+        $labels = [];
+
+        foreach ($passengers as $p) {
+            $ages[]   = $this->ageFromBirthdate($p->dateOfBirth);
+            $labels[] = trim($p->firstName . ' ' . $p->lastName);
         }
 
-        // No tier match → fall back to date override OR base price,
-        // plus cabin modifier (cruise only).
-        $base = $date->effectivePriceMinor();
+        $passengerSet = new PassengerSet(
+            ages: $ages,
+            labels: $labels,
+            cabinId: $cabinPrice->cabin_id,
+        );
 
-        if ($passenger->cabinTypeId !== null) {
-            $cabin = $tour->cabinTypes->firstWhere('id', $passenger->cabinTypeId);
-            if ($cabin) {
-                $base += (int) $cabin->price_modifier;
+        $calculator = $this->calculatorFactory->forMethod($cabinPrice->calculation_method);
+        $cabinTotal = $calculator->calculate($cabinPrice, $passengerSet);
+
+        $cabinLabel = $cabinPrice->cabin_id !== null
+            ? "Cabin #{$cabinPrice->cabin_id}"
+            : 'Generic';
+
+        $lines[] = new QuoteLineItem(
+            kind:      'passenger',
+            label:     sprintf('%s — %d yolcu (%s)',
+                $cabinLabel,
+                count($passengers),
+                $cabinPrice->calculation_method?->label() ?? 'standart'
+            ),
+            unitPrice: $cabinTotal,
+            quantity:  1,
+            subtotal:  $cabinTotal,
+            meta:      [
+                'tour_cabin_price_id' => $cabinPrice->id,
+                'cabin_id'            => $cabinPrice->cabin_id,
+                'passenger_count'     => count($passengers),
+                'calc_method'         => $cabinPrice->calculation_method?->value,
+            ],
+        );
+
+        return $cabinTotal;
+    }
+
+    /**
+     * Extras computation — mantığı Phase 1'den korunuyor.
+     */
+    private function computeExtrasCosts(Tour $tour, BookingDraft $draft, array &$lines): int
+    {
+        $total = 0;
+        $extraIds = collect($draft->extras)->pluck('extraId')->all();
+
+        if ($extraIds === []) {
+            return 0;
+        }
+
+        $extras = TourExtra::query()
+            ->where('tour_id', $tour->id)
+            ->active()
+            ->whereIn('id', $extraIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($draft->extras as $sel) {
+            /** @var TourExtra|null $extra */
+            $extra = $extras->get($sel->extraId);
+            if (! $extra) {
+                continue;
             }
+
+            $perUnit = (int) $extra->price;
+            $effectiveUnit = $extra->pricing_mode === 'per_passenger'
+                ? $perUnit * $draft->passengerCount()
+                : $perUnit;
+
+            $subtotal = $effectiveUnit * $sel->quantity;
+            $total   += $subtotal;
+
+            $lines[] = new QuoteLineItem(
+                kind:      'extra',
+                label:     (string) $extra->name,
+                unitPrice: $effectiveUnit,
+                quantity:  $sel->quantity,
+                subtotal:  $subtotal,
+                meta:      ['extra_id' => $extra->id],
+            );
         }
 
-        return max(0, $base);
-    }
-
-    private function passengerLabel(PassengerDraft $passenger, ?TourPriceTier $tier): string
-    {
-        $name = trim($passenger->firstName . ' ' . $passenger->lastName);
-        $type = $passenger->type->label();
-
-        return $name !== '' ? "{$name} ({$type})" : $type;
+        return $total;
     }
 
     private function ageFromBirthdate(?string $dob): ?int

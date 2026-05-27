@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Tours\Models;
 
+use App\Modules\Tours\Enums\PricingMode;
+use App\Modules\Tours\Enums\SalesStatus;
 use App\Modules\Tours\Enums\TourType;
 use App\Modules\Tours\Models\Concerns\HasTourType;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,6 +40,7 @@ class Tour extends Model implements HasMedia
     protected $fillable = [
         'type', 'slug', 'tour_category_id', 'status',
         'currency', 'base_price', 'capacity_default',
+        'pricing_mode', 'sales_status',
         'type_config', 'search_index',
         'sort_order', 'is_featured', 'structured_data_json',
     ];
@@ -46,6 +49,8 @@ class Tour extends Model implements HasMedia
     {
         return [
             'type'                 => TourType::class,
+            'pricing_mode'         => PricingMode::class,
+            'sales_status'         => SalesStatus::class,
             'base_price'           => 'integer',
             'capacity_default'     => 'integer',
             'type_config'          => 'array',
@@ -82,14 +87,16 @@ class Tour extends Model implements HasMedia
         return $this->hasMany(TourItinerary::class);
     }
 
-    public function cabinTypes(): HasMany
+    /**
+     * Pricing groups — Tab 4'te admin'in oluşturduğu named price groups
+     * ("Yaz 2026 Fiyatları" gibi).  Her grup N tarihe atanır, her grup
+     * N TourCabinPrice satırı içerir (cabin × person-tier matrix).
+     *
+     * Phase 1.5.b refactor — eski `priceTiers()` relation'ının yerine.
+     */
+    public function priceGroups(): HasMany
     {
-        return $this->hasMany(TourCabinType::class)->orderBy('sort_order');
-    }
-
-    public function priceTiers(): HasMany
-    {
-        return $this->hasMany(TourPriceTier::class);
+        return $this->hasMany(TourPriceGroup::class)->orderBy('sort_order');
     }
 
     public function extras(): HasMany

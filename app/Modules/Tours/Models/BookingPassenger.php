@@ -16,6 +16,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * tour operators must list passengers on manifests and (for cruises)
  * report names to the port authority.  Stored as-is — KVKK governs
  * retention (Phase 5 will add a redaction cron for old bookings).
+ *
+ * Phase 1.5.b refactor:
+ *   - cabin_id (FK to new Cabin model, nullable for non-cruise)
+ *   - tour_cabin_price_id (FK to TourCabinPrice — pricing snapshot for audit)
+ *
+ * Previous Phase 1 fields removed:
+ *   - tour_cabin_type_id (table dropped)
+ *   - price_tier_id (table dropped)
  */
 class BookingPassenger extends Model
 {
@@ -26,8 +34,8 @@ class BookingPassenger extends Model
         'first_name', 'last_name',
         'id_type', 'id_number', 'nationality',
         'date_of_birth', 'gender',
-        'tour_cabin_type_id', 'is_lead',
-        'price_tier_id', 'price', 'notes',
+        'cabin_id', 'tour_cabin_price_id',
+        'is_lead', 'price', 'notes',
     ];
 
     protected function casts(): array
@@ -40,19 +48,29 @@ class BookingPassenger extends Model
         ];
     }
 
+    // ─── Relations ────────────────────────────────────────────────────────────
+
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
     }
 
-    public function cabinType(): BelongsTo
+    /**
+     * Phase 1.5.b refactor — eski `cabinType()` → yeni `cabin()`.
+     * Master Cabin model'ine (Ship.cabins) referans.
+     */
+    public function cabin(): BelongsTo
     {
-        return $this->belongsTo(TourCabinType::class, 'tour_cabin_type_id');
+        return $this->belongsTo(Cabin::class);
     }
 
-    public function priceTier(): BelongsTo
+    /**
+     * Phase 1.5.b refactor — eski `priceTier()` → yeni `tourCabinPrice()`.
+     * TourCabinPrice matrix satırına snapshot referans (audit için).
+     */
+    public function tourCabinPrice(): BelongsTo
     {
-        return $this->belongsTo(TourPriceTier::class, 'price_tier_id');
+        return $this->belongsTo(TourCabinPrice::class);
     }
 
     public function fullName(): string
