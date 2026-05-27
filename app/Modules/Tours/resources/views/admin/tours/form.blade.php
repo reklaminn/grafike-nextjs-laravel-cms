@@ -1,17 +1,56 @@
 @extends('admin.layouts.app')
 @section('title', $tour->exists ? 'Tur Düzenle' : 'Yeni Tur')
 
+@php
+    // Form için ortak data — Alpine.js x-data bunları okur.
+    $tabs = [
+        1 => ['icon' => 'fa-cogs',         'label' => 'Genel'],
+        2 => ['icon' => 'fa-route',        'label' => 'Rota Takvimi'],
+        3 => ['icon' => 'fa-tags',         'label' => 'Genel Fiyatlar'],
+        4 => ['icon' => 'fa-calendar-alt', 'label' => 'Tarih & Fiyatlar'],
+        5 => ['icon' => 'fa-align-left',   'label' => 'Açıklamalar'],
+        6 => ['icon' => 'fa-search',       'label' => 'SEO'],
+        7 => ['icon' => 'fa-map-marked-alt','label' => 'Harita'],
+        8 => ['icon' => 'fa-images',       'label' => 'Resimler'],
+        9 => ['icon' => 'fa-comments',     'label' => 'Yorumlar'],
+    ];
+    $flightInfo  = $tour->flight_info ?? [];
+    $typeConfigJson = $tour->type_config
+        ? json_encode($tour->type_config, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+        : '';
+    $structuredJson = $tour->structured_data_json
+        ? json_encode($tour->structured_data_json, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+        : '';
+    $initialTab = (int) request('tab', $errors->any() ? 1 : 1);
+@endphp
+
 @section('content')
-<div class="flex items-center justify-between mb-6">
+<div class="flex items-center justify-between mb-4">
     <div class="flex items-center gap-3">
         <a href="{{ route('admin.tours.index') }}" class="text-gray-400 hover:text-gray-600"><i class="fas fa-arrow-left"></i></a>
-        <h1 class="text-2xl font-bold text-gray-800">{{ $tour->exists ? 'Tur Düzenle' : 'Yeni Tur' }}</h1>
+        <h1 class="text-2xl font-bold text-gray-800">
+            {{ $tour->exists ? ($translations->first()?->title ?? 'Tur Düzenle') : 'Yeni Tur' }}
+        </h1>
+        @if($tour->exists && $tour->copiedFromTour)
+            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                Kopya: <a href="{{ route('admin.tours.edit', $tour->copiedFromTour) }}" class="underline">#{{ $tour->copiedFromTour->id }}</a>
+            </span>
+        @endif
     </div>
     @if($tour->exists)
-        <a href="{{ route('admin.tours.dates.index', $tour) }}"
-           class="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm hover:bg-amber-200">
-            <i class="fas fa-calendar-alt mr-1"></i> Departure'ları Yönet ({{ $tour->dates->count() ?? 0 }})
-        </a>
+        <div class="flex items-center gap-2">
+            <form method="POST" action="{{ route('admin.tours.duplicate', $tour) }}"
+                  onsubmit="return confirm('Bu turu kopyala?');">
+                @csrf
+                <button type="submit" class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200">
+                    <i class="fas fa-copy mr-1"></i> Tur Kopyala
+                </button>
+            </form>
+            <a href="{{ route('admin.tours.dates.index', $tour) }}"
+               class="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm hover:bg-amber-200">
+                <i class="fas fa-calendar-alt mr-1"></i> Departure'lar ({{ $tour->dates->count() ?? 0 }})
+            </a>
+        </div>
     @endif
 </div>
 
@@ -23,191 +62,617 @@
 </div>
 @endif
 
-<form method="POST"
-      action="{{ $tour->exists ? route('admin.tours.update', $tour) : route('admin.tours.store') }}"
-      class="space-y-6">
+@if(session('success'))<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{{ session('success') }}</div>@endif
+
+<form method="POST" enctype="multipart/form-data"
+      x-data="{ activeTab: {{ $initialTab }} }"
+      action="{{ $tour->exists ? route('admin.tours.update', $tour) : route('admin.tours.store') }}">
     @csrf
     @if($tour->exists)@method('PUT')@endif
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- Tab nav --}}
+    <div class="bg-white rounded-xl shadow-sm border mb-5 overflow-x-auto">
+        <nav class="flex flex-wrap min-w-max">
+            @foreach($tabs as $num => $tab)
+                <button type="button" @click="activeTab = {{ $num }}"
+                        :class="activeTab === {{ $num }} ? 'border-indigo-500 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'"
+                        class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors">
+                    <span class="text-xs font-mono text-gray-400 mr-1">{{ $num }}.</span>
+                    <i class="fas {{ $tab['icon'] }} mr-1"></i>
+                    {{ $tab['label'] }}
+                </button>
+            @endforeach
+        </nav>
+    </div>
 
-        {{-- LEFT: Translations --}}
-        <div class="lg:col-span-2 space-y-6">
+    {{-- ═══ Tab 1: Genel Bilgiler ═══════════════════════════════════════ --}}
+    <div x-show="activeTab === 1" x-cloak class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <div class="bg-white rounded-xl shadow-sm border p-5 space-y-5">
-                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                    <i class="fas fa-language text-indigo-500"></i> İçerik (Çeviriler)
-                </h2>
+            {{-- LEFT col --}}
+            <div class="lg:col-span-2 space-y-6">
 
-                @foreach($languages as $i => $lang)
-                    @php $tr = $translations[$lang->id] ?? null; @endphp
-                    <div class="border border-gray-200 rounded-lg p-4 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs uppercase font-semibold text-gray-500">{{ $lang->name }}</span>
-                            <span class="text-[10px] font-mono text-gray-400">{{ $lang->code }}</span>
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-id-card text-indigo-500"></i> Kimlik
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tip *</label>
+                            <select name="type" x-data="{ type: '{{ old('type', $tour->type?->value ?? 'package') }}' }"
+                                    x-model="type"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                @foreach($types as $t)
+                                    <option value="{{ $t->value }}" {{ old('type', $tour->type?->value ?? 'package') === $t->value ? 'selected' : '' }}>
+                                        {{ $t->label() }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
 
-                        <input type="hidden" name="translations[{{ $i }}][language_id]" value="{{ $lang->id }}">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Durum *</label>
+                            <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="draft"     {{ old('status', $tour->status ?? 'draft') === 'draft' ? 'selected' : '' }}>Taslak</option>
+                                <option value="published" {{ old('status', $tour->status) === 'published' ? 'selected' : '' }}>Yayında</option>
+                                <option value="archived"  {{ old('status', $tour->status) === 'archived'  ? 'selected' : '' }}>Arşivlendi</option>
+                            </select>
+                        </div>
 
-                        <input type="text" name="translations[{{ $i }}][title]" required
-                               value="{{ old("translations.$i.title", $tr->title ?? '') }}"
-                               placeholder="Başlık"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Slug (URL) *</label>
+                            <input type="text" name="slug" required value="{{ old('slug', $tour->slug) }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                                   placeholder="bodrum-cruise-7-gun">
+                        </div>
 
-                        <input type="text" name="translations[{{ $i }}][subtitle]"
-                               value="{{ old("translations.$i.subtitle", $tr->subtitle ?? '') }}"
-                               placeholder="Alt başlık"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                SKU <span class="text-xs text-gray-400 font-normal">opsiyonel</span>
+                            </label>
+                            <input type="text" name="sku" value="{{ old('sku', $tour->sku) }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                                   placeholder="CRZ-MED-2026-07">
+                        </div>
 
-                        <textarea name="translations[{{ $i }}][short_description]" rows="2"
-                                  placeholder="Kısa açıklama (listeleme kartlarında çıkar)"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.short_description", $tr->short_description ?? '') }}</textarea>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Primary Kategori</label>
+                            <select name="tour_category_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="">— Kategorisiz —</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}" {{ (int) old('tour_category_id', $tour->tour_category_id) === $cat->id ? 'selected' : '' }}>
+                                        {{ $cat->translations->first()?->name ?? $cat->slug }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                        <textarea name="translations[{{ $i }}][description]" rows="6"
-                                  placeholder="Detaylı açıklama (HTML)"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono">{{ old("translations.$i.description", $tr->description ?? '') }}</textarea>
-
-                        <details class="text-xs">
-                            <summary class="cursor-pointer text-gray-500 hover:text-gray-700">▸ Highlights / Önemli Bilgi / SEO</summary>
-                            <div class="mt-3 space-y-3">
-                                <textarea name="translations[{{ $i }}][highlights]" rows="3"
-                                          placeholder="Highlights (bullet list / markdown)"
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono">{{ old("translations.$i.highlights", $tr->highlights ?? '') }}</textarea>
-                                <textarea name="translations[{{ $i }}][important_info]" rows="3"
-                                          placeholder="Önemli bilgi (yaş limiti, sağlık şartı vb.)"
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.important_info", $tr->important_info ?? '') }}</textarea>
-                                <input type="text" name="translations[{{ $i }}][meta_title]"
-                                       value="{{ old("translations.$i.meta_title", $tr->meta_title ?? '') }}"
-                                       placeholder="Meta title (SEO)"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">
-                                <textarea name="translations[{{ $i }}][meta_description]" rows="2"
-                                          placeholder="Meta description (SEO)"
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.meta_description", $tr->meta_description ?? '') }}</textarea>
-                                <input type="url" name="translations[{{ $i }}][og_image_url]"
-                                       value="{{ old("translations.$i.og_image_url", $tr->og_image_url ?? '') }}"
-                                       placeholder="OG image URL (sosyal paylaşım)"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">
-                            </div>
-                        </details>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Gemi
+                                <span class="text-xs text-amber-600 font-normal">(cruise için zorunlu)</span>
+                            </label>
+                            <select name="ship_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="">— Gemi yok —</option>
+                                @foreach($ships as $ship)
+                                    <option value="{{ $ship->id }}" {{ (int) old('ship_id', $tour->ship_id) === $ship->id ? 'selected' : '' }}>
+                                        {{ $ship->name }} ({{ $ship->company?->name }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                @endforeach
+                </div>
+
+                {{-- Secondary categories m2m --}}
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-3">
+                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-folder-tree text-indigo-500"></i> Ek Kategoriler
+                        <span class="text-xs text-gray-400 font-normal">(secondary — primary'ye ek)</span>
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                        @foreach($categories as $cat)
+                            <label class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="secondary_category_ids[]" value="{{ $cat->id }}"
+                                       {{ in_array($cat->id, $selectedSecCatIds, true) ? 'checked' : '' }}
+                                       class="h-4 w-4 text-indigo-600 rounded">
+                                <span class="text-sm truncate">{{ $cat->translations->first()?->name ?? $cat->slug }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Marketing tags m2m --}}
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-3">
+                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-tags text-indigo-500"></i> Pazarlama Etiketleri
+                    </h2>
+                    @if($allTags->isEmpty())
+                        <p class="text-sm text-amber-600">Henüz etiket yok — <a href="{{ route('admin.tour-tags.create') }}" class="underline">ekleyin</a>.</p>
+                    @else
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($allTags as $tag)
+                                @php $trTag = $tag->translations->first(); @endphp
+                                <label class="inline-flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-full hover:bg-gray-50 cursor-pointer text-xs">
+                                    <input type="checkbox" name="tour_tag_ids[]" value="{{ $tag->id }}"
+                                           {{ in_array($tag->id, $selectedTagIds, true) ? 'checked' : '' }}
+                                           class="h-3 w-3 text-indigo-600 rounded">
+                                    @if($tag->icon)<i class="fas {{ $tag->icon }} text-gray-400"></i>@endif
+                                    <span>{{ $trTag->name ?? $tag->slug }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Flight info (conditional) --}}
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="hidden" name="includes_flight" value="0">
+                        <input type="checkbox" id="includes_flight" name="includes_flight" value="1"
+                               x-data="{}" @change="$dispatch('flight-toggle', $event.target.checked)"
+                               {{ old('includes_flight', $tour->includes_flight ?? false) ? 'checked' : '' }}
+                               class="h-4 w-4 text-indigo-600 rounded">
+                        <span class="text-sm font-medium text-gray-700">
+                            <i class="fas fa-plane text-indigo-500"></i> Uçaklı paket (havayolu bilgilerini gir)
+                        </span>
+                    </label>
+
+                    <div x-data="{ show: {{ old('includes_flight', $tour->includes_flight ?? false) ? 'true' : 'false' }} }"
+                         @flight-toggle.window="show = $event.detail"
+                         x-show="show" x-cloak
+                         class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input type="text" name="flight_airline"
+                               value="{{ old('flight_airline', $flightInfo['airline'] ?? '') }}"
+                               placeholder="Havayolu (THY, Pegasus)"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <input type="text" name="flight_code"
+                               value="{{ old('flight_code', $flightInfo['code'] ?? '') }}"
+                               placeholder="Uçuş kodu (TK1234)"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono">
+                        <input type="text" name="flight_departure"
+                               value="{{ old('flight_departure', $flightInfo['departure'] ?? '') }}"
+                               placeholder="Kalkış havalimanı (IST)"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <input type="text" name="flight_arrival"
+                               value="{{ old('flight_arrival', $flightInfo['arrival'] ?? '') }}"
+                               placeholder="Varış havalimanı (BCN)"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                </div>
+
+                {{-- Type-config JSON (advanced) --}}
+                <details class="bg-white rounded-xl shadow-sm border p-5">
+                    <summary class="font-semibold text-gray-700 cursor-pointer flex items-center gap-2">
+                        <i class="fas fa-code text-purple-500"></i> Tip-spesifik Konfig (JSON, advanced)
+                    </summary>
+                    <textarea name="type_config" rows="6"
+                              placeholder='{"departure_port":"İstanbul","return_port":"İzmir"}'
+                              class="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono">{{ old('type_config', $typeConfigJson) }}</textarea>
+                </details>
             </div>
 
-            {{-- Type-config JSON --}}
-            <div class="bg-white rounded-xl shadow-sm border p-5 space-y-3">
-                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                    <i class="fas fa-code text-purple-500"></i> Tip-spesifik Konfig (type_config)
-                </h2>
-                <p class="text-xs text-gray-500">
-                    Cruise için <code>ship_name</code>, <code>departure_port</code>; Paket için
-                    <code>accommodation_type</code>, <code>transport_type</code>; Günlük için
-                    <code>meeting_point</code>, <code>pickup_radius_km</code>. JSON formatında.
-                </p>
-                <textarea name="type_config" rows="6"
-                          placeholder='{"ship_name":"Costa Mediterranea","departure_port":"İstanbul"}'
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono">{{ old('type_config', $tour->type_config ? json_encode($tour->type_config, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : '') }}</textarea>
+            {{-- RIGHT col --}}
+            <div class="space-y-4">
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-dollar-sign text-indigo-500"></i> Fiyat & Kapasite
+                    </h2>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fiyatlama Modu</label>
+                        <select name="pricing_mode" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            @foreach($pricingModes as $m)
+                                <option value="{{ $m->value }}" {{ old('pricing_mode', $tour->pricing_mode?->value) === $m->value ? 'selected' : '' }}
+                                        title="{{ $m->description() }}">
+                                    {{ $m->label() }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Satış Durumu</label>
+                        <select name="sales_status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            @foreach($salesStatuses as $s)
+                                <option value="{{ $s->value }}" {{ old('sales_status', $tour->sales_status?->value) === $s->value ? 'selected' : '' }}>
+                                    {{ $s->label() }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Para Birimi *</label>
+                            <input type="text" name="currency" required maxlength="3"
+                                   value="{{ old('currency', $tour->currency ?? 'TRY') }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sıra</label>
+                            <input type="number" name="sort_order" value="{{ old('sort_order', $tour->sort_order ?? 0) }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Baz Fiyat (kuruş) *</label>
+                        <input type="number" name="base_price" required min="0"
+                               value="{{ old('base_price', $tour->base_price ?? 0) }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono">
+                        <p class="text-xs text-gray-400 mt-1">100 = 1 TL.  Matrix fiyat varsa override eder.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Varsayılan Kapasite *</label>
+                        <input type="number" name="capacity_default" required min="0"
+                               value="{{ old('capacity_default', $tour->capacity_default ?? 0) }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+
+                    <label class="flex items-center gap-2 cursor-pointer pt-2 border-t border-gray-100">
+                        <input type="hidden" name="is_featured" value="0">
+                        <input type="checkbox" name="is_featured" value="1"
+                               {{ old('is_featured', $tour->is_featured ?? false) ? 'checked' : '' }}
+                               class="h-4 w-4 text-pink-600 rounded">
+                        <span class="text-sm text-gray-700"><i class="fas fa-star text-pink-500"></i> Öne çıkan</span>
+                    </label>
+                </div>
+
+                @if($tour->exists)
+                    <div class="bg-gray-50 rounded-xl border p-3 text-xs text-gray-500 space-y-1">
+                        <p><strong>ID:</strong> #{{ $tour->id }}</p>
+                        <p><strong>Oluşturuldu:</strong> {{ $tour->created_at?->isoFormat('D MMM YYYY HH:mm') }}</p>
+                        <p><strong>Güncellendi:</strong> {{ $tour->updated_at?->isoFormat('D MMM YYYY HH:mm') }}</p>
+                    </div>
+                @endif
             </div>
         </div>
+    </div>
 
-        {{-- RIGHT: Settings --}}
-        <div class="space-y-4">
-
-            <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
-                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                    <i class="fas fa-cogs text-indigo-500"></i> Genel
-                </h2>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tip *</label>
-                    <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        @foreach($types as $t)
-                            <option value="{{ $t->value }}" {{ old('type', $tour->type?->value ?? 'package') === $t->value ? 'selected' : '' }}>
-                                {{ $t->label() }}
-                            </option>
-                        @endforeach
-                    </select>
+    {{-- ═══ Tab 2: Rota Takvimi ═════════════════════════════════════════ --}}
+    <div x-show="activeTab === 2" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-route text-indigo-500"></i> Rota & Günler
+            </h2>
+            @if($tour->itineraries->isEmpty())
+                <div class="p-6 text-center bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-600 mb-3">Henüz rota girilmemiş.</p>
+                    @if($tour->exists)
+                        <p class="text-xs text-gray-500">
+                            Rota editörü ayrı bir sub-resource — Phase 1.5.e'de TourItineraryStop UI'sı eklenecek.
+                            Şimdilik itinerary day + stop'ları tinker / API ile yönetiyoruz.
+                        </p>
+                    @else
+                        <p class="text-xs text-gray-500">Önce turu kaydedip rota girişine geçin.</p>
+                    @endif
                 </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Slug (URL) *</label>
-                    <input type="text" name="slug" required value="{{ old('slug', $tour->slug) }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
-                           placeholder="bodrum-cruise-7-gun">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                    <select name="tour_category_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        <option value="">— Kategorisiz —</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" {{ (int) old('tour_category_id', $tour->tour_category_id) === $cat->id ? 'selected' : '' }}>
-                                {{ $cat->translations->first()?->name ?? $cat->slug }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Durum *</label>
-                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        <option value="draft"     {{ old('status', $tour->status ?? 'draft') === 'draft'     ? 'selected' : '' }}>Taslak</option>
-                        <option value="published" {{ old('status', $tour->status) === 'published'             ? 'selected' : '' }}>Yayında</option>
-                        <option value="archived"  {{ old('status', $tour->status) === 'archived'              ? 'selected' : '' }}>Arşivlendi</option>
-                    </select>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Para Birimi *</label>
-                        <input type="text" name="currency" required maxlength="3"
-                               value="{{ old('currency', $tour->currency ?? 'TRY') }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm uppercase">
+            @else
+                @foreach($tour->itineraries as $itinerary)
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-sm font-semibold mb-2 text-gray-700">
+                            {{ $itinerary->title ?? 'Rota (lang: ' . $itinerary->language_id . ')' }}
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-600">
+                            @foreach($itinerary->days as $day)
+                                <li class="flex items-center gap-2">
+                                    <span class="font-mono text-xs text-gray-400 w-8">G{{ $day->day_number }}</span>
+                                    <span>{{ $day->title }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Sıra</label>
-                        <input type="number" name="sort_order" value="{{ old('sort_order', $tour->sort_order ?? 0) }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                @endforeach
+            @endif
+        </div>
+    </div>
+
+    {{-- ═══ Tab 3: Genel Fiyatlar ═══════════════════════════════════════ --}}
+    <div x-show="activeTab === 3" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-tags text-indigo-500"></i> Fiyat Grupları (TourPriceGroup × TourCabinPrice matrix)
+            </h2>
+            @if($tour->priceGroups->isEmpty())
+                <div class="p-6 text-center bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-600 mb-3">Henüz fiyat grubu yok.</p>
+                    <p class="text-xs text-gray-500">
+                        Matrix editör Phase 1.5.e'de gelecek — 5-boyutlu fiyatlama
+                        (Date × PriceGroup × Cabin × PersonTier × CalculationMethod).
+                    </p>
+                </div>
+            @else
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
+                            <th class="px-3 py-2">Grup</th>
+                            <th class="px-3 py-2">Cabin Fiyat Satırı</th>
+                            <th class="px-3 py-2">Currency</th>
+                            <th class="px-3 py-2">Sıra</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach($tour->priceGroups as $pg)
+                            <tr>
+                                <td class="px-3 py-2 font-mono text-xs">{{ $pg->slug ?? "PG-{$pg->id}" }}</td>
+                                <td class="px-3 py-2">{{ $pg->cabinPrices()->count() }}</td>
+                                <td class="px-3 py-2 text-xs text-gray-500">{{ $pg->currency ?? '—' }}</td>
+                                <td class="px-3 py-2 text-gray-500">{{ $pg->sort_order }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+    </div>
+
+    {{-- ═══ Tab 4: Tarih & Fiyatlar ═════════════════════════════════════ --}}
+    <div x-show="activeTab === 4" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-calendar-alt text-indigo-500"></i> Departure Tarihleri
+            </h2>
+            @if(!$tour->exists)
+                <p class="text-sm text-gray-500">Önce turu kaydedin, sonra tarih ekleyin.</p>
+            @else
+                <p class="text-xs text-gray-500">
+                    Bu turun {{ $tour->dates->count() }} tarihi var.  Tarih bazlı kapasite + fiyat override
+                    + PriceGroup ataması nested route'ta yönetilir.
+                </p>
+                <a href="{{ route('admin.tours.dates.index', $tour) }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600">
+                    <i class="fas fa-arrow-right"></i> Tarih Yönetimi'ne Git
+                </a>
+                @if($tour->dates->isNotEmpty())
+                    <div class="mt-3 border-t pt-3">
+                        <table class="min-w-full text-xs">
+                            <thead><tr class="text-left text-gray-500 uppercase">
+                                <th class="py-1">Tarih</th><th class="py-1">Bitiş</th><th class="py-1">Kapasite</th><th class="py-1">Status</th>
+                            </tr></thead>
+                            <tbody class="divide-y">
+                                @foreach($tour->dates->take(10) as $d)
+                                    <tr>
+                                        <td class="py-1">{{ $d->starts_at?->format('Y-m-d') }}</td>
+                                        <td class="py-1">{{ $d->ends_at?->format('Y-m-d') }}</td>
+                                        <td class="py-1">{{ $d->capacity }}</td>
+                                        <td class="py-1">{{ $d->status }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            @endif
+        </div>
+    </div>
+
+    {{-- ═══ Tab 5: Açıklamalar (Translations) ═══════════════════════════ --}}
+    <div x-show="activeTab === 5" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-5">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-language text-indigo-500"></i> İçerik (Çeviriler)
+            </h2>
+
+            @foreach($languages as $i => $lang)
+                @php $tr = $translations[$lang->id] ?? null; @endphp
+                <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs uppercase font-semibold text-gray-500">{{ $lang->name }}</span>
+                        <span class="text-[10px] font-mono text-gray-400">{{ $lang->code }}</span>
+                    </div>
+
+                    <input type="hidden" name="translations[{{ $i }}][language_id]" value="{{ $lang->id }}">
+
+                    <input type="text" name="translations[{{ $i }}][title]" required
+                           value="{{ old("translations.$i.title", $tr->title ?? '') }}"
+                           placeholder="Başlık *"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium">
+
+                    <input type="text" name="translations[{{ $i }}][subtitle]"
+                           value="{{ old("translations.$i.subtitle", $tr->subtitle ?? '') }}"
+                           placeholder="Alt başlık"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+
+                    <textarea name="translations[{{ $i }}][short_description]" rows="2"
+                              placeholder="Kısa açıklama (kart üzerinde)"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.short_description", $tr->short_description ?? '') }}</textarea>
+
+                    <textarea name="translations[{{ $i }}][description]" rows="6"
+                              placeholder="Detaylı açıklama (HTML destekli)"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.description", $tr->description ?? '') }}</textarea>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <textarea name="translations[{{ $i }}][highlights]" rows="4"
+                                  placeholder="Öne çıkan özellikler (madde listesi)"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.highlights", $tr->highlights ?? '') }}</textarea>
+                        <textarea name="translations[{{ $i }}][important_info]" rows="4"
+                                  placeholder="Önemli bilgi (yaş limiti, sağlık şartları)"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.important_info", $tr->important_info ?? '') }}</textarea>
                     </div>
                 </div>
+            @endforeach
+        </div>
+    </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Baz Fiyat (kuruş cinsinden) *</label>
-                    <input type="number" name="base_price" required min="0"
-                           value="{{ old('base_price', $tour->base_price ?? 0) }}"
+    {{-- ═══ Tab 6: SEO ══════════════════════════════════════════════════ --}}
+    <div x-show="activeTab === 6" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-5">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-search text-indigo-500"></i> SEO Meta Bilgileri
+            </h2>
+
+            @foreach($languages as $i => $lang)
+                @php $tr = $translations[$lang->id] ?? null; @endphp
+                <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs uppercase font-semibold text-gray-500">{{ $lang->name }}</span>
+                        <span class="text-[10px] font-mono text-gray-400">{{ $lang->code }}</span>
+                    </div>
+                    {{-- Re-emit hidden language_id for SEO tab inputs to nest under same translations[$i] payload --}}
+                    {{-- (Tab 5'te zaten language_id var; HTML duplicate field overrides aynı değere — sorun yok.) --}}
+                    <input type="text" name="translations[{{ $i }}][meta_title]"
+                           value="{{ old("translations.$i.meta_title", $tr->meta_title ?? '') }}"
+                           placeholder="Meta title (60 karakter altı önerilir)"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                    <p class="text-xs text-gray-400 mt-1">Örnek: 125000 = 1.250,00 TL</p>
+                    <textarea name="translations[{{ $i }}][meta_description]" rows="3"
+                              placeholder="Meta description (160 karakter altı önerilir)"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.meta_description", $tr->meta_description ?? '') }}</textarea>
+                    <input type="url" name="translations[{{ $i }}][og_image_url]"
+                           value="{{ old("translations.$i.og_image_url", $tr->og_image_url ?? '') }}"
+                           placeholder="OG image URL (sosyal paylaşım önizleme)"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">
                 </div>
+            @endforeach
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Varsayılan Kapasite *</label>
-                    <input type="number" name="capacity_default" required min="0"
-                           value="{{ old('capacity_default', $tour->capacity_default ?? 0) }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                    <p class="text-xs text-gray-400 mt-1">Her departure tarihinde başlangıç kapasitesi (override edilebilir).</p>
-                </div>
+            <details class="border border-gray-200 rounded-lg p-4">
+                <summary class="text-sm font-medium text-gray-700 cursor-pointer">
+                    <i class="fas fa-code text-purple-500 mr-1"></i> Structured Data JSON-LD (advanced)
+                </summary>
+                <textarea name="structured_data_json" rows="8"
+                          placeholder='{"@context":"https://schema.org","@type":"TouristTrip","name":"..."}'
+                          class="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono">{{ old('structured_data_json', $structuredJson) }}</textarea>
+            </details>
+        </div>
+    </div>
 
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="hidden" name="is_featured" value="0">
-                    <input type="checkbox" name="is_featured" value="1"
-                           {{ old('is_featured', $tour->is_featured ?? false) ? 'checked' : '' }}
-                           class="h-4 w-4 text-pink-600 rounded">
-                    <span class="text-sm text-gray-700"><i class="fas fa-star text-pink-500"></i> Anasayfada öne çıkar</span>
-                </label>
-            </div>
+    {{-- ═══ Tab 7: Harita & Destinasyonlar ══════════════════════════════ --}}
+    <div x-show="activeTab === 7" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-map-marked-alt text-indigo-500"></i> Destinasyonlar
+            </h2>
+            <p class="text-xs text-gray-500">
+                Bu turun kapsadığı destinasyonlar.  Seçim sırası frontend listesinde aynı sırada görünür.
+            </p>
 
-            <button type="submit"
-                    class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
-                <i class="fas fa-save mr-1"></i> Kaydet
-            </button>
-
-            @if($tour->exists)
-                <div class="bg-gray-50 rounded-xl border p-3 text-xs text-gray-500 space-y-1">
-                    <p><strong>ID:</strong> #{{ $tour->id }}</p>
-                    <p><strong>Oluşturuldu:</strong> {{ $tour->created_at?->isoFormat('D MMM YYYY HH:mm') }}</p>
-                    <p><strong>Güncellendi:</strong> {{ $tour->updated_at?->isoFormat('D MMM YYYY HH:mm') }}</p>
+            @if($allDestinations->isEmpty())
+                <p class="text-sm text-amber-600">
+                    Henüz destinasyon yok — <a href="{{ route('admin.destinations.create') }}" class="underline">ekleyin</a>.
+                </p>
+            @else
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto p-2 bg-gray-50 rounded-lg">
+                    @foreach($allDestinations as $dest)
+                        @php $trDest = $dest->translations->first(); @endphp
+                        <label class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded hover:bg-indigo-50 cursor-pointer">
+                            <input type="checkbox" name="destination_ids[]" value="{{ $dest->id }}"
+                                   {{ in_array($dest->id, $selectedDestIds, true) ? 'checked' : '' }}
+                                   class="h-4 w-4 text-indigo-600 rounded">
+                            <span class="text-sm truncate">{{ $trDest->name ?? $dest->slug }}</span>
+                            @if($dest->is_featured)<i class="fas fa-star text-amber-400 text-xs"></i>@endif
+                        </label>
+                    @endforeach
                 </div>
             @endif
         </div>
+    </div>
+
+    {{-- ═══ Tab 8: Resimler ═════════════════════════════════════════════ --}}
+    <div x-show="activeTab === 8" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-5">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-images text-indigo-500"></i> Görseller & Broşür
+            </h2>
+
+            {{-- Cover --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Kapak Görseli (tek dosya)</label>
+                @if($tour->exists && ($coverUrl = $tour->getFirstMediaUrl('cover')))
+                    <div class="relative inline-block mb-2">
+                        <img src="{{ $coverUrl }}" alt="cover" class="h-32 rounded border border-gray-200">
+                        @php $coverMedia = $tour->getFirstMedia('cover'); @endphp
+                        @if($coverMedia)
+                            <form action="{{ route('admin.tours.media.delete', ['tour' => $tour, 'mediaId' => $coverMedia->id]) }}"
+                                  method="POST" class="absolute top-1 right-1"
+                                  onsubmit="return confirm('Kapağı silmek istediğinize emin misiniz?');">
+                                @csrf
+                                <button type="submit" class="bg-red-500 text-white rounded-full w-7 h-7 text-xs">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                @endif
+                <input type="file" name="cover" accept="image/*"
+                       class="block w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            </div>
+
+            {{-- Gallery --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Galeri (çoklu)</label>
+                @if($tour->exists)
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-2 mb-3">
+                        @foreach($tour->getMedia('gallery') as $media)
+                            <div class="relative group">
+                                <img src="{{ $media->getUrl() }}" alt="" class="h-20 w-full object-cover rounded border border-gray-200">
+                                <form action="{{ route('admin.tours.media.delete', ['tour' => $tour, 'mediaId' => $media->id]) }}"
+                                      method="POST" class="absolute top-1 right-1"
+                                      onsubmit="return confirm('Bu görseli silmek istediğinize emin misiniz?');">
+                                    @csrf
+                                    <button type="submit" class="bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+                <input type="file" name="gallery[]" accept="image/*" multiple
+                       class="block w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            </div>
+
+            {{-- Brochure --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Broşür PDF (tek dosya)</label>
+                @if($tour->exists && ($brochure = $tour->getFirstMedia('brochure')))
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                        <a href="{{ $brochure->getUrl() }}" target="_blank" class="text-sm text-indigo-600 underline">{{ $brochure->name }}</a>
+                        <form action="{{ route('admin.tours.media.delete', ['tour' => $tour, 'mediaId' => $brochure->id]) }}"
+                              method="POST" class="inline"
+                              onsubmit="return confirm('Broşürü silmek istediğinize emin misiniz?');">
+                            @csrf
+                            <button type="submit" class="text-xs text-red-600 hover:underline">Sil</button>
+                        </form>
+                    </div>
+                @endif
+                <input type="file" name="brochure" accept=".pdf"
+                       class="block w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ Tab 9: Yorumlar ═════════════════════════════════════════════ --}}
+    <div x-show="activeTab === 9" x-cloak class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-comments text-indigo-500"></i> Yorumlar
+            </h2>
+            <div class="p-6 text-center bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">
+                    <i class="fas fa-info-circle text-gray-400 mr-1"></i> Yorum modülü
+                </p>
+                <p class="text-xs text-gray-500">
+                    Bu tur için bırakılan yorumlar burada listelenecek.  Phase 5'te yorum onay/moderasyon
+                    akışı eklenecek; şimdilik genel <a href="{{ route('admin.reviews.index') }}" class="underline">yorumlar paneline</a>
+                    gidip filtre ile bu turun yorumlarını görebilirsiniz.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Sticky save bar --}}
+    <div class="sticky bottom-0 bg-white border-t border-gray-200 -mx-4 px-4 py-3 mt-6 flex items-center justify-between shadow-lg">
+        <p class="text-xs text-gray-500" x-show="activeTab !== 9">
+            <i class="fas fa-info-circle text-gray-400 mr-1"></i>
+            Tüm sekmeler tek formda — Kaydet butonu tüm değişiklikleri commit eder.
+        </p>
+        <button type="submit"
+                class="px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
+            <i class="fas fa-save mr-1"></i> Kaydet
+        </button>
     </div>
 </form>
 @endsection

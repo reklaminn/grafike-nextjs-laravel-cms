@@ -43,6 +43,10 @@ Route::prefix('admin')
 
         // Tour CRUD (resource-style)
         Route::resource('tours', TourController::class)->except(['show']);
+        Route::post('tours/{tour}/duplicate',
+                    [TourController::class, 'duplicate'])->name('tours.duplicate');
+        Route::post('tours/{tour}/media/{mediaId}/delete',
+                    [TourController::class, 'deleteMedia'])->name('tours.media.delete');
 
         // Nested departures under a tour
         Route::resource('tours.dates', TourDateController::class)

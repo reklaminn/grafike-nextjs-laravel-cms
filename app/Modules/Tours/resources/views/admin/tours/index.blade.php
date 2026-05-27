@@ -5,7 +5,7 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-800">Turlar</h1>
-        <p class="text-sm text-gray-500">Cruise, paket ve günlük tur kataloğu.</p>
+        <p class="text-sm text-gray-500">Cruise, paket, günlük tur kataloğu.</p>
     </div>
     <a href="{{ route('admin.tours.create') }}"
        class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
@@ -18,10 +18,10 @@
 
 {{-- Filters --}}
 <form method="GET" class="mb-4 bg-white border rounded-xl p-3 flex flex-wrap gap-3 items-end">
-    <div>
+    <div class="flex-1 min-w-[220px]">
         <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Ara</label>
-        <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Başlık / slug…"
-               class="px-3 py-1.5 border border-gray-300 rounded text-sm w-56">
+        <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Başlık / slug / SKU…"
+               class="w-full px-3 py-1.5 border border-gray-300 rounded text-sm">
     </div>
     <div>
         <label class="block text-[10px] font-semibold text-gray-500 uppercase mb-1">Tip</label>
@@ -61,7 +61,9 @@
                 <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
                     <th class="px-4 py-3">Tur</th>
                     <th class="px-4 py-3">Tip</th>
+                    <th class="px-4 py-3">Gemi</th>
                     <th class="px-4 py-3">Kategori</th>
+                    <th class="px-4 py-3">Dest.</th>
                     <th class="px-4 py-3">Tarih</th>
                     <th class="px-4 py-3">Fiyat</th>
                     <th class="px-4 py-3">Durum</th>
@@ -78,8 +80,16 @@
                     @endphp
                     <tr>
                         <td class="px-4 py-3">
-                            <div class="font-medium text-gray-800">{{ $title }}</div>
-                            <div class="text-xs text-gray-400 font-mono">{{ $tour->slug }}</div>
+                            <div class="font-medium text-gray-800 flex items-center gap-2">
+                                {{ $title }}
+                                @if($tour->includes_flight)
+                                    <i class="fas fa-plane text-indigo-400 text-xs" title="Uçaklı paket"></i>
+                                @endif
+                            </div>
+                            <div class="text-xs text-gray-400 font-mono">
+                                {{ $tour->slug }}
+                                @if($tour->sku)<span class="ml-2 text-purple-500">SKU:{{ $tour->sku }}</span>@endif
+                            </div>
                         </td>
                         <td class="px-4 py-3">
                             <span class="text-xs px-2 py-0.5 rounded-full
@@ -88,9 +98,18 @@
                                 {{ $tour->type->label() }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600">{{ $catName ?? '—' }}</td>
-                        <td class="px-4 py-3 text-xs text-gray-500">{{ $tour->dates_count }} tarih</td>
-                        <td class="px-4 py-3 text-gray-700">
+                        <td class="px-4 py-3 text-gray-600 text-xs">
+                            @if($tour->ship)
+                                <div>{{ $tour->ship->name }}</div>
+                                <div class="text-[10px] text-gray-400">{{ $tour->ship->company?->name }}</div>
+                            @else
+                                —
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-gray-600 text-xs">{{ $catName ?? '—' }}</td>
+                        <td class="px-4 py-3 text-center text-gray-500">{{ $tour->destinations_count }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500">{{ $tour->dates_count }}</td>
+                        <td class="px-4 py-3 text-gray-700 text-xs font-mono">
                             {{ number_format($tour->base_price / 100, 2, ',', '.') }} {{ $tour->currency }}
                         </td>
                         <td class="px-4 py-3">
@@ -106,16 +125,25 @@
                                 <span class="text-[10px] text-pink-600 ml-1"><i class="fas fa-star"></i></span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right">
-                            <a href="{{ route('admin.tours.dates.index', $tour) }}" class="text-xs text-gray-600 hover:underline mr-3">
-                                <i class="fas fa-calendar-alt"></i> Tarihler
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <a href="{{ route('admin.tours.dates.index', $tour) }}" class="text-xs text-gray-600 hover:underline mr-2"
+                               title="Tarihler">
+                                <i class="fas fa-calendar-alt"></i>
                             </a>
-                            <a href="{{ route('admin.tours.edit', $tour) }}" class="text-xs text-indigo-600 hover:underline mr-3">
-                                <i class="fas fa-edit"></i> Düzenle
+                            <form method="POST" action="{{ route('admin.tours.duplicate', $tour) }}" class="inline mr-2"
+                                  onsubmit="return confirm('Bu turu kopyala?');">
+                                @csrf
+                                <button type="submit" class="text-xs text-purple-600 hover:underline" title="Tur Kopyala">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </form>
+                            <a href="{{ route('admin.tours.edit', $tour) }}" class="text-xs text-indigo-600 hover:underline mr-2"
+                               title="Düzenle">
+                                <i class="fas fa-edit"></i>
                             </a>
                             <form method="POST" action="{{ route('admin.tours.destroy', $tour) }}" class="inline">
                                 @csrf @method('DELETE')
-                                <button onclick="return confirm('Tur silinsin mi?')" class="text-xs text-red-600 hover:underline">
+                                <button onclick="return confirm('Tur silinsin mi?')" class="text-xs text-red-600 hover:underline" title="Sil">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
