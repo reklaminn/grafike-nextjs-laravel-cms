@@ -60,7 +60,7 @@ class Destination extends Model implements HasMedia
             'destination_ports',
             'destination_id',
             'port_id'
-        )->withPivot('sort_order')->withTimestamps()->orderBy('pivot_sort_order');
+        )->withPivot('sort_order')->withTimestamps()->orderBy('destination_ports.sort_order');
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────

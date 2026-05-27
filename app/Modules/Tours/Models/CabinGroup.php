@@ -61,7 +61,7 @@ class CabinGroup extends Model
             'cabin_group_cabin',
             'cabin_group_id',
             'cabin_id'
-        )->withPivot('sort_order')->withTimestamps()->orderBy('pivot_sort_order');
+        )->withPivot('sort_order')->withTimestamps()->orderBy('cabin_group_cabin.sort_order');
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────
