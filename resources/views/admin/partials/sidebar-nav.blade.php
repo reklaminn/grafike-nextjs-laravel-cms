@@ -15,7 +15,20 @@
     $toursItems = $hasTours ? [
         ['route' => 'admin.tours.index',           'icon' => 'fa-route',        'label' => 'Turlar',         'match' => 'admin.tours.index'],
         ['route' => 'admin.tour-categories.index', 'icon' => 'fa-folder-tree',  'label' => 'Tur Kategorileri','match' => 'admin.tour-categories'],
+        ['route' => 'admin.tour-tags.index',       'icon' => 'fa-tags',         'label' => 'Etiketler',      'match' => 'admin.tour-tags'],
         ['route' => 'admin.tour-bookings.index',   'icon' => 'fa-ticket',       'label' => 'Rezervasyonlar', 'match' => 'admin.tour-bookings'],
+    ] : [];
+
+    // Cruise/master entity yönetim grubu — Tours modülü aktifse görünür.
+    // Phase 1.5.d (Ship → Cabin → Port → Destination master CRUD'ları).
+    $cruiseItems = $hasTours ? [
+        ['route' => 'admin.ship-companies.index',   'icon' => 'fa-building',     'label' => 'Gemi Firmaları',   'match' => 'admin.ship-companies'],
+        ['route' => 'admin.ships.index',            'icon' => 'fa-ship',         'label' => 'Gemiler',          'match' => 'admin.ships'],
+        ['route' => 'admin.cabin-categories.index', 'icon' => 'fa-list-ul',      'label' => 'Kabin Kategorileri','match' => 'admin.cabin-categories'],
+        ['route' => 'admin.cabins.index',           'icon' => 'fa-bed',          'label' => 'Kabinler',         'match' => 'admin.cabins'],
+        ['route' => 'admin.cabin-groups.index',     'icon' => 'fa-layer-group',  'label' => 'Kabin Grupları',   'match' => 'admin.cabin-groups'],
+        ['route' => 'admin.ports.index',            'icon' => 'fa-anchor',       'label' => 'Limanlar',         'match' => 'admin.ports'],
+        ['route' => 'admin.destinations.index',     'icon' => 'fa-map-marked-alt','label' => 'Destinasyonlar',  'match' => 'admin.destinations'],
     ] : [];
 
     $navItems = [
@@ -77,10 +90,27 @@
 <div class="my-3 border-t border-gray-200"></div>
 <div class="px-3 pt-2 pb-1">
     <span class="text-[10px] font-semibold text-amber-500 uppercase tracking-wider" x-show="sidebarOpen" x-transition>
-        <i class="fas fa-ship mr-0.5"></i> Turizm
+        <i class="fas fa-route mr-0.5"></i> Turizm
     </span>
 </div>
 @foreach($toursItems as $item)
+    <a href="{{ route($item['route']) }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
+        <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
+        <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
+    </a>
+@endforeach
+@endif
+
+<!-- Cruise Yönetimi (Phase 1.5.d — ship/cabin/port/destination master CRUD'ları) -->
+@if(!empty($cruiseItems))
+<div class="my-2 border-t border-gray-100"></div>
+<div class="px-3 pt-1 pb-1">
+    <span class="text-[10px] font-semibold text-blue-500 uppercase tracking-wider" x-show="sidebarOpen" x-transition>
+        <i class="fas fa-ship mr-0.5"></i> Cruise Yönetimi
+    </span>
+</div>
+@foreach($cruiseItems as $item)
     <a href="{{ route($item['route']) }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
         <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
