@@ -113,6 +113,29 @@ class ModuleRegistry
     }
 
     /**
+     * Seeder class names to run after the module's migrations.  Returns
+     * empty array when the module has no seeders configured.
+     *
+     * Seeders are run inside the tenant context after migrations have
+     * applied — see ModuleManager::install().
+     *
+     * @return array<int, class-string>
+     */
+    public function seeders(string $module): array
+    {
+        $list = $this->definition($module)['seeders'] ?? [];
+
+        if (! is_array($list)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $list,
+            fn ($entry) => is_string($entry) && class_exists($entry),
+        ));
+    }
+
+    /**
      * Direct prerequisite modules (does NOT recurse).
      *
      * @return array<int, string>

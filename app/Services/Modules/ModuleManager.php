@@ -57,6 +57,8 @@ class ModuleManager
                 // Still re-run migrations to catch newly-added files
                 // for previously-installed modules.  No-op if up-to-date.
                 $this->runMigrations($tenant, $slug, rollback: false);
+                // Re-run seeders too (idempotent — updateOrCreate-based)
+                $this->runSeeders($tenant, $slug);
                 continue;
             }
 
@@ -65,6 +67,7 @@ class ModuleManager
             $newlyAdded[] = $slug;
 
             $this->runMigrations($tenant, $slug, rollback: false);
+            $this->runSeeders($tenant, $slug);
 
             Log::info('ModuleManager: module installed', [
                 'tenant' => $tenant->getTenantKey(),
@@ -73,6 +76,51 @@ class ModuleManager
         }
 
         return $newlyAdded;
+    }
+
+    /**
+     * Run the module's seeders inside the tenant context.  Idempotent —
+     * seeders must use updateOrCreate (or similar) so re-running on an
+     * existing tenant doesn't duplicate.
+     *
+     * Called automatically by install() after migrations succeed.  Can
+     * also be invoked manually via the tenant:module:seed artisan command
+     * (Phase 1.5.b follow-up).
+     */
+    public function runSeeders(Tenant $tenant, string $module): void
+    {
+        $seeders = $this->registry->seeders($module);
+
+        if ($seeders === []) {
+            return;
+        }
+
+        // Run each seeder inside the tenant's DB connection context.
+        // tenancy()->run() initialises the tenant connection for the
+        // closure's duration, then reverts.
+        tenancy()->run($tenant, function () use ($seeders, $tenant, $module) {
+            foreach ($seeders as $seederClass) {
+                try {
+                    /** @var \Illuminate\Database\Seeder $seeder */
+                    $seeder = app($seederClass);
+                    $seeder->run();
+
+                    Log::info('ModuleManager: seeder ran', [
+                        'tenant' => $tenant->getTenantKey(),
+                        'module' => $module,
+                        'seeder' => $seederClass,
+                    ]);
+                } catch (Throwable $e) {
+                    Log::error('ModuleManager: seeder failed', [
+                        'tenant' => $tenant->getTenantKey(),
+                        'module' => $module,
+                        'seeder' => $seederClass,
+                        'error'  => $e->getMessage(),
+                    ]);
+                    throw $e;
+                }
+            }
+        });
     }
 
     /**

@@ -71,6 +71,12 @@ return [
             'description'      => 'Tur kataloğu, departure takvimi, rezervasyon ve voucher yönetimi. Cruise gemisi, çoklu-günlük paket tur ve günlük tur tek modülde alt-tip olarak modellenir.',
             'service_provider' => \App\Modules\Tours\Providers\ToursModuleServiceProvider::class,
             'migrations_path'  => 'app/Modules/Tours/Database/migrations',
+            // Seeders ModuleManager::install() pipeline'ında migration'lardan sonra çalıştırılır.
+            // Her seeder bir kez düşer (updateOrCreate ile idempotent), re-install güvenli.
+            'seeders'          => [
+                \App\Modules\Tours\Database\Seeders\CabinCategorySeeder::class,
+                \App\Modules\Tours\Database\Seeders\TourTagSeeder::class,
+            ],
             'requires'         => ['payments'],
             'user_installable' => true,
         ],
