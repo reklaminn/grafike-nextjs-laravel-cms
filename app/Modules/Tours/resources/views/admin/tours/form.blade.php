@@ -532,7 +532,7 @@
                     <i class="fas fa-code text-purple-500 mr-1"></i> Structured Data JSON-LD (advanced)
                 </summary>
                 <textarea name="structured_data_json" rows="8"
-                          placeholder='{"@context":"https://schema.org","@type":"TouristTrip","name":"..."}'
+                          placeholder='{"@@context":"https://schema.org","@@type":"TouristTrip","name":"..."}'
                           class="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg text-xs font-mono">{{ old('structured_data_json', $structuredJson) }}</textarea>
             </details>
         </div>
