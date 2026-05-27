@@ -82,7 +82,15 @@
                             <td class="px-3 py-2 text-xs font-mono text-gray-500">
                                 {{ strtoupper($p->id_type) }}: {{ $p->id_number ?? '—' }}
                             </td>
-                            <td class="px-3 py-2 text-xs text-gray-600">{{ $p->cabinType?->name ?? '—' }}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">
+                                {{-- Phase 1.5.b: cabin master + category translation --}}
+                                @php
+                                    $cabin = $p->cabin;
+                                    $cabinName = $cabin?->translations->first()?->name
+                                        ?? $cabin?->category?->translations?->first()?->name;
+                                @endphp
+                                {{ $cabinName ?? '—' }}
+                            </td>
                             <td class="px-3 py-2 text-right text-gray-700">
                                 {{ number_format($p->price / 100, 2, ',', '.') }} {{ $booking->currency }}
                             </td>

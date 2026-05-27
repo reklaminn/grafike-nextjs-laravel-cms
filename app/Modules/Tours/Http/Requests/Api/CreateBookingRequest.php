@@ -48,7 +48,11 @@ class CreateBookingRequest extends FormRequest
             'passengers.*.nationality'  => ['nullable', 'string', 'max:3'],
             'passengers.*.date_of_birth' => ['nullable', 'date'],
             'passengers.*.gender'       => ['nullable', Rule::in(['male', 'female', 'other'])],
-            'passengers.*.cabin_type_id' => ['nullable', 'integer', 'exists:tour_cabin_types,id'],
+            // Phase 1.5: cabin_id references new Cabin model (per-ship master).
+            // cabin_type_id legacy key tolerated by toDraft() for backward compat.
+            'passengers.*.cabin_id'      => ['nullable', 'integer', 'exists:cabins,id'],
+            'passengers.*.cabin_type_id' => ['nullable', 'integer'],   // legacy ignore
+
             'passengers.*.is_lead'      => ['nullable', 'boolean'],
             'passengers.*.notes'        => ['nullable', 'string', 'max:500'],
 
@@ -80,7 +84,7 @@ class CreateBookingRequest extends FormRequest
                 nationality:  $p['nationality']    ?? null,
                 dateOfBirth:  $p['date_of_birth']  ?? null,
                 gender:       $p['gender']         ?? null,
-                cabinTypeId:  $p['cabin_type_id']  ?? null,
+                cabinId:      $p['cabin_id']       ?? ($p['cabin_type_id'] ?? null),  // backward-compat key
                 isLead:       (bool) ($p['is_lead'] ?? false),
                 notes:        $p['notes']          ?? null,
             ))->all();

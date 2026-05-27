@@ -28,12 +28,14 @@ class BookingManifestExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection(): \Illuminate\Support\Collection
     {
+        // Phase 1.5.b: cabinType / priceTier relation'ları kaldırıldı.
+        // Yeni: cabin (Cabin master + category translation).
         return BookingPassenger::query()
             ->whereHas('booking', function ($q) {
                 $q->where('tour_date_id', $this->tourDate->id)
                   ->whereIn('status', ['reserved', 'confirmed', 'completed']);
             })
-            ->with(['booking', 'cabinType', 'priceTier'])
+            ->with(['booking', 'cabin.category.translations', 'cabin.translations'])
             ->orderBy('booking_id')
             ->orderByDesc('is_lead')
             ->get();
@@ -51,6 +53,12 @@ class BookingManifestExport implements FromCollection, WithHeadings, WithMapping
 
     public function map($passenger): array
     {
+        // Cabin display: prefer specific cabin name → fallback to category
+        // (e.g. "Junior Suite Deck 7" or just "Suite")
+        $cabinName = $passenger->cabin?->translations->first()?->name
+            ?? $passenger->cabin?->category?->translations?->first()?->name
+            ?? '—';
+
         return [
             $passenger->booking?->booking_ref,
             $passenger->booking?->status?->value,
@@ -62,7 +70,7 @@ class BookingManifestExport implements FromCollection, WithHeadings, WithMapping
             $passenger->id_type,
             $passenger->id_number,
             $passenger->nationality,
-            $passenger->cabinType?->name,
+            $cabinName,
             $passenger->price,
             $passenger->is_lead ? 'Lead' : '',
             $passenger->notes,

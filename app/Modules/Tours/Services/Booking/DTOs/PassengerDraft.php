@@ -9,6 +9,9 @@ use App\Modules\Tours\Enums\PassengerType;
 /**
  * Input shape for one passenger on a booking draft, sent by the
  * frontend wizard (Phase 4) or accepted via the public BookingController.
+ *
+ * Phase 1.5.b rename: cabinTypeId → cabinId (Phase 1'in TourCabinType
+ * modeli drop edildi, yerine yeni Cabin master model geçti).
  */
 final class PassengerDraft
 {
@@ -21,7 +24,7 @@ final class PassengerDraft
         public readonly ?string $nationality,
         public readonly ?string $dateOfBirth,     // YYYY-MM-DD
         public readonly ?string $gender,
-        public readonly ?int $cabinTypeId,        // cruise only; null otherwise
+        public readonly ?int $cabinId,            // cruise only; null otherwise (FK to cabins)
         public readonly bool $isLead = false,
         public readonly ?string $notes = null,
     ) {

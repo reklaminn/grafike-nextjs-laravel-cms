@@ -95,7 +95,9 @@ class TourController extends Controller
 
     public function edit(Tour $tour): View
     {
-        $tour->load(['translations', 'cabinTypes', 'dates']);
+        // Phase 1.5.b: Tour.cabinTypes relation kaldırıldı.
+        // Yeni model: Tour.ship.cabins (master cabin Phase 1.5.a)
+        $tour->load(['translations', 'ship.cabins.category', 'dates', 'priceGroups']);
 
         $languages  = Language::active()->orderBy('sort_order')->get();
         $categories = TourCategory::query()->with('translations')->orderBy('sort_order')->get();

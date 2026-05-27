@@ -63,9 +63,10 @@ class BookingController extends Controller
 
     public function show(Booking $booking): View
     {
+        // Phase 1.5.b: passengers.cabinType → cabin (master Cabin model)
         $booking->load([
             'tourDate.tour.translations',
-            'passengers.cabinType',
+            'passengers.cabin.category',
             'extras.tourExtra',
             'refunds',
             'member',

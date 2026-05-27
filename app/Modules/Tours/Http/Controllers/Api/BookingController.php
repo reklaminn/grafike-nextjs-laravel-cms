@@ -46,8 +46,11 @@ class BookingController extends Controller
         try {
             $draft = $request->toDraft();
 
+            // Phase 1.5.b: Tour.priceTiers / cabinTypes relation'ları kaldırıldı.
+            // QuoteService kendi içinde priceGroup'u resolve eder, sadece
+            // ship.cabins eager-load yeterli (matrix lookup'ı için).
             /** @var TourDate $date */
-            $date = TourDate::with('tour.priceTiers', 'tour.cabinTypes')
+            $date = TourDate::with('tour.ship.cabins')
                 ->findOrFail($draft->tourDateId);
 
             $quote = $this->quotes->compute($date->tour, $date, $draft);

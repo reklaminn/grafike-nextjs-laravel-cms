@@ -27,7 +27,11 @@ use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
  *   - Translations live in `tour_translations` (one row per language).
  *   - Departures live in `tour_dates` (capacity decremented atomically
  *     under DB lock by CapacityLockService in Phase 2).
- *   - Cabin types only meaningful for cruises; query via $tour->cabinTypes.
+ *   - Cabin master moved to per-ship Cabin model (Phase 1.5.a refactor).
+ *     Cruise tours reference Ship via tour.ship_id (Phase 1.5.c) and
+ *     query cabins via $tour->ship->cabins.
+ *   - Pricing uses TourPriceGroup → TourCabinPrice matrix (Phase 1.5.b).
+ *     Old TourPriceTier model dropped.
  *
  * Spatie integrations:
  *   - HasMedia / InteractsWithMedia — gallery, cover, brochure PDF on R2

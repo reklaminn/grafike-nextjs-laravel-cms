@@ -118,10 +118,10 @@ class QuoteService
         // Cruise tours: every passenger must pick a cabin
         // Non-cruise: passengers should NOT have a cabin (data hygiene)
         foreach ($draft->passengers as $idx => $passenger) {
-            if ($tour->isCruise() && $passenger->cabinTypeId === null) {
+            if ($tour->isCruise() && $passenger->cabinId === null) {
                 $errors[] = 'Yolcu #' . ($idx + 1) . ' için kabin seçimi zorunlu (cruise).';
             }
-            if (! $tour->isCruise() && $passenger->cabinTypeId !== null) {
+            if (! $tour->isCruise() && $passenger->cabinId !== null) {
                 $errors[] = 'Yolcu #' . ($idx + 1) . ' için kabin seçilemez (paket/günlük tur).';
             }
         }
@@ -178,7 +178,7 @@ class QuoteService
         if ($tour->isCruise()) {
             // Cruise: passengers grouped by cabin_id
             $byCabin = collect($draft->passengers)
-                ->groupBy(fn (PassengerDraft $p) => (int) $p->cabinTypeId);
+                ->groupBy(fn (PassengerDraft $p) => (int) $p->cabinId);
 
             foreach ($byCabin as $cabinId => $passengers) {
                 $cabinPrice = $priceGroup->priceForCabin($cabinId);

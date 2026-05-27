@@ -64,8 +64,12 @@ class BookingService
      */
     public function createReservation(BookingDraft $draft): Booking
     {
+        // Phase 1.5.b: Tour.priceTiers / cabinTypes relation'ları kaldırıldı.
+        // Yeni model: priceGroups (TourPriceGroup) + Ship.cabins (via ship).
+        // QuoteService kendi içinde TourPriceGroup'u resolve ettiği için
+        // burada sadece tour'u eager-load etmek yeterli.
         /** @var TourDate $date */
-        $date = TourDate::with('tour.priceTiers', 'tour.cabinTypes')
+        $date = TourDate::with('tour.ship.cabins')
             ->findOrFail($draft->tourDateId);
         $tour = $date->tour;
 
@@ -107,21 +111,24 @@ class BookingService
                         fn ($l) => $l->kind === 'passenger' && ($l->meta['passenger_idx'] ?? null) === $idx
                     );
 
+                    // Phase 1.5.b: BookingPassenger FK refactor —
+                    //   tour_cabin_type_id → cabin_id (FK to new Cabin master)
+                    //   price_tier_id      → tour_cabin_price_id (audit snapshot)
                     BookingPassenger::create([
-                        'booking_id'         => $booking->id,
-                        'passenger_type'     => $p->type->value,
-                        'first_name'         => $p->firstName,
-                        'last_name'          => $p->lastName,
-                        'id_type'            => $p->idType,
-                        'id_number'          => $p->idNumber,
-                        'nationality'        => $p->nationality,
-                        'date_of_birth'      => $p->dateOfBirth,
-                        'gender'             => $p->gender,
-                        'tour_cabin_type_id' => $p->cabinTypeId,
-                        'is_lead'            => $p->isLead,
-                        'price_tier_id'      => $line?->meta['tier_id'] ?? null,
-                        'price'              => $line?->subtotal ?? 0,
-                        'notes'              => $p->notes,
+                        'booking_id'          => $booking->id,
+                        'passenger_type'      => $p->type->value,
+                        'first_name'          => $p->firstName,
+                        'last_name'           => $p->lastName,
+                        'id_type'             => $p->idType,
+                        'id_number'           => $p->idNumber,
+                        'nationality'         => $p->nationality,
+                        'date_of_birth'       => $p->dateOfBirth,
+                        'gender'              => $p->gender,
+                        'cabin_id'            => $p->cabinId,
+                        'is_lead'             => $p->isLead,
+                        'tour_cabin_price_id' => $line?->meta['tour_cabin_price_id'] ?? null,
+                        'price'               => $line?->subtotal ?? 0,
+                        'notes'               => $p->notes,
                     ]);
                 }
 
