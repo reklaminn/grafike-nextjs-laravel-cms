@@ -577,12 +577,15 @@
             </h2>
 
             {{-- Cover --}}
+            @php
+                $coverUrl = $tour->exists ? $tour->getFirstMediaUrl('cover') : null;
+                $coverMedia = $tour->exists ? $tour->getFirstMedia('cover') : null;
+            @endphp
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Kapak Görseli (tek dosya)</label>
-                @if($tour->exists && ($coverUrl = $tour->getFirstMediaUrl('cover')))
+                @if($coverUrl)
                     <div class="relative inline-block mb-2">
                         <img src="{{ $coverUrl }}" alt="cover" class="h-32 rounded border border-gray-200">
-                        @php $coverMedia = $tour->getFirstMedia('cover'); @endphp
                         @if($coverMedia)
                             <form action="{{ route('admin.tours.media.delete', ['tour' => $tour, 'mediaId' => $coverMedia->id]) }}"
                                   method="POST" class="absolute top-1 right-1"
@@ -624,9 +627,12 @@
             </div>
 
             {{-- Brochure --}}
+            @php
+                $brochure = $tour->exists ? $tour->getFirstMedia('brochure') : null;
+            @endphp
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Broşür PDF (tek dosya)</label>
-                @if($tour->exists && ($brochure = $tour->getFirstMedia('brochure')))
+                @if($brochure)
                     <div class="flex items-center gap-2 mb-2">
                         <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
                         <a href="{{ $brochure->getUrl() }}" target="_blank" class="text-sm text-indigo-600 underline">{{ $brochure->name }}</a>
