@@ -95,10 +95,21 @@ class ModuleManager
             return;
         }
 
-        // Run each seeder inside the tenant's DB connection context.
-        // tenancy()->run() initialises the tenant connection for the
-        // closure's duration, then reverts.
-        tenancy()->run($tenant, function () use ($seeders, $tenant, $module) {
+        // Stancl/tenancy v3 API: no tenancy()->run() helper exists
+        // (added in v4).  Use manual initialize()/end() with try/finally
+        // to guarantee the connection is restored even on exception.
+        $wasInitialized   = tenancy()->initialized ?? false;
+        $previousTenantId = tenancy()->tenant?->getTenantKey();
+        $needSwitch       = ! $wasInitialized || $previousTenantId !== $tenant->getTenantKey();
+
+        if ($needSwitch) {
+            if ($wasInitialized) {
+                tenancy()->end();
+            }
+            tenancy()->initialize($tenant);
+        }
+
+        try {
             foreach ($seeders as $seederClass) {
                 try {
                     /** @var \Illuminate\Database\Seeder $seeder */
@@ -120,7 +131,18 @@ class ModuleManager
                     throw $e;
                 }
             }
-        });
+        } finally {
+            if ($needSwitch) {
+                tenancy()->end();
+                // Restore previous context if there was one
+                if ($wasInitialized && $previousTenantId !== null) {
+                    $previousTenant = \App\Models\Tenant::query()->find($previousTenantId);
+                    if ($previousTenant) {
+                        tenancy()->initialize($previousTenant);
+                    }
+                }
+            }
+        }
     }
 
     /**
