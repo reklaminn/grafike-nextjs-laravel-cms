@@ -119,6 +119,17 @@
                 </select>
                 <p class="text-xs text-gray-400 mt-1">Seçilirse migration sonrası hazır sayfalar ve menü otomatik oluşturulur.</p>
             </div>
+
+            {{-- Module hint — shown when chosen industry typically pairs
+                 with a vertical module (Turizm → Tours, E-Ticaret → Commerce).
+                 Pure suggestion: actual module activation happens via the
+                 Modüller panel on the tenant's detail page after creation. --}}
+            <div id="module-hint" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                <i class="fas fa-lightbulb mr-1"></i>
+                <span id="module-hint-text"></span>
+                Site oluşturulduktan sonra <strong>Site detay → Modüller</strong> panelinden
+                tek tıkla etkinleştirebilirsiniz.
+            </div>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
@@ -198,13 +209,27 @@ document.getElementById('slug').addEventListener('input', function () {
     document.getElementById('db-preview').textContent = 'tenant_' + (this.value || '…');
 });
 
-// Industry → Site Template cascade
-const templatesByIndustry = @json($templatesByIndustry);
+// Industry → Site Template cascade + Module hint
+const templatesByIndustry  = @json($templatesByIndustry);
+const industryModuleHints  = @json($industryModuleHints);
+const moduleLabels         = { tours: 'Turizm (Tours)', commerce: 'E-Ticaret (Commerce)' };
 
 document.getElementById('industry-select').addEventListener('change', function () {
-    const industry  = this.value;
-    const wrapper   = document.getElementById('template-wrapper');
-    const tplSelect = document.getElementById('template-select');
+    const industry   = this.value;
+    const wrapper    = document.getElementById('template-wrapper');
+    const tplSelect  = document.getElementById('template-select');
+    const hintBox    = document.getElementById('module-hint');
+    const hintText   = document.getElementById('module-hint-text');
+
+    // Module hint banner (independent of template availability)
+    const hints = industry ? (industryModuleHints[industry] || []) : [];
+    if (hints.length > 0) {
+        const pretty = hints.map(s => moduleLabels[s] || s).join(' + ');
+        hintText.textContent = `Bu sektör genellikle ${pretty} modülü ile birlikte kullanılır.`;
+        hintBox.classList.remove('hidden');
+    } else {
+        hintBox.classList.add('hidden');
+    }
 
     // Clear current options
     tplSelect.innerHTML = '<option value="">Şablon seç (opsiyonel)</option>';

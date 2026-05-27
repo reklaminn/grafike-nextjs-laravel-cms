@@ -70,8 +70,14 @@ class TenantController extends Controller
             ->map(fn ($group) => $group->values())
             ->toArray();
 
+        // Map industry → suggested vertical modules.  JS uses this to
+        // show a hint banner so the admin knows that picking "Turizm"
+        // typically pairs with the Tours module (which still needs to
+        // be enabled via the Modüller panel after creation).
+        $industryModuleHints = SiteTemplate::INDUSTRY_MODULE_HINTS;
+
         return view('admin.tenants.create', compact(
-            'themes', 'plans', 'industries', 'templatesByIndustry'
+            'themes', 'plans', 'industries', 'templatesByIndustry', 'industryModuleHints'
         ));
     }
 

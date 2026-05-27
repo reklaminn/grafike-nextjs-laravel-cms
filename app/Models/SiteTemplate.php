@@ -37,14 +37,36 @@ class SiteTemplate extends Model
     /**
      * Canonical industry codes used by the gallery + seeders. Free-text
      * values still work but the UI groups by these.
+     *
+     * Industry vs. vertical modules:
+     *   - `industry` is content-flavour (drives AI templates + site_template
+     *     seed selection).  A "tourism" tenant gets travel-themed page
+     *     templates by default.
+     *   - `tours` / `commerce` are vertical modules — separate transactional
+     *     features (booking engine, cart, payments).  An admin still has
+     *     to enable them via the tenant's "Modüller" panel.
+     *   Industry suggests modules but does not auto-activate them.
      */
     public const INDUSTRIES = [
         'clinic'      => 'Klinik / Sağlık',
         'lawyer'      => 'Avukat / Hukuk',
         'salon'       => 'Güzellik Salonu / Berber',
         'hotel'       => 'Otel / Konaklama',
+        'tourism'     => 'Turizm / Tur Acentesi',
+        'ecommerce'   => 'E-Ticaret',
         'real_estate' => 'Emlak',
         'corporate'   => 'Genel Kurumsal',
+    ];
+
+    /**
+     * Hint which vertical modules typically pair with each industry.
+     * Surfaced in the admin UI as "Turizm seçtin — Tours modülünü de
+     * etkinleştirmek ister misin?" guidance, without auto-activating.
+     */
+    public const INDUSTRY_MODULE_HINTS = [
+        'tourism'   => ['tours'],
+        'hotel'     => ['tours'],     // package + daily tours common
+        'ecommerce' => ['commerce'],
     ];
 
     public function theme()
