@@ -12,6 +12,14 @@
 </div>
 
 @if(session('success'))<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{{ session('success') }}</div>@endif
+@if(session('error'))<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{{ session('error') }}</div>@endif
+
+<div class="flex justify-end mb-4">
+    <a href="{{ route('admin.library.import.form') }}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">
+        <i class="fas fa-file-arrow-up"></i> Kütüphaneye Veri Yükle (CSV/Excel)
+    </a>
+</div>
 
 @php
     $cards = [

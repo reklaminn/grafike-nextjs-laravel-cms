@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\DesignController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\IndustryTemplateController;
 use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\Library\LegacyImportController;
 use App\Http\Controllers\Admin\Library\LibraryHubController;
 use App\Http\Controllers\Admin\Library\LibraryPortController;
 use App\Http\Controllers\Admin\Library\LibraryShipCompanyController;
@@ -207,6 +208,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Super-admin global gemi/liman/destinasyon master'larını yönetir;
             // tenant'lar bu kütüphaneyi değiştiremez, sadece import eder.
             Route::get('library', [LibraryHubController::class, 'index'])->name('library.index');
+            // Upload-tabanlı legacy import (CSV/XLSX → kolon eşle → library_*)
+            Route::get ('library/import',         [LegacyImportController::class, 'form'])   ->name('library.import.form');
+            Route::post('library/import/preview', [LegacyImportController::class, 'preview'])->name('library.import.preview');
+            Route::post('library/import/run',     [LegacyImportController::class, 'run'])    ->name('library.import.run');
             Route::resource('library/ship-companies', LibraryShipCompanyController::class)
                 ->except('show')
                 ->parameters(['ship-companies' => 'shipCompany'])
