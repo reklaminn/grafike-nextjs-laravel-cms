@@ -87,14 +87,59 @@
 
     {{-- ═══ Tab 1: Genel Bilgiler ═══════════════════════════════════════ --}}
     <div x-show="activeTab === 1" x-cloak class="space-y-6">
+
+        @include('tours::admin.partials._help', [
+            'title' => 'Genel bilgiler nasıl doldurulur?',
+            'intro' => 'Bu sekme turun temel kimliği. Aşağıdaki sırayla ilerleyin:',
+            'steps' => [
+                '<strong>Başlık</strong>: Turun adını her dil için yazın (en üstte).',
+                '<strong>Tip</strong>: Cruise / Paket / Günlük / Feribot. Cruise seçerseniz <strong>Gemi</strong> alanı zorunlu olur.',
+                '<strong>Slug</strong>: URL için kısa ad (otomatik değil, elle girin — örn. <code>bodrum-cruise-7-gun</code>).',
+                'Sağdaki <strong>Fiyatlandırma</strong> kartından temel fiyat + para birimi + satış durumunu seçin.',
+                'Etiketler ve ek kategoriler isteğe bağlı — frontend filtre menüsünü besler.',
+            ],
+            'note' => 'Tur kaydedildikten sonra Rota, Fiyat Grupları ve Tarihler sekmeleri aktif olur.',
+        ])
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {{-- LEFT col --}}
             <div class="lg:col-span-2 space-y-6">
 
+                {{-- Başlık + alt başlık — turun en kritik alanı, en üstte --}}
                 <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
                     <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                        <i class="fas fa-id-card text-indigo-500"></i> Kimlik
+                        <i class="fas fa-heading text-indigo-500"></i> Tur Başlığı
+                        <span class="text-gray-400 cursor-help" title="Her aktif dil için ayrı başlık girin. Liste, kart ve detay sayfasında görünür. En az bir dilde başlık zorunludur.">
+                            <i class="fas fa-circle-question text-xs"></i>
+                        </span>
+                    </h2>
+                    @foreach($languages as $i => $lang)
+                        @php $trH = $translations[$lang->id] ?? null; @endphp
+                        <div class="border border-gray-200 rounded-lg p-3 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] uppercase font-semibold text-gray-500">{{ $lang->name }}</span>
+                                <span class="text-[10px] font-mono text-gray-400">{{ $lang->code }}</span>
+                            </div>
+                            <input type="hidden" name="translations[{{ $i }}][language_id]" value="{{ $lang->id }}">
+                            <input type="text" name="translations[{{ $i }}][title]" required
+                                   value="{{ old("translations.$i.title", $trH->title ?? '') }}"
+                                   placeholder="Tur başlığı * (örn. MSC Akdeniz 7 Gece)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium">
+                            <input type="text" name="translations[{{ $i }}][subtitle]"
+                                   value="{{ old("translations.$i.subtitle", $trH->subtitle ?? '') }}"
+                                   placeholder="Alt başlık (opsiyonel — örn. Erken rezervasyon avantajıyla)"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    @endforeach
+                    <p class="text-xs text-gray-400">
+                        Uzun açıklamalar (kısa açıklama, detay, öne çıkanlar) <strong>5. Açıklamalar</strong> sekmesinde.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-id-card text-indigo-500"></i> Kimlik & Sınıflandırma
                     </h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -261,7 +306,12 @@
                     </h2>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fiyatlama Modu</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Fiyatlama Modu
+                            <span class="text-gray-400 cursor-help" title="Kişi başı: her yolcuya fiyat. Grup: belirli kişi sayısına paket fiyat. Rezervasyon: kabin/tur başına tek fiyat (kişi sayısından bağımsız).">
+                                <i class="fas fa-circle-question text-xs"></i>
+                            </span>
+                        </label>
                         <select name="pricing_mode" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             @foreach($pricingModes as $m)
                                 <option value="{{ $m->value }}" {{ old('pricing_mode', $tour->pricing_mode?->value) === $m->value ? 'selected' : '' }}
@@ -273,7 +323,12 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Satış Durumu</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Satış Durumu
+                            <span class="text-gray-400 cursor-help" title="Online ödeme / iletişimle satış / konaklamalı-konaklamasız teklif / sadece bilgi. Frontend'deki 'Rezervasyon Yap' butonunun davranışını belirler.">
+                                <i class="fas fa-circle-question text-xs"></i>
+                            </span>
+                        </label>
                         <select name="sales_status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             @foreach($salesStatuses as $s)
                                 <option value="{{ $s->value }}" {{ old('sales_status', $tour->sales_status?->value) === $s->value ? 'selected' : '' }}>
@@ -334,6 +389,20 @@
 
     {{-- ═══ Tab 2: Rota Takvimi ═════════════════════════════════════════ --}}
     <div x-show="activeTab === 2" x-cloak class="space-y-6">
+
+        @include('tours::admin.partials._help', [
+            'title' => 'Rota takvimi nasıl oluşturulur?',
+            'intro' => 'Rota = gün gün gezi programı (Gün 1, Gün 2, …). Cruise & paket turlar için, günlük turda gerekmez.',
+            'steps' => [
+                'Önce turu <strong>kaydedin</strong> — rota turun üstüne eklenir.',
+                'Her dil için ayrı bir <strong>rota başlığı</strong> tanımlanabilir (TR / EN farklı anlatım).',
+                'Gün ekleyin: <strong>Gün 1</strong>, <strong>Gün 2</strong> … sırayla.',
+                'Her güne <strong>liman / şehir</strong> + varış-kalkış saati atayın (cruise için kritik).',
+                'Aynı limanda birden çok gece olursa art arda günlere aynı limanı yazın (1,1,1,2,3,3 deseni).',
+            ],
+            'note' => 'Gün-içi çoklu liman (multi-stop) editörü bir sonraki sürümde (1.5.f) gelecek. Şu an gün-bazlı özet gösteriliyor.',
+        ])
+
         <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
             <h2 class="font-semibold text-gray-700 flex items-center gap-2">
                 <i class="fas fa-route text-indigo-500"></i> Rota & Günler
@@ -441,6 +510,18 @@
 
     {{-- ═══ Tab 4: Tarih & Fiyatlar ═════════════════════════════════════ --}}
     <div x-show="activeTab === 4" x-cloak class="space-y-6">
+
+        @include('tours::admin.partials._help', [
+            'title' => 'Departure tarihleri ile fiyat grupları nasıl bağlanır?',
+            'intro' => 'Departure = turun gerçekleştiği somut kalkış tarihi. Her tarihin kendi kapasitesi var.',
+            'steps' => [
+                '<strong>Tarih Yönetimi</strong>\'ne gidip kalkış/dönüş tarihi + kapasite girin.',
+                'Sonra <strong>3. Genel Fiyatlar</strong> sekmesinde bir fiyat grubu oluşturun.',
+                'Fiyat grubunu bu tarihlere atayın — böylece o tarihte hangi fiyatın geçerli olduğu belli olur.',
+                'Bir tarihe birden çok grup atanabilir (örn. erken rezervasyon + standart); öncelik sırasını grup sort_order belirler.',
+            ],
+        ])
+
         <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
             <h2 class="font-semibold text-gray-700 flex items-center gap-2">
                 <i class="fas fa-calendar-alt text-indigo-500"></i> Departure Tarihleri
@@ -481,9 +562,22 @@
 
     {{-- ═══ Tab 5: Açıklamalar (Translations) ═══════════════════════════ --}}
     <div x-show="activeTab === 5" x-cloak class="space-y-6">
+
+        @include('tours::admin.partials._help', [
+            'title' => 'Açıklama alanları ne işe yarar?',
+            'intro' => 'Turun pazarlama metinleri. Başlık 1. sekmede; burada uzun içerik var:',
+            'steps' => [
+                '<strong>Kısa açıklama</strong>: Liste/kart üzerinde görünen 1-2 cümle.',
+                '<strong>Detaylı açıklama</strong>: Tur detay sayfasının ana metni (HTML destekli).',
+                '<strong>Öne çıkanlar</strong>: Madde madde özellikler (her satır bir madde).',
+                '<strong>Önemli bilgi</strong>: Yaş limiti, sağlık şartı, vize uyarısı gibi notlar.',
+            ],
+            'note' => 'Her dil için ayrı doldurun. Boş bırakılan diller frontend\'de gizlenir.',
+        ])
+
         <div class="bg-white rounded-xl shadow-sm border p-5 space-y-5">
             <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                <i class="fas fa-language text-indigo-500"></i> İçerik (Çeviriler)
+                <i class="fas fa-align-left text-indigo-500"></i> İçerik Metinleri
             </h2>
 
             @foreach($languages as $i => $lang)
@@ -494,33 +588,39 @@
                         <span class="text-[10px] font-mono text-gray-400">{{ $lang->code }}</span>
                     </div>
 
-                    <input type="hidden" name="translations[{{ $i }}][language_id]" value="{{ $lang->id }}">
-
-                    <input type="text" name="translations[{{ $i }}][title]" required
-                           value="{{ old("translations.$i.title", $tr->title ?? '') }}"
-                           placeholder="Başlık *"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium">
-
-                    <input type="text" name="translations[{{ $i }}][subtitle]"
-                           value="{{ old("translations.$i.subtitle", $tr->subtitle ?? '') }}"
-                           placeholder="Alt başlık"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-
+                    <label class="block text-xs font-medium text-gray-600">
+                        Kısa açıklama
+                        <span class="text-gray-400 cursor-help" title="Liste ve kart görünümünde gösterilir. 1-2 cümle, max ~160 karakter ideal.">
+                            <i class="fas fa-circle-question"></i>
+                        </span>
+                    </label>
                     <textarea name="translations[{{ $i }}][short_description]" rows="2"
-                              placeholder="Kısa açıklama (kart üzerinde)"
+                              placeholder="Kart üzerinde görünen kısa tanıtım"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.short_description", $tr->short_description ?? '') }}</textarea>
 
+                    <label class="block text-xs font-medium text-gray-600">
+                        Detaylı açıklama
+                        <span class="text-gray-400 cursor-help" title="Tur detay sayfasının ana gövdesi. HTML etiketleri kullanılabilir.">
+                            <i class="fas fa-circle-question"></i>
+                        </span>
+                    </label>
                     <textarea name="translations[{{ $i }}][description]" rows="6"
                               placeholder="Detaylı açıklama (HTML destekli)"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.description", $tr->description ?? '') }}</textarea>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <textarea name="translations[{{ $i }}][highlights]" rows="4"
-                                  placeholder="Öne çıkan özellikler (madde listesi)"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.highlights", $tr->highlights ?? '') }}</textarea>
-                        <textarea name="translations[{{ $i }}][important_info]" rows="4"
-                                  placeholder="Önemli bilgi (yaş limiti, sağlık şartları)"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.important_info", $tr->important_info ?? '') }}</textarea>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Öne çıkanlar</label>
+                            <textarea name="translations[{{ $i }}][highlights]" rows="4"
+                                      placeholder="Her satır bir madde&#10;Örn: Tüm öğünler dahil&#10;Limanlarda rehberli tur"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.highlights", $tr->highlights ?? '') }}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Önemli bilgi</label>
+                            <textarea name="translations[{{ $i }}][important_info]" rows="4"
+                                      placeholder="Yaş limiti, sağlık şartları, vize uyarısı"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs">{{ old("translations.$i.important_info", $tr->important_info ?? '') }}</textarea>
+                        </div>
                     </div>
                 </div>
             @endforeach
@@ -541,8 +641,8 @@
                         <span class="text-xs uppercase font-semibold text-gray-500">{{ $lang->name }}</span>
                         <span class="text-[10px] font-mono text-gray-400">{{ $lang->code }}</span>
                     </div>
-                    {{-- Re-emit hidden language_id for SEO tab inputs to nest under same translations[$i] payload --}}
-                    {{-- (Tab 5'te zaten language_id var; HTML duplicate field overrides aynı değere — sorun yok.) --}}
+                    {{-- language_id Tab 1 başlık bloğunda emit ediliyor; aynı $i index'i
+                         tüm sekmelerde translations[$i] payload'unu tek array'de birleştirir. --}}
                     <input type="text" name="translations[{{ $i }}][meta_title]"
                            value="{{ old("translations.$i.meta_title", $tr->meta_title ?? '') }}"
                            placeholder="Meta title (60 karakter altı önerilir)"
@@ -570,6 +670,18 @@
 
     {{-- ═══ Tab 7: Harita & Destinasyonlar ══════════════════════════════ --}}
     <div x-show="activeTab === 7" x-cloak class="space-y-6">
+
+        @include('tours::admin.partials._help', [
+            'title' => 'Destinasyon seçimi ne için?',
+            'intro' => 'Destinasyon = turun coğrafi kapsamı (Akdeniz, Yunan Adaları, Karayipler).',
+            'steps' => [
+                'Turun uğradığı bölgeleri işaretleyin — bir tur birden çok destinasyona ait olabilir.',
+                'Frontend\'de bölge landing sayfaları (örn. /destinasyon/akdeniz) bu turları otomatik listeler.',
+                'Seçim sırası frontend\'deki gösterim sırasını belirler.',
+            ],
+            'note' => 'Destinasyon master listesini Cruise Yönetimi → Destinasyonlar\'dan yönetebilirsiniz.',
+        ])
+
         <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
             <h2 class="font-semibold text-gray-700 flex items-center gap-2">
                 <i class="fas fa-map-marked-alt text-indigo-500"></i> Destinasyonlar
@@ -601,6 +713,17 @@
 
     {{-- ═══ Tab 8: Resimler ═════════════════════════════════════════════ --}}
     <div x-show="activeTab === 8" x-cloak class="space-y-6">
+
+        @include('tours::admin.partials._help', [
+            'title' => 'Hangi görsel nerede kullanılır?',
+            'steps' => [
+                '<strong>Kapak</strong>: Liste/kart ve detay sayfası üst görseli (tek dosya, yatay önerilir).',
+                '<strong>Galeri</strong>: Detay sayfasındaki foto galerisi (çoklu yükleme).',
+                '<strong>Broşür</strong>: İndirilebilir PDF (tek dosya).',
+            ],
+            'note' => 'Görseller kaydetmeden önce yüklenmez — dosya seçip "Kaydet" deyin. Mevcut görselin üstüne fareyle gelince silme (×) çıkar.',
+        ])
+
         <div class="bg-white rounded-xl shadow-sm border p-5 space-y-5">
             <h2 class="font-semibold text-gray-700 flex items-center gap-2">
                 <i class="fas fa-images text-indigo-500"></i> Görseller & Broşür
