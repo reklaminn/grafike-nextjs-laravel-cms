@@ -101,6 +101,15 @@ class SectionTemplateController extends Controller
      */
     private function computeUsageMap(): array
     {
+        // `pages` is a TENANT table. Section templates are a central/global
+        // catalog that an agency admin can browse without selecting a site —
+        // in that state the default connection points at the central DB, which
+        // has no `pages` table (→ 500). Usage is per-tenant and meaningless
+        // without an active site, so return an empty map instead.
+        if (! tenancy()->initialized) {
+            return [];
+        }
+
         return DB::table('pages')
             ->whereNotNull('sections_json')
             ->get(['id', 'title', 'slug', 'sections_json'])
@@ -434,6 +443,12 @@ class SectionTemplateController extends Controller
      */
     private function buildMenuPlaceholders(): array
     {
+        // Menus are tenant-scoped; skip the lookup when no site is active so
+        // the (central) section-template editor still loads for agency admins.
+        if (! tenancy()->initialized) {
+            return [];
+        }
+
         return Menu::query()
             ->where('is_active', true)
             ->orderBy('location')
@@ -475,6 +490,13 @@ class SectionTemplateController extends Controller
             ['label' => 'Logo URL', 'token' => '{{logo_url}}', 'source' => 'settings'],
             ['label' => 'Favicon URL', 'token' => '{{favicon_url}}', 'source' => 'settings'],
         ]);
+
+        // SiteSetting is tenant-scoped; without an active site, expose only the
+        // fixed system tokens so the editor never hits the central DB (no
+        // `site_settings` table there → 500).
+        if (! tenancy()->initialized) {
+            return $fixed->values()->all();
+        }
 
         $settings = SiteSetting::query()
             ->select(['key', 'group'])

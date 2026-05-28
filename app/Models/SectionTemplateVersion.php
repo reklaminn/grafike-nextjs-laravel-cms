@@ -6,6 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class SectionTemplateVersion extends Model
 {
+    /**
+     * Central DB — version history belongs to the (central) section_templates
+     * catalog.  Without this, the relation/queries fall back to the default
+     * connection, which is the *tenant* DB whenever a site is active, where
+     * `section_template_versions` does not exist → 500 on save/restore.
+     */
+    protected $connection = 'central';
+
     public $timestamps = false;
 
     protected $fillable = [

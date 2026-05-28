@@ -167,9 +167,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('languages-translations', [LanguageController::class, 'saveTranslation'])->name('languages.save-translation');
         Route::delete('languages-translations/{translation}', [LanguageController::class, 'deleteTranslation'])->name('languages.delete-translation');
 
-        // Design (CSS/JS Editor)
-        Route::get('design', [DesignController::class, 'index'])->name('design.index');
-        Route::put('design', [DesignController::class, 'update'])->name('design.update');
+        // Design (CSS/JS Editor) — per-tenant assets (design_assets table lives
+        // in the tenant DB), so an active site is mandatory; otherwise the page
+        // would read/write the central DB and surface unrelated data.
+        Route::middleware('tenant.required')->group(function () {
+            Route::get('design', [DesignController::class, 'index'])->name('design.index');
+            Route::put('design', [DesignController::class, 'update'])->name('design.update');
+        });
         Route::resource('themes', ThemeController::class)->except('show');
         Route::get('section-templates/menu-placeholders', [SectionTemplateController::class, 'menuPlaceholders'])->name('section-templates.menu-placeholders');
         Route::match(['GET', 'POST'], 'section-templates/{section_template}/preview', [SectionTemplateController::class, 'preview'])->name('section-templates.preview');
@@ -181,9 +185,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('section-templates', SectionTemplateController::class)->except('show');
         Route::post('section-templates/{section_template}/duplicate', [SectionTemplateController::class, 'duplicate'])->name('section-templates.duplicate');
 
-        // SMTP Profiles
-        Route::resource('smtp-profiles', SmtpProfileController::class)->except('show');
-        Route::post('smtp-profiles/{smtp_profile}/test', [SmtpProfileController::class, 'sendTest'])->name('smtp-profiles.test');
+        // SMTP Profiles — per-tenant (smtp_profiles table lives in the tenant
+        // DB and stores credentials); require an active site so profiles are
+        // never read from / written to the central DB across tenants.
+        Route::middleware('tenant.required')->group(function () {
+            Route::resource('smtp-profiles', SmtpProfileController::class)->except('show');
+            Route::post('smtp-profiles/{smtp_profile}/test', [SmtpProfileController::class, 'sendTest'])->name('smtp-profiles.test');
+        });
 
         // Currencies
         Route::resource('currencies', CurrencyController::class)->except('show');

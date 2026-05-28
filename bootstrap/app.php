@@ -66,6 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'member.auth'     => \App\Http\Middleware\MemberAuthenticate::class,
             'tenant.admin'    => \App\Http\Middleware\InitializeTenancyForAdmin::class,
             'tenant.module'   => \App\Http\Middleware\RequireTenantModule::class,
+            'tenant.required' => \App\Http\Middleware\RequireActiveTenant::class,
         ]);
 
         // Tenant context MUST be initialized before SubstituteBindings so that
@@ -87,6 +88,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(
             before: \App\Http\Middleware\InitializeTenancyForAdmin::class,
             prepend: \App\Http\Middleware\AdminAuthenticate::class,
+        );
+        // RequireActiveTenant must run AFTER tenancy is initialized so it can
+        // see whether a site is active.  Inserting it before SubstituteBindings
+        // (and after InitializeTenancyForAdmin, added above) gives the order:
+        // AdminAuthenticate → InitializeTenancyForAdmin → RequireActiveTenant
+        // → SubstituteBindings.
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\RequireActiveTenant::class,
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
