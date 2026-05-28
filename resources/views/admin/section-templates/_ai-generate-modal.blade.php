@@ -279,7 +279,7 @@ function aiSectionTemplateWizard() {
 
         /**
          * Render the generated html_template into the preview iframe, with
-         * Tailwind CDN loaded and {{placeholders}} replaced by default_content.
+         * Tailwind CDN loaded and @verbatim{{placeholders}}@endverbatim replaced by default_content.
          */
         renderPreviewIframe() {
             const iframe = this.$refs.previewIframe;
@@ -288,7 +288,7 @@ function aiSectionTemplateWizard() {
             const html = this.preview.html_template || '';
             const defaults = this.preview.default_content_json || {};
 
-            // Replace {{key}} and {{{key}}} with default_content values.
+            // Replace @verbatim{{key}}@endverbatim and @verbatim{{{key}}}@endverbatim with default_content values.
             const rendered = html.replace(/\{{2,3}\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\}{2,3}/g, (m, key) => {
                 const v = defaults[key];
                 return v !== undefined && v !== null ? String(v) : '';
