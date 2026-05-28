@@ -176,15 +176,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tip *</label>
-                            <select name="type" x-data="{ type: '{{ old('type', $tour->type?->value ?? 'package') }}' }"
-                                    x-model="type"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            @php $selectedType = old('type', $tour->type?->value); @endphp
+                            <select name="type" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm {{ $selectedType ? '' : 'text-gray-400' }}">
+                                <option value="" {{ $selectedType ? '' : 'selected' }} disabled>— Tur tipini seçin —</option>
                                 @foreach($types as $t)
-                                    <option value="{{ $t->value }}" {{ old('type', $tour->type?->value ?? 'package') === $t->value ? 'selected' : '' }}>
+                                    <option value="{{ $t->value }}" {{ $selectedType === $t->value ? 'selected' : '' }}>
                                         {{ $t->label() }}
                                     </option>
                                 @endforeach
                             </select>
+                            <p class="text-xs text-gray-400 mt-1">Cruise seçerseniz gemi alanı zorunlu olur.</p>
                         </div>
 
                         <div>

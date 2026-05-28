@@ -70,8 +70,10 @@ class TourController extends Controller
 
     public function create(): View
     {
+        // NOT: type bilinçli olarak set EDİLMİYOR — kullanıcı yanlışlıkla
+        // "Paket Tur" ile kaydetmesin diye form boş placeholder ile gelir,
+        // tip seçimi zorunlu (required) yapılır.
         return $this->renderForm(new Tour([
-            'type'          => TourType::Package->value,
             'currency'      => 'TRY',
             'status'        => 'draft',
             'pricing_mode'  => PricingMode::PerPerson->value,

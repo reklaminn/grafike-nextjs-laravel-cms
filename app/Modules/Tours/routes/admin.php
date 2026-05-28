@@ -49,6 +49,13 @@ Route::prefix('admin')
         Route::post('tours/{tour}/media/{mediaId}/delete',
                     [TourController::class, 'deleteMedia'])->name('tours.media.delete');
 
+        // Bulk departure entry (cruise/günlük — çoklu tarih).  Resource'tan
+        // ÖNCE tanımlı ki `dates-bulk` path'i `dates/{date}` ile çakışmasın.
+        Route::get('tours/{tour}/dates-bulk',
+                   [TourDateController::class, 'createBulk'])->name('tours.dates.bulk-create');
+        Route::post('tours/{tour}/dates-bulk',
+                    [TourDateController::class, 'bulkStore'])->name('tours.dates.bulk-store');
+
         // Nested departures under a tour
         Route::resource('tours.dates', TourDateController::class)
             ->parameters(['dates' => 'date'])

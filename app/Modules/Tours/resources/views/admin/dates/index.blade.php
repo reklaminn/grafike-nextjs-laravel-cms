@@ -10,10 +10,16 @@
             <p class="text-sm text-gray-500">{{ $tour->translations->first()?->title ?? $tour->slug }}</p>
         </div>
     </div>
-    <a href="{{ route('admin.tours.dates.create', $tour) }}"
-       class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
-        <i class="fas fa-plus mr-1"></i> Yeni Tarih
-    </a>
+    <div class="flex items-center gap-2">
+        <a href="{{ route('admin.tours.dates.bulk-create', $tour) }}"
+           class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 font-medium">
+            <i class="fas fa-calendar-plus mr-1"></i> Toplu Tarih Ekle
+        </a>
+        <a href="{{ route('admin.tours.dates.create', $tour) }}"
+           class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
+            <i class="fas fa-plus mr-1"></i> Tekli Tarih
+        </a>
+    </div>
 </div>
 
 @if(session('success'))<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{{ session('success') }}</div>@endif
