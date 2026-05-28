@@ -12,8 +12,10 @@ use App\Modules\Tours\Enums\TourType;
 use App\Modules\Tours\Http\Requests\Admin\StoreTourRequest;
 use App\Modules\Tours\Models\Destination;
 use App\Modules\Tours\Models\Ship;
+use App\Modules\Tours\Models\TenantInfoExtra;
 use App\Modules\Tours\Models\Tour;
 use App\Modules\Tours\Models\TourCategory;
+use App\Modules\Tours\Models\TourExtra;
 use App\Modules\Tours\Models\TourTag;
 use App\Modules\Tours\Models\TourTranslation;
 use Illuminate\Http\RedirectResponse;
@@ -90,6 +92,7 @@ class TourController extends Controller
 
             $this->syncTranslations($tour, $data['translations']);
             $this->syncRelations($tour, $data);
+            $this->syncExtras($tour, $data);
             $this->handleMedia($tour, $request);
             $this->refreshSearchIndex($tour);
 
@@ -115,6 +118,7 @@ class TourController extends Controller
 
             $this->syncTranslations($tour, $data['translations']);
             $this->syncRelations($tour, $data);
+            $this->syncExtras($tour, $data);
             $this->handleMedia($tour, $request);
             $this->refreshSearchIndex($tour);
         });
@@ -263,6 +267,7 @@ class TourController extends Controller
             'category.translations',
             'media',
             'itineraries.days.stops',
+            'extras' => fn ($q) => $q->orderBy('sort_order'),
         ]);
 
         $languages         = Language::active()->orderBy('sort_order')->get();
@@ -275,6 +280,33 @@ class TourController extends Controller
         $selectedDestIds   = $tour->destinations->pluck('id')->toArray();
         $selectedTagIds    = $tour->marketingTags->pluck('id')->toArray();
         $selectedSecCatIds = $tour->secondaryCategories->pluck('id')->toArray();
+
+        // Tab 3 — bilgi amaçlı ücretler master + mevcut ekstralar (Alpine JSON)
+        $infoExtraMaster = TenantInfoExtra::query()->with('translations')->ordered()->get()->map(fn ($e) => [
+            'id'         => $e->id,
+            'label'      => $e->translations->first()?->name ?? $e->slug,
+            'amount'     => $e->default_amount,
+            'currency'   => $e->default_currency,
+            'per_person' => (bool) $e->per_person,
+        ])->values();
+
+        $infoExtraRows = $tour->extras->where('pricing_mode', 'info_only')->values()->map(fn ($e) => [
+            'id'           => $e->id,
+            'info_extra_id'=> $e->info_extra_id,
+            'name'         => $e->name,
+            'price'        => $e->price,
+            'currency'     => $e->currency ?? $tour->currency,
+            'per_person'   => (bool) $e->per_person,
+        ])->all();
+
+        $bookingExtraRows = $tour->extras->whereIn('pricing_mode', ['per_passenger', 'per_booking'])->values()->map(fn ($e) => [
+            'id'           => $e->id,
+            'name'         => $e->name,
+            'description'  => $e->description,
+            'price'        => $e->price,
+            'pricing_mode' => $e->pricing_mode,
+            'is_required'  => (bool) $e->is_required,
+        ])->all();
 
         return view('tours::admin.tours.form', [
             'tour'                => $tour,
@@ -290,6 +322,9 @@ class TourController extends Controller
             'selectedDestIds'     => $selectedDestIds,
             'selectedTagIds'      => $selectedTagIds,
             'selectedSecCatIds'   => $selectedSecCatIds,
+            'infoExtraMaster'     => $infoExtraMaster,
+            'infoExtraRows'       => $infoExtraRows,
+            'bookingExtraRows'    => $bookingExtraRows,
         ]);
     }
 
@@ -333,6 +368,7 @@ class TourController extends Controller
                     'description'       => $entry['description']       ?? null,
                     'highlights'        => $entry['highlights']        ?? null,
                     'important_info'    => $entry['important_info']    ?? null,
+                    'price_disclaimer'  => $entry['price_disclaimer']  ?? null,
                     'meta_title'        => $entry['meta_title']        ?? null,
                     'meta_description'  => $entry['meta_description']  ?? null,
                     'og_image_url'      => $entry['og_image_url']      ?? null,
@@ -358,6 +394,84 @@ class TourController extends Controller
         $tour->destinations()->sync($payload($data['destination_ids'] ?? []));
         $tour->marketingTags()->sync($payload($data['tour_tag_ids'] ?? []));
         $tour->secondaryCategories()->sync($payload($data['secondary_category_ids'] ?? []));
+    }
+
+    /**
+     * Tab 3 ekstralar sync — info-only + booking, ayrı listeler.
+     * id-bazlı upsert + submit'te olmayanları sil (BookingExtra FK guard).
+     */
+    private function syncExtras(Tour $tour, array $data): void
+    {
+        $keptIds = [];
+        $sort    = 0;
+
+        // Bilgi amaçlı ücretler (info_only)
+        foreach ($data['info_extras'] ?? [] as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '' && empty($row['info_extra_id'])) {
+                continue;
+            }
+            $keptIds[] = $this->upsertExtra($tour, $this->nullableInt($row['id'] ?? null), [
+                'info_extra_id' => $this->nullableInt($row['info_extra_id'] ?? null),
+                'name'          => $name ?: '—',
+                'pricing_mode'  => 'info_only',
+                'price'         => $this->nullableInt($row['price'] ?? null) ?? 0,
+                'currency'      => isset($row['currency']) && $row['currency'] !== '' ? strtoupper($row['currency']) : $tour->currency,
+                'per_person'    => (bool) ($row['per_person'] ?? false),
+                'is_required'   => false,
+                'sort_order'    => $sort++,
+                'is_active'     => true,
+            ]);
+        }
+
+        // Online ekstralar (booking)
+        foreach ($data['booking_extras'] ?? [] as $row) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $keptIds[] = $this->upsertExtra($tour, $this->nullableInt($row['id'] ?? null), [
+                'info_extra_id' => null,
+                'name'          => $name,
+                'description'   => $row['description'] ?? null,
+                'pricing_mode'  => $row['pricing_mode'] ?? 'per_booking',
+                'price'         => $this->nullableInt($row['price'] ?? null) ?? 0,
+                'currency'      => $tour->currency,
+                'per_person'    => ($row['pricing_mode'] ?? '') === 'per_passenger',
+                'is_required'   => (bool) ($row['is_required'] ?? false),
+                'sort_order'    => $sort++,
+                'is_active'     => true,
+            ]);
+        }
+
+        // Submit'te olmayan eski ekstraları sil (booking referansı yoksa)
+        $stale = $tour->extras()->whereNotIn('id', $keptIds ?: [0])->get();
+        foreach ($stale as $extra) {
+            $referenced = \DB::table('booking_extras')->where('tour_extra_id', $extra->id)->exists();
+            if (! $referenced) {
+                $extra->delete();
+            }
+        }
+    }
+
+    private function upsertExtra(Tour $tour, ?int $id, array $attrs): int
+    {
+        if ($id !== null) {
+            $existing = $tour->extras()->whereKey($id)->first();
+            if ($existing) {
+                $existing->update($attrs);
+                return $existing->id;
+            }
+        }
+        return $tour->extras()->create($attrs)->id;
+    }
+
+    private function nullableInt(mixed $v): ?int
+    {
+        if ($v === null || $v === '') {
+            return null;
+        }
+        return (int) $v;
     }
 
     private function handleMedia(Tour $tour, Request $request): void

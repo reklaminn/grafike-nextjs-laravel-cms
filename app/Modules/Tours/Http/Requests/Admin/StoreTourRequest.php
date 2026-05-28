@@ -96,6 +96,25 @@ class StoreTourRequest extends FormRequest
             'translations.*.meta_title'          => ['nullable', 'string', 'max:255'],
             'translations.*.meta_description'    => ['nullable', 'string'],
             'translations.*.og_image_url'        => ['nullable', 'url', 'max:1000'],
+            'translations.*.price_disclaimer'    => ['nullable', 'string'],
+
+            // Tab 3 — Bilgi amaçlı ücretler (online tahsil edilmez)
+            'info_extras'                   => ['nullable', 'array'],
+            'info_extras.*.id'              => ['nullable', 'integer'],
+            'info_extras.*.info_extra_id'   => ['nullable', 'integer', 'exists:tenant_info_extras,id'],
+            'info_extras.*.name'            => ['nullable', 'string', 'max:200'],
+            'info_extras.*.price'           => ['nullable', 'integer', 'min:0'],
+            'info_extras.*.currency'        => ['nullable', 'string', 'size:3'],
+            'info_extras.*.per_person'      => ['nullable', 'boolean'],
+
+            // Tab 3 — Online ekstralar (sepete girer)
+            'booking_extras'                => ['nullable', 'array'],
+            'booking_extras.*.id'           => ['nullable', 'integer'],
+            'booking_extras.*.name'         => ['nullable', 'string', 'max:200'],
+            'booking_extras.*.description'  => ['nullable', 'string', 'max:500'],
+            'booking_extras.*.price'        => ['nullable', 'integer', 'min:0'],
+            'booking_extras.*.pricing_mode' => ['nullable', Rule::in(['per_passenger', 'per_booking'])],
+            'booking_extras.*.is_required'  => ['nullable', 'boolean'],
         ];
     }
 

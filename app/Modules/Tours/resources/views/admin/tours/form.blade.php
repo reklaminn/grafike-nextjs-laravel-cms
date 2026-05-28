@@ -523,70 +523,150 @@
 
     {{-- ═══ Tab 3: Genel Fiyatlar ═══════════════════════════════════════ --}}
     <div x-show="activeTab === 3" x-cloak class="space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
-            <div class="flex items-center justify-between">
-                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                    <i class="fas fa-tags text-indigo-500"></i> Fiyat Grupları
-                </h2>
-                @if($tour->exists)
-                    <a href="{{ route('admin.tours.price-groups.create', $tour) }}"
-                       class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 font-medium">
-                        <i class="fas fa-plus mr-1"></i> Yeni Fiyat Grubu
-                    </a>
-                @endif
-            </div>
-            <p class="text-xs text-gray-500">
-                Her grup = "Yaz 2026 Standart" / "Erken Rezervasyon" gibi adlandırılmış pricing scenario.
-                Cabin × person-tier matrix taşır + departure tarihlerine atanır.
-            </p>
 
-            @if(!$tour->exists)
-                <p class="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">Önce turu kaydedin, sonra fiyat grubu ekleyin.</p>
-            @elseif($tour->priceGroups->isEmpty())
-                <div class="p-6 text-center bg-gray-50 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-3">Henüz fiyat grubu yok.</p>
-                    <a href="{{ route('admin.tours.price-groups.create', $tour) }}"
-                       class="inline-block text-indigo-600 hover:underline text-sm">İlkini oluştur →</a>
+        @include('tours::admin.partials._help', [
+            'title' => 'Genel Fiyatlar ne içerir?',
+            'intro' => 'Baz fiyat + para birimi 1. sekmede. Burada ek ücretler ve fiyat açıklaması var:',
+            'steps' => [
+                '<strong>Bilgi Amaçlı Ücretler</strong>: online tahsil EDİLMEZ (vize, havaalanı vergisi). Sadece "Bilmeniz gerekenler" olarak gösterilir.',
+                '<strong>Online Ekstralar</strong>: müşteri sepete ekler ve öder (transfer, sigorta, içecek paketi).',
+                '<strong>Fiyat Açıklaması</strong>: "Doluluğa göre değişebilir…" gibi disclaimer (dil bazlı).',
+            ],
+            'note' => 'Kabin/oda fiyat matrisi 4. Tarih & Fiyatlar sekmesindeki fiyat gruplarındadır.',
+        ])
+
+        {{-- Ekstralar (Alpine) — info-only + booking, iki ayrı liste --}}
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-6"
+             x-data="{
+                 infoMaster: {{ \Illuminate\Support\Js::from($infoExtraMaster) }},
+                 infoExtras: {{ \Illuminate\Support\Js::from($infoExtraRows) }},
+                 bookingExtras: {{ \Illuminate\Support\Js::from($bookingExtraRows) }},
+                 addInfo() { this.infoExtras.push({ id:null, info_extra_id:'', name:'', price:'', currency:'{{ $tour->currency }}', per_person:false }); },
+                 addBooking() { this.bookingExtras.push({ id:null, name:'', description:'', price:'', pricing_mode:'per_booking', is_required:false }); },
+                 onInfoMaster(row) {
+                     const m = this.infoMaster.find(x => String(x.id) === String(row.info_extra_id));
+                     if (m) { if(!row.name) row.name = m.label; if(!row.price) row.price = m.amount; if(m.currency) row.currency = m.currency; row.per_person = m.per_person; }
+                 }
+             }">
+
+            {{-- Info-only --}}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-circle-info text-amber-500"></i> Bilgi Amaçlı Ücretler
+                        <span class="text-xs text-gray-400 font-normal">(online tahsil edilmez)</span>
+                    </h3>
+                    <button type="button" @click="addInfo()" class="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs hover:bg-amber-100 font-medium">
+                        <i class="fas fa-plus mr-1"></i> Ücret Ekle
+                    </button>
                 </div>
-            @else
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-50">
-                        <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
-                            <th class="px-3 py-2">Grup Adı</th>
-                            <th class="px-3 py-2">Min</th>
-                            <th class="px-3 py-2">Tarih</th>
-                            <th class="px-3 py-2">Satır</th>
-                            <th class="px-3 py-2">Sıra</th>
-                            <th class="px-3 py-2 text-right">Eylem</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @foreach($tour->priceGroups as $pg)
-                            @php $pgTr = $pg->translations->first(); @endphp
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-3 py-2">
-                                    <div class="font-medium text-gray-800">{{ $pgTr->name ?? "PG-{$pg->id}" }}</div>
-                                    @if($pg->campaign_text)
-                                        <div class="text-[10px] text-amber-600 italic truncate max-w-[280px]">{{ $pg->campaign_text }}</div>
-                                    @endif
-                                </td>
-                                <td class="px-3 py-2 text-gray-500">{{ $pg->min_persons ?? '—' }}</td>
-                                <td class="px-3 py-2 text-gray-500">{{ $pg->dates()->count() }}</td>
-                                <td class="px-3 py-2 text-gray-500">{{ $pg->cabinPrices()->count() }}</td>
-                                <td class="px-3 py-2 text-gray-400">{{ $pg->sort_order }}</td>
-                                <td class="px-3 py-2 text-right">
-                                    <a href="{{ route('admin.tours.price-groups.edit', ['tour' => $tour, 'price_group' => $pg]) }}"
-                                       class="text-indigo-600 hover:underline text-xs">Düzenle</a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                <div class="pt-2">
-                    <a href="{{ route('admin.tours.price-groups.index', $tour) }}"
-                       class="text-xs text-gray-500 hover:underline">Tüm fiyat grupları sayfasına git →</a>
+                <template x-if="infoExtras.length === 0">
+                    <p class="text-xs text-gray-400 p-3 bg-gray-50 rounded">Henüz bilgi amaçlı ücret yok (vize, havaalanı vergisi vb.).</p>
+                </template>
+                <template x-for="(row, idx) in infoExtras" :key="'i'+idx">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-end border border-gray-100 rounded-lg p-2">
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] text-gray-500 mb-1">Hazır kalem</label>
+                            <select :name="`info_extras[${idx}][info_extra_id]`" x-model="row.info_extra_id" @change="onInfoMaster(row)"
+                                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs">
+                                <option value="">— Seçiniz —</option>
+                                <template x-for="m in infoMaster" :key="m.id">
+                                    <option :value="m.id" x-text="m.label"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] text-gray-500 mb-1">Ücret Adı</label>
+                            <input type="text" :name="`info_extras[${idx}][name]`" x-model="row.name" placeholder="Vize Ücreti"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] text-gray-500 mb-1">Fiyat (kuruş)</label>
+                            <input type="number" min="0" :name="`info_extras[${idx}][price]`" x-model="row.price"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] text-gray-500 mb-1">Kur</label>
+                            <select :name="`info_extras[${idx}][currency]`" x-model="row.currency"
+                                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs font-mono">
+                                <option value="TRY">TRY</option><option value="EUR">EUR</option><option value="USD">USD</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-1 flex items-center gap-1 pb-1.5">
+                            <input type="hidden" :name="`info_extras[${idx}][per_person]`" value="0">
+                            <input type="checkbox" :name="`info_extras[${idx}][per_person]`" value="1" x-model="row.per_person" class="h-3.5 w-3.5 text-amber-600 rounded">
+                            <span class="text-[10px] text-gray-500">Kişi başı</span>
+                        </div>
+                        <div class="md:col-span-1 flex justify-end pb-1">
+                            <button type="button" @click="infoExtras.splice(idx,1)" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            {{-- Booking --}}
+            <div class="space-y-3 border-t border-gray-100 pt-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-cart-plus text-indigo-500"></i> Online Ekstralar
+                        <span class="text-xs text-gray-400 font-normal">(sepete eklenir, ödenir)</span>
+                    </h3>
+                    <button type="button" @click="addBooking()" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs hover:bg-indigo-100 font-medium">
+                        <i class="fas fa-plus mr-1"></i> Ekstra Ekle
+                    </button>
                 </div>
-            @endif
+                <template x-if="bookingExtras.length === 0">
+                    <p class="text-xs text-gray-400 p-3 bg-gray-50 rounded">Henüz online ekstra yok (transfer, sigorta vb.).</p>
+                </template>
+                <template x-for="(row, idx) in bookingExtras" :key="'b'+idx">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-2 items-end border border-gray-100 rounded-lg p-2">
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] text-gray-500 mb-1">Ekstra Adı</label>
+                            <input type="text" :name="`booking_extras[${idx}][name]`" x-model="row.name" placeholder="Havalimanı Transferi"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-[10px] text-gray-500 mb-1">Açıklama</label>
+                            <input type="text" :name="`booking_extras[${idx}][description]`" x-model="row.description"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] text-gray-500 mb-1">Fiyat (kuruş)</label>
+                            <input type="number" min="0" :name="`booking_extras[${idx}][price]`" x-model="row.price"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] text-gray-500 mb-1">Mod</label>
+                            <select :name="`booking_extras[${idx}][pricing_mode]`" x-model="row.pricing_mode"
+                                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs">
+                                <option value="per_booking">Rezervasyon başı</option>
+                                <option value="per_passenger">Kişi başı</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-1 flex justify-end items-center gap-1 pb-1">
+                            <input type="hidden" :name="`booking_extras[${idx}][is_required]`" value="0">
+                            <input type="checkbox" :name="`booking_extras[${idx}][is_required]`" value="1" x-model="row.is_required" class="h-3.5 w-3.5 text-indigo-600 rounded" title="Zorunlu">
+                            <button type="button" @click="bookingExtras.splice(idx,1)" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        {{-- Fiyat disclaimer (per-language) --}}
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+            <h3 class="font-semibold text-gray-700 flex items-center gap-2">
+                <i class="fas fa-triangle-exclamation text-gray-400"></i> Fiyat Açıklaması
+            </h3>
+            @foreach($languages as $i => $lang)
+                @php $trD = $translations[$lang->id] ?? null; @endphp
+                <div>
+                    <label class="block text-[10px] uppercase font-semibold text-gray-500 mb-1">{{ $lang->name }}</label>
+                    <textarea name="translations[{{ $i }}][price_disclaimer]" rows="2"
+                              placeholder="Fiyatlar doluluğa göre değişebilir. Rezervasyon talebinde güncel fiyat iletilir."
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.price_disclaimer", $trD->price_disclaimer ?? '') }}</textarea>
+                </div>
+            @endforeach
         </div>
     </div>
 
@@ -630,7 +710,7 @@
                                     <tr>
                                         <td class="py-1">{{ $d->starts_at?->format('Y-m-d') }}</td>
                                         <td class="py-1">{{ $d->ends_at?->format('Y-m-d') }}</td>
-                                        <td class="py-1">{{ $d->capacity }}</td>
+                                        <td class="py-1">{{ $d->capacity_total }}</td>
                                         <td class="py-1">{{ $d->status }}</td>
                                     </tr>
                                 @endforeach
@@ -638,6 +718,60 @@
                         </table>
                     </div>
                 @endif
+            @endif
+        </div>
+
+        {{-- Fiyat Grupları (pricing engine — eski sistem Tab 4) --}}
+        <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fas fa-tags text-indigo-500"></i> Fiyat Grupları
+                </h2>
+                @if($tour->exists)
+                    <a href="{{ route('admin.tours.price-groups.create', $tour) }}"
+                       class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 font-medium">
+                        <i class="fas fa-plus mr-1"></i> Yeni Fiyat Grubu
+                    </a>
+                @endif
+            </div>
+            <p class="text-xs text-gray-500">
+                Adlandırılmış pricing senaryosu ("Yaz 2026", "Erken Rezervasyon") — oda/kabin × kişi-tier
+                matrisi taşır, departure tarihlerine atanır.
+            </p>
+
+            @if(!$tour->exists)
+                <p class="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">Önce turu + tarihleri kaydedin.</p>
+            @elseif($tour->priceGroups->isEmpty())
+                <div class="p-6 text-center bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-600 mb-2">Henüz fiyat grubu yok.</p>
+                    <a href="{{ route('admin.tours.price-groups.create', $tour) }}" class="text-indigo-600 hover:underline text-sm">İlkini oluştur →</a>
+                </div>
+            @else
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
+                            <th class="px-3 py-2">Grup</th><th class="px-3 py-2">Tarih</th>
+                            <th class="px-3 py-2">Satır</th><th class="px-3 py-2 text-right">Eylem</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach($tour->priceGroups as $pg)
+                            @php $pgTr = $pg->translations->first(); @endphp
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-3 py-2">
+                                    <div class="font-medium text-gray-800">{{ $pgTr->name ?? "PG-{$pg->id}" }}</div>
+                                    @if($pg->campaign_text)<div class="text-[10px] text-amber-600 italic truncate max-w-[280px]">{{ $pg->campaign_text }}</div>@endif
+                                </td>
+                                <td class="px-3 py-2 text-gray-500">{{ $pg->dates()->count() }}</td>
+                                <td class="px-3 py-2 text-gray-500">{{ $pg->cabinPrices()->count() }}</td>
+                                <td class="px-3 py-2 text-right">
+                                    <a href="{{ route('admin.tours.price-groups.edit', ['tour' => $tour, 'price_group' => $pg]) }}"
+                                       class="text-indigo-600 hover:underline text-xs">Düzenle</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             @endif
         </div>
     </div>

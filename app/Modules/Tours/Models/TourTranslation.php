@@ -19,7 +19,7 @@ class TourTranslation extends Model
     protected $fillable = [
         'tour_id', 'language_id',
         'title', 'subtitle', 'short_description', 'description',
-        'highlights', 'important_info',
+        'highlights', 'important_info', 'price_disclaimer',
         'meta_title', 'meta_description', 'og_image_url',
     ];
 

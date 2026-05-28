@@ -21,8 +21,8 @@ class TourExtra extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tour_id', 'code', 'name', 'description',
-        'pricing_mode', 'price',
+        'tour_id', 'info_extra_id', 'code', 'name', 'description',
+        'pricing_mode', 'price', 'currency', 'per_person',
         'is_required', 'is_active', 'sort_order',
     ];
 
@@ -30,6 +30,7 @@ class TourExtra extends Model
     {
         return [
             'price'       => 'integer',
+            'per_person'  => 'boolean',
             'is_required' => 'boolean',
             'is_active'   => 'boolean',
             'sort_order'  => 'integer',
@@ -41,6 +42,12 @@ class TourExtra extends Model
         return $this->belongsTo(Tour::class);
     }
 
+    /** Master info-extra referansı (vize/havaalanı vergisi snapshot kaynağı). */
+    public function infoExtra(): BelongsTo
+    {
+        return $this->belongsTo(TenantInfoExtra::class, 'info_extra_id');
+    }
+
     public function bookingExtras(): HasMany
     {
         return $this->hasMany(BookingExtra::class);
@@ -49,5 +56,17 @@ class TourExtra extends Model
     public function scopeActive(Builder $q): Builder
     {
         return $q->where('is_active', true);
+    }
+
+    /** Online tahsil edilen ekstralar (sepete girer). */
+    public function scopeBooking(Builder $q): Builder
+    {
+        return $q->whereIn('pricing_mode', ['per_passenger', 'per_booking']);
+    }
+
+    /** Bilgi amaçlı ücretler (online tahsil edilmez). */
+    public function scopeInfoOnly(Builder $q): Builder
+    {
+        return $q->where('pricing_mode', 'info_only');
     }
 }
