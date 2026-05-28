@@ -26,6 +26,7 @@ class ShipCompany extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
+        'source_library_id',
         'slug', 'name',
         'company_type', 'operator', 'founded_year', 'headquarters', 'website',
         'uses_cabin_groups', 'is_active', 'sort_order',

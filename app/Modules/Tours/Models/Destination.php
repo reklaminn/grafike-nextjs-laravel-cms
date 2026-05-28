@@ -29,6 +29,7 @@ class Destination extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
+        'source_library_id',
         'slug', 'latitude', 'longitude',
         'compatible_tour_types',
         'is_active', 'is_featured', 'sort_order',

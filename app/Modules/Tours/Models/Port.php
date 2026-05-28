@@ -33,6 +33,7 @@ class Port extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
+        'source_library_id',
         'slug', 'country_code',
         'latitude', 'longitude',
         'population', 'video_url', 'timezone',

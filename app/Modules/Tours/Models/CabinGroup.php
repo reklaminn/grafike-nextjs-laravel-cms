@@ -30,6 +30,7 @@ class CabinGroup extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'source_library_id',
         'ship_company_id', 'slug',
         'is_active', 'sort_order',
     ];

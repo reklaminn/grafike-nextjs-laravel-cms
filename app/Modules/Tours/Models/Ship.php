@@ -32,6 +32,7 @@ class Ship extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
+        'source_library_id',
         'ship_company_id', 'slug', 'name',
         'star_rating', 'local_agent', 'flag_country_code', 'imo_number',
         'year_built', 'passenger_capacity', 'crew_count', 'deck_count',

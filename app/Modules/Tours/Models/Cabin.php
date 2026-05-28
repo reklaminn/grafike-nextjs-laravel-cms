@@ -30,6 +30,7 @@ class Cabin extends Model implements HasMedia
     use HasFactory, SoftDeletes, InteractsWithMedia;
 
     protected $fillable = [
+        'source_library_id',
         'ship_id', 'cabin_category_id', 'brand_subcategory',
         'code', 'deck_name', 'max_capacity',
         'base_price_per_person',
