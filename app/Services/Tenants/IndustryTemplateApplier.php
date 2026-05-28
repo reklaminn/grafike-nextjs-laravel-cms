@@ -187,7 +187,12 @@ class IndustryTemplateApplier
         if (! $type) return null;
         $variation = $section['template_variation'] ?? null;
 
+        // Industry templates are agency-global, so they must seed pages that
+        // reference GLOBAL (tenant_id IS NULL) blocks only. This prevents the
+        // type-only fallback from grabbing another tenant's private block now
+        // that the catalog is tenant-scoped.
         $query = \App\Models\SectionTemplate::query()
+            ->whereNull('tenant_id')
             ->where('is_active', true)
             ->where('type', $type);
 

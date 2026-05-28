@@ -49,6 +49,7 @@ class IndustryTemplatesSeeder extends Seeder
             $this->lawyer(),
             $this->salon(),
             $this->hotel(),
+            $this->tourism(),
             $this->realEstate(),
             $this->corporate(),
         ];
@@ -367,6 +368,165 @@ class IndustryTemplatesSeeder extends Seeder
                     ['label' => 'Odalar',   'page_slug' => 'odalar'],
                     ['label' => 'İletişim', 'page_slug' => 'iletisim'],
                 ]]],
+            ],
+        ];
+    }
+
+    // ─── TURİZM / TUR ACENTESİ ──────────────────────────────────────────
+    // Global turizm bloklarını (GlobalTourismCatalogSeeder) referans alır:
+    //   hero/turizm-hero, features/turizm-services, rich-text/turizm-content,
+    //   article-list/turizm-tours, cta/turizm-cta, gallery/turizm-gallery.
+    private function tourism(): array
+    {
+        return [
+            'slug'        => 'industry-tourism-explorer',
+            'name'        => 'Turizm — Kaşif',
+            'industry'    => 'tourism',
+            'summary'     => 'Tur acenteleri ve seyahat firmaları için kapsamlı bir başlangıç.',
+            'description' => 'Hero + hizmetler + popüler turlar + galeri + rezervasyon CTA. Deniz tonlu, enerjik bir tasarım. Tours modülüyle birlikte kullanılması önerilir.',
+            'snapshot_json' => [
+                'settings' => [
+                    'site.title'             => 'Tur Acentesi',
+                    'site.tagline'           => 'Keşfet, yaşa, hatırla',
+                    'site.footer_text'       => '© 2026 Tur Acentesi — TÜRSAB üyesidir.',
+                    'design.color_primary'   => '#0ea5e9',
+                    'design.color_secondary' => '#f0f9ff',
+                    'design.color_accent'    => '#0f766e',
+                    'contact.phone'          => '+90 242 000 0000',
+                    'contact.email'          => 'info@turacentesi.com',
+                    'contact.address'        => 'Antalya, Türkiye',
+                    'contact.whatsapp_number' => '+90 532 000 0000',
+                    'social.instagram'       => 'https://instagram.com/turacentesi',
+                ],
+                'pages' => [
+                    // ── ANASAYFA ────────────────────────────────────────────
+                    [
+                        'title' => 'Anasayfa', 'slug' => 'anasayfa', 'show_in_menu' => true,
+                        'sections' => [
+                            ['template_type' => 'hero', 'template_variation' => 'turizm-hero', 'content' => [
+                                'eyebrow'     => 'Keşfetmeye Hazır mısın?',
+                                'title'       => 'Hayalindeki tatil bir tık uzağında',
+                                'subtitle'    => 'Yurt içi ve yurt dışı tur paketleri, günübirlik geziler ve özel rotalarla unutulmaz anılar biriktir.',
+                                'button_text' => 'Turları İncele',
+                                'button_url'  => '/turlar',
+                            ]],
+                            ['template_type' => 'features', 'template_variation' => 'turizm-services', 'content' => [
+                                'title'    => 'Neden Bizi Tercih Etmelisiniz?',
+                                'subtitle' => 'Profesyonel rehberlik, güvenli ulaşım ve özenle seçilmiş rotalarla yanınızdayız.',
+                                'item1_icon' => '🌍', 'item1_title' => 'Uzman Rehberler', 'item1_text' => 'Yerel kültürü tanıyan deneyimli profesyonel rehber kadrosu.',
+                                'item2_icon' => '🚌', 'item2_title' => 'Konforlu Ulaşım', 'item2_text' => 'Klimalı, güvenli araç filomuzla kapıdan kapıya hizmet.',
+                                'item3_icon' => '🛡️', 'item3_title' => 'Sigorta Güvencesi', 'item3_text' => 'Tüm turlarımız seyahat sigortası kapsamındadır.',
+                            ]],
+                            ['template_type' => 'article-list', 'template_variation' => 'turizm-tours', 'content' => [
+                                'title'       => 'Popüler Turlar',
+                                'description' => 'En çok tercih edilen rotalarımızdan bir seçki.',
+                            ]],
+                            ['template_type' => 'rich-text', 'template_variation' => 'turizm-content', 'content' => [
+                                'title'     => 'Biz Kimiz?',
+                                'body_html' => '<p>20 yılı aşkın tecrübemizle binlerce misafirimizi hayalindeki destinasyonlara ulaştırdık. TÜRSAB üyesiyiz ve tüm turlarımız sigorta güvencesi altındadır.</p>',
+                            ]],
+                            ['template_type' => 'cta', 'template_variation' => 'turizm-cta', 'content' => [
+                                'title'       => 'Bir sonraki maceran için hazır mısın?',
+                                'subtitle'    => 'Uzman ekibimiz sana en uygun tur paketini bulmak için bekliyor.',
+                                'button_text' => 'Hemen Rezervasyon Yap',
+                                'button_url'  => '/iletisim',
+                            ]],
+                        ],
+                    ],
+                    // ── TURLAR ──────────────────────────────────────────────
+                    [
+                        'title' => 'Turlar', 'slug' => 'turlar', 'show_in_menu' => true,
+                        'sections' => [
+                            ['template_type' => 'hero', 'template_variation' => 'turizm-hero', 'content' => [
+                                'eyebrow'     => 'Tüm Rotalar',
+                                'title'       => 'Tur Paketlerimiz',
+                                'subtitle'    => 'Kültür turlarından doğa gezilerine, her zevke uygun seçenekler.',
+                                'button_text' => 'Bize Ulaş',
+                                'button_url'  => '/iletisim',
+                            ]],
+                            ['template_type' => 'article-list', 'template_variation' => 'turizm-tours', 'content' => [
+                                'title'       => 'Öne Çıkan Turlar',
+                                'description' => 'Sezonun en sevilen tur paketleri. Detaylar için bizimle iletişime geçin.',
+                            ]],
+                            ['template_type' => 'cta', 'template_variation' => 'turizm-cta', 'content' => [
+                                'title'       => 'Grup indirimlerimizden faydalanın',
+                                'subtitle'    => '10 kişi ve üzeri gruplara özel fiyatlar.',
+                                'button_text' => 'Teklif Al',
+                                'button_url'  => '/iletisim',
+                            ]],
+                        ],
+                    ],
+                    // ── HAKKIMIZDA ──────────────────────────────────────────
+                    [
+                        'title' => 'Hakkımızda', 'slug' => 'hakkimizda', 'show_in_menu' => true,
+                        'sections' => [
+                            ['template_type' => 'hero', 'template_variation' => 'turizm-hero', 'content' => [
+                                'eyebrow'     => 'Hakkımızda',
+                                'title'       => 'Seyahat tutkumuzu sizinle paylaşıyoruz',
+                                'subtitle'    => '20 yıllık deneyim, binlerce mutlu misafir.',
+                                'button_text' => 'Turları Gör',
+                                'button_url'  => '/turlar',
+                            ]],
+                            ['template_type' => 'rich-text', 'template_variation' => 'turizm-content', 'content' => [
+                                'title'     => 'Hikayemiz',
+                                'body_html' => '<p>2005 yılında küçük bir ofiste başlayan yolculuğumuz, bugün Türkiye\'nin önde gelen tur acentelerinden biri olmamızla sürüyor. Misyonumuz; her bütçeye uygun, güvenli ve keyifli seyahat deneyimleri sunmak.</p><p>TÜRSAB üyesiyiz; tüm turlarımız sigortalı ve lisanslı rehberler eşliğindedir.</p>',
+                            ]],
+                            ['template_type' => 'features', 'template_variation' => 'turizm-services', 'content' => [
+                                'title'    => 'Değerlerimiz',
+                                'subtitle' => 'Her seyahatte arkanızdayız.',
+                                'item1_icon' => '⭐', 'item1_title' => 'Müşteri Memnuniyeti', 'item1_text' => 'Misafir memnuniyeti her zaman önceliğimiz.',
+                                'item2_icon' => '🤝', 'item2_title' => 'Güven', 'item2_text' => 'Şeffaf fiyat, dürüst iletişim.',
+                                'item3_icon' => '🌱', 'item3_title' => 'Sürdürülebilirlik', 'item3_text' => 'Doğaya ve yerel kültüre saygılı turizm.',
+                            ]],
+                        ],
+                    ],
+                    // ── GALERİ ──────────────────────────────────────────────
+                    [
+                        'title' => 'Galeri', 'slug' => 'galeri', 'show_in_menu' => true,
+                        'sections' => [
+                            ['template_type' => 'hero', 'template_variation' => 'turizm-hero', 'content' => [
+                                'eyebrow'  => 'Anılar',
+                                'title'    => 'Gezi Albümü',
+                                'subtitle' => 'Misafirlerimizle paylaştığımız unutulmaz kareler.',
+                                'button_text' => 'Sen de Katıl',
+                                'button_url'  => '/turlar',
+                            ]],
+                            ['template_type' => 'gallery', 'template_variation' => 'turizm-gallery', 'content' => [
+                                'title' => 'Turlardan Kareler',
+                            ]],
+                        ],
+                    ],
+                    // ── İLETİŞİM ────────────────────────────────────────────
+                    [
+                        'title' => 'İletişim', 'slug' => 'iletisim', 'show_in_menu' => true,
+                        'sections' => [
+                            ['template_type' => 'hero', 'template_variation' => 'turizm-hero', 'content' => [
+                                'eyebrow'  => 'Bize Ulaşın',
+                                'title'    => 'Rezervasyon & İletişim',
+                                'subtitle' => 'Sorularınız ve rezervasyon talepleriniz için 7/24 buradayız.',
+                                'button_text' => 'WhatsApp\'tan Yaz',
+                                'button_url'  => 'https://wa.me/905320000000',
+                            ]],
+                            ['template_type' => 'rich-text', 'template_variation' => 'turizm-content', 'content' => [
+                                'title'     => 'İletişim Bilgileri',
+                                'body_html' => '<p>📍 Antalya, Türkiye<br>📞 +90 242 000 0000<br>📱 +90 532 000 0000 (WhatsApp)<br>✉ info@turacentesi.com</p><p>Çalışma saatleri: Hafta içi 09:00–19:00, Cumartesi 10:00–16:00</p>',
+                            ]],
+                        ],
+                    ],
+                ],
+                'menus' => [
+                    [
+                        'name'     => 'Ana Menü',
+                        'location' => 'header',
+                        'items' => [
+                            ['label' => 'Anasayfa',   'page_slug' => 'anasayfa'],
+                            ['label' => 'Turlar',     'page_slug' => 'turlar'],
+                            ['label' => 'Hakkımızda', 'page_slug' => 'hakkimizda'],
+                            ['label' => 'Galeri',     'page_slug' => 'galeri'],
+                            ['label' => 'İletişim',   'page_slug' => 'iletisim'],
+                        ],
+                    ],
+                ],
             ],
         ];
     }
