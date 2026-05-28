@@ -442,36 +442,48 @@
                 'Her güne <strong>liman / şehir</strong> + varış-kalkış saati atayın (cruise için kritik).',
                 'Aynı limanda birden çok gece olursa art arda günlere aynı limanı yazın (1,1,1,2,3,3 deseni).',
             ],
-            'note' => 'Gün-içi çoklu liman (multi-stop) editörü bir sonraki sürümde (1.5.f) gelecek. Şu an gün-bazlı özet gösteriliyor.',
+            'note' => 'Aynı güne birden çok liman (multi-stop) düşebilir — aynı gün numarasını tekrar kullanın.',
         ])
 
         <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
-            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                <i class="fas fa-route text-indigo-500"></i> Rota & Günler
-            </h2>
-            @if($tour->itineraries->isEmpty())
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fas fa-route text-indigo-500"></i> Rota & Günler
+                </h2>
+                @if($tour->exists)
+                    <a href="{{ route('admin.tours.itinerary.edit', $tour) }}"
+                       class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 font-medium">
+                        <i class="fas fa-pen mr-1"></i> Rota Editörünü Aç
+                    </a>
+                @endif
+            </div>
+
+            @if(!$tour->exists)
+                <p class="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">Önce turu kaydedin, sonra rota girin.</p>
+            @elseif($tour->itineraries->isEmpty())
                 <div class="p-6 text-center bg-gray-50 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-3">Henüz rota girilmemiş.</p>
-                    @if($tour->exists)
-                        <p class="text-xs text-gray-500">
-                            Rota editörü ayrı bir sub-resource — Phase 1.5.e'de TourItineraryStop UI'sı eklenecek.
-                            Şimdilik itinerary day + stop'ları tinker / API ile yönetiyoruz.
-                        </p>
-                    @else
-                        <p class="text-xs text-gray-500">Önce turu kaydedip rota girişine geçin.</p>
-                    @endif
+                    <p class="text-sm text-gray-600 mb-2">Henüz rota girilmemiş.</p>
+                    <a href="{{ route('admin.tours.itinerary.edit', $tour) }}" class="text-indigo-600 hover:underline text-sm">
+                        Rota editörünü aç →
+                    </a>
                 </div>
             @else
                 @foreach($tour->itineraries as $itinerary)
                     <div class="border border-gray-200 rounded-lg p-4">
-                        <h3 class="text-sm font-semibold mb-2 text-gray-700">
-                            {{ $itinerary->title ?? 'Rota (lang: ' . $itinerary->language_id . ')' }}
-                        </h3>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-semibold text-gray-700">
+                                {{ $itinerary->title ?? 'Rota' }}
+                                <span class="text-[10px] font-mono text-gray-400 ml-1">lang #{{ $itinerary->language_id }}</span>
+                            </h3>
+                            <a href="{{ route('admin.tours.itinerary.edit', ['tour' => $tour, 'lang' => $itinerary->language_id]) }}"
+                               class="text-xs text-indigo-600 hover:underline">Düzenle</a>
+                        </div>
                         <ul class="space-y-1 text-sm text-gray-600">
                             @foreach($itinerary->days as $day)
                                 <li class="flex items-center gap-2">
                                     <span class="font-mono text-xs text-gray-400 w-8">G{{ $day->day_number }}</span>
                                     <span>{{ $day->title }}</span>
+                                    <span class="text-xs text-gray-400">({{ $day->stops->count() }} durak)</span>
                                 </li>
                             @endforeach
                         </ul>

@@ -30,6 +30,9 @@ class TourItineraryStop extends Model
     protected $fillable = [
         'tour_itinerary_day_id',
         'port_id',
+        'title',
+        'accommodation',
+        'description',
         'location',
         'geo_lat',
         'geo_lng',

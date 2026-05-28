@@ -13,6 +13,7 @@ use App\Modules\Tours\Http\Controllers\Admin\ShipController;
 use App\Modules\Tours\Http\Controllers\Admin\TourCategoryController;
 use App\Modules\Tours\Http\Controllers\Admin\TourController;
 use App\Modules\Tours\Http\Controllers\Admin\TourDateController;
+use App\Modules\Tours\Http\Controllers\Admin\TourItineraryController;
 use App\Modules\Tours\Http\Controllers\Admin\TourPriceGroupController;
 use App\Modules\Tours\Http\Controllers\Admin\TourTagController;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +65,12 @@ Route::prefix('admin')
         // Nested price groups under a tour (Phase 1.5.e — Tab 3 backend)
         Route::resource('tours.price-groups', TourPriceGroupController::class)
             ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+
+        // Rota Takvimi editörü (Phase 1.5.f — Tab 2). Dil bazlı tek sayfa.
+        Route::get('tours/{tour}/itinerary',
+                   [TourItineraryController::class, 'edit'])->name('tours.itinerary.edit');
+        Route::put('tours/{tour}/itinerary',
+                   [TourItineraryController::class, 'update'])->name('tours.itinerary.update');
 
         // Categories (flat-ish under admin)
         Route::resource('tour-categories', TourCategoryController::class)->except(['show']);

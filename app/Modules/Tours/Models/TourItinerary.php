@@ -18,12 +18,20 @@ class TourItinerary extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tour_id', 'language_id', 'title', 'summary',
+        'tour_id', 'language_id', 'origin_port_id', 'title', 'summary',
     ];
 
     public function tour(): BelongsTo
     {
         return $this->belongsTo(Tour::class);
+    }
+
+    /**
+     * Tur Çıkış Şehri (hareket limanı) — Port master referansı (Phase 1.5.f).
+     */
+    public function originPort(): BelongsTo
+    {
+        return $this->belongsTo(Port::class, 'origin_port_id');
     }
 
     public function days(): HasMany

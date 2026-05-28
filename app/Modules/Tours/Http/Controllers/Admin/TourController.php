@@ -262,7 +262,7 @@ class TourController extends Controller
             'secondaryCategories.translations',
             'category.translations',
             'media',
-            'itineraries.days',
+            'itineraries.days.stops',
         ]);
 
         $languages         = Language::active()->orderBy('sort_order')->get();
