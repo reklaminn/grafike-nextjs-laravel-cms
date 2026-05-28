@@ -16,6 +16,9 @@ use App\Http\Controllers\Admin\DesignController;
 use App\Http\Controllers\Admin\FormController;
 use App\Http\Controllers\Admin\IndustryTemplateController;
 use App\Http\Controllers\Admin\LanguageController;
+use App\Http\Controllers\Admin\Library\LibraryHubController;
+use App\Http\Controllers\Admin\Library\LibraryPortController;
+use App\Http\Controllers\Admin\Library\LibraryShipCompanyController;
 use App\Http\Controllers\Admin\MaintenanceController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\MemberController;
@@ -199,6 +202,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             // Activity Log
             Route::get('activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+
+            // ── Cruise Kütüphanesi (global katalog — Phase 1.5.h, central DB) ──
+            // Super-admin global gemi/liman/destinasyon master'larını yönetir;
+            // tenant'lar bu kütüphaneyi değiştiremez, sadece import eder.
+            Route::get('library', [LibraryHubController::class, 'index'])->name('library.index');
+            Route::resource('library/ship-companies', LibraryShipCompanyController::class)
+                ->except('show')
+                ->parameters(['ship-companies' => 'shipCompany'])
+                ->names('library.ship-companies');
+            Route::resource('library/ports', LibraryPortController::class)
+                ->except('show')
+                ->names('library.ports');
         });
 
         // AI translate full page/article — wired into AiModelRouter (FAZ 4.6).

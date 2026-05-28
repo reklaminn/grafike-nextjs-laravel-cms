@@ -72,6 +72,7 @@
             ['route' => 'admin.ai-dashboard', 'icon' => 'fa-chart-pie', 'label' => 'AI Kullanım', 'match' => 'admin.ai-dashboard'],
             ['route' => 'admin.maintenance.index', 'icon' => 'fa-database', 'label' => 'DB Bakım', 'match' => 'admin.maintenance'],
             ['route' => 'admin.activity-log.index', 'icon' => 'fa-history', 'label' => 'Aktivite Log', 'match' => 'admin.activity-log'],
+            ['route' => 'admin.library.index', 'icon' => 'fa-ship', 'label' => 'Cruise Kütüphanesi', 'match' => 'admin.library'],
         ]);
     }
 @endphp
