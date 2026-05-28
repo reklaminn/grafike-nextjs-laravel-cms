@@ -53,6 +53,7 @@ class TourTagController extends Controller
         DB::transaction(function () use ($data) {
             $tag = TourTag::create([
                 'slug'       => $data['slug'],
+                'tag_type'   => $data['tag_type']   ?? 'marketing',
                 'icon'       => $data['icon']       ?? null,
                 'sort_order' => (int) ($data['sort_order'] ?? 0),
                 'is_active'  => (bool) ($data['is_active'] ?? true),
@@ -85,6 +86,7 @@ class TourTagController extends Controller
         DB::transaction(function () use ($data, $tourTag) {
             $tourTag->update([
                 'slug'       => $data['slug'],
+                'tag_type'   => $data['tag_type']   ?? 'marketing',
                 'icon'       => $data['icon']       ?? null,
                 'sort_order' => (int) ($data['sort_order'] ?? 0),
                 'is_active'  => (bool) ($data['is_active'] ?? true),

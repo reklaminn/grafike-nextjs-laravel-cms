@@ -45,12 +45,20 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-3 text-gray-800 font-medium">
                             {{ $tr->name ?? '— çevirisi yok —' }}
+                            @if(($tag->tag_type ?? 'marketing') === 'campaign')
+                                <span class="ml-2 inline-flex px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium">Kampanya</span>
+                            @else
+                                <span class="ml-2 inline-flex px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-medium">Pazarlama</span>
+                            @endif
                         </td>
                         <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $tag->slug }}</td>
                         <td class="px-4 py-3">
                             @if($tag->icon)
-                                <code class="text-xs text-indigo-600">{{ $tag->icon }}</code>
-                                <i class="fas {{ $tag->icon }} ml-2 text-gray-400"></i>
+                                @if(\Illuminate\Support\Str::startsWith($tag->icon, 'fa-'))
+                                    <i class="fas {{ $tag->icon }} text-gray-400"></i>
+                                @else
+                                    <span class="text-base">{{ $tag->icon }}</span>
+                                @endif
                             @else
                                 <span class="text-xs text-gray-300">—</span>
                             @endif

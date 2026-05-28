@@ -31,7 +31,7 @@
             <i class="fas fa-tag text-indigo-500"></i> Genel
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Slug (URL anahtarı)</label>
                 <input type="text" name="slug" value="{{ old('slug', $tag->slug) }}" required
@@ -41,14 +41,21 @@
             </div>
 
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Etiket Tipi</label>
+                @php $tagType = old('tag_type', $tag->tag_type ?? 'marketing'); @endphp
+                <select name="tag_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="marketing" {{ $tagType === 'marketing' ? 'selected' : '' }}>Pazarlama (özellik)</option>
+                    <option value="campaign"  {{ $tagType === 'campaign'  ? 'selected' : '' }}>Kampanya (promosyon)</option>
+                </select>
+            </div>
+
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                    FontAwesome İkon
-                    <span class="text-gray-400 font-normal">(opsiyonel)</span>
+                    İkon <span class="text-gray-400 font-normal">(emoji veya fa-)</span>
                 </label>
                 <input type="text" name="icon" value="{{ old('icon', $tag->icon) }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
-                       placeholder="fa-heart">
-                <p class="text-xs text-gray-400 mt-1">Örn: <code>fa-heart</code>, <code>fa-users</code></p>
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                       placeholder="🚢 veya fa-heart">
             </div>
 
             <div>

@@ -22,7 +22,7 @@ class TourTag extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'slug', 'icon',
+        'slug', 'tag_type', 'icon',
         'is_active', 'sort_order',
     ];
 
@@ -32,6 +32,18 @@ class TourTag extends Model
             'is_active'  => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    /** Pazarlama etiketi mi? (özellik filtresi) */
+    public function scopeMarketing(Builder $q): Builder
+    {
+        return $q->where('tag_type', 'marketing');
+    }
+
+    /** Kampanya etiketi mi? (zaman/promosyon) */
+    public function scopeCampaign(Builder $q): Builder
+    {
+        return $q->where('tag_type', 'campaign');
     }
 
     public function translations(): HasMany

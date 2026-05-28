@@ -267,27 +267,55 @@
                     </div>
                 </div>
 
-                {{-- Marketing tags m2m --}}
-                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-3">
+                {{-- Etiketler m2m — Pazarlama + Kampanya (tek pivot, tag_type'a göre 2 grup) --}}
+                @php
+                    $marketingTags = $allTags->where('tag_type', 'marketing');
+                    $campaignTags  = $allTags->where('tag_type', 'campaign');
+                @endphp
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
                     <h2 class="font-semibold text-gray-700 flex items-center gap-2">
                         <i class="fas fa-tags text-indigo-500"></i> Pazarlama Etiketleri
+                        <span class="text-xs text-gray-400 font-normal">(özellik filtresi)</span>
                     </h2>
-                    @if($allTags->isEmpty())
+                    @if($marketingTags->isEmpty())
                         <p class="text-sm text-amber-600">Henüz etiket yok — <a href="{{ route('admin.tour-tags.create') }}" class="underline">ekleyin</a>.</p>
                     @else
                         <div class="flex flex-wrap gap-2">
-                            @foreach($allTags as $tag)
+                            @foreach($marketingTags as $tag)
                                 @php $trTag = $tag->translations->first(); @endphp
                                 <label class="inline-flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-full hover:bg-gray-50 cursor-pointer text-xs">
                                     <input type="checkbox" name="tour_tag_ids[]" value="{{ $tag->id }}"
                                            {{ in_array($tag->id, $selectedTagIds, true) ? 'checked' : '' }}
                                            class="h-3 w-3 text-indigo-600 rounded">
-                                    @if($tag->icon)<i class="fas {{ $tag->icon }} text-gray-400"></i>@endif
+                                    @if($tag->icon)<span class="text-gray-500">{{ $tag->icon }}</span>@endif
                                     <span>{{ $trTag->name ?? $tag->slug }}</span>
                                 </label>
                             @endforeach
                         </div>
                     @endif
+
+                    <div class="border-t border-gray-100 pt-4">
+                        <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2">
+                            <i class="fas fa-bullhorn text-amber-500"></i> Kampanyalar
+                            <span class="text-xs text-gray-400 font-normal">(zaman/promosyon)</span>
+                        </h3>
+                        @if($campaignTags->isEmpty())
+                            <p class="text-xs text-gray-400">Kampanya etiketi yok.</p>
+                        @else
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($campaignTags as $tag)
+                                    @php $trTag = $tag->translations->first(); @endphp
+                                    <label class="inline-flex items-center gap-2 px-3 py-1.5 border border-amber-200 bg-amber-50/40 rounded-full hover:bg-amber-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="tour_tag_ids[]" value="{{ $tag->id }}"
+                                               {{ in_array($tag->id, $selectedTagIds, true) ? 'checked' : '' }}
+                                               class="h-3 w-3 text-amber-600 rounded">
+                                        @if($tag->icon)<span class="text-amber-600">{{ $tag->icon }}</span>@endif
+                                        <span>{{ $trTag->name ?? $tag->slug }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                 </div>
 
                 {{-- Flight info (conditional) --}}

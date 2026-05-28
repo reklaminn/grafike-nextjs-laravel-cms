@@ -20,19 +20,26 @@ class TourTagSeeder extends Seeder
 {
     public function run(): void
     {
+        // Pazarlama etiketleri (özellik filtresi) — type=marketing
+        // Kampanyalar (zaman/promosyon) — type=campaign
         $tags = [
-            ['slug' => 'cruise-only',         'icon' => '🚢', 'tr' => 'Sadece Gemi Turu',          'en' => 'Cruise Only'],
-            ['slug' => 'mini-cruise',         'icon' => '⚓', 'tr' => 'Mini Cruise',                'en' => 'Mini Cruise'],
-            ['slug' => 'river-cruise',        'icon' => '🌊', 'tr' => 'Nehir Turları',              'en' => 'River Cruises'],
-            ['slug' => 'flight-package',      'icon' => '✈️', 'tr' => 'Uçaklı Paket Gemi Turları',  'en' => 'Flight Package Cruises'],
-            ['slug' => 'ultra-luxury',        'icon' => '✨', 'tr' => 'Ultra Lüks Gemiler',         'en' => 'Ultra Luxury Ships'],
-            ['slug' => 'last-minute',         'icon' => '⏰', 'tr' => 'Son Dakika Fırsatları',      'en' => 'Last Minute Deals'],
-            ['slug' => 'new-year',            'icon' => '🎆', 'tr' => 'Yılbaşı Gemi Turları',       'en' => 'New Year Cruises'],
-            ['slug' => 'holiday',             'icon' => '🎊', 'tr' => 'Bayram Turları',             'en' => 'Holiday Tours'],
-            ['slug' => 'eid-al-adha',         'icon' => '🕌', 'tr' => 'Kurban Bayramı',             'en' => 'Eid al-Adha'],
-            ['slug' => 'eid-al-fitr',         'icon' => '🌙', 'tr' => 'Şeker Bayramı',              'en' => 'Eid al-Fitr'],
-            ['slug' => 'semester-break',      'icon' => '📚', 'tr' => 'Sömestre Turları',           'en' => 'Semester Break Tours'],
-            ['slug' => 'family-friendly',     'icon' => '👨‍👩‍👧', 'tr' => 'Aile Dostu Turlar',         'en' => 'Family-Friendly Tours'],
+            ['slug' => 'cruise-only',         'icon' => '🚢', 'tr' => 'Sadece Gemi Turu',          'en' => 'Cruise Only',           'type' => 'marketing'],
+            ['slug' => 'mini-cruise',         'icon' => '⚓', 'tr' => 'Mini Cruise',                'en' => 'Mini Cruise',           'type' => 'marketing'],
+            ['slug' => 'river-cruise',        'icon' => '🌊', 'tr' => 'Nehir Turları',              'en' => 'River Cruises',         'type' => 'marketing'],
+            ['slug' => 'flight-package',      'icon' => '✈️', 'tr' => 'Uçaklı Paket Gemi Turları',  'en' => 'Flight Package Cruises','type' => 'marketing'],
+            ['slug' => 'ultra-luxury',        'icon' => '✨', 'tr' => 'Ultra Lüks Gemiler',         'en' => 'Ultra Luxury Ships',    'type' => 'marketing'],
+            ['slug' => 'new-year',            'icon' => '🎆', 'tr' => 'Yılbaşı Gemi Turları',       'en' => 'New Year Cruises',      'type' => 'marketing'],
+            ['slug' => 'holiday',             'icon' => '🎊', 'tr' => 'Bayram Turları',             'en' => 'Holiday Tours',         'type' => 'marketing'],
+            ['slug' => 'eid-al-adha',         'icon' => '🕌', 'tr' => 'Kurban Bayramı',             'en' => 'Eid al-Adha',           'type' => 'marketing'],
+            ['slug' => 'eid-al-fitr',         'icon' => '🌙', 'tr' => 'Şeker Bayramı',              'en' => 'Eid al-Fitr',           'type' => 'marketing'],
+            ['slug' => 'semester-break',      'icon' => '📚', 'tr' => 'Sömestre Turları',           'en' => 'Semester Break Tours',  'type' => 'marketing'],
+            ['slug' => 'family-friendly',     'icon' => '👨‍👩‍👧', 'tr' => 'Aile Dostu Turlar',         'en' => 'Family-Friendly Tours', 'type' => 'marketing'],
+
+            ['slug' => 'early-booking',       'icon' => '🐦', 'tr' => 'Erken Rezervasyon Fırsatları','en' => 'Early Booking Deals',  'type' => 'campaign'],
+            ['slug' => 'last-minute-deals',   'icon' => '⏰', 'tr' => 'Son Dakika İndirimleri',     'en' => 'Last Minute Discounts', 'type' => 'campaign'],
+            ['slug' => 'second-guest-free',   'icon' => '🎁', 'tr' => '2. Kişi Ücretsiz',           'en' => '2nd Guest Free',        'type' => 'campaign'],
+            ['slug' => 'one-full-one-half',   'icon' => '🧮', 'tr' => '1 Tam 1 Yarım',              'en' => '1 Full 1 Half',         'type' => 'campaign'],
+            ['slug' => 'tl-holiday',          'icon' => '₺',  'tr' => 'TL ile Tatil Fırsatları',    'en' => 'Holiday in TRY',        'type' => 'campaign'],
         ];
 
         $languageIds = $this->resolveLanguageIds(['tr', 'en']);
@@ -42,6 +49,7 @@ class TourTagSeeder extends Seeder
             $tag = TourTag::query()->updateOrCreate(
                 ['slug' => $row['slug']],
                 [
+                    'tag_type'   => $row['type'] ?? 'marketing',
                     'icon'       => $row['icon'],
                     'sort_order' => $i + 1,
                     'is_active'  => true,

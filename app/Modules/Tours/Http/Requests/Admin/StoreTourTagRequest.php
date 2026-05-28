@@ -29,6 +29,7 @@ class StoreTourTagRequest extends FormRequest
                 'required', 'string', 'max:60', 'alpha_dash',
                 Rule::unique('tour_tags', 'slug')->ignore($tagId),
             ],
+            'tag_type'    => ['nullable', Rule::in(['marketing', 'campaign'])],
             'icon'        => ['nullable', 'string', 'max:60'],
             'sort_order'  => ['nullable', 'integer'],
             'is_active'   => ['nullable', 'boolean'],
