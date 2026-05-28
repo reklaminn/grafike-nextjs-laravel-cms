@@ -30,6 +30,7 @@ class StoreTourItineraryRequest extends FormRequest
 
             'stops'                     => ['nullable', 'array'],
             'stops.*.day_number'        => ['required', 'integer', 'min:1', 'max:365'],
+            'stops.*.point_type'        => ['nullable', 'in:meeting,visit'],
             'stops.*.title'             => ['nullable', 'string', 'max:255'],
             'stops.*.port_id'           => ['nullable', 'integer', 'exists:ports,id'],
             'stops.*.arrival_time'      => ['nullable', 'date_format:H:i'],

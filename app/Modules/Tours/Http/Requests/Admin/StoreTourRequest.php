@@ -57,6 +57,8 @@ class StoreTourRequest extends FormRequest
             'currency'         => ['required', 'string', 'size:3'],
             'base_price'       => ['required', 'integer', 'min:0'],
             'capacity_default' => ['required', 'integer', 'min:0'],
+            'duration_value'   => ['nullable', 'integer', 'min:0', 'max:365'],
+            'duration_unit'    => ['nullable', Rule::in(['night', 'day', 'hour'])],
 
             'includes_flight'      => ['nullable', 'boolean'],
             'flight_airline'       => ['nullable', 'string', 'max:120'],

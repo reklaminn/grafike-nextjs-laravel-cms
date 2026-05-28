@@ -50,6 +50,7 @@ class TourItineraryController extends Controller
                 foreach ($day->stops->sortBy('sort_order') as $stop) {
                     $stopRows[] = [
                         'day_number'     => $day->day_number,
+                        'point_type'     => $stop->point_type ?? 'visit',
                         'title'          => $stop->title ?? $day->title,
                         'port_id'        => $stop->port_id,
                         'arrival_time'   => $stop->arrival_time?->format('H:i'),
@@ -117,6 +118,7 @@ class TourItineraryController extends Controller
                 foreach (array_values($dayRows) as $i => $row) {
                     $day->stops()->create([
                         'port_id'        => $row['port_id'] ?? null,
+                        'point_type'     => $row['point_type'] ?? 'visit',
                         'title'          => $row['title'] ?? null,
                         'accommodation'  => $row['accommodation'] ?? null,
                         'description'    => $row['description'] ?? null,

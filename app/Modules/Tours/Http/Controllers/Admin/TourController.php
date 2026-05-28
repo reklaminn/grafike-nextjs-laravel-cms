@@ -340,6 +340,8 @@ class TourController extends Controller
             'currency'              => strtoupper($data['currency']),
             'base_price'            => (int) $data['base_price'],
             'capacity_default'      => (int) $data['capacity_default'],
+            'duration_value'        => $data['duration_value'] ?? null,
+            'duration_unit'         => $data['duration_unit']  ?? null,
             'pricing_mode'          => $data['pricing_mode'] ?? PricingMode::PerPerson->value,
             'sales_status'          => $data['sales_status'] ?? SalesStatus::LivePayment->value,
             'includes_flight'       => (bool) ($data['includes_flight'] ?? false),

@@ -51,7 +51,7 @@
           addStop() {
               const lastDay = this.stops.length ? Number(this.stops[this.stops.length-1].day_number) : 0;
               this.stops.push({
-                  day_number: lastDay + 1, title: '', port_id: '',
+                  day_number: lastDay + 1, point_type: 'visit', title: '', port_id: '',
                   arrival_time: '', departure_time: '', accommodation: '', description: ''
               });
           },
@@ -125,7 +125,15 @@
                             <input type="number" min="1" max="365" :name="`stops[${idx}][day_number]`" x-model="stop.day_number"
                                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
                         </div>
-                        <div class="md:col-span-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Nokta Tipi</label>
+                            <select :name="`stops[${idx}][point_type]`" x-model="stop.point_type"
+                                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                                <option value="visit">Ziyaret</option>
+                                <option value="meeting">Buluşma/Hareket</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3">
                             <label class="block text-[11px] font-medium text-gray-600 mb-1">Liman</label>
                             <select :name="`stops[${idx}][port_id]`" x-model="stop.port_id" @change="onPortChange(stop)"
                                     class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
@@ -135,7 +143,7 @@
                                 </template>
                             </select>
                         </div>
-                        <div class="md:col-span-4">
+                        <div class="md:col-span-3">
                             <label class="block text-[11px] font-medium text-gray-600 mb-1">Başlık (şehir/bölge)</label>
                             <input type="text" :name="`stops[${idx}][title]`" x-model="stop.title"
                                    placeholder="Çeşme"

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -48,6 +49,20 @@ class TourDate extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Tarihe özel kampanyalar (Phase 1.5.g) — TourTag (campaign tipi) m2m.
+     * Her departure'a farklı kampanya atanabilir (eski sistem Tab 4).
+     */
+    public function campaigns(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            TourTag::class,
+            'tour_date_campaign',
+            'tour_date_id',
+            'tour_tag_id'
+        )->withTimestamps();
     }
 
     // ─── Scopes ───────────────────────────────────────────────────────────────

@@ -71,6 +71,27 @@
         </div>
     </div>
 
+    @if(!empty($campaignTags) && $campaignTags->isNotEmpty())
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-bullhorn text-amber-500 mr-1"></i> Bu Tarihe Özel Kampanyalar
+        </label>
+        <div class="flex flex-wrap gap-2">
+            @foreach($campaignTags as $tag)
+                @php $trTag = $tag->translations->first(); @endphp
+                <label class="inline-flex items-center gap-2 px-3 py-1.5 border border-amber-200 bg-amber-50/40 rounded-full hover:bg-amber-50 cursor-pointer text-xs">
+                    <input type="checkbox" name="campaign_ids[]" value="{{ $tag->id }}"
+                           {{ in_array($tag->id, $selectedCampaignIds ?? [], true) ? 'checked' : '' }}
+                           class="h-3 w-3 text-amber-600 rounded">
+                    @if($tag->icon)<span class="text-amber-600">{{ $tag->icon }}</span>@endif
+                    <span>{{ $trTag->name ?? $tag->slug }}</span>
+                </label>
+            @endforeach
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Her departure farklı kampanyada olabilir (örn. yaz tarihleri erken rezervasyon).</p>
+    </div>
+    @endif
+
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Notlar</label>
         <textarea name="notes" rows="3" placeholder="Bu departure'a özel notlar (yolculara gözükmez, sadece admin)"

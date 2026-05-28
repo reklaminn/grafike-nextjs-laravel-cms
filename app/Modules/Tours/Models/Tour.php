@@ -45,6 +45,7 @@ class Tour extends Model implements HasMedia
     protected $fillable = [
         'type', 'slug', 'sku', 'tour_category_id', 'ship_id', 'status',
         'currency', 'base_price', 'capacity_default',
+        'duration_value', 'duration_unit',
         'pricing_mode', 'sales_status',
         'includes_flight', 'flight_info',
         'type_config', 'search_index',
@@ -60,6 +61,7 @@ class Tour extends Model implements HasMedia
             'sales_status'         => SalesStatus::class,
             'base_price'           => 'integer',
             'capacity_default'     => 'integer',
+            'duration_value'       => 'integer',
             'type_config'          => 'array',
             'flight_info'          => 'array',
             'structured_data_json' => 'array',

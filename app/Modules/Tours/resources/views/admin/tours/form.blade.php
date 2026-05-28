@@ -437,6 +437,27 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
 
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Gezi Süresi
+                            <span class="text-gray-400 cursor-help" title="Örn. 7 Gece. Kart ve filtrede gösterilir. Boş bırakılabilir.">
+                                <i class="fas fa-circle-question text-xs"></i>
+                            </span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="number" name="duration_value" min="0" max="365"
+                                   value="{{ old('duration_value', $tour->duration_value) }}"
+                                   placeholder="7"
+                                   class="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            @php $du = old('duration_unit', $tour->duration_unit ?? 'night'); @endphp
+                            <select name="duration_unit" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="night" {{ $du === 'night' ? 'selected' : '' }}>Gece</option>
+                                <option value="day"   {{ $du === 'day'   ? 'selected' : '' }}>Gün</option>
+                                <option value="hour"  {{ $du === 'hour'  ? 'selected' : '' }}>Saat</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <label class="flex items-center gap-2 cursor-pointer pt-2 border-t border-gray-100">
                         <input type="hidden" name="is_featured" value="0">
                         <input type="checkbox" name="is_featured" value="1"

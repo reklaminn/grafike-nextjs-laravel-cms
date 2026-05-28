@@ -9,6 +9,7 @@ use App\Modules\Tours\Http\Requests\Admin\StoreTourDateRequest;
 use App\Modules\Tours\Http\Requests\Admin\StoreTourDatesBulkRequest;
 use App\Modules\Tours\Models\Tour;
 use App\Modules\Tours\Models\TourDate;
+use App\Modules\Tours\Models\TourTag;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -44,14 +45,19 @@ class TourDateController extends Controller
             'status'         => 'open',
         ]);
 
-        return view('tours::admin.dates.form', compact('tour', 'date'));
+        return view('tours::admin.dates.form', [
+            'tour'            => $tour,
+            'date'            => $date,
+            'campaignTags'    => TourTag::query()->campaign()->with('translations')->ordered()->get(),
+            'selectedCampaignIds' => [],
+        ]);
     }
 
     public function store(StoreTourDateRequest $request, Tour $tour): RedirectResponse
     {
         $data = $request->validated();
 
-        $tour->dates()->create([
+        $date = $tour->dates()->create([
             'starts_at'      => $data['starts_at'],
             'ends_at'        => $data['ends_at']        ?? null,
             'capacity_total' => (int) $data['capacity_total'],
@@ -60,6 +66,8 @@ class TourDateController extends Controller
             'status'         => $data['status'],
             'notes'          => $data['notes']          ?? null,
         ]);
+
+        $date->campaigns()->sync($data['campaign_ids'] ?? []);
 
         return redirect()
             ->route('admin.tours.dates.index', $tour)
@@ -132,7 +140,12 @@ class TourDateController extends Controller
     {
         $this->ensureBelongs($tour, $date);
 
-        return view('tours::admin.dates.form', compact('tour', 'date'));
+        return view('tours::admin.dates.form', [
+            'tour'                => $tour,
+            'date'                => $date,
+            'campaignTags'        => TourTag::query()->campaign()->with('translations')->ordered()->get(),
+            'selectedCampaignIds' => $date->campaigns()->pluck('tour_tags.id')->toArray(),
+        ]);
     }
 
     public function update(StoreTourDateRequest $request, Tour $tour, TourDate $date): RedirectResponse
@@ -150,6 +163,8 @@ class TourDateController extends Controller
             'status'         => $data['status'],
             'notes'          => $data['notes']          ?? null,
         ]);
+
+        $date->campaigns()->sync($data['campaign_ids'] ?? []);
 
         return redirect()
             ->route('admin.tours.dates.index', $tour)

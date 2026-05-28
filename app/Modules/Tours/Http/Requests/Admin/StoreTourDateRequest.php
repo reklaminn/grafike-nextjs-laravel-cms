@@ -28,6 +28,8 @@ class StoreTourDateRequest extends FormRequest
             'price_override' => ['nullable', 'integer', 'min:0'],
             'status'         => ['required', Rule::in(['open', 'closed', 'sold_out', 'cancelled'])],
             'notes'          => ['nullable', 'string', 'max:1000'],
+            'campaign_ids'   => ['nullable', 'array'],
+            'campaign_ids.*' => ['integer', 'exists:tour_tags,id'],
         ];
     }
 }
