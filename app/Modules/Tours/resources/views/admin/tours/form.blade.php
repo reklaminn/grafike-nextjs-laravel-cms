@@ -15,6 +15,16 @@
         9 => ['icon' => 'fa-comments',     'label' => 'Yorumlar'],
     ];
     $flightInfo  = $tour->flight_info ?? [];
+
+    // Para birimi seçenekleri — ileride kur tablosundan (admin.currencies)
+    // dinamik beslenebilir.  Şimdilik 3 ana para birimi.
+    $currencyOptions = [
+        'TRY' => '₺ Türk Lirası (TRY)',
+        'EUR' => '€ Euro (EUR)',
+        'USD' => '$ Amerikan Doları (USD)',
+    ];
+    $currentCurrency = old('currency', $tour->currency ?? 'TRY');
+
     $typeConfigJson = $tour->type_config
         ? json_encode($tour->type_config, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
         : '';
@@ -65,7 +75,21 @@
 @if(session('success'))<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{{ session('success') }}</div>@endif
 
 <form method="POST" enctype="multipart/form-data"
-      x-data="{ activeTab: {{ $initialTab }} }"
+      x-data="{
+          activeTab: {{ $initialTab }},
+          slug: @js(old('slug', $tour->slug ?? '')),
+          slugTouched: {{ $tour->exists ? 'true' : 'false' }},
+          slugify(text) {
+              const map = { 'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u' };
+              return (text || '').toString().toLowerCase()
+                  .replace(/[çğıöşü]/g, m => map[m])
+                  .replace(/[^a-z0-9\s-]/g, '')
+                  .trim()
+                  .replace(/\s+/g, '-')
+                  .replace(/-+/g, '-')
+                  .replace(/^-+|-+$/g, '');
+          }
+      }"
       action="{{ $tour->exists ? route('admin.tours.update', $tour) : route('admin.tours.store') }}">
     @csrf
     @if($tour->exists)@method('PUT')@endif
@@ -125,7 +149,14 @@
                             <input type="text" name="translations[{{ $i }}][title]" required
                                    value="{{ old("translations.$i.title", $trH->title ?? '') }}"
                                    placeholder="Tur başlığı * (örn. MSC Akdeniz 7 Gece)"
+                                   @if($i === 0) @input="if (!slugTouched) slug = slugify($event.target.value)" @endif
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium">
+                            @if($i === 0)
+                                <p class="text-[10px] text-gray-400">
+                                    <i class="fas fa-link mr-0.5"></i>
+                                    İlk dilin başlığından URL (slug) otomatik üretilir — Kimlik kartından düzenleyebilirsiniz.
+                                </p>
+                            @endif
                             <input type="text" name="translations[{{ $i }}][subtitle]"
                                    value="{{ old("translations.$i.subtitle", $trH->subtitle ?? '') }}"
                                    placeholder="Alt başlık (opsiyonel — örn. Erken rezervasyon avantajıyla)"
@@ -166,8 +197,14 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Slug (URL) *</label>
-                            <input type="text" name="slug" required value="{{ old('slug', $tour->slug) }}"
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Slug (URL) *
+                                <span class="text-gray-400 cursor-help" title="Başlıktan otomatik üretilir. Elle değiştirirseniz otomatik güncelleme durur.">
+                                    <i class="fas fa-circle-question text-xs"></i>
+                                </span>
+                            </label>
+                            <input type="text" name="slug" required
+                                   x-model="slug" @input="slugTouched = true"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
                                    placeholder="bodrum-cruise-7-gun">
                         </div>
@@ -341,9 +378,12 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Para Birimi *</label>
-                            <input type="text" name="currency" required maxlength="3"
-                                   value="{{ old('currency', $tour->currency ?? 'TRY') }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm uppercase">
+                            <select name="currency" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                @foreach($currencyOptions as $code => $label)
+                                    <option value="{{ $code }}" {{ $currentCurrency === $code ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Sıra</label>

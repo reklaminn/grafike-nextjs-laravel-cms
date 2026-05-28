@@ -2,6 +2,9 @@
 @section('title', ($group->exists ? 'Fiyat Grubu Düzenle' : 'Yeni Fiyat Grubu') . ' — ' . ($tour->translations->first()?->title ?? $tour->slug))
 
 @php
+    // Para birimi seçenekleri — Tour form ile aynı liste.
+    $currencyOptions = ['TRY', 'EUR', 'USD'];
+
     // Cabins koleksiyonunu rows-to-render olarak hazırla.
     // Cruise: ship.cabins listesinden her biri.
     // Non-cruise: tek "_generic" sentinel row (cabin_id=null).
@@ -234,9 +237,13 @@
                                 </select>
                             </td>
                             <td class="px-2 py-2">
-                                <input type="text" name="cabin_prices[{{ $i }}][currency]" maxlength="3"
-                                       value="{{ old("cabin_prices.$i.currency", $existing->currency ?? $tour->currency) }}"
-                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs uppercase font-mono">
+                                @php $rowCcy = old("cabin_prices.$i.currency", $existing->currency ?? $tour->currency); @endphp
+                                <select name="cabin_prices[{{ $i }}][currency]"
+                                        class="w-full px-1 py-1 border border-gray-300 rounded text-xs font-mono">
+                                    @foreach($currencyOptions as $ccy)
+                                        <option value="{{ $ccy }}" {{ $rowCcy === $ccy ? 'selected' : '' }}>{{ $ccy }}</option>
+                                    @endforeach
+                                </select>
                             </td>
                             <td class="px-2 py-2">
                                 <input type="number" min="0" name="cabin_prices[{{ $i }}][price_single]"
