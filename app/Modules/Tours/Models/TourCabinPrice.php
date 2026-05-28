@@ -31,6 +31,7 @@ class TourCabinPrice extends Model
 
     protected $fillable = [
         'tour_price_group_id', 'cabin_id',
+        'room_label', 'deck_label',
         'price_definition', 'calculation_method',
         'price_single', 'price_double', 'price_triple', 'price_quad',
         'price_child', 'price_baby',

@@ -1,33 +1,6 @@
 @extends('admin.layouts.app')
 @section('title', ($group->exists ? 'Fiyat Grubu Düzenle' : 'Yeni Fiyat Grubu') . ' — ' . ($tour->translations->first()?->title ?? $tour->slug))
 
-@php
-    // Para birimi seçenekleri — Tour form ile aynı liste.
-    $currencyOptions = ['TRY', 'EUR', 'USD'];
-
-    // Cabins koleksiyonunu rows-to-render olarak hazırla.
-    // Cruise: ship.cabins listesinden her biri.
-    // Non-cruise: tek "_generic" sentinel row (cabin_id=null).
-    $matrixRows = [];
-    if ($tour->ship && $cabins->isNotEmpty()) {
-        foreach ($cabins as $cabin) {
-            $matrixRows[] = [
-                'key'    => $cabin->id,
-                'cabin'  => $cabin,
-                'label'  => $cabin->translations->first()?->name ?? $cabin->code ?? ('Cabin #' . $cabin->id),
-                'sub'    => $cabin->category?->translations->first()?->name ?? '',
-            ];
-        }
-    } else {
-        $matrixRows[] = [
-            'key'   => '_generic',
-            'cabin' => null,
-            'label' => 'Genel Fiyat (kabinsiz)',
-            'sub'   => 'Paket / günlük / ferry turlar',
-        ];
-    }
-@endphp
-
 @section('content')
 <div class="flex items-center gap-3 mb-6">
     <a href="{{ route('admin.tours.price-groups.index', $tour) }}" class="text-gray-400 hover:text-gray-600">
@@ -39,12 +12,22 @@
         </h1>
         <p class="text-xs text-gray-500">
             Tur: <strong>{{ $tour->translations->first()?->title ?? $tour->slug }}</strong>
-            @if($tour->ship)
-                · Gemi: <strong>{{ $tour->ship->name }}</strong>
-            @endif
+            @if($tour->ship)· Gemi: <strong>{{ $tour->ship->name }}</strong>@endif
         </p>
     </div>
 </div>
+
+@include('tours::admin.partials._help', [
+    'title' => 'Fiyat grubu nasıl oluşturulur?',
+    'intro' => 'Bir fiyat grubu = adlandırılmış fiyat seti ("Yaz 2026", "Erken Rezervasyon"). Aynı tarihe birden çok grup atanabilir; bir grup birden çok tarihte geçerli olabilir.',
+    'steps' => [
+        '<strong>Opsiyon Adı</strong> + (varsa) açıklama girin.',
+        '<strong>Tarihler</strong>: bu grubun geçerli olacağı departure tarihlerini işaretleyin.',
+        '<strong>Oda Fiyatları</strong>: her oda/kabin için bir satır ekleyin — oda adı, hesaplama yöntemi ve kişi-bazlı (Single/Double/Triple/Quad/Çocuk/Bebek) fiyatları girin.',
+        'Fiyat boş bırakılırsa "Sorunuz" olarak gösterilir (manuel teklif).',
+    ],
+    'note' => 'Hesaplama yöntemi: Standart (Doublex2) = double × kişi; Kişi Toplama = her pozisyon kendi fiyatı; Tek Kabin = sabit kabin fiyatı.',
+])
 
 @if($errors->any())
 <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -58,101 +41,116 @@
       action="{{ $group->exists
           ? route('admin.tours.price-groups.update', ['tour' => $tour, 'price_group' => $group])
           : route('admin.tours.price-groups.store', $tour) }}"
+      x-data="{
+          rooms: {{ \Illuminate\Support\Js::from($roomRows) }},
+          cabinOptions: {{ \Illuminate\Support\Js::from($cabinOptions) }},
+          addRoom() {
+              this.rooms.push({
+                  id: null, room_label: '', deck_label: '', cabin_id: '',
+                  price_definition: '', calculation_method: 'standart_doublex2',
+                  currency: '{{ $tour->currency }}',
+                  price_single: '', price_double: '', price_triple: '', price_quad: '',
+                  price_child: '', price_baby: '',
+                  child_age_min: 2, child_age_max: 11, baby_age_min: 0, baby_age_max: 1,
+                  is_active: true,
+              });
+          },
+          onCabinChange(room) {
+              // Kabin seçilince oda adı + güverte boşsa otomatik doldur
+              const opt = this.cabinOptions.find(o => String(o.id) === String(room.cabin_id));
+              if (opt) {
+                  if (!room.room_label) room.room_label = opt.label;
+                  if (!room.deck_label && opt.deck) room.deck_label = opt.deck;
+              }
+          }
+      }"
       class="space-y-6">
     @csrf
     @if($group->exists)@method('PUT')@endif
 
-    {{-- Identity --}}
+    {{-- ── Grup Bilgileri ── --}}
     <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
         <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-            <i class="fas fa-cog text-indigo-500"></i> Grup Ayarları
+            <i class="fas fa-tag text-indigo-500"></i> Grup Bilgileri
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Min Kişi Sayısı</label>
-                <input type="number" name="min_persons" value="{{ old('min_persons', $group->min_persons) }}" min="1"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                <p class="text-xs text-gray-400 mt-1">Bu fiyatın geçerli olması için min yolcu (örn. çift için min 2).</p>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Kontenjan Kotası</label>
-                <input type="number" name="capacity_quota" value="{{ old('capacity_quota', $group->capacity_quota) }}" min="0"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                <p class="text-xs text-gray-400 mt-1">Bu grup için ayrılan kontenjan (boş = limitsiz).</p>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Sıralama</label>
-                <input type="number" name="sort_order" value="{{ old('sort_order', $group->sort_order ?? 0) }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                <p class="text-xs text-gray-400 mt-1">Düşük değer = öncelik (QuoteService bunu uygular).</p>
-            </div>
-
-            <div class="md:col-span-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Kampanya Metni</label>
-                <input type="text" name="campaign_text" value="{{ old('campaign_text', $group->campaign_text) }}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                       placeholder="Erken rezervasyon avantajı — %20 indirim 31 Mart'a kadar">
-            </div>
-        </div>
-
-        <div class="flex flex-wrap gap-6 pt-2 border-t border-gray-100">
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="hidden" name="is_active" value="0">
-                <input type="checkbox" name="is_active" value="1"
-                       {{ old('is_active', $group->is_active ?? true) ? 'checked' : '' }}
-                       class="h-4 w-4 text-indigo-600 rounded">
-                <span class="text-sm text-gray-700">Aktif</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="hidden" name="adult_priority" value="0">
-                <input type="checkbox" name="adult_priority" value="1"
-                       {{ old('adult_priority', $group->adult_priority ?? true) ? 'checked' : '' }}
-                       class="h-4 w-4 text-indigo-600 rounded">
-                <span class="text-sm text-gray-700">Yetişkin önceliği (1st adult = single price)</span>
-            </label>
-        </div>
-    </div>
-
-    {{-- Translations --}}
-    <div class="bg-white rounded-xl shadow-sm border p-5 space-y-5">
-        <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-            <i class="fas fa-language text-indigo-500"></i> Çeviriler
-        </h2>
-
+        {{-- Opsiyon adı + açıklama (per language) --}}
         @foreach($languages as $i => $lang)
             @php $tr = $translations[$lang->id] ?? null; @endphp
-            <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div class="border border-gray-200 rounded-lg p-3 space-y-2">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs uppercase font-semibold text-gray-500">{{ $lang->name }}</span>
+                    <span class="text-[10px] uppercase font-semibold text-gray-500">{{ $lang->name }} — Opsiyon Adı</span>
                     <span class="text-[10px] font-mono text-gray-400">{{ $lang->code }}</span>
                 </div>
                 <input type="hidden" name="translations[{{ $i }}][language_id]" value="{{ $lang->id }}">
                 <input type="text" name="translations[{{ $i }}][name]" required
                        value="{{ old("translations.$i.name", $tr->name ?? '') }}"
-                       placeholder="Grup adı (Yaz 2026 Standart)"
+                       placeholder="Opsiyon adı (Yaz 2026 Fiyatları)"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                <textarea name="translations[{{ $i }}][description]" rows="2"
-                          placeholder="Açıklama (opsiyonel)"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old("translations.$i.description", $tr->description ?? '') }}</textarea>
+                <input type="text" name="translations[{{ $i }}][description]"
+                       value="{{ old("translations.$i.description", $tr->description ?? '') }}"
+                       placeholder="Açıklama (opsiyonel)"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
             </div>
         @endforeach
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Sıra</label>
+                <input type="number" name="sort_order" value="{{ old('sort_order', $group->sort_order ?? 99999) }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Min. Kişi</label>
+                <input type="number" name="min_persons" min="1" value="{{ old('min_persons', $group->min_persons) }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">
+                    Kontenjan
+                    <span class="text-gray-400 cursor-help" title="Bu gruba ayrılan kontenjan. Boş = tarih kontenjanını kullan.">
+                        <i class="fas fa-circle-question"></i>
+                    </span>
+                </label>
+                <input type="number" name="capacity_quota" min="0" value="{{ old('capacity_quota', $group->capacity_quota) }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div class="flex flex-col justify-end gap-1 pb-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="adult_priority" value="0">
+                    <input type="checkbox" name="adult_priority" value="1"
+                           {{ old('adult_priority', $group->adult_priority ?? true) ? 'checked' : '' }}
+                           class="h-4 w-4 text-indigo-600 rounded">
+                    <span class="text-xs text-gray-700">Yetişkin önceliği</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="is_active" value="0">
+                    <input type="checkbox" name="is_active" value="1"
+                           {{ old('is_active', $group->is_active ?? true) ? 'checked' : '' }}
+                           class="h-4 w-4 text-indigo-600 rounded">
+                    <span class="text-xs text-gray-700">Aktif</span>
+                </label>
+            </div>
+            <div class="md:col-span-4">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Kampanya Metni</label>
+                <input type="text" name="campaign_text" value="{{ old('campaign_text', $group->campaign_text) }}"
+                       placeholder="Erken rezervasyon avantajı — %20 indirim 31 Mart'a kadar"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+        </div>
     </div>
 
-    {{-- Date assignments --}}
+    {{-- ── Tarih Seçiniz ── --}}
     <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
         <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-            <i class="fas fa-calendar-check text-indigo-500"></i> Atanmış Tarihler
+            <i class="fas fa-calendar-check text-indigo-500"></i> Tarih Seçiniz
+            <span class="text-xs text-gray-400 font-normal">— bu grup hangi tarihlerde geçerli?</span>
         </h2>
-        <p class="text-xs text-gray-500">
-            Bu grup hangi departure tarihlerine geçerli? Boş bırakılırsa hiçbir tarihte aktif olmaz.
-        </p>
 
         @if($tour->dates->isEmpty())
             <p class="text-sm text-amber-600">
-                Henüz tarih yok — önce <a href="{{ route('admin.tours.dates.index', $tour) }}" class="underline">departure ekleyin</a>.
+                Henüz departure tarihi yok — önce
+                <a href="{{ route('admin.tours.dates.bulk-create', $tour) }}" class="underline">tarih ekleyin</a>.
             </p>
         @else
             <div class="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto p-2 bg-gray-50 rounded-lg">
@@ -163,9 +161,7 @@
                                class="h-4 w-4 text-indigo-600 rounded">
                         <div class="text-xs">
                             <div class="font-medium">{{ $date->starts_at?->format('d.m.Y') }}</div>
-                            @if($date->ends_at)
-                                <div class="text-gray-400">→ {{ $date->ends_at->format('d.m.Y') }}</div>
-                            @endif
+                            @if($date->ends_at)<div class="text-gray-400">→ {{ $date->ends_at->format('d.m.Y') }}</div>@endif
                         </div>
                     </label>
                 @endforeach
@@ -173,166 +169,171 @@
         @endif
     </div>
 
-    {{-- Cabin Matrix Grid --}}
+    {{-- ── Oda Fiyatları (repeatable) ── --}}
     <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                <i class="fas fa-table text-indigo-500"></i> Fiyat Matrisi
+                <i class="fas fa-bed text-indigo-500"></i> Oda / Kabin Fiyatları
+                <span class="text-xs text-gray-400 font-normal" x-text="`(${rooms.length} oda)`"></span>
             </h2>
-            <span class="text-xs text-gray-500">
-                @if($tour->ship)
-                    {{ $cabins->count() }} kabin × 6 fiyat sütunu
-                @else
-                    Genel fiyat (kabinsiz)
-                @endif
-            </span>
+            <button type="button" @click="addRoom()"
+                    class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs hover:bg-indigo-100 font-medium">
+                <i class="fas fa-plus mr-1"></i> Oda Ekle
+            </button>
         </div>
+
         <p class="text-xs text-gray-500">
-            Fiyatlar <strong>kuruş</strong> cinsinden tam sayı.  100 = 1 TL.  Boş = "Sorunuz" (manuel teklif).
-            Çocuk / bebek yaş aralıkları sadece child / baby fiyatı dolu satırlarda anlam taşır.
+            Fiyatlar <strong>kuruş</strong> cinsinden (100 = 1 TL). Boş = "Sorunuz".
+            Çocuk/bebek yaş aralıkları sadece o fiyat dolu satırlarda anlamlıdır.
         </p>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-xs border-collapse">
-                <thead class="bg-gray-50 text-gray-600 uppercase text-[10px]">
-                    <tr>
-                        <th class="px-2 py-2 text-left sticky left-0 bg-gray-50 min-w-[180px]">Kabin</th>
-                        <th class="px-2 py-2 text-left min-w-[200px]">Hesaplama</th>
-                        <th class="px-2 py-2 min-w-[60px]">Ccy</th>
-                        <th class="px-2 py-2 min-w-[100px]" title="Tek kişi">1ki</th>
-                        <th class="px-2 py-2 min-w-[100px]" title="Çift kişi">2ki</th>
-                        <th class="px-2 py-2 min-w-[100px]" title="Üçüncü kişi">3ki</th>
-                        <th class="px-2 py-2 min-w-[100px]" title="Dördüncü kişi">4ki</th>
-                        <th class="px-2 py-2 min-w-[100px]">Çocuk</th>
-                        <th class="px-2 py-2 min-w-[80px]" title="Çocuk yaş aralığı">Yaş ç</th>
-                        <th class="px-2 py-2 min-w-[100px]">Bebek</th>
-                        <th class="px-2 py-2 min-w-[80px]" title="Bebek yaş aralığı">Yaş b</th>
-                        <th class="px-2 py-2">Aktif</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($matrixRows as $i => $row)
-                        @php
-                            $existing = $existingPrices[$row['key']] ?? null;
-                            $cabinIdVal = $row['key']; // 'cabin_id' input value (id veya '_generic')
-                        @endphp
-                        <tr class="border-t border-gray-100 hover:bg-indigo-50/30">
-                            <td class="px-2 py-2 sticky left-0 bg-white">
-                                <div class="font-medium text-gray-800">{{ $row['label'] }}</div>
-                                @if($row['sub'])
-                                    <div class="text-[10px] text-gray-400">{{ $row['sub'] }}</div>
-                                @endif
-                                <input type="hidden" name="cabin_prices[{{ $i }}][cabin_id]" value="{{ $cabinIdVal }}">
-                            </td>
-                            <td class="px-2 py-2">
-                                <select name="cabin_prices[{{ $i }}][calculation_method]"
-                                        class="w-full px-2 py-1 border border-gray-300 rounded text-xs">
-                                    @foreach($calculationMethods as $cm)
-                                        <option value="{{ $cm->value }}"
-                                                title="{{ $cm->description() }}"
-                                                {{ old("cabin_prices.$i.calculation_method", $existing->calculation_method?->value ?? 'standart_doublex2') === $cm->value ? 'selected' : '' }}>
-                                            {{ $cm->label() }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </td>
-                            <td class="px-2 py-2">
-                                @php $rowCcy = old("cabin_prices.$i.currency", $existing->currency ?? $tour->currency); @endphp
-                                <select name="cabin_prices[{{ $i }}][currency]"
-                                        class="w-full px-1 py-1 border border-gray-300 rounded text-xs font-mono">
-                                    @foreach($currencyOptions as $ccy)
-                                        <option value="{{ $ccy }}" {{ $rowCcy === $ccy ? 'selected' : '' }}>{{ $ccy }}</option>
-                                    @endforeach
-                                </select>
-                            </td>
-                            <td class="px-2 py-2">
-                                <input type="number" min="0" name="cabin_prices[{{ $i }}][price_single]"
-                                       value="{{ old("cabin_prices.$i.price_single", $existing->price_single ?? '') }}"
-                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                                       placeholder="—">
-                            </td>
-                            <td class="px-2 py-2">
-                                <input type="number" min="0" name="cabin_prices[{{ $i }}][price_double]"
-                                       value="{{ old("cabin_prices.$i.price_double", $existing->price_double ?? '') }}"
-                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                                       placeholder="—">
-                            </td>
-                            <td class="px-2 py-2">
-                                <input type="number" min="0" name="cabin_prices[{{ $i }}][price_triple]"
-                                       value="{{ old("cabin_prices.$i.price_triple", $existing->price_triple ?? '') }}"
-                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                                       placeholder="—">
-                            </td>
-                            <td class="px-2 py-2">
-                                <input type="number" min="0" name="cabin_prices[{{ $i }}][price_quad]"
-                                       value="{{ old("cabin_prices.$i.price_quad", $existing->price_quad ?? '') }}"
-                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                                       placeholder="—">
-                            </td>
-                            <td class="px-2 py-2">
-                                <input type="number" min="0" name="cabin_prices[{{ $i }}][price_child]"
-                                       value="{{ old("cabin_prices.$i.price_child", $existing->price_child ?? '') }}"
-                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                                       placeholder="—">
-                            </td>
-                            <td class="px-2 py-2">
-                                <div class="flex items-center gap-1">
-                                    <input type="number" min="0" max="30" name="cabin_prices[{{ $i }}][child_age_min]"
-                                           value="{{ old("cabin_prices.$i.child_age_min", $existing->child_age_min ?? 2) }}"
-                                           class="w-12 px-1 py-1 border border-gray-300 rounded text-xs font-mono"
-                                           title="Min yaş">
-                                    <span class="text-gray-400 text-xs">-</span>
-                                    <input type="number" min="0" max="30" name="cabin_prices[{{ $i }}][child_age_max]"
-                                           value="{{ old("cabin_prices.$i.child_age_max", $existing->child_age_max ?? 11) }}"
-                                           class="w-12 px-1 py-1 border border-gray-300 rounded text-xs font-mono"
-                                           title="Max yaş">
-                                </div>
-                            </td>
-                            <td class="px-2 py-2">
-                                <input type="number" min="0" name="cabin_prices[{{ $i }}][price_baby]"
-                                       value="{{ old("cabin_prices.$i.price_baby", $existing->price_baby ?? '') }}"
-                                       class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                                       placeholder="—">
-                            </td>
-                            <td class="px-2 py-2">
-                                <div class="flex items-center gap-1">
-                                    <input type="number" min="0" max="30" name="cabin_prices[{{ $i }}][baby_age_min]"
-                                           value="{{ old("cabin_prices.$i.baby_age_min", $existing->baby_age_min ?? 0) }}"
-                                           class="w-12 px-1 py-1 border border-gray-300 rounded text-xs font-mono"
-                                           title="Min yaş">
-                                    <span class="text-gray-400 text-xs">-</span>
-                                    <input type="number" min="0" max="30" name="cabin_prices[{{ $i }}][baby_age_max]"
-                                           value="{{ old("cabin_prices.$i.baby_age_max", $existing->baby_age_max ?? 1) }}"
-                                           class="w-12 px-1 py-1 border border-gray-300 rounded text-xs font-mono"
-                                           title="Max yaş">
-                                </div>
-                            </td>
-                            <td class="px-2 py-2 text-center">
-                                <input type="hidden" name="cabin_prices[{{ $i }}][is_active]" value="0">
-                                <input type="checkbox" name="cabin_prices[{{ $i }}][is_active]" value="1"
-                                       {{ old("cabin_prices.$i.is_active", $existing->is_active ?? true) ? 'checked' : '' }}
-                                       class="h-4 w-4 text-indigo-600 rounded">
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <div class="space-y-4">
+            <template x-for="(room, idx) in rooms" :key="idx">
+                <div class="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50/50">
+                    <input type="hidden" :name="`cabin_prices[${idx}][id]`" :value="room.id ?? ''">
+
+                    {{-- Üst satır: oda adı + kabin + güverte + sil --}}
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        <div class="md:col-span-4">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Oda Adı / Türü *</label>
+                            <input type="text" :name="`cabin_prices[${idx}][room_label]`" x-model="room.room_label"
+                                   placeholder="Standart İç Kabin"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Kabin (master, opsiyonel)</label>
+                            <select :name="`cabin_prices[${idx}][cabin_id]`" x-model="room.cabin_id"
+                                    @change="onCabinChange(room)"
+                                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                                <option value="">— Kabin Seçiniz —</option>
+                                <template x-for="opt in cabinOptions" :key="opt.id">
+                                    <option :value="opt.id" x-text="opt.label"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Güverte / Kat</label>
+                            <input type="text" :name="`cabin_prices[${idx}][deck_label]`" x-model="room.deck_label"
+                                   placeholder="Deck 7"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                        </div>
+                        <div class="md:col-span-1 flex justify-end">
+                            <button type="button" @click="rooms.splice(idx, 1)" x-show="rooms.length > 1"
+                                    class="text-red-500 hover:text-red-700 px-2 py-1.5" title="Odayı sil">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Orta satır: fiyat tanımı + hesaplama + yaş aralıkları --}}
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <div class="md:col-span-4">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Fiyat Tanımı</label>
+                            <input type="text" :name="`cabin_prices[${idx}][price_definition]`" x-model="room.price_definition"
+                                   placeholder="1 Tam 1 Yarım gibi"
+                                   class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Hesaplama Yöntemi</label>
+                            <select :name="`cabin_prices[${idx}][calculation_method]`" x-model="room.calculation_method"
+                                    class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
+                                @foreach($calculationMethods as $cm)
+                                    <option value="{{ $cm->value }}" title="{{ $cm->description() }}">{{ $cm->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Çocuk Yaş</label>
+                            <div class="flex items-center gap-1">
+                                <input type="number" min="0" max="30" :name="`cabin_prices[${idx}][child_age_min]`" x-model="room.child_age_min"
+                                       class="w-full px-1 py-1.5 border border-gray-300 rounded text-sm" title="Min">
+                                <span class="text-gray-400 text-xs">-</span>
+                                <input type="number" min="0" max="30" :name="`cabin_prices[${idx}][child_age_max]`" x-model="room.child_age_max"
+                                       class="w-full px-1 py-1.5 border border-gray-300 rounded text-sm" title="Max">
+                            </div>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">Bebek Yaş</label>
+                            <div class="flex items-center gap-1">
+                                <input type="number" min="0" max="30" :name="`cabin_prices[${idx}][baby_age_min]`" x-model="room.baby_age_min"
+                                       class="w-full px-1 py-1.5 border border-gray-300 rounded text-sm" title="Min">
+                                <span class="text-gray-400 text-xs">-</span>
+                                <input type="number" min="0" max="30" :name="`cabin_prices[${idx}][baby_age_max]`" x-model="room.baby_age_max"
+                                       class="w-full px-1 py-1.5 border border-gray-300 rounded text-sm" title="Max">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Alt satır: person-tier fiyatları --}}
+                    <div class="grid grid-cols-2 md:grid-cols-7 gap-2 pt-2 border-t border-gray-200">
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-1">👤 Tek</label>
+                            <input type="number" min="0" :name="`cabin_prices[${idx}][price_single]`" x-model="room.price_single"
+                                   placeholder="—" class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-1">👥 Çift</label>
+                            <input type="number" min="0" :name="`cabin_prices[${idx}][price_double]`" x-model="room.price_double"
+                                   placeholder="—" class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-1">3. Kişi</label>
+                            <input type="number" min="0" :name="`cabin_prices[${idx}][price_triple]`" x-model="room.price_triple"
+                                   placeholder="—" class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-1">4. Kişi</label>
+                            <input type="number" min="0" :name="`cabin_prices[${idx}][price_quad]`" x-model="room.price_quad"
+                                   placeholder="—" class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-1">🧒 Çocuk</label>
+                            <input type="number" min="0" :name="`cabin_prices[${idx}][price_child]`" x-model="room.price_child"
+                                   placeholder="—" class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-1">👶 Bebek</label>
+                            <input type="number" min="0" :name="`cabin_prices[${idx}][price_baby]`" x-model="room.price_baby"
+                                   placeholder="—" class="w-full px-2 py-1 border border-gray-300 rounded text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-500 mb-1">Para Birimi</label>
+                            <select :name="`cabin_prices[${idx}][currency]`" x-model="room.currency"
+                                    class="w-full px-1 py-1 border border-gray-300 rounded text-xs font-mono">
+                                <option value="TRY">TRY</option>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="hidden" :name="`cabin_prices[${idx}][is_active]`" value="0">
+                        <input type="checkbox" :name="`cabin_prices[${idx}][is_active]`" value="1" x-model="room.is_active"
+                               class="h-3.5 w-3.5 text-indigo-600 rounded">
+                        <span class="text-xs text-gray-600">Aktif</span>
+                    </label>
+                </div>
+            </template>
         </div>
 
-        <details class="text-xs text-gray-500 pt-2">
-            <summary class="cursor-pointer hover:text-gray-700">▸ Hesaplama yöntemleri kısaca</summary>
-            <ul class="mt-2 pl-4 space-y-1 list-disc">
-                @foreach($calculationMethods as $cm)
-                    <li><strong>{{ $cm->label() }}:</strong> {{ $cm->description() }}</li>
-                @endforeach
-            </ul>
-        </details>
+        <button type="button" @click="addRoom()"
+                class="text-xs text-indigo-600 hover:underline">
+            <i class="fas fa-plus mr-1"></i> Bir oda daha ekle
+        </button>
     </div>
 
-    <div class="flex justify-end">
-        <button type="submit"
+    {{-- ── Çift kaydet butonu ── --}}
+    <div class="flex justify-end gap-2">
+        <a href="{{ route('admin.tours.price-groups.index', $tour) }}"
+           class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">İptal</a>
+        <button type="submit" name="save_action" value="new"
+                class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 font-medium">
+            <i class="fas fa-plus mr-1"></i> Kaydet ve Yeni Grup
+        </button>
+        <button type="submit" name="save_action" value="continue"
                 class="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
-            <i class="fas fa-save mr-1"></i> Kaydet
+            <i class="fas fa-save mr-1"></i> Kaydet ve Devam Et
         </button>
     </div>
 </form>

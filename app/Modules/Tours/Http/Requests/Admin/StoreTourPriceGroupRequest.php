@@ -44,11 +44,14 @@ class StoreTourPriceGroupRequest extends FormRequest
             'date_ids'   => ['nullable', 'array'],
             'date_ids.*' => ['integer', 'exists:tour_dates,id'],
 
-            // Cabin matrix grid — each row is a TourCabinPrice
+            // Oda/kabin satırları — her satır bir TourCabinPrice (repeatable)
             'cabin_prices'                          => ['nullable', 'array'],
+            'cabin_prices.*.id'                     => ['nullable', 'integer'],
+            'cabin_prices.*.room_label'             => ['nullable', 'string', 'max:200'],
+            'cabin_prices.*.deck_label'             => ['nullable', 'string', 'max:120'],
             'cabin_prices.*.cabin_id'               => ['nullable', 'integer', 'exists:cabins,id'],
             'cabin_prices.*.price_definition'       => ['nullable', 'string', 'max:200'],
-            'cabin_prices.*.calculation_method'     => ['required', Rule::in(CalculationMethod::values())],
+            'cabin_prices.*.calculation_method'     => ['nullable', Rule::in(CalculationMethod::values())],
             'cabin_prices.*.currency'               => ['nullable', 'string', 'size:3'],
             'cabin_prices.*.price_single'           => ['nullable', 'integer', 'min:0'],
             'cabin_prices.*.price_double'           => ['nullable', 'integer', 'min:0'],
