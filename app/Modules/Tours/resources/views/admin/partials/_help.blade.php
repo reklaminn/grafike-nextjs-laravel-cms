@@ -9,7 +9,7 @@
             'steps' => ['Adım 1...', 'Adım 2...'],
         ])
 --}}
-<div x-data="{ open: true }" class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-5">
+<div x-data="{ open: false }" class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-5">
     <div class="flex items-start justify-between gap-3">
         <div class="flex items-center gap-2 text-sm font-semibold text-blue-800">
             <i class="fas fa-circle-info"></i> {{ $title ?? 'Nasıl kullanılır?' }}

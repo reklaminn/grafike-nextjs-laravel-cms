@@ -56,6 +56,10 @@
               });
           },
           onPortChange(stop) {
+              if (String(stop.port_id) === 'sea') {
+                  if (!stop.title) stop.title = 'Denizde';
+                  return;
+              }
               const opt = this.ports.find(p => String(p.id) === String(stop.port_id));
               if (opt && !stop.title) stop.title = opt.label;
           }
@@ -110,6 +114,18 @@
             </button>
         </div>
 
+        @unless($portsFromTour)
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-start gap-2">
+                <i class="fas fa-info-circle mt-0.5"></i>
+                <span>
+                    Bu tur için henüz <strong>ziyaret edilen liman</strong> seçmediniz; aşağıdaki liman listesi
+                    tüm liman ana kataloğundan gösteriliyor.
+                    <a href="{{ route('admin.tours.edit', $tour) }}#tab-1" class="underline font-medium">Tab 1'den turun limanlarını seçin</a>
+                    — sonra bu liste yalnızca o limanları gösterir.
+                </span>
+            </div>
+        @endunless
+
         <template x-if="stops.length === 0">
             <p class="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg text-center">
                 Henüz durak yok. "Durak Ekle" ile başlayın.
@@ -138,6 +154,7 @@
                             <select :name="`stops[${idx}][port_id]`" x-model="stop.port_id" @change="onPortChange(stop)"
                                     class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm">
                                 <option value="">— Liman Seçiniz —</option>
+                                <option value="sea">🌊 Denizde (At Sea)</option>
                                 <template x-for="p in ports" :key="p.id">
                                     <option :value="p.id" x-text="p.label"></option>
                                 </template>

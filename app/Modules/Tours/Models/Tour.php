@@ -104,6 +104,21 @@ class Tour extends Model implements HasMedia
     }
 
     /**
+     * Ziyaret edilen limanlar (Phase 1.5.g) — eski sistem Tab 1 "Bölgeler".
+     * 1000+ Port master'ından seçilen alt küme; Rota Takvimi dropdown'u
+     * bu listeden beslenir.
+     */
+    public function ports(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Port::class,
+            'tour_ports',
+            'tour_id',
+            'port_id'
+        )->withPivot('sort_order')->withTimestamps()->orderBy('tour_ports.sort_order');
+    }
+
+    /**
      * Destinasyon m2m — bir tur birden çok destinasyon kapsayabilir
      * (örn. "Akdeniz Yaz" → Yunan Adaları + İtalya).  Phase 1.5.c.
      */

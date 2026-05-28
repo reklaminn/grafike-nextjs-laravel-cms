@@ -43,16 +43,19 @@ class TourItineraryController extends Controller
             ->with(['days.stops.port.translations', 'originPort.translations'])
             ->first();
 
-        // Stop satırlarını flat listeye düz (Alpine x-data init JSON)
+        // Stop satırlarını flat listeye düz (Alpine x-data init JSON).
+        // "Denizde" günleri point_type='sea' olarak saklanır; dropdown'da
+        // port_id='sea' sanal değeriyle gösterilir (Nokta Tipi nötr 'visit').
         $stopRows = [];
         if ($itinerary) {
             foreach ($itinerary->days->sortBy('day_number') as $day) {
                 foreach ($day->stops->sortBy('sort_order') as $stop) {
+                    $isSea = $stop->point_type === 'sea';
                     $stopRows[] = [
                         'day_number'     => $day->day_number,
-                        'point_type'     => $stop->point_type ?? 'visit',
+                        'point_type'     => $isSea ? 'visit' : ($stop->point_type ?? 'visit'),
                         'title'          => $stop->title ?? $day->title,
-                        'port_id'        => $stop->port_id,
+                        'port_id'        => $isSea ? 'sea' : $stop->port_id,
                         'arrival_time'   => $stop->arrival_time?->format('H:i'),
                         'departure_time' => $stop->departure_time?->format('H:i'),
                         'accommodation'  => $stop->accommodation,
@@ -62,10 +65,22 @@ class TourItineraryController extends Controller
             }
         }
 
-        $ports = Port::query()->with('translations')->ordered()->get()->map(fn ($p) => [
+        // Rota dropdown'u SADECE turun seçili limanlarından beslenir
+        // (eski sistemde 1000+ liman master'ından Tab 1'de seçilen alt küme).
+        // Tur henüz liman seçmediyse tüm master'a düşülür + UI ipucu gösterilir.
+        $tour->loadMissing('ports.translations');
+        $tourPorts = $tour->ports->map(fn ($p) => [
             'id'    => $p->id,
             'label' => $p->translations->first()?->name ?? $p->slug,
         ])->values();
+
+        $portsFromTour = $tourPorts->isNotEmpty();
+        $ports = $portsFromTour
+            ? $tourPorts
+            : Port::query()->with('translations')->ordered()->get()->map(fn ($p) => [
+                'id'    => $p->id,
+                'label' => $p->translations->first()?->name ?? $p->slug,
+            ])->values();
 
         return view('tours::admin.itinerary.edit', [
             'tour'           => $tour,
@@ -74,6 +89,7 @@ class TourItineraryController extends Controller
             'itinerary'      => $itinerary,
             'stopRows'       => $stopRows,
             'ports'          => $ports,
+            'portsFromTour'  => $portsFromTour,
         ]);
     }
 
@@ -116,10 +132,13 @@ class TourItineraryController extends Controller
                 ]);
 
                 foreach (array_values($dayRows) as $i => $row) {
+                    $isSea = ($row['point_type'] ?? '') === 'sea';
                     $day->stops()->create([
-                        'port_id'        => $row['port_id'] ?? null,
+                        'port_id'        => $isSea ? null : ($row['port_id'] ?? null),
                         'point_type'     => $row['point_type'] ?? 'visit',
-                        'title'          => $row['title'] ?? null,
+                        'title'          => trim((string) ($row['title'] ?? '')) !== ''
+                                                ? $row['title']
+                                                : ($isSea ? 'Denizde' : null),
                         'accommodation'  => $row['accommodation'] ?? null,
                         'description'    => $row['description'] ?? null,
                         'arrival_time'   => $row['arrival_time']   ?? null,

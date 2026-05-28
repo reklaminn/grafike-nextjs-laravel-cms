@@ -11,6 +11,7 @@ use App\Modules\Tours\Enums\SalesStatus;
 use App\Modules\Tours\Enums\TourType;
 use App\Modules\Tours\Http\Requests\Admin\StoreTourRequest;
 use App\Modules\Tours\Models\Destination;
+use App\Modules\Tours\Models\Port;
 use App\Modules\Tours\Models\Ship;
 use App\Modules\Tours\Models\TenantInfoExtra;
 use App\Modules\Tours\Models\Tour;
@@ -268,6 +269,7 @@ class TourController extends Controller
             'media',
             'itineraries.days.stops',
             'extras' => fn ($q) => $q->orderBy('sort_order'),
+            'ports.translations',
         ]);
 
         $languages         = Language::active()->orderBy('sort_order')->get();
@@ -280,6 +282,14 @@ class TourController extends Controller
         $selectedDestIds   = $tour->destinations->pluck('id')->toArray();
         $selectedTagIds    = $tour->marketingTags->pluck('id')->toArray();
         $selectedSecCatIds = $tour->secondaryCategories->pluck('id')->toArray();
+
+        // Liman master (1000+) — Tab 1 arama-filtreli çoklu seçim için JSON.
+        $allPorts = Port::query()->with('translations')->ordered()->get()->map(fn ($p) => [
+            'id'    => $p->id,
+            'label' => $p->translations->first()?->name ?? $p->slug,
+            'flag'  => $p->flagUrl(),
+        ])->values();
+        $selectedPortIds = $tour->ports->pluck('id')->toArray();
 
         // Tab 3 — bilgi amaçlı ücretler master + mevcut ekstralar (Alpine JSON)
         $infoExtraMaster = TenantInfoExtra::query()->with('translations')->ordered()->get()->map(fn ($e) => [
@@ -322,6 +332,8 @@ class TourController extends Controller
             'selectedDestIds'     => $selectedDestIds,
             'selectedTagIds'      => $selectedTagIds,
             'selectedSecCatIds'   => $selectedSecCatIds,
+            'allPorts'            => $allPorts,
+            'selectedPortIds'     => $selectedPortIds,
             'infoExtraMaster'     => $infoExtraMaster,
             'infoExtraRows'       => $infoExtraRows,
             'bookingExtraRows'    => $bookingExtraRows,
@@ -396,6 +408,7 @@ class TourController extends Controller
         $tour->destinations()->sync($payload($data['destination_ids'] ?? []));
         $tour->marketingTags()->sync($payload($data['tour_tag_ids'] ?? []));
         $tour->secondaryCategories()->sync($payload($data['secondary_category_ids'] ?? []));
+        $tour->ports()->sync($payload($data['port_ids'] ?? []));
     }
 
     /**

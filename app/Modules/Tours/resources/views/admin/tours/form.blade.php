@@ -318,6 +318,70 @@
                     </div>
                 </div>
 
+                {{-- Ziyaret Edilen Limanlar — arama-filtreli çoklu seçim (1000+ master) --}}
+                <div class="bg-white rounded-xl shadow-sm border p-5 space-y-3"
+                     x-data="{
+                         all: {{ \Illuminate\Support\Js::from($allPorts) }},
+                         selected: {{ \Illuminate\Support\Js::from($selectedPortIds) }},
+                         search: '',
+                         get results() {
+                             const q = this.search.toLowerCase().trim();
+                             let list = this.all;
+                             if (q) list = list.filter(p => (p.label || '').toLowerCase().includes(q));
+                             return list.slice(0, 40);
+                         },
+                         selectedPorts() { return this.all.filter(p => this.selected.includes(p.id)); },
+                         isSel(id) { return this.selected.includes(id); },
+                         toggle(id) {
+                             const i = this.selected.indexOf(id);
+                             if (i === -1) this.selected.push(id); else this.selected.splice(i, 1);
+                         }
+                     }">
+                    <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-anchor text-indigo-500"></i> Ziyaret Edilen Limanlar
+                        <span class="text-gray-400 cursor-help" title="Bu turun uğradığı limanları seçin. Rota Takvimi (2. sekme) durak limanlarını BU listeden seçer.">
+                            <i class="fas fa-circle-question text-xs"></i>
+                        </span>
+                    </h2>
+
+                    {{-- Seçili limanlar (chip) + hidden inputs --}}
+                    <template x-for="id in selected" :key="'h'+id">
+                        <input type="hidden" name="port_ids[]" :value="id">
+                    </template>
+                    <div class="flex flex-wrap gap-1.5" x-show="selected.length">
+                        <template x-for="p in selectedPorts()" :key="'c'+p.id">
+                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs">
+                                <template x-if="p.flag"><img :src="p.flag" class="w-4 h-3 rounded-sm"></template>
+                                <span x-text="p.label"></span>
+                                <button type="button" @click="toggle(p.id)" class="text-indigo-400 hover:text-indigo-700">&times;</button>
+                            </span>
+                        </template>
+                    </div>
+                    <p class="text-xs text-gray-400" x-show="!selected.length">Henüz liman seçilmedi.</p>
+
+                    {{-- Arama --}}
+                    <div class="relative">
+                        <input type="text" x-model="search" placeholder="Liman ara (örn. İstanbul, Mykonos)…"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <div x-show="search" x-cloak
+                             class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+                            <template x-if="results.length === 0">
+                                <div class="px-3 py-2 text-xs text-gray-400">Eşleşen liman yok.</div>
+                            </template>
+                            <template x-for="p in results" :key="'r'+p.id">
+                                <label class="flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 cursor-pointer text-sm border-b border-gray-50">
+                                    <input type="checkbox" :checked="isSel(p.id)" @change="toggle(p.id)" class="h-4 w-4 text-indigo-600 rounded">
+                                    <template x-if="p.flag"><img :src="p.flag" class="w-5 h-3.5 rounded-sm"></template>
+                                    <span x-text="p.label"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-gray-400">
+                        Liman master Cruise Yönetimi → Limanlar'dan yönetilir. Arama ile {{ count($allPorts) }} liman içinden seçin.
+                    </p>
+                </div>
+
                 {{-- Flight info (conditional) --}}
                 <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
                     <label class="flex items-center gap-2 cursor-pointer">

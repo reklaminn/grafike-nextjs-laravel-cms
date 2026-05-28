@@ -75,6 +75,8 @@ class StoreTourRequest extends FormRequest
             // M2M relations (Phase 1.5.c)
             'destination_ids'         => ['nullable', 'array'],
             'destination_ids.*'       => ['integer', 'exists:destinations,id'],
+            'port_ids'                => ['nullable', 'array'],
+            'port_ids.*'              => ['integer', 'exists:ports,id'],
             'tour_tag_ids'            => ['nullable', 'array'],
             'tour_tag_ids.*'          => ['integer', 'exists:tour_tags,id'],
             'secondary_category_ids'  => ['nullable', 'array'],
