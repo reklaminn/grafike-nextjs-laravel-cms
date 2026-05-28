@@ -223,6 +223,8 @@ class IndustryTemplateApplier
 
             $menu = Menu::create([
                 'name'      => $name,
+                // tenant `menus.slug` is NOT NULL + unique — must be supplied.
+                'slug'      => $this->uniqueMenuSlug($name, $location),
                 'location'  => $location,
                 'is_active' => true,
             ]);
@@ -238,7 +240,8 @@ class IndustryTemplateApplier
                 }
                 MenuItem::create([
                     'menu_id'    => $menu->id,
-                    'label'      => (string) ($item['label'] ?? 'Bağlantı'),
+                    // tenant column is `title` (snapshot uses `label`).
+                    'title'      => (string) ($item['label'] ?? $item['title'] ?? 'Bağlantı'),
                     'page_id'    => $pageId,
                     'url'        => $item['url'] ?? null,
                     'sort_order' => $i + 1,
@@ -283,5 +286,24 @@ class IndustryTemplateApplier
         $slug = Str::slug($value, '-', 'tr');
 
         return $slug !== '' ? $slug : 'page';
+    }
+
+    /**
+     * Build a menu slug that is unique within the tenant DB (menus.slug is
+     * UNIQUE + NOT NULL). Falls back to the location and appends -2, -3, … on
+     * collision (e.g. a header + footer menu sharing the same name).
+     */
+    private function uniqueMenuSlug(string $name, string $location): string
+    {
+        $base = $this->slugify(trim($name) !== '' ? $name : $location);
+        $slug = $base;
+        $n = 2;
+
+        while (Menu::query()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$n;
+            $n++;
+        }
+
+        return $slug;
     }
 }
