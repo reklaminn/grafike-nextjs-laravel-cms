@@ -13,6 +13,7 @@ use App\Modules\Tours\Http\Controllers\Admin\ShipController;
 use App\Modules\Tours\Http\Controllers\Admin\TourCategoryController;
 use App\Modules\Tours\Http\Controllers\Admin\TourController;
 use App\Modules\Tours\Http\Controllers\Admin\TourDateController;
+use App\Modules\Tours\Http\Controllers\Admin\TourPriceGroupController;
 use App\Modules\Tours\Http\Controllers\Admin\TourTagController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,10 @@ Route::prefix('admin')
         // Nested departures under a tour
         Route::resource('tours.dates', TourDateController::class)
             ->parameters(['dates' => 'date'])
+            ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+
+        // Nested price groups under a tour (Phase 1.5.e — Tab 3 backend)
+        Route::resource('tours.price-groups', TourPriceGroupController::class)
             ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 
         // Categories (flat-ish under admin)

@@ -373,38 +373,68 @@
     {{-- ═══ Tab 3: Genel Fiyatlar ═══════════════════════════════════════ --}}
     <div x-show="activeTab === 3" x-cloak class="space-y-6">
         <div class="bg-white rounded-xl shadow-sm border p-5 space-y-4">
-            <h2 class="font-semibold text-gray-700 flex items-center gap-2">
-                <i class="fas fa-tags text-indigo-500"></i> Fiyat Grupları (TourPriceGroup × TourCabinPrice matrix)
-            </h2>
-            @if($tour->priceGroups->isEmpty())
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fas fa-tags text-indigo-500"></i> Fiyat Grupları
+                </h2>
+                @if($tour->exists)
+                    <a href="{{ route('admin.tours.price-groups.create', $tour) }}"
+                       class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 font-medium">
+                        <i class="fas fa-plus mr-1"></i> Yeni Fiyat Grubu
+                    </a>
+                @endif
+            </div>
+            <p class="text-xs text-gray-500">
+                Her grup = "Yaz 2026 Standart" / "Erken Rezervasyon" gibi adlandırılmış pricing scenario.
+                Cabin × person-tier matrix taşır + departure tarihlerine atanır.
+            </p>
+
+            @if(!$tour->exists)
+                <p class="text-sm text-gray-500 p-4 bg-gray-50 rounded-lg">Önce turu kaydedin, sonra fiyat grubu ekleyin.</p>
+            @elseif($tour->priceGroups->isEmpty())
                 <div class="p-6 text-center bg-gray-50 rounded-lg">
                     <p class="text-sm text-gray-600 mb-3">Henüz fiyat grubu yok.</p>
-                    <p class="text-xs text-gray-500">
-                        Matrix editör Phase 1.5.e'de gelecek — 5-boyutlu fiyatlama
-                        (Date × PriceGroup × Cabin × PersonTier × CalculationMethod).
-                    </p>
+                    <a href="{{ route('admin.tours.price-groups.create', $tour) }}"
+                       class="inline-block text-indigo-600 hover:underline text-sm">İlkini oluştur →</a>
                 </div>
             @else
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-50">
                         <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
-                            <th class="px-3 py-2">Grup</th>
-                            <th class="px-3 py-2">Cabin Fiyat Satırı</th>
-                            <th class="px-3 py-2">Currency</th>
+                            <th class="px-3 py-2">Grup Adı</th>
+                            <th class="px-3 py-2">Min</th>
+                            <th class="px-3 py-2">Tarih</th>
+                            <th class="px-3 py-2">Satır</th>
                             <th class="px-3 py-2">Sıra</th>
+                            <th class="px-3 py-2 text-right">Eylem</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @foreach($tour->priceGroups as $pg)
-                            <tr>
-                                <td class="px-3 py-2 font-mono text-xs">{{ $pg->slug ?? "PG-{$pg->id}" }}</td>
-                                <td class="px-3 py-2">{{ $pg->cabinPrices()->count() }}</td>
-                                <td class="px-3 py-2 text-xs text-gray-500">{{ $pg->currency ?? '—' }}</td>
-                                <td class="px-3 py-2 text-gray-500">{{ $pg->sort_order }}</td>
+                            @php $pgTr = $pg->translations->first(); @endphp
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-3 py-2">
+                                    <div class="font-medium text-gray-800">{{ $pgTr->name ?? "PG-{$pg->id}" }}</div>
+                                    @if($pg->campaign_text)
+                                        <div class="text-[10px] text-amber-600 italic truncate max-w-[280px]">{{ $pg->campaign_text }}</div>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-gray-500">{{ $pg->min_persons ?? '—' }}</td>
+                                <td class="px-3 py-2 text-gray-500">{{ $pg->dates()->count() }}</td>
+                                <td class="px-3 py-2 text-gray-500">{{ $pg->cabinPrices()->count() }}</td>
+                                <td class="px-3 py-2 text-gray-400">{{ $pg->sort_order }}</td>
+                                <td class="px-3 py-2 text-right">
+                                    <a href="{{ route('admin.tours.price-groups.edit', ['tour' => $tour, 'price_group' => $pg]) }}"
+                                       class="text-indigo-600 hover:underline text-xs">Düzenle</a>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
+                <div class="pt-2">
+                    <a href="{{ route('admin.tours.price-groups.index', $tour) }}"
+                       class="text-xs text-gray-500 hover:underline">Tüm fiyat grupları sayfasına git →</a>
+                </div>
             @endif
         </div>
     </div>
