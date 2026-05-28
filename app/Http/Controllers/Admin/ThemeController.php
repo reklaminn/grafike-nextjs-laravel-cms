@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ScopesCatalogToTenant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ThemeRequest;
 use App\Models\Theme;
@@ -11,9 +12,11 @@ use Illuminate\Support\Str;
 
 class ThemeController extends Controller
 {
+    use ScopesCatalogToTenant;
+
     public function index(Request $request)
     {
-        $query = Theme::query();
+        $query = Theme::query()->visibleTo($this->catalogTenantId());
 
         if ($request->filled('q')) {
             $search = trim((string) $request->string('q'));
@@ -49,7 +52,10 @@ class ThemeController extends Controller
 
     public function store(ThemeRequest $request)
     {
-        $theme = Theme::create($this->withUploadedAssets($request, $request->validated()));
+        $data = $this->withUploadedAssets($request, $request->validated());
+        $data['tenant_id'] = $this->newCatalogOwnerId();
+
+        $theme = Theme::create($data);
 
         return redirect()
             ->route('admin.themes.edit', $theme)
@@ -58,11 +64,16 @@ class ThemeController extends Controller
 
     public function edit(Theme $theme)
     {
+        $this->authorizeCatalogRead($theme->tenant_id);
+
         return view('admin.themes.edit', compact('theme'));
     }
 
     public function update(ThemeRequest $request, Theme $theme)
     {
+        $this->authorizeCatalogWrite($theme->tenant_id);
+
+        // tenant_id is owner-controlled, never client-supplied.
         $theme->update($this->withUploadedAssets($request, $request->validated()));
 
         return redirect()
@@ -72,6 +83,8 @@ class ThemeController extends Controller
 
     public function destroy(Theme $theme)
     {
+        $this->authorizeCatalogWrite($theme->tenant_id);
+
         $theme->delete();
 
         return redirect()

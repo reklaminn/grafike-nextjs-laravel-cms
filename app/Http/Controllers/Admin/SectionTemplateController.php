@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ScopesCatalogToTenant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SectionTemplateRequest;
 use App\Models\Menu;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class SectionTemplateController extends Controller
 {
+    use ScopesCatalogToTenant;
+
     private const COMMON_TYPE_CATALOG = [
         'header' => 'Header',
         'footer' => 'Footer',
@@ -38,10 +41,12 @@ class SectionTemplateController extends Controller
 
     public function index(Request $request)
     {
+        $tenantId = $this->catalogTenantId();
+
         $trashed = $request->boolean('trashed');
         $query = $trashed
-            ? SectionTemplate::onlyTrashed()->with('theme')
-            : SectionTemplate::query()->with('theme');
+            ? SectionTemplate::onlyTrashed()->visibleTo($tenantId)->with('theme')
+            : SectionTemplate::query()->visibleTo($tenantId)->with('theme');
 
         if ($request->filled('q')) {
             $search = trim((string) $request->string('q'));
@@ -79,12 +84,12 @@ class SectionTemplateController extends Controller
             ->paginate(18)
             ->withQueryString();
 
-        $themes = Theme::query()->orderBy('name')->get(['id', 'name', 'slug']);
+        $themes = Theme::query()->visibleTo($tenantId)->orderBy('name')->get(['id', 'name', 'slug']);
         $typeOptions = $this->buildTypeOptions();
 
         $usageMap = $this->computeUsageMap();
         $usageCounts = collect($usageMap)->map(fn (array $pages) => count($pages))->all();
-        $trashedCount = SectionTemplate::onlyTrashed()->count();
+        $trashedCount = SectionTemplate::onlyTrashed()->visibleTo($tenantId)->count();
 
         return view('admin.section-templates.index', compact('sectionTemplates', 'themes', 'typeOptions', 'usageCounts', 'usageMap', 'trashed', 'trashedCount'));
     }
@@ -145,7 +150,10 @@ class SectionTemplateController extends Controller
 
     public function store(SectionTemplateRequest $request)
     {
-        $sectionTemplate = SectionTemplate::create($request->validated());
+        $data = $request->validated();
+        $data['tenant_id'] = $this->newCatalogOwnerId();
+
+        $sectionTemplate = SectionTemplate::create($data);
 
         if ($request->hasFile('preview_image')) {
             $sectionTemplate->addMediaFromRequest('preview_image')
@@ -159,11 +167,15 @@ class SectionTemplateController extends Controller
 
     public function edit(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         return view('admin.section-templates.edit', $this->buildFormViewData($sectionTemplate));
     }
 
     public function update(SectionTemplateRequest $request, SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         // Snapshot before overwrite if html_template or schema changed
         $dirty = array_intersect(
             array_keys($request->validated()),
@@ -194,6 +206,8 @@ class SectionTemplateController extends Controller
 
     public function versions(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         $versions = $sectionTemplate->versions()->limit(50)->get();
 
         return response()->json($versions->map(fn (SectionTemplateVersion $v) => [
@@ -207,6 +221,8 @@ class SectionTemplateController extends Controller
 
     public function saveVersion(Request $request, SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $label = $request->input('label');
         $sectionTemplate->recordVersion('manual', $label ?: null);
 
@@ -215,6 +231,8 @@ class SectionTemplateController extends Controller
 
     public function restoreVersion(SectionTemplate $sectionTemplate, SectionTemplateVersion $version)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         // Snapshot current before restore
         $sectionTemplate->recordVersion('pre-restore');
 
@@ -231,6 +249,10 @@ class SectionTemplateController extends Controller
 
     public function duplicate(SectionTemplate $sectionTemplate)
     {
+        // A tenant may fork any block they can SEE (global or own); the copy
+        // becomes owned by the current tenant so they can customise it.
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         $baseVariation = $sectionTemplate->variation.'-copy';
         $variation = $baseVariation;
         $suffix = 2;
@@ -245,6 +267,7 @@ class SectionTemplateController extends Controller
         }
 
         $copy = $sectionTemplate->replicate();
+        $copy->tenant_id  = $this->newCatalogOwnerId();
         $copy->name       = $sectionTemplate->name . ' (kopya)';
         $copy->variation  = $variation;
         $copy->is_active  = false;
@@ -257,6 +280,8 @@ class SectionTemplateController extends Controller
 
     public function destroy(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $sectionTemplate->delete(); // soft delete
 
         return redirect()
@@ -266,6 +291,8 @@ class SectionTemplateController extends Controller
 
     public function restore(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $sectionTemplate->restore();
 
         return redirect()
@@ -275,6 +302,8 @@ class SectionTemplateController extends Controller
 
     public function forceDelete(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $sectionTemplate->clearMediaCollection('preview_image');
         $sectionTemplate->forceDelete();
 
@@ -285,6 +314,8 @@ class SectionTemplateController extends Controller
 
     public function preview(Request $request, SectionTemplate $sectionTemplate): mixed
     {
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         $renderer = app(SectionTemplateRenderer::class);
 
         if ($request->isMethod('POST')) {
@@ -319,7 +350,7 @@ class SectionTemplateController extends Controller
 
     private function buildFormViewData(SectionTemplate $sectionTemplate): array
     {
-        $themes = Theme::query()->orderBy('name')->get();
+        $themes = Theme::query()->visibleTo($this->catalogTenantId())->orderBy('name')->get();
         $typeOptions = $this->buildTypeOptions();
         $variationOptions = $this->buildVariationOptions($themes, $sectionTemplate);
         $menuPlaceholders = $this->buildMenuPlaceholders();
@@ -372,6 +403,7 @@ class SectionTemplateController extends Controller
     private function buildTypeOptions(): array
     {
         $existingTypes = SectionTemplate::query()
+            ->visibleTo($this->catalogTenantId())
             ->distinct()
             ->orderBy('type')
             ->pluck('type')
@@ -389,6 +421,7 @@ class SectionTemplateController extends Controller
     private function buildVariationOptions($themes, SectionTemplate $sectionTemplate): array
     {
         $existing = SectionTemplate::query()
+            ->visibleTo($this->catalogTenantId())
             ->select(['theme_id', 'type', 'variation'])
             ->orderBy('variation')
             ->get()

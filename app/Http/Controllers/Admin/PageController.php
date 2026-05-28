@@ -57,7 +57,12 @@ class PageController extends Controller
         $parentPages = Page::whereNull('parent_id')
             ->orderBy('title')
             ->get(['id', 'title', 'language_id']);
+        // Block picker = global (shared) blocks + this tenant's own blocks,
+        // optionally narrowed to the tenant's active theme (matches edit()).
+        $tenantThemeId = tenancy()->tenant?->theme_id;
         $availableFrontendSectionTemplates = SectionTemplate::query()
+            ->visibleTo(session('active_tenant'))
+            ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
             ->active()
             ->orderBy('name')
             ->get()
@@ -150,6 +155,7 @@ class PageController extends Controller
         $tenantThemeId = tenancy()->tenant?->theme_id;
 
         $availableFrontendSectionTemplates = SectionTemplate::query()
+            ->visibleTo(session('active_tenant'))
             ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
             ->active()
             ->orderBy('name')

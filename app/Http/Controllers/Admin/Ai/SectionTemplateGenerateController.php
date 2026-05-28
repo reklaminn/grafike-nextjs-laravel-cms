@@ -72,6 +72,12 @@ class SectionTemplateGenerateController extends Controller
 
         if (filter_var($validated['auto_save'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
             $template = SectionTemplate::create([
+                // Owned by the active site so AI-generated blocks stay scoped
+                // to the tenant that created them (null only in agency context).
+                'tenant_id'            => (function () {
+                    $id = session('active_tenant');
+                    return is_string($id) && $id !== '' ? $id : null;
+                })(),
                 'theme_id'             => $validated['theme_id'] ?? null,
                 'name'                 => $result['name'],
                 'type'                 => $result['type'],

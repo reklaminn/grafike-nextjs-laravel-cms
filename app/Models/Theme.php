@@ -13,6 +13,7 @@ class Theme extends Model
     protected $connection = 'central';
 
     protected $fillable = [
+        'tenant_id',
         'name',
         'slug',
         'engine',
@@ -52,5 +53,21 @@ class Theme extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Restrict to rows the given tenant may see: global (tenant_id IS NULL)
+     * plus the tenant's own rows.  Passing null (agency context, no active
+     * site) yields only the global/shared catalog.
+     */
+    public function scopeVisibleTo($query, ?string $tenantId)
+    {
+        return $query->where(function ($q) use ($tenantId) {
+            $q->whereNull('tenant_id');
+
+            if ($tenantId !== null && $tenantId !== '') {
+                $q->orWhere('tenant_id', $tenantId);
+            }
+        });
     }
 }

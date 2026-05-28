@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ScopesCatalogToTenant;
 use App\Http\Controllers\Controller;
 use App\Models\DesignAsset;
 use App\Models\Theme;
@@ -11,6 +12,8 @@ use Illuminate\Validation\Rule;
 
 class DesignController extends Controller
 {
+    use ScopesCatalogToTenant;
+
     public function index()
     {
         $globalCss = DesignAsset::firstOrCreate(
@@ -34,6 +37,7 @@ class DesignController extends Controller
         );
 
         $themes = Theme::query()
+            ->visibleTo($this->catalogTenantId())
             ->orderByDesc('is_active')
             ->orderBy('name')
             ->get()
@@ -97,6 +101,13 @@ class DesignController extends Controller
                 $theme = Theme::find($themeAssetData['id']);
 
                 if (! $theme) {
+                    continue;
+                }
+
+                // A tenant admin may only edit asset paths on their OWN theme;
+                // global (shared) themes are managed by agency admins. Silently
+                // skip rows the current admin is not allowed to write.
+                if (! $this->canManageGlobalCatalog() && $theme->tenant_id !== $this->catalogTenantId()) {
                     continue;
                 }
 
