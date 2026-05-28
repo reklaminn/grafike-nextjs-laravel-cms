@@ -67,6 +67,27 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.admin'    => \App\Http\Middleware\InitializeTenancyForAdmin::class,
             'tenant.module'   => \App\Http\Middleware\RequireTenantModule::class,
         ]);
+
+        // Tenant context MUST be initialized before SubstituteBindings so that
+        // implicit route–model binding (e.g. `edit(Tour $tour)`) queries the
+        // TENANT database, not central.  Without this, bound tenant models hit
+        // `graficms` (central) and throw "table doesn't exist".
+        //
+        // Order enforced: AdminAuthenticate → InitializeTenancyForAdmin →
+        // SubstituteBindings.  AdminAuthenticate first so the admin guard +
+        // session are resolved before we pick the tenant.
+        //
+        // Core CMS controllers (Page/Article) use explicit findOrFail and are
+        // unaffected; this only *additionally* enables implicit binding for
+        // tenant-scoped models (Tours module).
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\InitializeTenancyForAdmin::class,
+        );
+        $middleware->prependToPriorityList(
+            before: \App\Http\Middleware\InitializeTenancyForAdmin::class,
+            prepend: \App\Http\Middleware\AdminAuthenticate::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Integration::handles($exceptions);
