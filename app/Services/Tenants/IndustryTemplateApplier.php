@@ -97,6 +97,15 @@ class IndustryTemplateApplier
             Tenancy::end();
         }
 
+        // Bind the tenant to the template's theme so the public frontend loads
+        // its tokens (colors/fonts) + CSS/JS. Central write — done OUTSIDE the
+        // tenant context above. Only when the template declares a theme.
+        if ($template->theme_id) {
+            $tenant->theme_id = $template->theme_id;
+            $tenant->save();
+            $summary['theme_id'] = (int) $template->theme_id;
+        }
+
         return $summary;
     }
 

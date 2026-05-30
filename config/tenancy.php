@@ -42,6 +42,10 @@ return [
         Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
+        // Per-tenant mailer: routes every send through the active tenant's
+        // default SmtpProfile (falls back to global config/mail.php if none).
+        // MUST stay after DatabaseTenancyBootstrapper (needs the tenant DB).
+        App\Tenancy\MailTenancyBootstrapper::class,
         // Stancl\Tenancy\Bootstrappers\RedisTenancyBootstrapper::class, // Note: phpredis is needed
     ],
 

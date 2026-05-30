@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\SiteTemplate;
+use App\Models\Theme;
 use Illuminate\Database\Seeder;
 
 /**
@@ -29,12 +30,20 @@ class IndustryTemplatesSeeder extends Seeder
 {
     public function run(): void
     {
+        // Bağlanacak global temalar (block seeder'ları önce çalışmış olmalı).
+        // Bulunamazsa theme_id null kalır (uygulama yine bloklarla render olur).
+        $baseThemeId   = Theme::where('slug', 'genel-temel')->value('id');
+        $turizmThemeId = Theme::where('slug', 'turizm-modern')->value('id');
+
         foreach ($this->templates() as $i => $tpl) {
             SiteTemplate::updateOrCreate(
                 ['slug' => $tpl['slug']],
                 [
                     'name'          => $tpl['name'],
                     'industry'      => $tpl['industry'],
+                    // Şablon uygulanınca tenant->theme_id buna set edilir →
+                    // tema token'ları (renk/font) ve CSS/JS yüklenir.
+                    'theme_id'      => $tpl['industry'] === 'tourism' ? $turizmThemeId : $baseThemeId,
                     'description'   => $tpl['description'],
                     'summary'       => $tpl['summary'],
                     'preview_image' => $tpl['preview_image'] ?? null,
