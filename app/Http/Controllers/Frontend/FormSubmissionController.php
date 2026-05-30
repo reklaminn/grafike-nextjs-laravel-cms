@@ -101,6 +101,15 @@ class FormSubmissionController extends Controller
             }
         }
 
+        // Outbound webhook (e.g. SendPulse) — after response, no added latency.
+        if ($form->webhook_enabled && $form->webhook_url) {
+            $flatValues = array_map(fn ($f) => $f['value'] ?? null, $submissionData);
+            $ip = $request->ip();
+            app()->terminating(function () use ($form, $flatValues, $ip) {
+                app(\App\Services\Forms\FormWebhookDispatcher::class)->dispatch($form, $flatValues, $ip);
+            });
+        }
+
         return back()->with('success', 'Formunuz başarıyla gönderildi. Teşekkürler!');
     }
 

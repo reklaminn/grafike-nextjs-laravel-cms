@@ -64,6 +64,7 @@ class FormController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'notification_email' => 'nullable|email',
+            'webhook_url' => 'nullable|url|max:1000',
         ]);
 
         $form->update([
@@ -71,6 +72,8 @@ class FormController extends Controller
             'description' => $request->description,
             'notification_email' => $request->notification_email,
             'is_active' => $request->boolean('is_active', true),
+            'webhook_url' => $request->input('webhook_url'),
+            'webhook_enabled' => $request->boolean('webhook_enabled'),
         ]);
 
         return redirect()

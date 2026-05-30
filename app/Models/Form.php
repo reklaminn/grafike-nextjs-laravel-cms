@@ -15,6 +15,7 @@ class Form extends Model
         'notification_email', 'smtp_host', 'smtp_port', 'smtp_username',
         'smtp_password', 'smtp_encryption', 'allow_submissions', 'allow_listing',
         'save_to_database', 'language_id', 'legacy_id',
+        'webhook_url', 'webhook_enabled',
     ];
 
     protected function casts(): array
@@ -25,6 +26,7 @@ class Form extends Model
             'allow_submissions' => 'boolean',
             'allow_listing' => 'boolean',
             'save_to_database' => 'boolean',
+            'webhook_enabled' => 'boolean',
         ];
     }
 

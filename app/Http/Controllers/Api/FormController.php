@@ -144,6 +144,16 @@ class FormController extends Controller
             }
         }
 
+        // Outbound webhook (e.g. SendPulse) — runs AFTER the response so it
+        // adds zero latency. Flatten field values to name => value.
+        if ($form->webhook_enabled && $form->webhook_url) {
+            $flatValues = array_map(fn ($f) => $f['value'] ?? null, $submissionData);
+            $ip = $request->ip();
+            app()->terminating(function () use ($form, $flatValues, $ip) {
+                app(\App\Services\Forms\FormWebhookDispatcher::class)->dispatch($form, $flatValues, $ip);
+            });
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Formunuz başarıyla gönderildi. Teşekkürler!',
