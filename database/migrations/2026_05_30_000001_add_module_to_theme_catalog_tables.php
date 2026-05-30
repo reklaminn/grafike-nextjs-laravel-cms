@@ -17,13 +17,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('themes', function (Blueprint $table) {
-            $table->string('module', 50)->nullable()->after('tenant_id')->index();
-        });
+        // Idempotent: yarım kalmış / kaydedilmemiş bir önceki çalıştırma kolonu
+        // zaten eklemiş olabilir (Duplicate column hatasını önle).
+        if (! Schema::hasColumn('themes', 'module')) {
+            Schema::table('themes', function (Blueprint $table) {
+                $table->string('module', 50)->nullable()->after('tenant_id')->index();
+            });
+        }
 
-        Schema::table('section_templates', function (Blueprint $table) {
-            $table->string('module', 50)->nullable()->after('tenant_id')->index();
-        });
+        if (! Schema::hasColumn('section_templates', 'module')) {
+            Schema::table('section_templates', function (Blueprint $table) {
+                $table->string('module', 50)->nullable()->after('tenant_id')->index();
+            });
+        }
     }
 
     public function down(): void
