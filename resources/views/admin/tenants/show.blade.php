@@ -192,6 +192,9 @@
             ])
         @endif
 
+        {{-- ─── Kaynak Kullanımı (paket bazlı metering) ───────────────────── --}}
+        @include('admin.tenants._resource-usage-panel', ['resourceUsage' => $resourceUsage ?? []])
+
         {{-- ─── Iyzico Ayarları (BYOK) — sadece tours/commerce aktifse anlamlı ── --}}
         @if($tenant->hasModule('tours') || $tenant->hasModule('commerce'))
             @include('admin.tenants._iyzico-settings-panel', [

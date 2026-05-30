@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\InitializeTenancyForPublicApi;
+use App\Http\Middleware\MeterTenantUsage;
 use App\Http\Middleware\UseSiteHostHeader;
 
 /*
@@ -19,4 +20,5 @@ use App\Http\Middleware\UseSiteHostHeader;
 Route::middleware([
     UseSiteHostHeader::class,
     InitializeTenancyForPublicApi::class,
+    MeterTenantUsage::class, // tenancy init SONRASI — tenant istek sayımı + yumuşak limit
 ])->group(base_path('routes/tenant_api.php'));

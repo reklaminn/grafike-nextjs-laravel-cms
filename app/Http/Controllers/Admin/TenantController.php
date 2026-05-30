@@ -180,7 +180,7 @@ class TenantController extends Controller
     /**
      * Show tenant details + actions.
      */
-    public function show(Tenant $tenant, \App\Services\Ai\AiQuotaService $quotaService, ModuleRegistry $registry, IyzicoBYOKResolver $iyzicoResolver)
+    public function show(Tenant $tenant, \App\Services\Ai\AiQuotaService $quotaService, ModuleRegistry $registry, IyzicoBYOKResolver $iyzicoResolver, \App\Services\Tenancy\TenantUsageMeter $meter)
     {
         $this->authorizeTenantAccess($tenant);
 
@@ -222,8 +222,20 @@ class TenantController extends Controller
             ];
         }
 
+        $tenantKey = (string) $tenant->getTenantKey();
+        $resourceUsage = [
+            'storage_used_mb'  => $meter->storageUsedMb($tenantKey),
+            'storage_quota_mb' => $tenant->packageConfig()['max_storage_mb'] ?? null,
+            'requests_today'   => $meter->requestsToday($tenantKey),
+            'requests_quota'   => $tenant->packageConfig()['max_requests_per_day'] ?? null,
+            'logins_today'     => $meter->loginsToday($tenantKey),
+            'users_count'      => AdminTenantAccess::where('tenant_id', $tenantKey)->distinct()->count('admin_id'),
+            'max_users'        => $tenant->maxAdminUsers(),
+            'package_label'    => $tenant->packageConfig()['label'] ?? $tenant->package(),
+        ];
+
         return view('admin.tenants.show', compact(
-            'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage', 'availableModules', 'iyzicoStatus'
+            'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage', 'availableModules', 'iyzicoStatus', 'resourceUsage'
         ));
     }
 

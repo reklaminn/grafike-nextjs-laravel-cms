@@ -44,6 +44,12 @@ class MemberAuthController extends Controller
         $request->session()->regenerate();
         RateLimiter::clear($key);
 
+        // Tenant başına günlük giriş metering (fail-open).
+        if (function_exists('tenancy') && tenancy()->initialized && tenancy()->tenant) {
+            app(\App\Services\Tenancy\TenantUsageMeter::class)
+                ->hitLogin((string) tenancy()->tenant->getTenantKey());
+        }
+
         return redirect()->intended(route('member.profile'));
     }
 
