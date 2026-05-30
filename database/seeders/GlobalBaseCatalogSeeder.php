@@ -27,6 +27,7 @@ class GlobalBaseCatalogSeeder extends Seeder
             ['slug' => 'genel-temel'],
             [
                 'tenant_id'   => null,
+                'module'      => null, // genel — tüm tenant'lara görünür
                 'name'        => 'Genel — Temel',
                 'engine'      => 'nextjs-basic-html',
                 'description' => 'Tüm sektörler için nötr, yeniden kullanılabilir global blok kütüphanesi.',
@@ -49,6 +50,7 @@ class GlobalBaseCatalogSeeder extends Seeder
                 ['theme_id' => $theme->id, 'type' => $block['type'], 'variation' => $block['variation']],
                 [
                     'tenant_id'            => null,
+                    'module'               => null, // genel
                     'name'                 => $block['name'],
                     'render_mode'          => 'html',
                     'html_template'        => $block['html'],

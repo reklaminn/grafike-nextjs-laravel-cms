@@ -32,6 +32,7 @@ class GlobalTourismCatalogSeeder extends Seeder
             ['slug' => 'turizm-modern'],
             [
                 'tenant_id'   => null, // GLOBAL / shared
+                'module'      => 'tours', // yalnızca 'tours' modülü açık tenant'lara görünür
                 'name'        => 'Turizm — Modern',
                 'engine'      => 'nextjs-basic-html',
                 'description' => 'Tur acenteleri için global blok kütüphanesi (deniz tonları).',
@@ -54,6 +55,7 @@ class GlobalTourismCatalogSeeder extends Seeder
                 ['theme_id' => $theme->id, 'type' => $block['type'], 'variation' => $block['variation']],
                 [
                     'tenant_id'            => null, // GLOBAL / shared
+                    'module'               => 'tours', // 'tours' modülüne bağlı
                     'name'                 => $block['name'],
                     'render_mode'          => 'html',
                     'html_template'        => $block['html'],

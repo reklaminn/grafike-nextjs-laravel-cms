@@ -42,11 +42,12 @@ class SectionTemplateController extends Controller
     public function index(Request $request)
     {
         $tenantId = $this->catalogTenantId();
+        $modules  = $this->catalogModuleFilter();
 
         $trashed = $request->boolean('trashed');
         $query = $trashed
-            ? SectionTemplate::onlyTrashed()->visibleTo($tenantId)->with('theme')
-            : SectionTemplate::query()->visibleTo($tenantId)->with('theme');
+            ? SectionTemplate::onlyTrashed()->visibleTo($tenantId)->visibleForModules($modules)->with('theme')
+            : SectionTemplate::query()->visibleTo($tenantId)->visibleForModules($modules)->with('theme');
 
         if ($request->filled('q')) {
             $search = trim((string) $request->string('q'));
@@ -84,12 +85,12 @@ class SectionTemplateController extends Controller
             ->paginate(18)
             ->withQueryString();
 
-        $themes = Theme::query()->visibleTo($tenantId)->orderBy('name')->get(['id', 'name', 'slug']);
+        $themes = Theme::query()->visibleTo($tenantId)->visibleForModules($modules)->orderBy('name')->get(['id', 'name', 'slug']);
         $typeOptions = $this->buildTypeOptions();
 
         $usageMap = $this->computeUsageMap();
         $usageCounts = collect($usageMap)->map(fn (array $pages) => count($pages))->all();
-        $trashedCount = SectionTemplate::onlyTrashed()->visibleTo($tenantId)->count();
+        $trashedCount = SectionTemplate::onlyTrashed()->visibleTo($tenantId)->visibleForModules($modules)->count();
 
         return view('admin.section-templates.index', compact('sectionTemplates', 'themes', 'typeOptions', 'usageCounts', 'usageMap', 'trashed', 'trashedCount'));
     }
@@ -350,7 +351,7 @@ class SectionTemplateController extends Controller
 
     private function buildFormViewData(SectionTemplate $sectionTemplate): array
     {
-        $themes = Theme::query()->visibleTo($this->catalogTenantId())->orderBy('name')->get();
+        $themes = Theme::query()->visibleTo($this->catalogTenantId())->visibleForModules($this->catalogModuleFilter())->orderBy('name')->get();
         $typeOptions = $this->buildTypeOptions();
         $variationOptions = $this->buildVariationOptions($themes, $sectionTemplate);
         $menuPlaceholders = $this->buildMenuPlaceholders();
@@ -404,6 +405,7 @@ class SectionTemplateController extends Controller
     {
         $existingTypes = SectionTemplate::query()
             ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
             ->distinct()
             ->orderBy('type')
             ->pluck('type')
@@ -422,6 +424,7 @@ class SectionTemplateController extends Controller
     {
         $existing = SectionTemplate::query()
             ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
             ->select(['theme_id', 'type', 'variation'])
             ->orderBy('variation')
             ->get()

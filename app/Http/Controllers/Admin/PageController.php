@@ -62,6 +62,7 @@ class PageController extends Controller
         $tenantThemeId = tenancy()->tenant?->theme_id;
         $availableFrontendSectionTemplates = SectionTemplate::query()
             ->visibleTo(session('active_tenant'))
+            ->visibleForModules(tenancy()->tenant?->enabledModules())
             ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
             ->active()
             ->orderBy('name')
@@ -156,6 +157,7 @@ class PageController extends Controller
 
         $availableFrontendSectionTemplates = SectionTemplate::query()
             ->visibleTo(session('active_tenant'))
+            ->visibleForModules(tenancy()->tenant?->enabledModules())
             ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
             ->active()
             ->orderBy('name')

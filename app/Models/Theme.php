@@ -14,6 +14,7 @@ class Theme extends Model
 
     protected $fillable = [
         'tenant_id',
+        'module',
         'name',
         'slug',
         'engine',
@@ -67,6 +68,28 @@ class Theme extends Model
 
             if ($tenantId !== null && $tenantId !== '') {
                 $q->orWhere('tenant_id', $tenantId);
+            }
+        });
+    }
+
+    /**
+     * Hide GLOBAL rows that belong to a vertical module the active tenant does
+     * NOT have enabled. Own rows (tenant_id set) are never module-gated.
+     * Pass null to disable gating (agency / no active site → see everything).
+     *
+     * Chain after visibleTo(): ->visibleTo($id)->visibleForModules($modules)
+     */
+    public function scopeVisibleForModules($query, ?array $modules)
+    {
+        if ($modules === null) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($modules) {
+            $q->whereNotNull('tenant_id')   // tenant-owned rows pass through
+              ->orWhereNull('module');      // generic global rows
+            if (! empty($modules)) {
+                $q->orWhereIn('module', $modules); // module-specific globals the tenant has
             }
         });
     }

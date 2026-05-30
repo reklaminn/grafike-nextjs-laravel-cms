@@ -36,6 +36,25 @@ trait ScopesCatalogToTenant
     }
 
     /**
+     * Vertical modules enabled for the active tenant, used to gate
+     * module-specific GLOBAL catalog rows (e.g. Turizm theme = 'tours').
+     * Returns null when no site is active (agency view → no gating, sees all).
+     *
+     * @return array<int, string>|null
+     */
+    protected function catalogModuleFilter(): ?array
+    {
+        $id = $this->catalogTenantId();
+        if ($id === null) {
+            return null;
+        }
+
+        $tenant = \App\Models\Tenant::find($id);
+
+        return $tenant ? $tenant->enabledModules() : [];
+    }
+
+    /**
      * tenant_id to stamp on a newly created row.  Tenant admins always own
      * their rows; an agency admin with no active site creates a GLOBAL row,
      * and with an active site creates it for that site.

@@ -38,6 +38,7 @@ class DesignController extends Controller
 
         $themes = Theme::query()
             ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
             ->orderByDesc('is_active')
             ->orderBy('name')
             ->get()

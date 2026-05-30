@@ -17,6 +17,7 @@ class SectionTemplate extends Model implements HasMedia
 
     protected $fillable = [
         'tenant_id',
+        'module',
         'theme_id',
         'type',
         'variation',
@@ -91,6 +92,26 @@ class SectionTemplate extends Model implements HasMedia
 
             if ($tenantId !== null && $tenantId !== '') {
                 $q->orWhere('tenant_id', $tenantId);
+            }
+        });
+    }
+
+    /**
+     * Hide GLOBAL blocks that belong to a vertical module the active tenant
+     * does NOT have enabled. Own blocks (tenant_id set) are never gated.
+     * Pass null to disable gating. Chain after visibleTo().
+     */
+    public function scopeVisibleForModules($query, ?array $modules)
+    {
+        if ($modules === null) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($modules) {
+            $q->whereNotNull('tenant_id')
+              ->orWhereNull('module');
+            if (! empty($modules)) {
+                $q->orWhereIn('module', $modules);
             }
         });
     }

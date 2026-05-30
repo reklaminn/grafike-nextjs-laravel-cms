@@ -16,7 +16,9 @@ class ThemeController extends Controller
 
     public function index(Request $request)
     {
-        $query = Theme::query()->visibleTo($this->catalogTenantId());
+        $query = Theme::query()
+            ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter());
 
         if ($request->filled('q')) {
             $search = trim((string) $request->string('q'));
