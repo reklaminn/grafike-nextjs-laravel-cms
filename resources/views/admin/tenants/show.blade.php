@@ -169,11 +169,16 @@
         @endif
 
         {{-- ─── Vertical Modüller (Tours, Commerce, …) ─────────────────────── --}}
-        @include('admin.tenants._modules-panel', [
-            'tenant'           => $tenant,
-            'availableModules' => $availableModules ?? [],
-            'canManage'        => $canManageTenants,
-        ])
+        {{-- Seçili modül yoksa ve kullanıcı modülleri yönetemiyorsa paneli
+             tamamen gizle (boş alan göstermeyelim). Yöneticiler (ajans) her
+             zaman görür ki modül açıp kapatabilsin. --}}
+        @if($canManageTenants || count($tenant->enabledModules()) > 0)
+            @include('admin.tenants._modules-panel', [
+                'tenant'           => $tenant,
+                'availableModules' => $availableModules ?? [],
+                'canManage'        => $canManageTenants,
+            ])
+        @endif
 
         {{-- ─── Iyzico Ayarları (BYOK) — sadece tours/commerce aktifse anlamlı ── --}}
         @if($tenant->hasModule('tours') || $tenant->hasModule('commerce'))

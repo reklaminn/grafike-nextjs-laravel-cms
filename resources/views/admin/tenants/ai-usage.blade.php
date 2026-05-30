@@ -54,14 +54,14 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
     <div class="bg-white rounded-xl shadow-sm border p-5 lg:col-span-2">
         <h3 class="text-sm font-semibold text-gray-700 mb-3">Son 30 Gün — Günlük Trend</h3>
-        <canvas id="chart-daily" style="height: 250px"></canvas>
+        <div style="position:relative;height:250px;"><canvas id="chart-daily"></canvas></div>
     </div>
     <div class="bg-white rounded-xl shadow-sm border p-5">
         <h3 class="text-sm font-semibold text-gray-700 mb-3">Feature Dağılımı</h3>
         @if (empty($features))
             <p class="text-xs text-gray-400">Bu ay hiç AI isteği yok.</p>
         @else
-            <canvas id="chart-features" style="height: 250px"></canvas>
+            <div style="position:relative;height:250px;"><canvas id="chart-features"></canvas></div>
         @endif
     </div>
 </div>

@@ -74,6 +74,11 @@
             ['route' => 'admin.activity-log.index', 'icon' => 'fa-history', 'label' => 'Aktivite Log', 'match' => 'admin.activity-log'],
             ['route' => 'admin.library.index', 'icon' => 'fa-ship', 'label' => 'Cruise Kütüphanesi', 'match' => 'admin.library'],
         ]);
+    } elseif ($activeTenantId) {
+        // Tenant admin: kendi sitesinin AI kullanım raporu (per-tenant görünüm).
+        array_splice($systemItems, 1, 0, [
+            ['route' => 'admin.tenants.ai-usage', 'icon' => 'fa-chart-pie', 'label' => 'AI Kullanım', 'match' => 'admin.tenants.ai-usage', 'url' => route('admin.tenants.ai-usage', $activeTenantId, false)],
+        ]);
     }
 @endphp
 
@@ -152,7 +157,7 @@
     <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider" x-show="sidebarOpen" x-transition>Sistem</span>
 </div>
 @foreach($systemItems as $item)
-    <a href="{{ route($item['route']) }}"
+    <a href="{{ $item['url'] ?? route($item['route']) }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
         <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
         <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
