@@ -26,7 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // OOM / fatal hatalarını yakalayıp hangi URL'de + kaç MB'da patladığını
+        // storage/logs/fatal.log'a yaz. Laravel'in kendi handler'ı OOM'da bunu
+        // yapamaz (bellek kalmaz). Oku: `bash scripts/diag.sh fatal`.
+        \App\Support\FatalLogger::register(storage_path('logs/fatal.log'));
     }
 
     /**

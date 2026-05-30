@@ -6,6 +6,9 @@
 #
 # Kullanım (VPS'te /opt/graficms içinde):
 #   bash scripts/diag.sh           # her app'te SON hata bloğunu (stack trace) göster
+#   bash scripts/diag.sh slow      # php-slow.log: yavaş/OOM isteğin TAM backtrace'i (EN DEĞERLİ)
+#   bash scripts/diag.sh url        # php-fpm access: son istekler (URL + status + peak bellek)
+#   bash scripts/diag.sh fatal      # storage/logs/fatal.log: OOM/fatal → hangi URL, kaç MB
 #   bash scripts/diag.sh dns       # DNS (getaddrinfo / EAI_AGAIN) durumunu özetle
 #   bash scripts/diag.sh watch     # canlı izle (tail -f) — sayfayı yenile, hatayı anında gör
 #   bash scripts/diag.sh "metin"   # logda metni ara, son eşleşmeleri göster
@@ -36,6 +39,46 @@ case "$MODE" in
         [ -z "$ln" ] && { echo "✅ Bu container logunda ERROR yok."; exit 0; }
         echo "----- son hata (satır $ln) + stack trace -----"
         sed -n "${ln},$((ln+35))p" "$f"
+      '
+    done
+    ;;
+
+  slow)
+    # php-fpm slowlog: 5sn'yi aşan (ya da OOM'a giderken yavaşlayan) isteğin
+    # TAM PHP backtrace'i. Hangi fonksiyon zincirinin belleği yediğini söyler.
+    for c in $APPS; do
+      sep "$c — php-slow.log (son yavaş istek backtrace'i)"
+      docker exec "$c" sh -c '
+        f=storage/logs/php-slow.log
+        [ -f "$f" ] || f=/var/www/html/storage/logs/php-slow.log
+        [ -f "$f" ] || { echo "  (php-slow.log yok — 5sn altı sürede ölmüş olabilir)"; exit 0; }
+        echo "log: $f ($(wc -l < "$f" 2>/dev/null) satır)"
+        echo "----- son backtrace -----"
+        # son "[pool" işaretinden dosya sonuna kadar = en son blok
+        awk "/\[pool/{n=NR} {a[NR]=\$0} END{for(i=n;i<=NR;i++)print a[i]}" "$f" | tail -60
+      '
+    done
+    ;;
+
+  url)
+    # php-fpm access log (/proc/self/fd/2 → docker logs). Her satırda istek,
+    # status ve peak bellek (%M, KB) var. OOM'da nginx 502/500 görür.
+    for c in $APPS; do
+      sep "$c — php-fpm access (son istekler: URL + status + bellek)"
+      docker logs --since 30m "$c" 2>&1 \
+        | grep -aE '"(GET|POST|PUT|DELETE|PATCH) ' \
+        | tail -30
+    done
+    ;;
+
+  fatal)
+    for c in $APPS; do
+      sep "$c — fatal.log (OOM/fatal → URL + peak bellek)"
+      docker exec "$c" sh -c '
+        f=storage/logs/fatal.log
+        [ -f "$f" ] || f=/var/www/html/storage/logs/fatal.log
+        [ -f "$f" ] || { echo "  (fatal.log yok — FatalLogger henüz deploy edilmemiş olabilir)"; exit 0; }
+        tail -25 "$f"
       '
     done
     ;;
