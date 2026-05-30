@@ -258,6 +258,8 @@ services:
       - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
+      - traefik_proxy
+    extra_hosts: *db-extra-hosts
 
   # ── Scheduler: single container is sufficient ────────────────────────────────
   scheduler:
@@ -283,6 +285,8 @@ services:
       - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
+      - traefik_proxy
+    extra_hosts: *db-extra-hosts
 
   # ── Next.js frontend ─────────────────────────────────────────────────────────
   frontend:
