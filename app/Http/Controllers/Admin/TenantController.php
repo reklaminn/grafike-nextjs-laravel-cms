@@ -223,16 +223,28 @@ class TenantController extends Controller
         }
 
         $tenantKey = (string) $tenant->getTenantKey();
-        $resourceUsage = [
-            'storage_used_mb'  => $meter->storageUsedMb($tenantKey),
-            'storage_quota_mb' => $tenant->packageConfig()['max_storage_mb'] ?? null,
-            'requests_today'   => $meter->requestsToday($tenantKey),
-            'requests_quota'   => $tenant->packageConfig()['max_requests_per_day'] ?? null,
-            'logins_today'     => $meter->loginsToday($tenantKey),
-            'users_count'      => AdminTenantAccess::where('tenant_id', $tenantKey)->distinct()->count('admin_id'),
-            'max_users'        => $tenant->maxAdminUsers(),
-            'package_label'    => $tenant->packageConfig()['label'] ?? $tenant->package(),
-        ];
+        try {
+            $resourceUsage = [
+                'storage_used_mb'  => $meter->storageUsedMb($tenantKey),
+                'storage_quota_mb' => $tenant->packageConfig()['max_storage_mb'] ?? null,
+                'requests_today'   => $meter->requestsToday($tenantKey),
+                'requests_quota'   => $tenant->packageConfig()['max_requests_per_day'] ?? null,
+                'logins_today'     => $meter->loginsToday($tenantKey),
+                'users_count'      => AdminTenantAccess::where('tenant_id', $tenantKey)->distinct()->count('admin_id'),
+                'max_users'        => $tenant->maxAdminUsers(),
+                'package_label'    => $tenant->packageConfig()['label'] ?? $tenant->package(),
+            ];
+        } catch (\Throwable $e) {
+            // Geçici DB/metering hatası (örn. DNS blip) tenant sayfasını komple
+            // düşürmesin — pakete bağlı (config) değerler hep gösterilir.
+            report($e);
+            $resourceUsage = [
+                'storage_quota_mb' => $tenant->packageConfig()['max_storage_mb'] ?? null,
+                'requests_quota'   => $tenant->packageConfig()['max_requests_per_day'] ?? null,
+                'max_users'        => $tenant->maxAdminUsers(),
+                'package_label'    => $tenant->packageConfig()['label'] ?? $tenant->package(),
+            ];
+        }
 
         return view('admin.tenants.show', compact(
             'tenant', 'themes', 'canManageTenants', 'aiPlan', 'aiUsage', 'availableModules', 'iyzicoStatus', 'resourceUsage'
