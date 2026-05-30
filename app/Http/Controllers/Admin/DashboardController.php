@@ -17,23 +17,37 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $stats = [
-            'total_pages'          => Page::count(),
-            'published_pages'      => Page::where('status', 'published')->count(),
-            'total_articles'       => Article::count(),
-            'published_articles'   => Article::where('status', 'published')->count(),
-            'total_media'          => Media::count(),
-            'total_media_size'     => Media::sum('size'),
-            'new_submissions'      => FormSubmission::where('status', 'new')->count(),
-            'today_submissions'    => FormSubmission::whereDate('created_at', today())->count(),
-        ];
+        // Tenant içerik istatistikleri yalnızca aktif bir site varken anlamlı.
+        // Aktif site yokken (ajans admini, site seçilmemiş) tenant tabloları
+        // merkezi DB'de aranıp 500 vermesin diye sıfırlanır.
+        if (tenancy()->initialized) {
+            $stats = [
+                'total_pages'          => Page::count(),
+                'published_pages'      => Page::where('status', 'published')->count(),
+                'total_articles'       => Article::count(),
+                'published_articles'   => Article::where('status', 'published')->count(),
+                'total_media'          => Media::count(),
+                'total_media_size'     => Media::sum('size'),
+                'new_submissions'      => FormSubmission::where('status', 'new')->count(),
+                'today_submissions'    => FormSubmission::whereDate('created_at', today())->count(),
+            ];
+            $recentPages    = Page::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
+            $recentArticles = Article::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
+        } else {
+            $stats = [
+                'total_pages' => 0, 'published_pages' => 0,
+                'total_articles' => 0, 'published_articles' => 0,
+                'total_media' => 0, 'total_media_size' => 0,
+                'new_submissions' => 0, 'today_submissions' => 0,
+            ];
+            $recentPages    = collect();
+            $recentArticles = collect();
+        }
 
+        $noActiveTenant = ! tenancy()->initialized;
         $health = $this->systemHealth();
 
-        $recentPages = Page::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
-        $recentArticles = Article::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
-
-        return view('admin.dashboard', compact('stats', 'health', 'recentPages', 'recentArticles'));
+        return view('admin.dashboard', compact('stats', 'health', 'recentPages', 'recentArticles', 'noActiveTenant'));
     }
 
     // ─── System health ─────────────────────────────────────────────────────────
