@@ -160,6 +160,18 @@
                     </select>
                 </div>
 
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Paket</label>
+                    <select name="package" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                        @foreach(config('packages.packages', []) as $key => $pkg)
+                        <option value="{{ $key }}" {{ old('package', $tenant->package()) === $key ? 'selected' : '' }}>
+                            {{ $pkg['label'] }} — {{ $pkg['max_users'] === null ? 'sınırsız kullanıcı' : $pkg['max_users'].' kullanıcı' }} · AI: {{ $pkg['ai_plan'] }}
+                        </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Paket; yönetici kullanıcı kotasını ve AI planını belirler.</p>
+                </div>
+
                 <button type="submit"
                         class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
                     <i class="fas fa-save mr-1"></i> Kaydet

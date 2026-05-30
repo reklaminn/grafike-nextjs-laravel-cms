@@ -79,18 +79,17 @@
                 </select>
             </div>
 
-            {{-- AI Plan --}}
+            {{-- Paket (kullanıcı kotası + AI planı) --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                    AI Plan
-                    <span class="ml-1 text-xs text-gray-400 font-normal">(AI özellikler için kota belirler)</span>
+                    Paket
+                    <span class="ml-1 text-xs text-gray-400 font-normal">(yönetici kullanıcı kotası + AI planı)</span>
                 </label>
-                <select name="plan"
+                <select name="package"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">Seç (varsayılan: free)</option>
-                    @foreach($plans as $planKey)
-                    <option value="{{ $planKey }}" {{ old('plan') === $planKey ? 'selected' : '' }}>
-                        {{ ucfirst($planKey) }}
+                    @foreach(config('packages.packages', []) as $key => $pkg)
+                    <option value="{{ $key }}" {{ old('package', config('packages.default')) === $key ? 'selected' : '' }}>
+                        {{ $pkg['label'] }} — {{ $pkg['max_users'] === null ? 'sınırsız kullanıcı' : $pkg['max_users'].' kullanıcı' }} · AI: {{ $pkg['ai_plan'] }}
                     </option>
                     @endforeach
                 </select>

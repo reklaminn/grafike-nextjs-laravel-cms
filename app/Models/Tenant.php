@@ -145,6 +145,33 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         $this->setAiSettings($settings);
     }
 
+    /**
+     * Tenant'ın paketi (config/packages.php). Geçersiz/boşsa varsayılana düşer.
+     */
+    public function package(): string
+    {
+        $pkg = $this->getAttribute('package');
+        $packages = (array) config('packages.packages', []);
+
+        return (is_string($pkg) && isset($packages[$pkg]))
+            ? $pkg
+            : (string) config('packages.default', 'basic');
+    }
+
+    /** @return array<string,mixed> */
+    public function packageConfig(): array
+    {
+        return (array) (config('packages.packages.' . $this->package(), []) ?: []);
+    }
+
+    /** İzin verilen yönetici kullanıcı sayısı; null = sınırsız. */
+    public function maxAdminUsers(): ?int
+    {
+        $max = $this->packageConfig()['max_users'] ?? null;
+
+        return $max === null ? null : (int) $max;
+    }
+
     public function preferredAiModel(string $provider, string $tier): ?string
     {
         $value = $this->aiSettings()['models'][$provider][$tier] ?? null;

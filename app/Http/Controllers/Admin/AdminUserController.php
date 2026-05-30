@@ -9,6 +9,7 @@ use App\Models\AdminTenantAccess;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AdminUserController extends Controller
 {
@@ -51,6 +52,9 @@ class AdminUserController extends Controller
             'default_tenant_id' => ['nullable', 'string', Rule::exists('central.tenants', 'id')],
         ]);
 
+        // Paket kotası: her hedef tenant için max_users aşılıyor mu?
+        $this->assertTenantQuota($data['tenant_ids'] ?? [], null);
+
         $admin = Admin::create([
             'name' => $data['name'],
             'username' => $data['username'],
@@ -91,6 +95,9 @@ class AdminUserController extends Controller
             'tenant_access_role' => 'nullable|in:owner,manager,editor',
             'default_tenant_id' => ['nullable', 'string', Rule::exists('central.tenants', 'id')],
         ]);
+
+        // Paket kotası: bu admin'in halihazırda eriştiği tenant'lar hariç sayılır.
+        $this->assertTenantQuota($data['tenant_ids'] ?? [], $admin_user->id);
 
         $admin_user->name = $data['name'];
         $admin_user->username = $data['username'];
@@ -140,6 +147,39 @@ class AdminUserController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Pakete göre tenant başına yönetici kullanıcı kotasını doğrular.
+     * Aşılıyorsa ValidationException fırlatır (kayıt oluşturulmadan).
+     *
+     * @param  array<int,string>  $tenantIds
+     */
+    private function assertTenantQuota(array $tenantIds, ?int $excludeAdminId): void
+    {
+        foreach (collect($tenantIds)->filter()->unique() as $tenantId) {
+            $tenant = Tenant::find($tenantId);
+            if (! $tenant) {
+                continue;
+            }
+
+            $max = $tenant->maxAdminUsers();
+            if ($max === null) {
+                continue; // sınırsız paket
+            }
+
+            $query = AdminTenantAccess::where('tenant_id', $tenantId);
+            if ($excludeAdminId) {
+                $query->where('admin_id', '!=', $excludeAdminId);
+            }
+            $current = $query->distinct()->count('admin_id');
+
+            if ($current + 1 > $max) {
+                throw ValidationException::withMessages([
+                    'tenant_ids' => "«{$tenant->name}» paketi («{$tenant->package()}») en fazla {$max} yönetici kullanıcıya izin veriyor (şu an {$current}). Paketi yükseltin veya farklı bir site seçin.",
+                ]);
+            }
+        }
     }
 
     private function syncTenantAccess(Admin $admin, array $data): void

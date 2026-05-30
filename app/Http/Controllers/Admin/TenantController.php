@@ -94,6 +94,7 @@ class TenantController extends Controller
             'domain'   => 'required|string|max:253',
             'theme_id' => ['nullable', Rule::exists('central.themes', 'id')],
             'plan'     => ['nullable', Rule::in($aiPlans)],
+            'package'  => ['nullable', Rule::in(array_keys(config('packages.packages', [])))],
             'site_template_id' => ['nullable', Rule::exists('central.site_templates', 'id')],
             'create_company_admin' => 'nullable|boolean',
             'company_admin_name' => 'required_if:create_company_admin,1|nullable|string|max:255',
@@ -111,16 +112,21 @@ class TenantController extends Controller
             return DB::connection('central')->transaction(function () use ($validated, $domain) {
                 // Insert explicitly into the central table. This avoids both
                 // stancl creation events and Eloquent key casting edge cases.
+                $package = $validated['package'] ?? config('packages.default', 'basic');
+
                 $tenantData = [
                     'name'     => $validated['name'],
                     'status'   => 'provisioning',   // job will flip to 'active'
                     'theme_id' => $validated['theme_id'] ?? null,
+                    'package'  => $package,
                 ];
 
-                // Store initial AI plan in the data blob so quota checks
-                // work immediately after provisioning.
-                if (! empty($validated['plan'])) {
-                    $tenantData['ai_settings'] = ['plan' => $validated['plan']];
+                // AI planı pakete bağlı (paket öncelikli); paketten gelmezse
+                // formdaki ayrı 'plan' alanına düşer. Kota kontrolleri
+                // provisioning'den hemen sonra çalışsın diye data'ya yazılır.
+                $aiPlan = config("packages.packages.{$package}.ai_plan") ?? ($validated['plan'] ?? null);
+                if (! empty($aiPlan)) {
+                    $tenantData['ai_settings'] = ['plan' => $aiPlan];
                 }
 
                 DB::connection('central')->table('tenants')->insert([
@@ -325,6 +331,7 @@ class TenantController extends Controller
             'name'     => 'required|string|max:255',
             'theme_id' => ['nullable', Rule::exists('central.themes', 'id')],
             'status'   => 'required|in:active,suspended',
+            'package'  => ['nullable', Rule::in(array_keys(config('packages.packages', [])))],
         ]);
 
         $tenantId = (string) $tenant->getTenantKey();
@@ -337,15 +344,28 @@ class TenantController extends Controller
             ? (json_decode($currentData, true) ?: [])
             : ((array) $currentData);
 
+        $package = $validated['package'] ?? $tenant->package();
+
+        $newData = array_merge($currentData, [
+            'name'     => $validated['name'],
+            'theme_id' => $validated['theme_id'] ?? null,
+            'status'   => $validated['status'],
+            'package'  => $package,
+        ]);
+
+        // Paket değişince AI planını da paketle senkron tut.
+        $aiPlan = config("packages.packages.{$package}.ai_plan");
+        if ($aiPlan) {
+            $ai = is_array($newData['ai_settings'] ?? null) ? $newData['ai_settings'] : [];
+            $ai['plan'] = $aiPlan;
+            $newData['ai_settings'] = $ai;
+        }
+
         DB::connection('central')
             ->table('tenants')
             ->where('id', $tenantId)
             ->update([
-                'data' => json_encode(array_merge($currentData, [
-                    'name'     => $validated['name'],
-                    'theme_id' => $validated['theme_id'] ?? null,
-                    'status'   => $validated['status'],
-                ]), JSON_THROW_ON_ERROR),
+                'data' => json_encode($newData, JSON_THROW_ON_ERROR),
                 'updated_at' => now(),
             ]);
 
