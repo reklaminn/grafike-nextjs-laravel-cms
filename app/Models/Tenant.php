@@ -147,10 +147,14 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     /**
      * Tenant'ın paketi (config/packages.php). Geçersiz/boşsa varsayılana düşer.
+     *
+     * UYARI: getAttribute('package') KULLANMA — Eloquent, aynı isimli bir metod
+     * varsa bunu ilişki zanneder → getAttribute → isRelation → package() döngüsü →
+     * sonsuz recursion → OOM. Doğrudan attributes dizisinden oku.
      */
     public function package(): string
     {
-        $pkg = $this->getAttribute('package');
+        $pkg = $this->attributes['package'] ?? null;
         $packages = (array) config('packages.packages', []);
 
         return (is_string($pkg) && isset($packages[$pkg]))
