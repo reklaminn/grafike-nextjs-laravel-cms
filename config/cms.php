@@ -42,6 +42,14 @@ return [
         'secret_key' => env('RECAPTCHA_SECRET_KEY', ''),
     ],
 
+    // Cloudflare Turnstile — form spam protection (Next.js/API form path).
+    // site_key is public (rendered in the widget); secret_key is server-only.
+    'turnstile' => [
+        'enabled' => env('TURNSTILE_ENABLED', false),
+        'site_key' => env('TURNSTILE_SITE_KEY', ''),
+        'secret_key' => env('TURNSTILE_SECRET_KEY', ''),
+    ],
+
     'social' => [
         'facebook_app_id' => env('FACEBOOK_APP_ID', ''),
         'twitter_username' => env('TWITTER_USERNAME', ''),

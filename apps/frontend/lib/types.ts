@@ -211,6 +211,8 @@ export type FormPayload = {
   slug: string;
   description?: string | null;
   requires_captcha: boolean;
+  /** Public Cloudflare Turnstile site key; present only when captcha is required + enabled. */
+  turnstile_site_key?: string | null;
   fields: FormField[];
 };
 

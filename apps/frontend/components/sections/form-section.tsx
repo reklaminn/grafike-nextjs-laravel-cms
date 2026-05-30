@@ -6,6 +6,7 @@
  * Server wrapper (FormSectionLoader) fetches the form definition,
  * then passes it to this Client Component for interactive submission.
  */
+import Script from "next/script";
 import { useState, type FormEvent } from "react";
 import type { FormField, FormPayload } from "@/lib/types";
 
@@ -126,9 +127,18 @@ export function FormSection({ form, title, description, submitLabel = "Gönder" 
     setFieldErrors({});
 
     const formData = new FormData(e.currentTarget);
-    const body: Record<string, string> = {};
+    // Backend expects a nested `fields` object (fields.email …). Inputs are
+    // named `fields[email]`, so unwrap them; everything else (honeypot
+    // `_hp_url`, Turnstile `cf-turnstile-response`) stays top-level.
+    const fields: Record<string, string> = {};
+    const body: Record<string, unknown> = { fields };
     formData.forEach((value, key) => {
-      body[key] = String(value);
+      const match = key.match(/^fields\[(.+)\]$/);
+      if (match) {
+        fields[match[1]] = String(value);
+      } else {
+        body[key] = String(value);
+      }
     });
 
     try {
@@ -230,6 +240,17 @@ export function FormSection({ form, title, description, submitLabel = "Gönder" 
             <FieldInput key={field.id} field={field} />
           ))}
 
+        {/* Honeypot — off-screen; humans never fill it, bots do. */}
+        <input
+          type="text"
+          name="_hp_url"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          defaultValue=""
+          style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", opacity: 0 }}
+        />
+
         {visibleFields.map((field) => {
           const errs = fieldErrors[`fields.${field.name}`] ?? [];
           return (
@@ -259,6 +280,15 @@ export function FormSection({ form, title, description, submitLabel = "Gönder" 
             </div>
           );
         })}
+
+        {/* Cloudflare Turnstile — implicit render: the script injects a hidden
+            `cf-turnstile-response` input into this form, picked up by FormData. */}
+        {form.requires_captcha && form.turnstile_site_key && (
+          <div>
+            <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
+            <div className="cf-turnstile" data-sitekey={form.turnstile_site_key} />
+          </div>
+        )}
 
         <div>
           <button
