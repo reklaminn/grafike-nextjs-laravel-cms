@@ -25,14 +25,27 @@ class FatalLogger
     /** Reserved memory buffer, released inside the shutdown handler. */
     private static ?string $reserved = null;
 
+    /** Register only once even if called from index.php AND a provider. */
+    private static bool $registered = false;
+
     public static function register(string $logFile): void
     {
+        // İlk kayıt kazanır. index.php (framework'ten ÖNCE) çağırırsa bizim
+        // shutdown handler'ımız Laravel'inkinden önce çalışır ve OOM'u yakalar;
+        // AppServiceProvider'daki ikinci çağrı no-op olur.
+        if (self::$registered) {
+            return;
+        }
+        self::$registered = true;
+
         // Reserve headroom so the handler can still run after an OOM.
         self::$reserved = str_repeat('x', 1024 * 1024); // 1 MB
 
         register_shutdown_function(static function () use ($logFile): void {
             // Free the reserve first — gives the handler room to work.
             self::$reserved = null;
+            // OOM sonrası bile yazabilmek için limiti geçici olarak yükselt.
+            @ini_set('memory_limit', '512M');
 
             $e = error_get_last();
             if ($e === null) {
