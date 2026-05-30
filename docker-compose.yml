@@ -177,6 +177,14 @@ x-app-labels: &app-labels
   traefik.http.routers.grafike-tenants.service: grafike-lb
   traefik.http.routers.grafike-tenants.priority: "1"
 
+# DB host'unu /etc/hosts'a pinler → Alpine(musl) + Docker gömülü DNS'in yük
+# altında verdiği aralıklı "getaddrinfo ... Try again" (EAI_AGAIN) hatasını
+# önler; PHP/PDO artık mariadb_admindb için DNS lookup yapmaz. IP, mariadb'nin
+# traefik_proxy ağındaki adresidir; gerekirse .env'de MARIADB_HOST_IP ile
+# override edilir. (mariadb yeniden oluşturulup IP değişirse güncelle.)
+x-db-extra-hosts: &db-extra-hosts
+  - "mariadb_admindb:${MARIADB_HOST_IP:-172.21.0.5}"
+
 x-app-common: &app-common
   build:
     context: .
@@ -200,6 +208,7 @@ x-app-common: &app-common
   networks:
     - app_net
     - traefik_proxy
+  extra_hosts: *db-extra-hosts
 
 services:
 
