@@ -23,6 +23,9 @@ class ArticleObserver
 
     public function deleted(Article $article): void
     {
+        // SEO kaydını da sil — cascade etmiyor
+        $article->seo()->delete();
+
         $this->clearArticleCache($article);
         $this->revalidateFrontend($article);
     }

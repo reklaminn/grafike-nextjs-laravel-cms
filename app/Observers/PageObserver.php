@@ -41,8 +41,17 @@ class PageObserver
 
     public function deleted(Page $page): void
     {
+        // SEO kaydını da sil — soft-delete cascade etmiyor
+        $page->seo()->delete();
+
         $this->clearPageCache($page);
         $this->revalidateFrontend($page);
+    }
+
+    public function forceDeleted(Page $page): void
+    {
+        $page->seo()->forceDelete();
+        $this->clearPageCache($page);
     }
 
     // ─── Cache invalidation ───────────────────────────────────────────────────
