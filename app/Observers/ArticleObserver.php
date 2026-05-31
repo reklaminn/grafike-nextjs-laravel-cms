@@ -26,6 +26,16 @@ class ArticleObserver
         }
     }
 
+    /**
+     * Slug değişince SEO kaydını da güncelle.
+     */
+    public function updated(Article $article): void
+    {
+        if ($article->wasChanged('slug')) {
+            $article->seo()->update(['slug' => $article->slug]);
+        }
+    }
+
     public function saved(Article $article): void
     {
         $this->clearArticleCache($article);

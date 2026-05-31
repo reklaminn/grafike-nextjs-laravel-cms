@@ -28,6 +28,18 @@ class PageObserver
         }
     }
 
+    /**
+     * Slug değişince SEO kaydını da güncelle.
+     * saveSeo() yalnızca meta alanlar doluysa çalışır; bu observer
+     * her durumda seo_entries.slug'ı pages.slug ile senkronize tutar.
+     */
+    public function updated(Page $page): void
+    {
+        if ($page->wasChanged('slug')) {
+            $page->seo()->update(['slug' => $page->slug]);
+        }
+    }
+
     public function updating(Page $page): void
     {
         if ($page->isDirty('sections_json') || $page->isDirty('layout_json')) {
