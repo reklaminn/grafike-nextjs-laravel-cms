@@ -406,26 +406,21 @@ class PageController extends Controller
      */
     protected function saveSeo(Page $page, Request $request): void
     {
-        // Slug her zaman güncellenir (meta dolu olmasa bile).
-        // Meta alanlar doluysa tam updateOrCreate; değilse sadece slug sync.
-        if ($request->filled('seo_title') || $request->filled('seo_description') || $request->filled('seo_keywords')) {
-            $page->seo()->updateOrCreate(
-                ['seoable_id' => $page->id, 'seoable_type' => Page::class],
-                [
-                    'slug'             => $page->slug,
-                    'language_id'      => $page->language_id,
-                    'meta_title'       => $request->input('seo_title'),
-                    'meta_description' => $request->input('seo_description'),
-                    'meta_keywords'    => $request->input('seo_keywords'),
-                    'h1_override'      => $request->input('seo_h1'),
-                    'canonical_url'    => $request->input('seo_canonical'),
-                    'is_noindex'       => $request->boolean('seo_noindex'),
-                ]
-            );
-        } elseif ($page->seo()->exists()) {
-            // Meta boş ama SEO kaydı var → sadece slug'ı güncelle
-            $page->seo()->update(['slug' => $page->slug]);
-        }
+        // Koşulsuz updateOrCreate — her kayıtta SEO formu ile seo_entries senkronize olur.
+        // Boş gelen alanlar null yazılır (temizleme de çalışır).
+        $page->seo()->updateOrCreate(
+            ['seoable_id' => $page->id, 'seoable_type' => Page::class],
+            [
+                'slug'             => $page->slug,
+                'language_id'      => $page->language_id,
+                'meta_title'       => $request->input('seo_title')       ?: null,
+                'meta_description' => $request->input('seo_description') ?: null,
+                'meta_keywords'    => $request->input('seo_keywords')    ?: null,
+                'h1_override'      => $request->input('seo_h1')          ?: null,
+                'canonical_url'    => $request->input('seo_canonical')   ?: null,
+                'is_noindex'       => $request->boolean('seo_noindex'),
+            ]
+        );
     }
 
     protected function syncHomepageSetting(Page $page, Request $request): void

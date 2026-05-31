@@ -86,15 +86,24 @@ class SeoController extends Controller
 
         // Slug değiştiyse ilgili sayfa/yazının slug'ını da güncelle
         if ($validated['slug'] !== $oldSlug) {
-            $seoable = $seoEntry->seoable;
+            $seoable = $seoEntry->fresh()->seoable;
             if ($seoable instanceof Page || $seoable instanceof Article) {
                 // updateQuietly → observer tetiklenmesin (sonsuz döngü olmasın)
                 $seoable->updateQuietly(['slug' => $validated['slug']]);
             }
         }
 
+        // Geri dön: ilgili içerik editörüne link ver
+        $seoable = $seoEntry->fresh()->seoable;
+        $editUrl = match(true) {
+            $seoable instanceof Page    => route('admin.pages.edit', $seoable, false),
+            $seoable instanceof Article => route('admin.articles.edit', $seoable, false),
+            default                     => null,
+        };
+
         return redirect()->route('admin.seo.index')
-            ->with('success', 'SEO kaydı güncellendi.');
+            ->with('success', 'SEO kaydı güncellendi.')
+            ->with('seo_edit_url', $editUrl);
     }
 
     public function destroy(SeoEntry $seoEntry)

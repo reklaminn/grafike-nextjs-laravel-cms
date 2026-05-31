@@ -115,6 +115,28 @@
                            value="{{ old('seo_keywords', $article->seo?->meta_keywords ?? '') }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">H1 Geçersiz Kıl</label>
+                        <input type="text" name="seo_h1"
+                               value="{{ old('seo_h1', $article->seo?->h1_override ?? '') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Canonical URL</label>
+                        <input type="url" name="seo_canonical"
+                               value="{{ old('seo_canonical', $article->seo?->canonical_url ?? '') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                               placeholder="https://...">
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="seo_noindex" value="0">
+                    <input type="checkbox" id="seo_noindex_article" name="seo_noindex" value="1"
+                           {{ old('seo_noindex', $article->seo?->is_noindex ?? false) ? 'checked' : '' }}
+                           class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="seo_noindex_article" class="text-sm text-gray-700">noindex (Arama motorlarından gizle)</label>
+                </div>
             </div>
         </div>
 

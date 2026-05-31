@@ -230,18 +230,20 @@ class ArticleController extends Controller
 
     protected function saveSeo(Article $article, Request $request): void
     {
-        if ($request->filled('seo_title') || $request->filled('seo_description')) {
-            $article->seo()->updateOrCreate(
-                ['seoable_id' => $article->id, 'seoable_type' => Article::class],
-                [
-                    'slug' => $article->slug,
-                    'language_id' => $article->language_id,
-                    'meta_title' => $request->input('seo_title'),
-                    'meta_description' => $request->input('seo_description'),
-                    'meta_keywords' => $request->input('seo_keywords'),
-                ]
-            );
-        }
+        // Koşulsuz updateOrCreate — her kayıtta SEO formu ile seo_entries senkronize olur.
+        $article->seo()->updateOrCreate(
+            ['seoable_id' => $article->id, 'seoable_type' => Article::class],
+            [
+                'slug'             => $article->slug,
+                'language_id'      => $article->language_id,
+                'meta_title'       => $request->input('seo_title')       ?: null,
+                'meta_description' => $request->input('seo_description') ?: null,
+                'meta_keywords'    => $request->input('seo_keywords')    ?: null,
+                'h1_override'      => $request->input('seo_h1')          ?: null,
+                'canonical_url'    => $request->input('seo_canonical')   ?: null,
+                'is_noindex'       => $request->boolean('seo_noindex'),
+            ]
+        );
     }
 
     protected function generateUniqueSlug(string $title, ?int $excludeId = null): string
