@@ -55,6 +55,45 @@ class AiBlockEditor
     }
 
     /**
+     * Build the system + user prompt parts for streaming — same logic as
+     * edit(), but without making the AI call itself.
+     *
+     * @return array{system:string, user:string|null, allowed:array<int,string>|null}
+     */
+    public function buildPromptParts(
+        array $content,
+        ?array $schema,
+        string $action,
+        ?string $customPrompt = null,
+    ): array {
+        $instruction = $this->resolveInstruction($action, $customPrompt);
+        $allowed     = $this->allowedKeys($schema);
+        $editable    = $allowed !== null
+            ? array_intersect_key($content, array_flip($allowed))
+            : $this->filterNonTextFields($content);
+
+        return [
+            'system'  => $this->systemPrompt(),
+            'user'    => empty($editable) ? null : $this->userPrompt($editable, $instruction),
+            'allowed' => $allowed,
+        ];
+    }
+
+    /**
+     * Parse accumulated raw AI output + merge onto original content.
+     * Used by the streaming controller after all deltas are received.
+     *
+     * @return array<string, mixed>
+     */
+    public function applyRawOutput(array $content, string $rawOutput, ?array $schema): array
+    {
+        $allowed   = $this->allowedKeys($schema);
+        $aiOutput  = $this->parseJson($rawOutput);
+
+        return $this->mergeOutput($content, $aiOutput, $allowed);
+    }
+
+    /**
      * Apply a transformation to the block content.
      *
      * @param  array<string, mixed>            $content        Current block content keyed by field

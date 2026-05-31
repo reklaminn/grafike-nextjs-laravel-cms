@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Ai;
 
 use App\Http\Controllers\Controller;
 use App\Models\SectionTemplate;
+use App\Services\Ai\AiBlockEditor;
 use App\Services\Ai\AiManager;
 use App\Services\Ai\AiQuotaService;
 use App\Services\Ai\Dtos\AiMessage;
@@ -11,41 +12,28 @@ use App\Services\Ai\Dtos\AiRequest;
 use App\Services\Ai\Exceptions\AiQuotaExceededException;
 use App\Services\Ai\TenantAiResolver;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /**
  * Streaming block-edit endpoint (FAZ 3.6).
  *
- * Emits Server-Sent Events as the model generates tokens. Frontend
- * uses EventSource (or a fetch reader) to render the text live —
- * "typewriter" UX that lets the admin abort early if the rewrite is
- * obviously going the wrong way.
+ * Aynı parametreleri BlockEditController gibi alır (action, content, schema …)
+ * ama yanıtı Server-Sent Events olarak akar.
  *
- * Wire format:
+ * SSE wire format:
  *   event: delta
  *   data: {"text":"merhaba "}
  *
- *   event: delta
- *   data: {"text":"dünya"}
- *
  *   event: done
- *   data: {"provider":"anthropic","model":"haiku","input_tokens":120,"output_tokens":35,"stop_reason":"end_turn"}
+ *   data: {"content":{...merged...},"provider":"anthropic","model":"haiku","input_tokens":120,"output_tokens":35}
  *
  *   event: error
  *   data: {"error_code":"quota_exceeded","message":"…"}
  *
- * Quota: pre-check (assertWithinQuota) BEFORE opening the stream;
- * post-record after the stream closes with the actual token usage from
- * the final SSE event. If the client aborts mid-stream, we still
- * persist whatever tokens were consumed.
- *
- * Note: this controller is intentionally separate from BlockEditController
- * because streaming makes JSON-shape post-processing impossible — we
- * stream raw text deltas, and the frontend assembles the rewritten
- * content client-side. Schema-aware text-only filtering happens via the
- * prompt itself (system message tells the model to return same JSON).
+ * Frontend ReadableStream ile delta chunk'larını gösterir (typewriter efekt),
+ * done event'indeki content'i settingsDraft.content'e yazar.
  */
 class StreamBlockEditController extends Controller
 {
@@ -54,59 +42,98 @@ class StreamBlockEditController extends Controller
         AiManager $manager,
         TenantAiResolver $tenantResolver,
         AiQuotaService $quota,
+        AiBlockEditor $editor,
     ): StreamedResponse {
+        $actions = array_keys($editor->availableActions());
+
         $validated = $request->validate([
-            'prompt'              => 'required|string|max:2000',
-            'tier'                => 'nullable|in:simple,complex',
-            'system'              => 'nullable|string|max:2000',
+            'content'             => 'required|array',
+            'action'              => ['required', 'string', Rule::in([...$actions, 'custom'])],
+            'custom_prompt'       => 'nullable|string|max:500',
+            'schema'              => 'nullable|array',
             'section_template_id' => 'nullable|integer',
         ]);
 
-        $tier   = $validated['tier'] ?? 'simple';
         $tenant = tenancy()->initialized ? tenant() : null;
 
-        // Quota pre-check — refuse the connection BEFORE streaming opens.
+        // Quota pre-check — refuse before the stream opens.
         try {
             $quota->assertWithinQuota($tenant, estimatedTokens: 1000);
         } catch (AiQuotaExceededException $e) {
             return $this->errorStream('quota_exceeded', $e->getMessage(), 402);
         }
 
-        $resolved = $tenantResolver->resolve($tenant, $tier);
-
-        // Optional system prompt enrichment from section template.
-        $system = $validated['system'] ?? null;
-        if (! empty($validated['section_template_id'])) {
+        // Build prompt using the same logic as BlockEditController / AiBlockEditor.
+        $schema = $validated['schema'] ?? null;
+        if ($schema === null && ! empty($validated['section_template_id'])) {
             $tpl = SectionTemplate::query()->find($validated['section_template_id']);
             if ($tpl && is_array($tpl->schema_json)) {
-                $schemaHint = "Schema keys: ".implode(', ', array_keys($tpl->schema_json));
-                $system = trim(($system ?: '')."\n\n".$schemaHint);
+                $schema = $tpl->schema_json;
             }
         }
 
+        try {
+            $parts = $editor->buildPromptParts(
+                content:      $validated['content'],
+                schema:       $schema,
+                action:       $validated['action'],
+                customPrompt: $validated['custom_prompt'] ?? null,
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorStream('invalid_request', $e->getMessage(), 422);
+        }
+
+        // Nothing editable → return original content immediately without a stream.
+        if ($parts['user'] === null) {
+            return response()->stream(function () use ($validated) {
+                $this->sse('done', [
+                    'content'       => $validated['content'],
+                    'input_tokens'  => 0,
+                    'output_tokens' => 0,
+                    'note'          => 'Bu blokta düzenlenebilir metin alanı bulunamadı.',
+                ]);
+            }, 200, $this->sseHeaders());
+        }
+
+        $resolved = $tenantResolver->resolve($tenant, 'simple');
+
         return response()->stream(function () use (
-            $manager, $resolved, $validated, $system, $quota, $tenant
+            $manager, $resolved, $parts, $validated, $schema, $quota, $tenant, $editor
         ) {
+            $accumulated = '';
+
             $aiRequest = new AiRequest(
                 model:          $resolved['model'],
-                messages:       [AiMessage::user($validated['prompt'])],
-                system:         $system,
+                messages:       [AiMessage::user($parts['user'])],
+                system:         $parts['system'],
                 maxTokens:      1500,
                 temperature:    0.7,
-                metadata:       ['source' => 'stream.block-edit', 'tenant_id' => $tenant?->getKey(), 'tier' => $resolved['tier'] ?? null],
+                metadata:       ['source' => 'stream.block-edit', 'tenant_id' => $tenant?->getKey()],
                 apiKeyOverride: $resolved['api_key'],
             );
 
             try {
                 $response = $manager->provider($resolved['provider'])->stream(
                     $aiRequest,
-                    function (string $textChunk) {
-                        $this->sse('delta', ['text' => $textChunk]);
+                    function (string $chunk) use (&$accumulated) {
+                        $accumulated .= $chunk;
+                        $this->sse('delta', ['text' => $chunk]);
                     },
                 );
 
-                // Final usage event
+                // Parse accumulated JSON + merge onto original content.
+                try {
+                    $mergedContent = $editor->applyRawOutput(
+                        $validated['content'],
+                        $accumulated,
+                        $schema,
+                    );
+                } catch (Throwable) {
+                    $mergedContent = null; // frontend falls back to no-op
+                }
+
                 $this->sse('done', [
+                    'content'       => $mergedContent,
                     'provider'      => $response->provider,
                     'model'         => $response->model,
                     'input_tokens'  => $response->usage->inputTokens,
@@ -114,39 +141,31 @@ class StreamBlockEditController extends Controller
                     'stop_reason'   => $response->stopReason,
                 ]);
 
-                // Persist usage for billing/dashboards
                 $quota->recordSuccess(
-                    tenant:       $tenant,
-                    feature:      'block.edit',
-                    response:     $response,
-                    byok:         (bool) ($resolved['byok'] ?? false),
-                    fallbackUsed: false,
-                    extraMetadata: ['streamed' => true, 'tier' => $resolved['tier'] ?? null],
+                    tenant:        $tenant,
+                    feature:       'block.edit',
+                    response:      $response,
+                    byok:          (bool) ($resolved['byok'] ?? false),
+                    fallbackUsed:  false,
+                    extraMetadata: ['streamed' => true, 'action' => $validated['action']],
                 );
             } catch (Throwable $e) {
                 report($e);
                 $this->sse('error', ['message' => $e->getMessage()]);
 
-                // Still record failure for ops visibility
                 $quota->recordFailure(
-                    tenant:    $tenant,
-                    feature:   'block.edit',
-                    provider:  $resolved['provider'],
-                    model:     $resolved['model'],
-                    error:     $e,
-                    byok:      (bool) ($resolved['byok'] ?? false),
+                    tenant:        $tenant,
+                    feature:       'block.edit',
+                    provider:      $resolved['provider'],
+                    model:         $resolved['model'],
+                    error:         $e,
+                    byok:          (bool) ($resolved['byok'] ?? false),
                     extraMetadata: ['streamed' => true],
                 );
             }
-        }, 200, [
-            'Content-Type'      => 'text/event-stream',
-            'Cache-Control'     => 'no-cache, no-transform',
-            'X-Accel-Buffering' => 'no', // disable nginx buffering — chunks arrive immediately
-            'Connection'        => 'keep-alive',
-        ]);
+        }, 200, $this->sseHeaders());
     }
 
-    /** Emit a single SSE event. */
     private function sse(string $event, array $payload): void
     {
         echo "event: {$event}\n";
@@ -157,16 +176,20 @@ class StreamBlockEditController extends Controller
         @flush();
     }
 
+    private function sseHeaders(): array
+    {
+        return [
+            'Content-Type'      => 'text/event-stream',
+            'Cache-Control'     => 'no-cache, no-transform',
+            'X-Accel-Buffering' => 'no',
+            'Connection'        => 'keep-alive',
+        ];
+    }
+
     private function errorStream(string $code, string $message, int $status): StreamedResponse
     {
         return response()->stream(function () use ($code, $message) {
-            echo "event: error\n";
-            echo 'data: '.json_encode(['error_code' => $code, 'message' => $message], JSON_UNESCAPED_UNICODE)."\n\n";
-            @ob_flush();
-            @flush();
-        }, $status, [
-            'Content-Type'  => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-        ]);
+            $this->sse('error', ['error_code' => $code, 'message' => $message]);
+        }, $status, $this->sseHeaders());
     }
 }

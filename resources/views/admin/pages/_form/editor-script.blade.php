@@ -155,10 +155,13 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         rowSettingsDraft: null,
         initialSerializedRegions: null,
 
-        // AI block-edit state (FAZ 4.2)
+        // AI block-edit state (FAZ 3.6 streaming)
         aiAction: 'shorten',
         aiCustomPrompt: '',
         aiLoading: false,
+        aiStreaming: false,   // true while SSE stream is open
+        aiStreamText: '',     // accumulated raw text (typewriter preview)
+        aiAbortController: null,
         aiStatus: '',
         aiStatusOk: false,
 
@@ -964,13 +967,11 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             this.closeBlockSettings();
         },
 
-        // ── AI block-edit (FAZ 4.2) ─────────────────────────────────────
+        // ── AI block-edit — streaming (FAZ 3.6) ─────────────────────────
         //
-        // Sends the current settingsDraft.content + the block's schema to
-        // the backend AI endpoint, then overwrites the draft content with
-        // the AI's rewrite. The admin sees the change immediately in the
-        // already-open settings modal and can either keep editing, "Kaydet"
-        // to commit the draft into regions, or "Vazgeç" to discard.
+        // Streams SSE from admin.ai.stream.block-edit. Delta chunks build a
+        // live typewriter preview; the done event carries the fully-merged
+        // content object which replaces settingsDraft.content.
         async applyAiTransform() {
             if (!this.settingsDraft || this.aiLoading) return;
 
@@ -982,19 +983,25 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 return;
             }
 
-            this.aiLoading = true;
-            this.aiStatus = '';
-            this.aiStatusOk = false;
+            this.aiLoading    = true;
+            this.aiStreaming  = true;
+            this.aiStreamText = '';
+            this.aiStatus     = '';
+            this.aiStatusOk   = false;
+            this.aiAbortController = new AbortController();
+
+            const url = @js(route('admin.ai.stream.block-edit', [], false));
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
             try {
-                const url = @js(route('admin.ai.block-edit', [], false));
-                const r = await fetch(url, {
+                const response = await fetch(url, {
                     method: 'POST',
                     credentials: 'same-origin',
+                    signal: this.aiAbortController.signal,
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'text/event-stream',
                     },
                     body: JSON.stringify({
                         action,
@@ -1003,33 +1010,84 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                         schema: Array.isArray(this.settingsDraft.schema_json)
                                 ? this.settingsDraft.schema_json
                                 : (this.settingsDraft.schema || null),
-                        section_template_id: this.settingsDraft.section_template_id || this.settingsDraft.template_id || null,
+                        section_template_id: this.settingsDraft.section_template_id
+                                             || this.settingsDraft.template_id || null,
                     }),
                 });
 
-                const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
-
-                if (!r.ok || !data.ok) {
-                    let msg = data.message || 'AI cevap üretemedi.';
-                    if (data.error_code === 'quota_exceeded') {
-                        msg = `${data.message} (kalan ${data.limit - data.used}/${data.limit})`;
-                    }
-                    this.aiStatus = msg;
-                    this.aiStatusOk = false;
-                    return;
+                if (!response.ok) {
+                    // Error before stream opened (e.g. 402 quota exceeded).
+                    const errText = await response.text().catch(() => '');
+                    // Try to parse SSE error event from body.
+                    const m = errText.match(/data:\s*(\{.*\})/);
+                    const errData = m ? JSON.parse(m[1]) : {};
+                    throw new Error(errData.message || `HTTP ${response.status}`);
                 }
 
-                // Replace draft content with AI rewrite. Keep other draft
-                // metadata (is_active, member-only, etc.) untouched.
-                this.settingsDraft.content = data.content || this.settingsDraft.content;
-                this.aiStatus = 'Blok içeriği AI ile güncellendi. Kaydetmeden önce gözden geçirin.';
-                this.aiStatusOk = true;
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Process complete SSE messages (terminated by \n\n).
+                    const parts = buffer.split('\n\n');
+                    buffer = parts.pop(); // last incomplete chunk stays in buffer
+
+                    for (const part of parts) {
+                        let eventType = 'message';
+                        let dataLine  = '';
+
+                        for (const line of part.split('\n')) {
+                            if (line.startsWith('event:')) {
+                                eventType = line.slice(6).trim();
+                            } else if (line.startsWith('data:')) {
+                                dataLine = line.slice(5).trim();
+                            }
+                        }
+
+                        if (!dataLine) continue;
+
+                        let payload;
+                        try { payload = JSON.parse(dataLine); } catch { continue; }
+
+                        if (eventType === 'delta') {
+                            this.aiStreamText += payload.text || '';
+                        } else if (eventType === 'done') {
+                            if (payload.content) {
+                                this.settingsDraft.content = payload.content;
+                                this.aiStatus    = 'Blok içeriği AI ile güncellendi. Kaydetmeden önce gözden geçirin.';
+                                this.aiStatusOk  = true;
+                            } else {
+                                this.aiStatus   = payload.note || 'AI yanıt üretti ama içerik uygulanamadı.';
+                                this.aiStatusOk = false;
+                            }
+                        } else if (eventType === 'error') {
+                            throw new Error(payload.message || 'AI hatası.');
+                        }
+                    }
+                }
             } catch (e) {
-                this.aiStatus = e.message || 'Ağ hatası.';
-                this.aiStatusOk = false;
+                if (e.name === 'AbortError') {
+                    this.aiStatus   = 'İptal edildi.';
+                    this.aiStatusOk = false;
+                } else {
+                    this.aiStatus   = e.message || 'Ağ hatası.';
+                    this.aiStatusOk = false;
+                }
             } finally {
-                this.aiLoading = false;
+                this.aiLoading         = false;
+                this.aiStreaming        = false;
+                this.aiAbortController = null;
             }
+        },
+
+        abortAiTransform() {
+            this.aiAbortController?.abort();
         },
 
         get settingsBlock() {

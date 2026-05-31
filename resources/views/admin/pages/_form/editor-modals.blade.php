@@ -212,7 +212,8 @@
                         </div>
                         <div class="flex flex-wrap gap-2 items-stretch">
                             <select x-model="aiAction"
-                                    class="flex-1 min-w-[180px] px-3 py-2 border border-indigo-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500">
+                                    :disabled="aiLoading"
+                                    class="flex-1 min-w-[180px] px-3 py-2 border border-indigo-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
                                 <option value="shorten">📏 Daha kısa yaz</option>
                                 <option value="lengthen">📜 Daha uzun yaz</option>
                                 <option value="professional">💼 Profesyonel ton</option>
@@ -227,20 +228,42 @@
                                 <option value="translate_ar">🇸🇦 Arapçaya çevir</option>
                                 <option value="custom">⚡ Özel komut</option>
                             </select>
-                            <button type="button"
-                                    @click="applyAiTransform()"
-                                    :disabled="aiLoading"
-                                    class="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 whitespace-nowrap">
-                                <i class="fas" :class="aiLoading ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
-                                <span x-text="aiLoading ? 'Çalışıyor…' : 'Uygula'"></span>
-                            </button>
+                            <template x-if="!aiStreaming">
+                                <button type="button"
+                                        @click="applyAiTransform()"
+                                        :disabled="aiLoading"
+                                        class="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 whitespace-nowrap">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>Uygula</span>
+                                </button>
+                            </template>
+                            <template x-if="aiStreaming">
+                                <button type="button"
+                                        @click="abortAiTransform()"
+                                        class="px-4 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 flex items-center gap-1.5 whitespace-nowrap">
+                                    <i class="fas fa-stop"></i>
+                                    <span>Durdur</span>
+                                </button>
+                            </template>
                         </div>
                         <div x-show="aiAction === 'custom'" x-cloak class="mt-2">
                             <input type="text" x-model="aiCustomPrompt"
+                                   :disabled="aiLoading"
                                    maxlength="500"
                                    placeholder="Örn: Cümlelerin başına emoji ekle ama içeriği değiştirme"
-                                   class="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500">
+                                   class="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
                         </div>
+
+                        {{-- Typewriter preview — gösterim sırasında canlı chunk birikir --}}
+                        <div x-show="aiStreaming && aiStreamText" x-cloak class="mt-2">
+                            <div class="bg-white border border-indigo-200 rounded-lg p-2 text-xs text-gray-700 max-h-24 overflow-y-auto font-mono leading-relaxed whitespace-pre-wrap"
+                                 x-text="aiStreamText"></div>
+                            <p class="text-[10px] text-indigo-500 mt-0.5 flex items-center gap-1">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+                                AI yazıyor…
+                            </p>
+                        </div>
+
                         <div x-show="aiStatus" x-cloak class="mt-2 text-xs rounded-md p-2"
                              :class="aiStatusOk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                                 : 'bg-red-50 text-red-700 border border-red-200'">
