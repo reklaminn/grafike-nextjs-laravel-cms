@@ -3,6 +3,7 @@
 namespace App\Services\Tenancy;
 
 use App\Models\Tenant;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Redis;
 
@@ -47,6 +48,28 @@ class TenantUsageMeter
     public function storageUsedMb(string $tenantId): float
     {
         return round($this->storageUsedBytes($tenantId) / 1048576, 1);
+    }
+
+    /**
+     * Tenant veritabanının (tenant_<id>) disk boyutu (MB).
+     * MySQL/MariaDB sunucusu paylaşımlı olduğundan information_schema'dan
+     * okunur — tenancy init gerektirmez, central bağlantıyla çalışır.
+     */
+    public function databaseSizeMb(string $tenantId): float
+    {
+        $db = config('tenancy.database.prefix', 'tenant_') . $tenantId . config('tenancy.database.suffix', '');
+
+        try {
+            $row = DB::connection('central')->selectOne(
+                'SELECT COALESCE(SUM(data_length + index_length), 0) AS bytes
+                   FROM information_schema.tables WHERE table_schema = ?',
+                [$db]
+            );
+
+            return round(((int) ($row->bytes ?? 0)) / 1048576, 1);
+        } catch (\Throwable) {
+            return 0.0;
+        }
     }
 
     /** True if adding $additionalBytes would push the tenant over its quota. */

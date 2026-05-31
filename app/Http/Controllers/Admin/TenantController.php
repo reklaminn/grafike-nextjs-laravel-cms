@@ -226,6 +226,7 @@ class TenantController extends Controller
         try {
             $resourceUsage = [
                 'storage_used_mb'  => $meter->storageUsedMb($tenantKey),
+                'db_size_mb'       => $meter->databaseSizeMb($tenantKey),
                 'storage_quota_mb' => $tenant->packageConfig()['max_storage_mb'] ?? null,
                 'requests_today'   => $meter->requestsToday($tenantKey),
                 'requests_quota'   => $tenant->packageConfig()['max_requests_per_day'] ?? null,
@@ -233,6 +234,7 @@ class TenantController extends Controller
                 'users_count'      => AdminTenantAccess::where('tenant_id', $tenantKey)->distinct()->count('admin_id'),
                 'max_users'        => $tenant->maxAdminUsers(),
                 'package_label'    => $tenant->packageConfig()['label'] ?? $tenant->package(),
+                'upgrade'          => app(\App\Services\Tenancy\TenantUpgradeAdvisor::class)->evaluate($tenant),
             ];
         } catch (\Throwable $e) {
             // Geçici DB/metering hatası (örn. DNS blip) tenant sayfasını komple
