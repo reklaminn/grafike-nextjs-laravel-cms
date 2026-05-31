@@ -25,7 +25,10 @@ class PageRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'slug' => [
                 'nullable', 'string', 'max:255', 'regex:/^[a-z0-9\-]+$/',
-                Rule::unique('pages', 'slug')->ignore($pageId),
+                // DB unique index: (slug, language_id) composite — aynı dilde çakışmayı engelle
+                Rule::unique('pages', 'slug')
+                    ->ignore($pageId)
+                    ->where('language_id', $this->input('language_id')),
             ],
             'parent_id' => ['nullable', 'exists:pages,id'],
             'root_page_id' => ['nullable', 'exists:pages,id'],
