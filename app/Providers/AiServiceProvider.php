@@ -80,7 +80,10 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
         });
 
         $this->app->singleton(AiPageGenerator::class, function ($app) {
-            return new AiPageGenerator($app->make(AiModelRouter::class));
+            return new AiPageGenerator(
+                $app->make(AiModelRouter::class),
+                $app->make(\App\Services\Ai\SiteContextBuilder::class),
+            );
         });
 
         $this->app->singleton(AiTranslator::class, function ($app) {
