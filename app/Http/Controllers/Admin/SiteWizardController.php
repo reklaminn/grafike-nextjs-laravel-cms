@@ -197,7 +197,7 @@ PROMPT;
             'slug'          => $finalSlug,
             'language_id'   => $languageId,
             'status'        => 'draft',
-            'sections_json' => json_encode([]),
+            'sections_json' => [],
             'show_in_menu'  => false,
             'sort_order'    => $v['sort_order'] ?? 0,
         ]);
