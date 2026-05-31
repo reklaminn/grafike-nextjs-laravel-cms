@@ -34,6 +34,9 @@ class SectionTemplateGenerateController extends Controller
             'style'         => 'nullable|string|max:100',
             'language'      => 'nullable|string|max:50',
             'auto_save'     => 'nullable|boolean',
+            // Vision: base64 string gönderilir (data-URI prefix olmadan)
+            'image_base64'  => 'nullable|string|max:6000000', // ~4.5MB base64
+            'image_mime'    => 'nullable|string|in:image/jpeg,image/png,image/webp,image/gif',
         ]);
 
         $hints = array_filter([
@@ -46,9 +49,11 @@ class SectionTemplateGenerateController extends Controller
         // Quota for SectionTemplate generation hits the agency, not any tenant.
         try {
             $result = $generator->generate(
-                prompt: $validated['prompt'],
-                tenant: null,
-                hints:  $hints ?: null,
+                prompt:       $validated['prompt'],
+                tenant:       null,
+                hints:        $hints ?: null,
+                imageBase64:  $validated['image_base64'] ?? null,
+                imageMimeType: $validated['image_mime'] ?? 'image/jpeg',
             );
         } catch (AiQuotaExceededException $e) {
             return response()->json([

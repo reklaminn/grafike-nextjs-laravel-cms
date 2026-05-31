@@ -459,10 +459,16 @@ class PageController extends Controller
             $siteContext = [];
         }
 
-        $purpose = trim((string) $request->input('purpose', ''));
-        $prompt  = "\"{$pageModel->title}\" sayfası";
+        $purpose     = trim((string) $request->input('purpose', ''));
+        $imageBase64 = $request->input('image_base64') ?: null;
+        $imageMime   = $request->input('image_mime', 'image/jpeg');
+
+        $prompt = "\"{$pageModel->title}\" sayfası";
         if ($purpose !== '') {
             $prompt .= ". {$purpose}";
+        }
+        if ($imageBase64) {
+            $prompt .= ". Referans görsel eklendi — görsel tasarıma benzer layout üret.";
         }
         if (! empty($siteContext['company_name'])) {
             $prompt .= ". Firma: {$siteContext['company_name']}";
@@ -473,10 +479,12 @@ class PageController extends Controller
 
         try {
             $result = $generator->generate(
-                prompt:      $prompt,
-                tenant:      $tenant,
-                locale:      $locale,
-                siteContext: $siteContext,
+                prompt:        $prompt,
+                tenant:        $tenant,
+                locale:        $locale,
+                siteContext:   $siteContext,
+                imageBase64:   $imageBase64,
+                imageMimeType: $imageMime,
             );
         } catch (AiQuotaExceededException $e) {
             return response()->json([

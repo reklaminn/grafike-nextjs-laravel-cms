@@ -40,17 +40,21 @@ class AiSectionTemplateGenerator
         string $prompt,
         ?Tenant $tenant = null,
         ?array $hints = null,
+        ?string $imageBase64 = null,
+        string $imageMimeType = 'image/jpeg',
     ): array {
         $system = $this->systemPrompt();
-        $user   = $this->userPrompt($prompt, $hints ?? []);
+        $user   = $this->userPrompt($prompt, $hints ?? [], hasImage: $imageBase64 !== null);
 
         try {
             $response = $this->router->generate(
-                feature:  'block.template',
-                prompt:   $user,
-                system:   $system,
-                tenant:   $tenant,
-                metadata: ['source' => 'section-template.generator'],
+                feature:       'block.template',
+                prompt:        $user,
+                system:        $system,
+                tenant:        $tenant,
+                metadata:      ['source' => 'section-template.generator'],
+                imageBase64:   $imageBase64,
+                imageMimeType: $imageMimeType,
             );
         } catch (AiProviderException $e) {
             throw new RuntimeException('AI sağlayıcısı yanıt veremedi: '.$e->getMessage(), 0, $e);
@@ -126,7 +130,7 @@ Beklenen şema:
 PROMPT;
     }
 
-    private function userPrompt(string $prompt, array $hints): string
+    private function userPrompt(string $prompt, array $hints, bool $hasImage = false): string
     {
         $hintLines = [];
         if (! empty($hints['color_scheme'])) {
@@ -142,7 +146,11 @@ PROMPT;
             ? "\nKısıtlar:\n- ".implode("\n- ", $hintLines)."\n"
             : '';
 
-        return "Block şablonu tarifi:\n{$prompt}{$hintBlock}\n\nÇIKTI: Yukarıdaki şemada tam JSON, başka hiçbir şey.";
+        $imageNote = $hasImage
+            ? "\nReferans görsel eklendi — tasarımı bu görseldeki layout, renk ve bileşen yapısına benzetmeye çalış.\n"
+            : '';
+
+        return "Block şablonu tarifi:\n{$prompt}{$imageNote}{$hintBlock}\n\nÇIKTI: Yukarıdaki şemada tam JSON, başka hiçbir şey.";
     }
 
     private function parseJson(string $raw): array

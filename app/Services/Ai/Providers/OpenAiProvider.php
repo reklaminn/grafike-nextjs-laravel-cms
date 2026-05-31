@@ -44,7 +44,12 @@ class OpenAiProvider implements AiProvider
         }
         foreach ($request->messages as $message) {
             /** @var AiMessage $message */
-            $messages[] = ['role' => $message->role, 'content' => $message->content];
+            $messages[] = [
+                'role'    => $message->role,
+                'content' => is_array($message->content)
+                    ? $this->buildOpenAiContent($message->content)
+                    : $message->content,
+            ];
         }
 
         $headers = [
@@ -105,7 +110,12 @@ class OpenAiProvider implements AiProvider
         }
         foreach ($request->messages as $message) {
             /** @var AiMessage $message */
-            $messages[] = ['role' => $message->role, 'content' => $message->content];
+            $messages[] = [
+                'role'    => $message->role,
+                'content' => is_array($message->content)
+                    ? $this->buildOpenAiContent($message->content)
+                    : $message->content,
+            ];
         }
 
         $headers = [
@@ -169,5 +179,25 @@ class OpenAiProvider implements AiProvider
             stopReason: $state['stop_reason'],
             raw:        ['streamed' => true],
         );
+    }
+
+    /**
+     * Convert internal multimodal blocks to OpenAI content format.
+     *
+     * @param  array<int, array{type:string,...}>  $blocks
+     * @return array<int, array>
+     */
+    private function buildOpenAiContent(array $blocks): array
+    {
+        return array_map(function (array $block): array {
+            if ($block['type'] === 'image') {
+                $mimeType = $block['mimeType'] ?? 'image/jpeg';
+                return [
+                    'type'      => 'image_url',
+                    'image_url' => ['url' => "data:{$mimeType};base64,{$block['base64']}"],
+                ];
+            }
+            return ['type' => 'text', 'text' => $block['text'] ?? ''];
+        }, $blocks);
     }
 }

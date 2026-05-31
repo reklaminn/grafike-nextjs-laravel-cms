@@ -169,14 +169,44 @@ class AnthropicProvider implements AiProvider
      * @param  array<int, AiMessage>  $messages
      * @return array<int, array{role:string, content:string}>
      */
+    /**
+     * Normalize messages for Anthropic API.
+     * Supports plain-text and multimodal (image) content.
+     */
     private function normalizeMessages(array $messages): array
     {
         return collect($messages)
             ->map(fn (AiMessage $m) => [
                 'role'    => $m->role === 'system' ? 'user' : $m->role,
-                'content' => $m->content,
+                'content' => is_array($m->content)
+                    ? $this->buildAnthropicContent($m->content)
+                    : $m->content,
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Convert internal multimodal blocks to Anthropic content format.
+     *
+     * @param  array<int, array{type:string,...}>  $blocks
+     * @return array<int, array>
+     */
+    private function buildAnthropicContent(array $blocks): array
+    {
+        return array_map(function (array $block): array {
+            if ($block['type'] === 'image') {
+                return [
+                    'type'   => 'image',
+                    'source' => [
+                        'type'       => 'base64',
+                        'media_type' => $block['mimeType'] ?? 'image/jpeg',
+                        'data'       => $block['base64'],
+                    ],
+                ];
+            }
+            // text block (or any future type)
+            return ['type' => 'text', 'text' => $block['text'] ?? ''];
+        }, $blocks);
     }
 }

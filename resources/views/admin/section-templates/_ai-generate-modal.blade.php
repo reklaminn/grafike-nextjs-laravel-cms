@@ -46,6 +46,37 @@
                 </p>
             </div>
 
+            {{-- Referans Görsel --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Referans Görsel <span class="text-gray-400 font-normal text-xs">(opsiyonel — AI benzer tasarım üretir)</span>
+                </label>
+                <div class="relative border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
+                     @click="$refs.imageInput.click()"
+                     @dragover.prevent
+                     @drop.prevent="handleImageDrop($event)">
+                    <template x-if="!imagePreview">
+                        <div class="text-gray-400 text-sm">
+                            <i class="fas fa-image text-2xl mb-2 block"></i>
+                            PNG, JPG, WebP — maks. 4MB
+                        </div>
+                    </template>
+                    <template x-if="imagePreview">
+                        <div class="relative inline-block">
+                            <img :src="imagePreview" class="max-h-32 rounded-lg mx-auto object-contain">
+                            <button type="button"
+                                    @click.stop="clearImage()"
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </template>
+                    <input type="file" x-ref="imageInput" class="hidden"
+                           accept="image/jpeg,image/png,image/webp,image/gif"
+                           @change="handleImageSelect($event)">
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                     <label class="block text-xs font-medium text-gray-600 mb-1">Renk paleti (opsiyonel)</label>
@@ -209,6 +240,9 @@ function aiSectionTemplateWizard() {
         status: '',
         statusOk: false,
         preview: null,
+        imageBase64: null,
+        imageMime: 'image/jpeg',
+        imagePreview: null,
 
         reset() {
             this.prompt = '';
@@ -219,6 +253,43 @@ function aiSectionTemplateWizard() {
             this.status = '';
             this.statusOk = false;
             this.preview = null;
+            this.imageBase64 = null;
+            this.imageMime = 'image/jpeg';
+            this.imagePreview = null;
+        },
+
+        handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (file) this.loadImage(file);
+        },
+
+        handleImageDrop(event) {
+            const file = event.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) this.loadImage(file);
+        },
+
+        loadImage(file) {
+            if (file.size > 4 * 1024 * 1024) {
+                this.status = 'Görsel 4MB\'den büyük olamaz.';
+                this.statusOk = false;
+                return;
+            }
+            this.imageMime = file.type || 'image/jpeg';
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                this.imagePreview = dataUrl;
+                // Strip "data:image/xxx;base64," prefix → raw base64
+                this.imageBase64 = dataUrl.split(',')[1] || null;
+            };
+            reader.readAsDataURL(file);
+        },
+
+        clearImage() {
+            this.imageBase64 = null;
+            this.imageMime = 'image/jpeg';
+            this.imagePreview = null;
+            if (this.$refs.imageInput) this.$refs.imageInput.value = '';
         },
 
         async generate(autoSave) {
@@ -245,6 +316,8 @@ function aiSectionTemplateWizard() {
                         style: this.style || null,
                         language: this.language || 'Türkçe',
                         auto_save: autoSave,
+                        image_base64: this.imageBase64 || null,
+                        image_mime: this.imageBase64 ? this.imageMime : null,
                     }),
                 });
                 const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));

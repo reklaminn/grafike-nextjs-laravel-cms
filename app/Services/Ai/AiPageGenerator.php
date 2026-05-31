@@ -50,6 +50,8 @@ class AiPageGenerator
         string $locale = 'tr',
         ?Collection $availableTemplates = null,
         array $siteContext = [],
+        ?string $imageBase64 = null,
+        string $imageMimeType = 'image/jpeg',
     ): array {
         $templates = $availableTemplates ?? $this->fetchTemplates();
         if ($templates->isEmpty()) {
@@ -76,11 +78,13 @@ class AiPageGenerator
 
         try {
             $response = $this->router->generate(
-                feature:  'page.create',
-                prompt:   $user,
-                system:   $system,
-                tenant:   $tenant,
-                metadata: ['source' => 'page.generator'],
+                feature:       'page.create',
+                prompt:        $user,
+                system:        $system,
+                tenant:        $tenant,
+                metadata:      ['source' => 'page.generator'],
+                imageBase64:   $imageBase64,
+                imageMimeType: $imageMimeType,
             );
         } catch (AiProviderException $e) {
             throw new RuntimeException('AI sağlayıcısı yanıt veremedi: '.$e->getMessage(), 0, $e);

@@ -84,6 +84,8 @@ class AiModelRouter
         ?string $tier = null,
         ?Tenant $tenant = null,
         array $metadata = [],
+        ?string $imageBase64 = null,
+        string $imageMimeType = 'image/jpeg',
     ): AiResponse {
         $cfg = $this->resolve($feature, $tier, $tenant);
 
@@ -91,9 +93,13 @@ class AiModelRouter
         // are exempt; the service handles that internally.
         $this->quota->assertWithinQuota($tenant, estimatedTokens: $cfg['max_tokens']);
 
+        $message = $imageBase64
+            ? AiMessage::userWithImage($prompt, $imageBase64, $imageMimeType)
+            : AiMessage::user($prompt);
+
         $request = new AiRequest(
             model:          $cfg['model'],
-            messages:       [AiMessage::user($prompt)],
+            messages:       [$message],
             system:         $system,
             maxTokens:      $cfg['max_tokens'],
             temperature:    $cfg['temperature'],

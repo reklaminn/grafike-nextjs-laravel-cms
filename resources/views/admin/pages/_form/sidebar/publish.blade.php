@@ -7,6 +7,25 @@
          error: '',
          purpose: '',
          showPurpose: false,
+         imageBase64: null,
+         imageMime: 'image/jpeg',
+         imagePreview: null,
+         loadImage(file) {
+             if (!file || !file.type.startsWith('image/')) return;
+             if (file.size > 4 * 1024 * 1024) { this.error = 'Görsel 4MB\'den büyük olamaz.'; return; }
+             this.imageMime = file.type || 'image/jpeg';
+             const reader = new FileReader();
+             reader.onload = (e) => {
+                 this.imagePreview = e.target.result;
+                 this.imageBase64 = e.target.result.split(',')[1] || null;
+             };
+             reader.readAsDataURL(file);
+         },
+         clearImage() {
+             this.imageBase64 = null; this.imagePreview = null;
+             const inp = document.getElementById('ai_page_img_input');
+             if (inp) inp.value = '';
+         },
          async generate() {
              this.generating = true;
              this.error = '';
@@ -19,7 +38,11 @@
                          'Accept': 'application/json',
                          'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
                      },
-                     body: JSON.stringify({ purpose: this.purpose }),
+                     body: JSON.stringify({
+                         purpose: this.purpose,
+                         image_base64: this.imageBase64 || null,
+                         image_mime: this.imageBase64 ? this.imageMime : null,
+                     }),
                  });
                  const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
                  if (data.ok) {
@@ -43,6 +66,28 @@
         Sayfa başlığı ve firma bilgilerine göre blokları otomatik doldurur.
         Mevcut içerik varsa üzerine yazar.
     </p>
+
+    {{-- Referans görsel upload --}}
+    <div class="mb-2">
+        <template x-if="!imagePreview">
+            <label class="flex items-center gap-2 cursor-pointer border border-dashed border-indigo-300 rounded-lg px-3 py-2 hover:border-indigo-500 transition-colors bg-white">
+                <i class="fas fa-image text-indigo-400 text-sm"></i>
+                <span class="text-xs text-indigo-500">Referans görsel ekle (opsiyonel)</span>
+                <input type="file" id="ai_page_img_input" class="hidden"
+                       accept="image/jpeg,image/png,image/webp"
+                       @change="loadImage($event.target.files[0])">
+            </label>
+        </template>
+        <template x-if="imagePreview">
+            <div class="relative">
+                <img :src="imagePreview" class="w-full max-h-24 object-contain rounded-lg border border-indigo-200 bg-white">
+                <button type="button" @click="clearImage()"
+                        class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </template>
+    </div>
 
     <div x-show="showPurpose" x-cloak class="mb-2">
         <textarea x-model="purpose" rows="2"
