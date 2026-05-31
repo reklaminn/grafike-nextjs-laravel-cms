@@ -205,7 +205,7 @@
                         <i class="fas fa-list-check text-indigo-500"></i> Sayfaları Belirle
                     </h2>
                     <p class="text-xs text-gray-500 mt-1">
-                        Her satıra bir sayfa yazın. Alt sayfa için 2+ boşluk ekleyin.
+                        Her satıra bir sayfa yazın. <strong>2 boşluk</strong> = alt sayfa, <strong>3 boşluk</strong> = <span class="bg-green-100 text-green-700 px-1 rounded">yazı</span>.
                         AI butonu otomatik doldurur, üzerine yazabilirsiniz.
                     </p>
                 </div>
