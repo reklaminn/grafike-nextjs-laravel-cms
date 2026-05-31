@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Language;
 use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Services\Ai\AiModelRouter;
@@ -158,17 +159,47 @@ PROMPT;
             'title'       => 'required|string|max:200',
             'slug'        => 'nullable|string|max:100',
             'language_id' => 'nullable|integer',
+            'sort_order'  => 'nullable|integer',
         ]);
 
-        $finalSlug = $this->uniqueSlug($v['slug'] ?: $v['title']);
+        // slug='' → Ana Sayfa anlamına gelir. Zaten varsa yeniden oluşturma.
+        $requestedSlug = $v['slug'] ?? '';
+        if ($requestedSlug === '') {
+            $existing = Page::where('slug', '')->first();
+            if ($existing) {
+                // Sadece sort_order'ı güncelle, yeni sayfa açma
+                if (isset($v['sort_order'])) {
+                    $existing->update(['sort_order' => (int) $v['sort_order']]);
+                }
+                return response()->json([
+                    'ok'       => true,
+                    'page_id'  => $existing->id,
+                    'title'    => $existing->title,
+                    'slug'     => $existing->slug,
+                    'skipped'  => true,
+                    'edit_url' => route('admin.pages.edit', $existing, false),
+                ]);
+            }
+        }
+
+        // language_id verilmemişse varsayılan aktif dili kullan
+        $languageId = $v['language_id'] ?? null;
+        if (! $languageId) {
+            $languageId = Language::where('is_active', true)
+                ->orderBy('sort_order')
+                ->value('id');
+        }
+
+        $finalSlug = $requestedSlug !== '' ? $this->uniqueSlug($requestedSlug) : $this->uniqueSlug($v['title']);
 
         $page = Page::create([
             'title'         => $v['title'],
             'slug'          => $finalSlug,
-            'language_id'   => $v['language_id'] ?? null,
+            'language_id'   => $languageId,
             'status'        => 'draft',
-            'sections_json' => '[]',
+            'sections_json' => json_encode([]),
             'show_in_menu'  => false,
+            'sort_order'    => $v['sort_order'] ?? 0,
         ]);
 
         return response()->json([

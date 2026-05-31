@@ -608,6 +608,7 @@ function siteWizard() {
                     const r = await this._post(@js(route('admin.wizard.generate-page', [], false)), {
                         title:       this.generatedPages[i].title,
                         slug:        this.generatedPages[i].slug,
+                        sort_order:  i,  // sıra numarası — Ana Sayfa (0) hep önde
                         language_id: null,
                     });
                     const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));

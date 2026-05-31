@@ -50,7 +50,11 @@ class PageController extends Controller
             $query->where('parent_id', $parentId ?: null);
         }
 
-        $pages = $query->orderBy('sort_order')->orderBy('title')->paginate(25);
+        // slug='' (Ana Sayfa / anasayfa) her zaman listenin başında olsun
+        $pages = $query->orderByRaw("CASE WHEN slug = '' THEN 0 ELSE 1 END")
+                       ->orderBy('sort_order')
+                       ->orderBy('title')
+                       ->paginate(25);
         $languages = Language::where('is_active', true)->get();
 
         return view('admin.pages.index', compact('pages', 'languages'));
