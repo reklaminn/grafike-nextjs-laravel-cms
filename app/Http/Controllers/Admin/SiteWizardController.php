@@ -208,9 +208,16 @@ PROMPT;
                 'sort_order'    => $v['sort_order'] ?? 0,
             ]);
         } catch (\Illuminate\Database\UniqueConstraintViolationException) {
-            // Race condition veya daha önce oluşturulmuş sayfa — mevcut kaydı döndür
-            $existing = Page::where('slug', $finalSlug)
-                ->where('language_id', $languageId)
+            // Race condition veya daha önce oluşturulmuş sayfa — mevcut kaydı bul.
+            // 3 farklı arama: 1) oluşturulan slug, 2) orijinal slug, 3) başlık eşleşmesi
+            $baseSlug  = Str::slug($requestedSlug ?: $v['title'], '-', 'tr');
+            $existing  = Page::where('language_id', $languageId)
+                ->where(function ($q) use ($finalSlug, $baseSlug, $v) {
+                    $q->where('slug', $finalSlug)
+                      ->orWhere('slug', $baseSlug)
+                      ->orWhere('title', $v['title']);
+                })
+                ->orderByRaw("CASE WHEN slug = ? THEN 0 WHEN slug = ? THEN 1 ELSE 2 END", [$finalSlug, $baseSlug])
                 ->first();
             if ($existing) {
                 return response()->json([
@@ -222,7 +229,18 @@ PROMPT;
                     'edit_url'=> route('admin.pages.edit', $existing, false),
                 ]);
             }
-            return response()->json(['ok' => false, 'message' => 'Sayfa oluşturulamadı: slug çakışması.'], 500);
+            // Bulunamadı → benzersiz fallback slug ile yeniden dene
+            $fallbackSlug = $finalSlug . '-' . substr(uniqid(), -4);
+            $page = Page::create([
+                'title'         => $v['title'],
+                'slug'          => $fallbackSlug,
+                'language_id'   => $languageId,
+                'parent_id'     => $v['parent_id'] ?? null,
+                'status'        => 'draft',
+                'sections_json' => [],
+                'show_in_menu'  => false,
+                'sort_order'    => $v['sort_order'] ?? 0,
+            ]);
         }
 
         return response()->json([
@@ -251,6 +269,14 @@ PROMPT;
             'parent_id'   => 'nullable|integer',  // yazının bağlı olduğu sayfa
         ]);
 
+        // Yazının bağlı olacağı sayfa zorunlu (articles.page_id NOT NULL)
+        if (empty($v['parent_id'])) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Üst sayfa bulunamadı — önce bağlı olduğu sayfayı oluşturun.',
+            ], 422);
+        }
+
         $languageId = $v['language_id'] ?? null;
         if (! $languageId) {
             $languageId = Language::where('is_active', true)
@@ -260,16 +286,42 @@ PROMPT;
 
         $slug = $this->uniqueArticleSlug($v['slug'] ?: $v['title']);
 
-        $article = Article::create([
-            'title'       => $v['title'],
-            'slug'        => $slug,
-            'language_id' => $languageId,
-            'page_id'     => $v['parent_id'] ?? null,
-            'status'      => 'draft',
-            'sort_order'  => $v['sort_order'] ?? 0,
-            'body'        => '',
-            'content_json'=> null,
-        ]);
+        try {
+            $article = Article::create([
+                'title'       => $v['title'],
+                'slug'        => $slug,
+                'language_id' => $languageId,
+                'page_id'     => $v['parent_id'],
+                'status'      => 'draft',
+                'sort_order'  => $v['sort_order'] ?? 0,
+                'body'        => '',
+                'content_json'=> null,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // Aynı slug ile yazı zaten var → mevcut kaydı döndür
+            $existing = Article::where('slug', $slug)->where('language_id', $languageId)->first()
+                ?? Article::where('title', $v['title'])->where('page_id', $v['parent_id'])->first();
+            if ($existing) {
+                return response()->json([
+                    'ok'      => true,
+                    'page_id' => null,
+                    'title'   => $existing->title,
+                    'slug'    => $existing->slug,
+                    'skipped' => true,
+                    'edit_url'=> route('admin.articles.edit', $existing, false),
+                ]);
+            }
+            $article = Article::create([
+                'title'       => $v['title'],
+                'slug'        => $this->uniqueArticleSlug($slug . '-' . substr(uniqid(), -4)),
+                'language_id' => $languageId,
+                'page_id'     => $v['parent_id'],
+                'status'      => 'draft',
+                'sort_order'  => $v['sort_order'] ?? 0,
+                'body'        => '',
+                'content_json'=> null,
+            ]);
+        }
 
         return response()->json([
             'ok'      => true,

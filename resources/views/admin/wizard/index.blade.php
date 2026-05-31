@@ -621,17 +621,36 @@ function siteWizard() {
                 error:       null,
             }));
 
-            // parentIds[indent] = son oluşturulan o seviyedeki sayfa ID'si
+            // parentIds[indent]  = son başarılı sayfa ID'si (yazılar için page_id)
+            // failedIndents      = başarısız olan indent seviyeleri (Set)
             // Örn: indent=0 Hizmetler oluşunca parentIds[0]=42
             //      indent=1 Saç Ekimi → parent_id=42
-            const parentIds = {};
+            const parentIds    = {};
+            const failedIndents = new Set();
 
             for (let i = 0; i < this.generatedPages.length; i++) {
                 const pg = this.generatedPages[i];
                 this.generatedPages[i].status = 'generating';
 
                 // Bir üst indent seviyesindeki son sayfa bu sayfanın parent'ı
-                const parentId = (pg.indent > 0) ? (parentIds[pg.indent - 1] ?? null) : null;
+                const parentIndent = pg.indent - 1;
+                const parentId     = (pg.indent > 0) ? (parentIds[parentIndent] ?? null) : null;
+
+                // Yazı (article) ise ve parent'ı başarısız olduysa → isteği gönderme
+                if (pg.type === 'article' && pg.indent > 0 && failedIndents.has(parentIndent)) {
+                    this.generatedPages[i].status = 'error';
+                    this.generatedPages[i].error  = 'Üst sayfa oluşturulamadığı için atlandı.';
+                    this.completedCount++;
+                    continue;
+                }
+
+                // Yazı ise ama parentId yoksa → güvenli hata
+                if (pg.type === 'article' && !parentId) {
+                    this.generatedPages[i].status = 'error';
+                    this.generatedPages[i].error  = 'Üst sayfa bulunamadı, önce sayfayı oluşturun.';
+                    this.completedCount++;
+                    continue;
+                }
 
                 try {
                     const url = pg.type === 'article'
@@ -653,7 +672,10 @@ function siteWizard() {
 
                         // Bu sayfanın ID'sini indent seviyesine kaydet
                         // Daha derin seviyeleri temizle (yeni dal başladığında)
-                        parentIds[pg.indent] = data.page_id;
+                        if (data.page_id) {
+                            parentIds[pg.indent] = data.page_id;
+                            failedIndents.delete(pg.indent);
+                        }
                         Object.keys(parentIds).forEach(lvl => {
                             if (parseInt(lvl) > pg.indent) delete parentIds[lvl];
                         });
@@ -661,11 +683,14 @@ function siteWizard() {
                         this.generatedPages[i].status = 'error';
                         this.generatedPages[i].error  = data.message || 'Bilinmeyen hata';
                         this.completedCount++;
+                        // Bu indent başarısız → alt elemanlar da atlanacak
+                        if (pg.type !== 'article') failedIndents.add(pg.indent);
                     }
                 } catch (e) {
                     this.generatedPages[i].status = 'error';
                     this.generatedPages[i].error  = e.message || 'Ağ hatası';
                     this.completedCount++;
+                    if (pg.type !== 'article') failedIndents.add(pg.indent);
                 }
             }
             this.wizardDone = true;
