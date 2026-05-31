@@ -90,9 +90,10 @@
             </h2>
             <div class="space-y-2">
                 @forelse($tenant->domains as $domain)
+                @php $domainStr = is_object($domain) ? $domain->domain : ($domain['domain'] ?? (string) $domain); @endphp
                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="font-mono text-sm text-gray-700">{{ $domain->domain }}</span>
-                    <a href="https://{{ $domain->domain }}" target="_blank"
+                    <span class="font-mono text-sm text-gray-700">{{ $domainStr }}</span>
+                    <a href="https://{{ $domainStr }}" target="_blank"
                        class="text-xs text-indigo-500 hover:underline">
                         <i class="fas fa-external-link-alt mr-0.5"></i> Ziyaret Et
                     </a>

@@ -76,7 +76,11 @@
                 <td class="px-5 py-4">
                     <div class="flex flex-wrap gap-1">
                         @foreach($tenant->domains as $domain)
-                        <span class="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-mono">{{ $domain->domain }}</span>
+                        @php
+                            // stancl VirtualColumn: $domain bazen Eloquent model bazen array olabilir
+                            $domainStr = is_object($domain) ? $domain->domain : ($domain['domain'] ?? (string) $domain);
+                        @endphp
+                        <span class="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-mono">{{ $domainStr }}</span>
                         @endforeach
                     </div>
                 </td>
