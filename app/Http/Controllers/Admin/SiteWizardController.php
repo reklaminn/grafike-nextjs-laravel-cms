@@ -192,18 +192,38 @@ PROMPT;
                 ->value('id');
         }
 
-        $finalSlug = $requestedSlug !== '' ? $this->uniqueSlug($requestedSlug) : $this->uniqueSlug($v['title']);
+        $finalSlug = $requestedSlug !== ''
+            ? $this->uniqueSlug($requestedSlug, $languageId)
+            : $this->uniqueSlug($v['title'], $languageId);
 
-        $page = Page::create([
-            'title'         => $v['title'],
-            'slug'          => $finalSlug,
-            'language_id'   => $languageId,
-            'parent_id'     => $v['parent_id'] ?? null,
-            'status'        => 'draft',
-            'sections_json' => [],
-            'show_in_menu'  => false,
-            'sort_order'    => $v['sort_order'] ?? 0,
-        ]);
+        try {
+            $page = Page::create([
+                'title'         => $v['title'],
+                'slug'          => $finalSlug,
+                'language_id'   => $languageId,
+                'parent_id'     => $v['parent_id'] ?? null,
+                'status'        => 'draft',
+                'sections_json' => [],
+                'show_in_menu'  => false,
+                'sort_order'    => $v['sort_order'] ?? 0,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            // Race condition veya daha önce oluşturulmuş sayfa — mevcut kaydı döndür
+            $existing = Page::where('slug', $finalSlug)
+                ->where('language_id', $languageId)
+                ->first();
+            if ($existing) {
+                return response()->json([
+                    'ok'      => true,
+                    'page_id' => $existing->id,
+                    'title'   => $existing->title,
+                    'slug'    => $existing->slug,
+                    'skipped' => true,
+                    'edit_url'=> route('admin.pages.edit', $existing, false),
+                ]);
+            }
+            return response()->json(['ok' => false, 'message' => 'Sayfa oluşturulamadı: slug çakışması.'], 500);
+        }
 
         return response()->json([
             'ok'      => true,
@@ -320,20 +340,29 @@ PROMPT;
         return $base . '-' . substr(uniqid(), -4);
     }
 
-    private function uniqueSlug(string $base): string
+    private function uniqueSlug(string $base, ?int $languageId = null): string
     {
         $base = Str::slug($base ?: 'sayfa', '-', 'tr');
         if ($base === '') {
             $base = 'sayfa';
         }
 
-        if (!Page::query()->where('slug', $base)->exists()) {
+        // DB constraint: (slug, language_id) composite unique — aynı şekilde kontrol et
+        $exists = function (string $slug) use ($languageId): bool {
+            $q = Page::query()->where('slug', $slug);
+            if ($languageId) {
+                $q->where('language_id', $languageId);
+            }
+            return $q->exists();
+        };
+
+        if (! $exists($base)) {
             return $base;
         }
 
         for ($i = 2; $i < 100; $i++) {
             $candidate = $base . '-' . $i;
-            if (!Page::query()->where('slug', $candidate)->exists()) {
+            if (! $exists($candidate)) {
                 return $candidate;
             }
         }
