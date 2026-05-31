@@ -81,7 +81,17 @@ class SeoController extends Controller
             $validated['hreflang_tags'] = json_last_error() === JSON_ERROR_NONE ? $decoded : null;
         }
 
+        $oldSlug = $seoEntry->slug;
         $seoEntry->update($validated);
+
+        // Slug değiştiyse ilgili sayfa/yazının slug'ını da güncelle
+        if ($validated['slug'] !== $oldSlug) {
+            $seoable = $seoEntry->seoable;
+            if ($seoable instanceof Page || $seoable instanceof Article) {
+                // updateQuietly → observer tetiklenmesin (sonsuz döngü olmasın)
+                $seoable->updateQuietly(['slug' => $validated['slug']]);
+            }
+        }
 
         return redirect()->route('admin.seo.index')
             ->with('success', 'SEO kaydı güncellendi.');

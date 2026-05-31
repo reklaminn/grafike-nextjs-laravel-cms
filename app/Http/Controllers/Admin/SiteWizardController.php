@@ -209,9 +209,10 @@ PROMPT;
             ]);
         } catch (\Illuminate\Database\UniqueConstraintViolationException) {
             // Race condition veya daha önce oluşturulmuş sayfa — mevcut kaydı bul.
-            // 3 farklı arama: 1) oluşturulan slug, 2) orijinal slug, 3) başlık eşleşmesi
-            $baseSlug  = Str::slug($requestedSlug ?: $v['title'], '-', 'tr');
-            $existing  = Page::where('language_id', $languageId)
+            // Sırasıyla dene: finalSlug+langId → baseSlug+langId → title+langId → title (herhangi dil)
+            $baseSlug = Str::slug($requestedSlug ?: $v['title'], '-', 'tr');
+
+            $existing = Page::where('language_id', $languageId)
                 ->where(function ($q) use ($finalSlug, $baseSlug, $v) {
                     $q->where('slug', $finalSlug)
                       ->orWhere('slug', $baseSlug)
@@ -219,6 +220,12 @@ PROMPT;
                 })
                 ->orderByRaw("CASE WHEN slug = ? THEN 0 WHEN slug = ? THEN 1 ELSE 2 END", [$finalSlug, $baseSlug])
                 ->first();
+
+            // language_id fark etmeksizin slug veya başlıkla bul
+            $existing ??= Page::where('slug', $finalSlug)->first();
+            $existing ??= Page::where('slug', $baseSlug)->first();
+            $existing ??= Page::where('title', $v['title'])->first();
+
             if ($existing) {
                 return response()->json([
                     'ok'      => true,
@@ -229,18 +236,9 @@ PROMPT;
                     'edit_url'=> route('admin.pages.edit', $existing, false),
                 ]);
             }
-            // Bulunamadı → benzersiz fallback slug ile yeniden dene
-            $fallbackSlug = $finalSlug . '-' . substr(uniqid(), -4);
-            $page = Page::create([
-                'title'         => $v['title'],
-                'slug'          => $fallbackSlug,
-                'language_id'   => $languageId,
-                'parent_id'     => $v['parent_id'] ?? null,
-                'status'        => 'draft',
-                'sections_json' => [],
-                'show_in_menu'  => false,
-                'sort_order'    => $v['sort_order'] ?? 0,
-            ]);
+
+            // Gerçekten bulunamadı → hata döndür, rastgele slug üretme
+            return response()->json(['ok' => false, 'message' => 'Sayfa oluşturulamadı: başka bir istek aynı anda tamamladı.'], 500);
         }
 
         return response()->json([
