@@ -37,7 +37,19 @@
                 fn () => \App\Models\Tenant::with('domains')->find($activeTenantId)
             );
             $previewTenantName = $tenantForPreview?->name ?? $activeTenantId;
-            $tenantDomain = $tenantForPreview?->domains?->first()?->domain;
+
+            // stancl VirtualColumn: data JSON'da 'domains' key varsa Eloquent
+            // ilişkisi yerine array döner → Collection metotları çalışmaz.
+            $rawDomains = $tenantForPreview?->domains;
+            $firstDomain = null;
+            if ($rawDomains instanceof \Illuminate\Support\Collection) {
+                $firstDomain = $rawDomains->first();
+            } elseif (is_array($rawDomains) && !empty($rawDomains)) {
+                $firstDomain = $rawDomains[0];
+            }
+            $tenantDomain = is_object($firstDomain)
+                ? $firstDomain->domain
+                : ($firstDomain['domain'] ?? null);
 
             if ($tenantDomain) {
                 $liveSiteUrl = str_starts_with($tenantDomain, 'http://') || str_starts_with($tenantDomain, 'https://')
