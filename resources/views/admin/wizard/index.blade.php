@@ -197,85 +197,169 @@
     <div x-show="step === 2" x-cloak x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+
+            {{-- Başlık + araç çubuğu --}}
             <div class="flex items-start justify-between mb-4">
                 <div>
                     <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
                         <i class="fas fa-list-check text-indigo-500"></i> Hangi Sayfalar Oluşturulsun?
                     </h2>
-                    <p class="text-xs text-gray-500 mt-1">AI sektörünüze özel sayfalar önerdi. İstediğinizi seçin veya kaldırın.</p>
+                    <p class="text-xs text-gray-500 mt-1"
+                       x-text="manualMode
+                           ? 'Her satıra bir sayfa yazın. Alt sayfa için 2+ boşluk/tab ile girintileyin.'
+                           : 'AI sektörünüze özel sayfalar önerdi. İstediğinizi seçin veya kaldırın.'">
+                    </p>
                 </div>
-                <button type="button" @click="suggestPages()"
-                        :disabled="suggesting"
-                        class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 border border-indigo-300 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-50 disabled:opacity-50">
-                    <i class="fas" :class="suggesting ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i>
-                    <span>Yeniden Öner</span>
-                </button>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    {{-- Manuel / AI toggle --}}
+                    <button type="button" @click="manualMode = !manualMode"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors"
+                            :class="manualMode
+                                ? 'border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100'
+                                : 'border-gray-300 text-gray-600 bg-white hover:bg-gray-50'">
+                        <i class="fas" :class="manualMode ? 'fa-robot' : 'fa-pencil'"></i>
+                        <span x-text="manualMode ? 'AI Önerisi Kullan' : 'Manuel Giriş'"></span>
+                    </button>
+                    {{-- AI yeniden öner (sadece AI modunda) --}}
+                    <button type="button" @click="suggestPages()"
+                            x-show="!manualMode"
+                            :disabled="suggesting"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-indigo-300 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-50 disabled:opacity-50">
+                        <i class="fas" :class="suggesting ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i>
+                        <span>Yeniden Öner</span>
+                    </button>
+                </div>
             </div>
 
-            {{-- Yükleniyor --}}
-            <div x-show="suggesting" x-cloak class="py-8 text-center text-gray-400 text-sm">
-                <i class="fas fa-spinner fa-spin text-2xl mb-3 block text-indigo-400"></i>
-                AI sektörünüze uygun sayfalar seçiyor…
-            </div>
+            {{-- ── AI MODU ─────────────────────────────────────────────── --}}
+            <div x-show="!manualMode">
 
-            {{-- Hata --}}
-            <div x-show="suggestError && !suggesting" x-cloak
-                 class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 flex items-center gap-2 mb-4">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span x-text="suggestError"></span>
-            </div>
+                {{-- Yükleniyor --}}
+                <div x-show="suggesting" x-cloak class="py-8 text-center text-gray-400 text-sm">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-3 block text-indigo-400"></i>
+                    AI sektörünüze uygun sayfalar seçiyor…
+                </div>
 
-            {{-- Sayfa listesi --}}
-            <div x-show="!suggesting && pages.length > 0" x-cloak class="space-y-2">
-                <template x-for="(page, i) in pages" :key="i">
-                    <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-                           :class="page.selected
-                               ? 'bg-indigo-50 border-indigo-300'
-                               : 'bg-gray-50 border-gray-200 opacity-60'">
-                        <input type="checkbox" x-model="page.selected"
-                               class="mt-0.5 h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-sm font-medium text-gray-900" x-text="page.title"></span>
-                                <span class="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
-                                      x-text="page.slug ? '/'+page.slug : '/'"></span>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-0.5" x-text="page.purpose"></p>
+                {{-- Hata --}}
+                <div x-show="suggestError && !suggesting" x-cloak
+                     class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 mb-4">
+                    <div class="flex items-start gap-2">
+                        <i class="fas fa-exclamation-triangle mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <span x-text="suggestError"></span>
+                            <button type="button" @click="manualMode = true"
+                                    class="ml-2 underline text-red-600 hover:text-red-800 font-medium">
+                                Manuel giriş yap →
+                            </button>
                         </div>
-                    </label>
-                </template>
+                    </div>
+                </div>
 
-                {{-- Manuel ekleme satırı --}}
-                <div class="border-t border-dashed border-gray-200 pt-3 mt-3">
-                    <div class="flex items-center gap-2">
-                        <input x-model="newPageTitle" type="text" maxlength="100"
-                               placeholder="+ Özel sayfa başlığı ekle (Örn: Ekibimiz)"
-                               @keydown.enter="addCustomPage()"
-                               class="flex-1 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-solid bg-gray-50">
-                        <button type="button" @click="addCustomPage()"
-                                :disabled="!newPageTitle.trim()"
-                                class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 disabled:opacity-40">
-                            <i class="fas fa-plus mr-1"></i> Ekle
-                        </button>
+                {{-- Sayfa listesi --}}
+                <div x-show="!suggesting && pages.length > 0" x-cloak class="space-y-2">
+                    <template x-for="(page, i) in pages" :key="i">
+                        <label class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+                               :class="page.selected
+                                   ? 'bg-indigo-50 border-indigo-300'
+                                   : 'bg-gray-50 border-gray-200 opacity-60'">
+                            <input type="checkbox" x-model="page.selected"
+                                   class="mt-0.5 h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-sm font-medium text-gray-900" x-text="page.title"></span>
+                                    <span class="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
+                                          x-text="page.slug ? '/'+page.slug : '/'"></span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-0.5" x-text="page.purpose"></p>
+                            </div>
+                        </label>
+                    </template>
+
+                    {{-- Manuel ekleme satırı --}}
+                    <div class="border-t border-dashed border-gray-200 pt-3 mt-3">
+                        <div class="flex items-center gap-2">
+                            <input x-model="newPageTitle" type="text" maxlength="100"
+                                   placeholder="+ Özel sayfa başlığı ekle (Örn: Ekibimiz)"
+                                   @keydown.enter="addCustomPage()"
+                                   class="flex-1 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-solid bg-gray-50">
+                            <button type="button" @click="addCustomPage()"
+                                    :disabled="!newPageTitle.trim()"
+                                    class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 disabled:opacity-40">
+                                <i class="fas fa-plus mr-1"></i> Ekle
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Seçim özeti --}}
+                <div x-show="!suggesting && pages.length > 0" x-cloak
+                     class="mt-4 flex items-center justify-between text-xs text-gray-500">
+                    <span>
+                        <span class="font-semibold text-gray-800" x-text="selectedCount()"></span> sayfa seçildi
+                    </span>
+                    <div class="flex gap-2">
+                        <button type="button" @click="toggleAll(true)"
+                                class="text-indigo-600 hover:underline">Tümünü Seç</button>
+                        <span>·</span>
+                        <button type="button" @click="toggleAll(false)"
+                                class="text-gray-500 hover:underline">Tümünü Kaldır</button>
                     </div>
                 </div>
             </div>
 
-            {{-- Seçim özeti --}}
-            <div x-show="!suggesting && pages.length > 0" x-cloak
-                 class="mt-4 flex items-center justify-between text-xs text-gray-500">
-                <span>
-                    <span class="font-semibold text-gray-800" x-text="selectedCount()"></span> sayfa seçildi
-                </span>
-                <div class="flex gap-2">
-                    <button type="button" @click="toggleAll(true)"
-                            class="text-indigo-600 hover:underline">Tümünü Seç</button>
-                    <span>·</span>
-                    <button type="button" @click="toggleAll(false)"
-                            class="text-gray-500 hover:underline">Tümünü Kaldır</button>
+            {{-- ── MANUEL HIYERARŞI MODU ──────────────────────────────── --}}
+            <div x-show="manualMode" x-cloak>
+                <div class="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs text-purple-700">
+                    <p class="font-medium mb-1"><i class="fas fa-lightbulb mr-1"></i> Format:</p>
+                    <pre class="font-mono leading-5 text-purple-600">Ana Sayfa
+Hizmetler
+  Saç Ekimi
+  Sakal Ekimi
+Hakkımızda
+Blog
+İletişim</pre>
+                    <p class="mt-1.5 text-purple-500">Alt sayfalar da ayrı birer sayfa olarak oluşturulur.</p>
+                </div>
+
+                <textarea x-model="hierarchyText"
+                          rows="10"
+                          placeholder="Ana Sayfa&#10;Hizmetler&#10;  Hizmet 1&#10;  Hizmet 2&#10;Hakkımızda&#10;İletişim"
+                          class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-purple-500 resize-none bg-gray-50"></textarea>
+
+                <div class="flex items-center justify-between mt-3">
+                    <span class="text-xs text-gray-400">
+                        <span x-text="parseHierarchy(hierarchyText).length"></span> sayfa algılandı
+                    </span>
+                    <button type="button"
+                            @click="applyHierarchy()"
+                            :disabled="parseHierarchy(hierarchyText).length === 0"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-40">
+                        <i class="fas fa-check"></i>
+                        <span>Sayfaları Belirle</span>
+                        <span x-show="parseHierarchy(hierarchyText).length > 0"
+                              class="bg-purple-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full"
+                              x-text="parseHierarchy(hierarchyText).length"></span>
+                    </button>
+                </div>
+
+                {{-- Önizleme: belirlendikten sonra --}}
+                <div x-show="manualApplied && pages.length > 0" x-cloak class="mt-4 space-y-1.5">
+                    <p class="text-xs font-medium text-gray-600 mb-2">
+                        <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                        <span x-text="pages.length"></span> sayfa belirlendi — hepsini seçili olarak ekledim:
+                    </p>
+                    <template x-for="(page, i) in pages" :key="i">
+                        <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                            <i class="fas fa-file text-gray-400 text-xs w-4 text-center"></i>
+                            <span class="text-sm text-gray-800" x-text="page.title"></span>
+                            <span class="text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded ml-auto"
+                                  x-text="page.slug ? '/'+page.slug : '/'"></span>
+                        </div>
+                    </template>
                 </div>
             </div>
 
+            {{-- Alt butonlar --}}
             <div class="flex items-center justify-between mt-6">
                 <button type="button" @click="step = 1"
                         class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">
@@ -419,10 +503,13 @@ function siteWizard() {
         step1Error: '',
 
         // Step 2 state
-        suggesting:   false,
-        pages:        [],  // [{title, slug, purpose, selected}]
-        suggestError: '',
-        newPageTitle: '',
+        suggesting:    false,
+        pages:         [],  // [{title, slug, purpose, selected}]
+        suggestError:  '',
+        newPageTitle:  '',
+        manualMode:    false,
+        manualApplied: false,
+        hierarchyText: '',
 
         // Step 3 state
         generating:     false,
@@ -483,6 +570,42 @@ function siteWizard() {
             } finally {
                 this.suggesting = false;
             }
+        },
+
+        /**
+         * Hiyerarşi textarea'sını parse eder → [{title, slug, purpose}] döndürür.
+         * Girinti (2+ boşluk veya tab) = alt sayfa, ama flat liste olarak işlenir.
+         * Pure function — reaktif hesaplama için x-text içinde çağrılabilir.
+         */
+        parseHierarchy(text) {
+            if (!text || !text.trim()) return [];
+            const toSlug = (s) => s.toLowerCase()
+                .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
+                .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
+                .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+
+            const pages = [];
+            const lines = text.split('\n');
+            for (const line of lines) {
+                const title = line.replace(/^\s+/, '').replace(/^[-*•]\s*/, '').trim();
+                if (!title) continue;
+                const isIndented = /^[\s\t]{2,}/.test(line); // alt sayfa ipucu (purpose için)
+                pages.push({
+                    title,
+                    slug: toSlug(title),
+                    purpose: isIndented ? `${title} sayfası içeriği` : '',
+                    selected: true,
+                });
+            }
+            return pages;
+        },
+
+        /** Hiyerarşi textarea'sından sayfaları pages[] dizisine uygular */
+        applyHierarchy() {
+            const parsed = this.parseHierarchy(this.hierarchyText);
+            if (!parsed.length) return;
+            this.pages         = parsed;
+            this.manualApplied = true;
         },
 
         /** Kullanıcı özel sayfa ekler */

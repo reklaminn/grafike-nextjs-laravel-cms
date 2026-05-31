@@ -69,6 +69,7 @@
         array_splice($systemItems, 1, 0, [
             ['route' => 'admin.packages.index',    'icon' => 'fa-box-open',    'label' => 'Paketler',          'match' => 'admin.packages'],
             ['route' => 'admin.ai-plans.index',   'icon' => 'fa-robot',       'label' => 'AI Planları',        'match' => 'admin.ai-plans'],
+            ['route' => 'admin.settings.ai-keys', 'icon' => 'fa-key',         'label' => 'AI Anahtarları',     'match' => 'admin.settings.ai-keys'],
             ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield', 'label' => 'Yöneticiler',       'match' => 'admin.admin-users'],
             ['route' => 'admin.roles.index',       'icon' => 'fa-key',         'label' => 'Roller/Yetkiler',   'match' => 'admin.roles'],
             ['route' => 'admin.ai-dashboard',      'icon' => 'fa-chart-pie',   'label' => 'AI Kullanım',       'match' => 'admin.ai-dashboard'],

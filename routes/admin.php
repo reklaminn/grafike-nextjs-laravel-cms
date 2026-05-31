@@ -41,6 +41,7 @@ use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\SiteWizardController;
+use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\TranslationController;
 use Illuminate\Support\Facades\Route;
 
@@ -260,6 +261,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Crawl / robots / llms settings
         Route::get('settings/crawl', [SettingsController::class, 'crawl'])->name('settings.crawl');
         Route::put('settings/crawl', [SettingsController::class, 'updateCrawl'])->name('settings.crawl.update');
+
+        // Sistem geneli AI Anahtarları — sadece agency admin (superadmin) erişebilir
+        Route::get('settings/ai-keys',  [SystemSettingsController::class, 'aiKeys'])->name('settings.ai-keys');
+        Route::post('settings/ai-keys', [SystemSettingsController::class, 'updateAiKeys'])->name('settings.ai-keys.update');
 
         // Mail template test
         Route::post('settings/test-mail', [SettingsController::class, 'sendTestMail'])->name('settings.test-mail');

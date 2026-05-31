@@ -71,6 +71,13 @@ class AppServiceProvider extends ServiceProvider
         // Register view composer for frontend layouts
         View::composer('frontend.layouts.*', FrontendComposer::class);
 
+        // Superadmin panelinden tanımlanan AI API anahtarlarını config'e yükle.
+        // central_settings tablosundaki şifreli kayıtlar runtime'da çözülerek
+        // config('ai.providers.*.api_key') değerlerini override eder.
+        // .env'de anahtar varsa ve DB'de de varsa → DB kazanır (BYOK benzeri).
+        // Tablo henüz migrate edilmemişse (fresh install) sessizce geçilir.
+        $this->bootAiKeysFromDb();
+
         // Schema::createIfNotExists($table, $callback) — idempotent create.
         //
         // Module migrations bunu Schema::create yerine kullanır.  Tenant DB
@@ -81,7 +88,7 @@ class AppServiceProvider extends ServiceProvider
         //
         // Tasarım notu: Schema::hasTable check'i Blueprint kapanışından
         // önce yapılır, bu yüzden boş bir Blueprint kurmaya gerek yok.
-        Schema::macro('createIfNotExists', function (string $table, \Closure $callback): void {
+        Schema::macro('createIfNotExists', function (string $table, \Closure $callback): void {  // @phpstan-ignore-line
             /** @var \Illuminate\Database\Schema\Builder $this */
             if ($this->hasTable($table)) {
                 Log::info('Schema::createIfNotExists — table exists, skipping create', [
@@ -92,5 +99,30 @@ class AppServiceProvider extends ServiceProvider
             }
             $this->create($table, $callback);
         });
+    }
+
+    // ─── Private helpers ─────────────────────────────────────────────────────
+
+    /**
+     * central_settings tablosundaki AI API anahtarlarını runtime config'e yükler.
+     * Tablo yoksa (fresh install / migration bekliyor) sessizce geçer.
+     */
+    private function bootAiKeysFromDb(): void
+    {
+        try {
+            $ai = \App\Models\CentralSetting::aiConfig();
+
+            if ($ai['default_provider']) {
+                config(['ai.default_provider' => $ai['default_provider']]);
+            }
+            foreach (['anthropic', 'openrouter', 'openai'] as $provider) {
+                if (! empty($ai[$provider])) {
+                    config(["ai.providers.{$provider}.api_key" => $ai[$provider]]);
+                }
+            }
+        } catch (\Throwable) {
+            // central_settings tablosu henüz yok veya DB bağlantısı yok.
+            // .env değerleri geçerli kalır.
+        }
     }
 }
