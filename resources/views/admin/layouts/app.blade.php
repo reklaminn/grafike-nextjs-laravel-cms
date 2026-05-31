@@ -69,8 +69,10 @@
         <!-- Logo -->
         <div class="flex h-16 items-center justify-between px-4 border-b border-gray-200">
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 min-w-0">
-                @if(config('cms.agency.logo_dark') || config('cms.agency.logo_url'))
-                <img src="{{ config('cms.agency.logo_dark') ?: config('cms.agency.logo_url') }}"
+                @if(config('cms.agency.logo_url') || config('cms.agency.logo_dark'))
+                {{-- Sidebar beyaz zeminli → koyu/normal logo (logo_url) kullan.
+                     logo_dark koyu-zemin (açık renkli) varyant; sadece fallback. --}}
+                <img src="{{ config('cms.agency.logo_url') ?: config('cms.agency.logo_dark') }}"
                      alt="{{ config('cms.agency.name') }}"
                      class="h-8 w-auto object-contain flex-shrink-0">
                 @else
