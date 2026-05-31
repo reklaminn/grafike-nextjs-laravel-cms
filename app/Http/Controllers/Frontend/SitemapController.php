@@ -57,9 +57,17 @@ class SitemapController extends Controller
 
         $emittedPageIds = [];
 
+        // Slugs that are never appropriate in a sitemap (error pages etc.)
+        $alwaysExcludedSlugs = ['404', '500', '403', 'maintenance'];
+
         foreach ($pages as $page) {
             if (in_array($page->id, $emittedPageIds, true)) {
                 continue; // already emitted as part of a sibling group
+            }
+
+            // Always exclude error/system pages by slug
+            if (in_array($page->slug, $alwaysExcludedSlugs, true)) {
+                continue;
             }
 
             $seo = $page->seo;
