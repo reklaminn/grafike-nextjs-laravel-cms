@@ -226,6 +226,25 @@
                 <span class="text-amber-500">— Elle yazabilirsiniz.</span>
             </div>
 
+            {{-- ── Format Notu ─────────────────────────────────────────── --}}
+            <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                <span class="flex items-center gap-1.5">
+                    <span class="inline-block w-5 h-px bg-gray-400"></span>
+                    <span class="font-mono text-gray-700">Sayfa Adı</span>
+                    <span class="text-gray-400">→ Sayfa oluşturur</span>
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="font-mono text-indigo-400 tracking-widest">··</span>
+                    <span class="font-mono text-gray-700">Alt Başlık</span>
+                    <span class="text-gray-400">→ <strong>2 boşluk</strong> = alt sayfa</span>
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="font-mono text-green-500 tracking-widest">···</span>
+                    <span class="font-mono text-gray-700">Ürün Adı</span>
+                    <span class="text-gray-400">→ <strong>3 boşluk</strong> = yazı <span class="bg-green-100 text-green-700 px-1 rounded">yazı</span></span>
+                </span>
+            </div>
+
             {{-- ── TEXTAREA ────────────────────────────────────────────── --}}
             <div class="relative">
                 <textarea
@@ -233,15 +252,9 @@
                     @input="syncFromText()"
                     rows="9"
                     spellcheck="false"
-                    placeholder="Ana Sayfa&#10;Hizmetler&#10;  Hizmet 1&#10;  Hizmet 2&#10;Hakkımızda&#10;Galeri&#10;Blog&#10;İletişim"
+                    placeholder="Ana Sayfa&#10;Hizmetler&#10;  Saç Ekimi&#10;  Sakal Ekimi&#10;Ürünler&#10;   Şampuan&#10;   Saç Maskesi&#10;İletişim"
                     class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 resize-none bg-gray-50 leading-6"
                 ></textarea>
-                {{-- Format ipucu --}}
-                <div class="absolute top-2 right-2 text-[10px] text-gray-300 pointer-events-none select-none leading-4 text-right">
-                    <span>her satır = sayfa</span><br>
-                    <span class="text-gray-400">2 boşluk = alt sayfa</span><br>
-                    <span class="text-green-400">3 boşluk = yazı</span>
-                </div>
             </div>
 
             {{-- ── CANLI ÖNİZLEME ─────────────────────────────────────── --}}
