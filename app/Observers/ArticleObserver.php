@@ -4,12 +4,28 @@ namespace App\Observers;
 
 use App\Models\Article;
 use App\Models\Language;
+use App\Models\SeoEntry;
 use App\Services\FrontendRevalidator;
 use App\Services\Seo\IndexNowNotifier;
 use Illuminate\Support\Facades\Cache;
 
 class ArticleObserver
 {
+    /**
+     * Yazı oluşturulduğunda otomatik SEO kaydı aç.
+     */
+    public function created(Article $article): void
+    {
+        if (! $article->seo()->exists()) {
+            SeoEntry::create([
+                'seoable_id'   => $article->id,
+                'seoable_type' => Article::class,
+                'slug'         => $article->slug,
+                'language_id'  => $article->language_id,
+            ]);
+        }
+    }
+
     public function saved(Article $article): void
     {
         $this->clearArticleCache($article);

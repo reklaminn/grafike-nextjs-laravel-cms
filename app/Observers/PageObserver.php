@@ -5,12 +5,29 @@ namespace App\Observers;
 use App\Models\Language;
 use App\Models\Page;
 use App\Models\PageRevision;
+use App\Models\SeoEntry;
 use App\Services\FrontendRevalidator;
 use App\Services\Seo\IndexNowNotifier;
 use Illuminate\Support\Facades\Cache;
 
 class PageObserver
 {
+    /**
+     * Sayfa oluşturulduğunda otomatik SEO kaydı aç.
+     * slug dolu olacak, meta alanlar boş — editörden doldurulur.
+     */
+    public function created(Page $page): void
+    {
+        if (! $page->seo()->exists()) {
+            SeoEntry::create([
+                'seoable_id'   => $page->id,
+                'seoable_type' => Page::class,
+                'slug'         => $page->slug,
+                'language_id'  => $page->language_id,
+            ]);
+        }
+    }
+
     public function updating(Page $page): void
     {
         if ($page->isDirty('sections_json') || $page->isDirty('layout_json')) {
