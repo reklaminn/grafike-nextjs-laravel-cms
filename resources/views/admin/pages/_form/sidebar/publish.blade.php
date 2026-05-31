@@ -1,3 +1,72 @@
+{{-- ── AI ile Sayfayı Oluştur (sadece edit modunda göster) ── --}}
+@isset($page)
+<div class="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4"
+     x-data="{
+         generating: false,
+         done: false,
+         error: '',
+         purpose: '',
+         showPurpose: false,
+         async generate() {
+             this.generating = true;
+             this.error = '';
+             try {
+                 const r = await fetch(@js(route('admin.pages.ai-generate-blocks', $page, false)), {
+                     method: 'POST',
+                     credentials: 'same-origin',
+                     headers: {
+                         'Content-Type': 'application/json',
+                         'Accept': 'application/json',
+                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                     },
+                     body: JSON.stringify({ purpose: this.purpose }),
+                 });
+                 const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
+                 if (data.ok) {
+                     this.done = true;
+                     setTimeout(() => window.location.reload(), 1200);
+                 } else {
+                     this.error = data.message || 'Hata oluştu.';
+                 }
+             } catch(e) {
+                 this.error = e.message || 'Ağ hatası.';
+             } finally {
+                 this.generating = false;
+             }
+         }
+     }">
+    <div class="flex items-center gap-2 mb-2">
+        <i class="fas fa-wand-magic-sparkles text-indigo-500"></i>
+        <span class="text-sm font-semibold text-indigo-800">AI ile İçerik Oluştur</span>
+    </div>
+    <p class="text-xs text-indigo-600 mb-3">
+        Sayfa başlığı ve firma bilgilerine göre blokları otomatik doldurur.
+        Mevcut içerik varsa üzerine yazar.
+    </p>
+
+    <div x-show="showPurpose" x-cloak class="mb-2">
+        <textarea x-model="purpose" rows="2"
+                  placeholder="Sayfanın amacını belirtin (isteğe bağlı)…"
+                  class="w-full px-2.5 py-2 border border-indigo-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-400 resize-none"></textarea>
+    </div>
+
+    <div class="flex items-center gap-2">
+        <button type="button" @click="generate()"
+                :disabled="generating || done"
+                class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+            <i class="fas" :class="done ? 'fa-check' : (generating ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles')"></i>
+            <span x-text="done ? 'Tamamlandı! Yenileniyor…' : (generating ? 'Oluşturuluyor…' : 'AI ile Oluştur')"></span>
+        </button>
+        <button type="button" @click="showPurpose = !showPurpose"
+                title="Amaç notu ekle"
+                class="px-2.5 py-2 bg-white border border-indigo-200 text-indigo-500 text-xs rounded-lg hover:bg-indigo-50">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+    </div>
+    <p x-show="error" x-cloak class="mt-2 text-xs text-red-600 bg-red-50 rounded p-2" x-text="error"></p>
+</div>
+@endisset
+
 <!-- Publish box -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
     <h3 class="text-base font-semibold text-gray-800 mb-4">Yayın</h3>

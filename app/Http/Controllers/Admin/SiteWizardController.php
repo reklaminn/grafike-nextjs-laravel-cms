@@ -6,9 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Page;
 use App\Models\SiteSetting;
 use App\Services\Ai\AiModelRouter;
-use App\Services\Ai\AiPageGenerator;
-use App\Services\Ai\Exceptions\AiQuotaExceededException;
-use App\Services\Ai\SiteContextBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -150,88 +147,36 @@ PROMPT;
 
     /**
      * POST /admin/site-wizard/generate-page
-     * Adım 3: Tek bir sayfa üretir ve draft olarak kaydeder.
-     * Frontend bu endpoint'i seçili her sayfa için ayrı ayrı çağırır.
+     * Adım 3: Boş taslak sayfa oluşturur (AI içerik üretimi YOK).
+     *
+     * Sayfa içeriği (bloklar) sayfa düzenleme ekranındaki
+     * "AI ile Sayfayı Oluştur" butonu ile sonradan doldurulur.
      */
-    public function generatePage(
-        Request $request,
-        AiPageGenerator $generator,
-        SiteContextBuilder $contextBuilder,
-    ): JsonResponse {
+    public function generatePage(Request $request): JsonResponse
+    {
         $v = $request->validate([
-            'title'           => 'required|string|max:200',
-            'slug'            => 'nullable|string|max:100',
-            'purpose'         => 'nullable|string|max:500',
-            'language_id'     => 'nullable|integer',
-            'locale'          => 'nullable|string|max:5',
-            'company_context' => 'nullable|array',
-            'planned_pages'   => 'nullable|array',   // tüm sihirbaz sayfaları — çapraz bağlantı için
+            'title'       => 'required|string|max:200',
+            'slug'        => 'nullable|string|max:100',
+            'language_id' => 'nullable|integer',
         ]);
 
-        $tenant = tenancy()->initialized ? tenant() : null;
-        $locale = $v['locale'] ?? 'tr';
-
-        // DB bağlamını wizard form verisiyle doldur
-        $overrides = array_filter(
-            $v['company_context'] ?? [],
-            fn ($val) => $val !== null && $val !== '',
-        );
-        if (!empty($v['planned_pages'])) {
-            $overrides['planned_pages'] = $v['planned_pages'];
-        }
-        $siteContext = $contextBuilder->build($overrides);
-
-        // Sayfa bazlı prompt: başlık + amaç + firma bağlamı
-        $promptParts = ["\"{$v['title']}\" sayfası"];
-        if (!empty($v['purpose'])) {
-            $promptParts[] = $v['purpose'];
-        }
-        if (!empty($siteContext['company_name'])) {
-            $promptParts[] = "Firma: {$siteContext['company_name']}";
-            if (!empty($siteContext['sector'])) {
-                $promptParts[count($promptParts) - 1] .= " ({$siteContext['sector']})";
-            }
-        }
-        $prompt = implode('. ', $promptParts);
-
-        try {
-            $result = $generator->generate(
-                prompt:      $prompt,
-                tenant:      $tenant,
-                locale:      $locale,
-                siteContext: $siteContext,
-            );
-        } catch (AiQuotaExceededException $e) {
-            return response()->json([
-                'ok'         => false,
-                'error_code' => 'quota_exceeded',
-                'message'    => $e->getMessage(),
-            ], 402);
-        } catch (Throwable $e) {
-            report($e);
-
-            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
-        }
-
-        // Sihirbazda seçilen başlık/slug'ı AI'ın kendi önerisine göre ezme
-        $finalSlug = $this->uniqueSlug($v['slug'] ?: $result['slug']);
+        $finalSlug = $this->uniqueSlug($v['slug'] ?: $v['title']);
 
         $page = Page::create([
             'title'         => $v['title'],
             'slug'          => $finalSlug,
             'language_id'   => $v['language_id'] ?? null,
             'status'        => 'draft',
-            'sections_json' => $result['sections_json'],
+            'sections_json' => '[]',
             'show_in_menu'  => false,
         ]);
 
         return response()->json([
-            'ok'         => true,
-            'page_id'    => $page->id,
-            'title'      => $page->title,
-            'slug'       => $page->slug,
-            'block_count'=> count($result['picked_template_ids']),
-            'edit_url'   => route('admin.pages.edit', $page, false),
+            'ok'      => true,
+            'page_id' => $page->id,
+            'title'   => $page->title,
+            'slug'    => $page->slug,
+            'edit_url'=> route('admin.pages.edit', $page, false),
         ]);
     }
 

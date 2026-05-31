@@ -11,11 +11,16 @@ use App\Models\PageRevision;
 use App\Models\SectionTemplate;
 use App\Models\SeoEntry;
 use App\Models\SiteSetting;
+use App\Services\Ai\AiPageGenerator;
+use App\Services\Ai\Exceptions\AiQuotaExceededException;
+use App\Services\Ai\SiteContextBuilder;
 use App\Support\FrontendSections;
 use App\Support\LegacyLayoutToSections;
 use App\Support\PageEditorData;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Throwable;
 
 class PageController extends Controller
 {
@@ -419,6 +424,71 @@ class PageController extends Controller
     {
         return Page::query()->findOrFail($page);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * POST /admin/pages/{page}/ai-generate-blocks
+     *
+     * Mevcut sayfanın içeriğini (sections_json) AI ile doldurur.
+     * Sadece sections_json güncellenir — başlık/slug/durum değişmez.
+     */
+    public function aiGenerateBlocks(
+        string $page,
+        Request $request,
+        AiPageGenerator $generator,
+        SiteContextBuilder $contextBuilder,
+    ): JsonResponse {
+        $pageModel = Page::findOrFail($page);
+        $tenant    = tenancy()->initialized ? tenant() : null;
+        $locale    = $request->input('locale', 'tr');
+
+        try {
+            $siteContext = $contextBuilder->build();
+        } catch (Throwable) {
+            $siteContext = [];
+        }
+
+        $purpose = trim((string) $request->input('purpose', ''));
+        $prompt  = "\"{$pageModel->title}\" sayfası";
+        if ($purpose !== '') {
+            $prompt .= ". {$purpose}";
+        }
+        if (! empty($siteContext['company_name'])) {
+            $prompt .= ". Firma: {$siteContext['company_name']}";
+            if (! empty($siteContext['sector'])) {
+                $prompt .= " ({$siteContext['sector']})";
+            }
+        }
+
+        try {
+            $result = $generator->generate(
+                prompt:      $prompt,
+                tenant:      $tenant,
+                locale:      $locale,
+                siteContext: $siteContext,
+            );
+        } catch (AiQuotaExceededException $e) {
+            return response()->json([
+                'ok'         => false,
+                'error_code' => 'quota_exceeded',
+                'message'    => $e->getMessage(),
+            ], 402);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+        }
+
+        $pageModel->update(['sections_json' => $result['sections_json']]);
+
+        return response()->json([
+            'ok'          => true,
+            'block_count' => count($result['picked_template_ids'] ?? []),
+            'message'     => count($result['picked_template_ids'] ?? []) . ' blok oluşturuldu.',
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * Generate a unique slug with Turkish character support.

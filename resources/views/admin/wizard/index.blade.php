@@ -376,8 +376,8 @@
                             <p class="text-sm font-medium text-gray-900 truncate" x-text="pg.title"></p>
                             <p class="text-[11px] mt-0.5"
                                :class="pg.status === 'error' ? 'text-red-600' : 'text-gray-400'"
-                               x-text="pg.status === 'generating' ? 'AI içerik üretiyor…'
-                                      : pg.status === 'done' ? pg.block_count + ' blok oluşturuldu'
+                               x-text="pg.status === 'generating' ? 'Taslak oluşturuluyor…'
+                                      : pg.status === 'done' ? 'Taslak oluşturuldu ✓'
                                       : pg.status === 'error' ? (pg.error || 'Hata oluştu')
                                       : 'Bekliyor…'">
                             </p>
@@ -609,17 +609,14 @@ function siteWizard() {
                 this.generatedPages[i].status = 'generating';
                 try {
                     const r = await this._post(@js(route('admin.wizard.generate-page', [], false)), {
-                        title:           this.generatedPages[i].title,
-                        slug:            this.generatedPages[i].slug,
-                        purpose:         this.generatedPages[i].purpose,
-                        company_context: companyContext,
-                        planned_pages:   plannedPages,
+                        title:       this.generatedPages[i].title,
+                        slug:        this.generatedPages[i].slug,
+                        language_id: null,
                     });
                     const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
                     if (data.ok) {
-                        this.generatedPages[i].status      = 'done';
-                        this.generatedPages[i].edit_url    = data.edit_url;
-                        this.generatedPages[i].block_count = data.block_count || 0;
+                        this.generatedPages[i].status   = 'done';
+                        this.generatedPages[i].edit_url = data.edit_url;
                         this.completedCount++;
                     } else {
                         this.generatedPages[i].status = 'error';

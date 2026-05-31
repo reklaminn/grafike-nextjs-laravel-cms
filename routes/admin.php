@@ -97,6 +97,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('pages', PageController::class);
         Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
         Route::post('pages/{page}/migrate-to-sections', [PageController::class, 'migrateToSections'])->name('pages.migrate-to-sections');
+        Route::post('pages/{page}/ai-generate-blocks',  [PageController::class, 'aiGenerateBlocks'])->name('pages.ai-generate-blocks');
         Route::get('pages/{page}/migrate-preview', [PageController::class, 'migratePreview'])->name('pages.migrate-preview');
         Route::post('pages/{page}/revisions/{revision}/restore', [PageController::class, 'restoreRevision'])->name('pages.restore-revision');
         Route::get('pages/{page}/create-translation', [PageController::class, 'createTranslation'])->name('pages.create-translation');
