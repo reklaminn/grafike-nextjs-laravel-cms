@@ -160,6 +160,7 @@ PROMPT;
             'slug'        => 'nullable|string|max:100',
             'language_id' => 'nullable|integer',
             'sort_order'  => 'nullable|integer',
+            'parent_id'   => 'nullable|integer',
         ]);
 
         // slug='' → Ana Sayfa anlamına gelir. Zaten varsa yeniden oluşturma.
@@ -196,6 +197,7 @@ PROMPT;
             'title'         => $v['title'],
             'slug'          => $finalSlug,
             'language_id'   => $languageId,
+            'parent_id'     => $v['parent_id'] ?? null,
             'status'        => 'draft',
             'sections_json' => [],
             'show_in_menu'  => false,

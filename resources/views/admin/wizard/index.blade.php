@@ -373,7 +373,12 @@
 
                         {{-- Başlık --}}
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate" x-text="pg.title"></p>
+                            <div class="flex items-center gap-1.5">
+                                <template x-if="pg.indent > 0">
+                                    <span class="text-[10px] text-gray-400 font-mono">↳</span>
+                                </template>
+                                <p class="text-sm font-medium text-gray-900 truncate" x-text="pg.title"></p>
+                            </div>
                             <p class="text-[11px] mt-0.5"
                                :class="pg.status === 'error' ? 'text-red-600' : 'text-gray-400'"
                                x-text="pg.status === 'generating' ? 'Taslak oluşturuluyor…'
@@ -590,25 +595,24 @@ function siteWizard() {
                 error:       null,
             }));
 
-            const companyContext = {
-                company_name:    this.company_name,
-                sector:          this.sector,
-                description:     this.description,
-                target_audience: this.target_audience,
-                city:            this.city,
-                phone:           this.phone,
-                email:           this.email,
-                css_framework:   this.css_framework,
-            };
-            const plannedPages = selected.map(p => ({ title: p.title, slug: p.slug }));
+            // parentIds[indent] = son oluşturulan o seviyedeki sayfa ID'si
+            // Örn: indent=0 Hizmetler oluşunca parentIds[0]=42
+            //      indent=1 Saç Ekimi → parent_id=42
+            const parentIds = {};
 
             for (let i = 0; i < this.generatedPages.length; i++) {
+                const pg = this.generatedPages[i];
                 this.generatedPages[i].status = 'generating';
+
+                // Bir üst indent seviyesindeki son sayfa bu sayfanın parent'ı
+                const parentId = (pg.indent > 0) ? (parentIds[pg.indent - 1] ?? null) : null;
+
                 try {
                     const r = await this._post(@js(route('admin.wizard.generate-page', [], false)), {
-                        title:       this.generatedPages[i].title,
-                        slug:        this.generatedPages[i].slug,
-                        sort_order:  i,  // sıra numarası — Ana Sayfa (0) hep önde
+                        title:       pg.title,
+                        slug:        pg.slug,
+                        sort_order:  i,
+                        parent_id:   parentId,
                         language_id: null,
                     });
                     const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
@@ -616,10 +620,17 @@ function siteWizard() {
                         this.generatedPages[i].status   = 'done';
                         this.generatedPages[i].edit_url = data.edit_url;
                         this.completedCount++;
+
+                        // Bu sayfanın ID'sini indent seviyesine kaydet
+                        // Daha derin seviyeleri temizle (yeni dal başladığında)
+                        parentIds[pg.indent] = data.page_id;
+                        Object.keys(parentIds).forEach(lvl => {
+                            if (parseInt(lvl) > pg.indent) delete parentIds[lvl];
+                        });
                     } else {
                         this.generatedPages[i].status = 'error';
                         this.generatedPages[i].error  = data.message || 'Bilinmeyen hata';
-                        this.completedCount++; // hatalı da tamamlandı sayılır (ilerleme için)
+                        this.completedCount++;
                     }
                 } catch (e) {
                     this.generatedPages[i].status = 'error';
