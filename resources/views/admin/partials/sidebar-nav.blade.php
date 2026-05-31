@@ -85,7 +85,7 @@
 @endphp
 
 {{-- ── Kurulum Sihirbazı — her zaman erişilebilir, flag'e göre stil --}}
-@if($activeTenantId)
+@if($activeTenantId && \Illuminate\Support\Facades\Route::has('admin.wizard.index'))
 @php
     $wizardDone = false;
     try { $wizardDone = (bool) \App\Models\SiteSetting::get('site.setup_completed'); } catch (\Throwable) {}

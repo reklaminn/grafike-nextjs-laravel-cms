@@ -183,7 +183,8 @@
         {{-- ── Kurulum Sihirbazı Onboarding Banner ───────────────────────── --}}
         @php
             $showSetupBanner = false;
-            if ($isAdminAuthenticated && $activeTenantId) {
+            if ($isAdminAuthenticated && $activeTenantId
+                && \Illuminate\Support\Facades\Route::has('admin.wizard.index')) {
                 try {
                     $showSetupBanner = !\App\Models\SiteSetting::get('site.setup_completed')
                                       && !request()->routeIs('admin.wizard.*');
