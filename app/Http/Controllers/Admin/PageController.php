@@ -153,7 +153,13 @@ class PageController extends Controller
             ->orderBy('title')
             ->get(['id', 'title', 'language_id']);
 
-        $sectionTemplateIds = FrontendSections::collectTemplateIds($page->sections_json);
+        // Defensive: sections_json bazen DB'de string '[]' olarak kalabilir (çift encode bug).
+        // Cast array beklediği halde string gelirse null'a normalize et.
+        $sectionsData = $page->sections_json;
+        if (is_string($sectionsData)) {
+            $sectionsData = json_decode($sectionsData, true) ?? [];
+        }
+        $sectionTemplateIds = FrontendSections::collectTemplateIds($sectionsData);
 
         $frontendSectionTemplates = SectionTemplate::query()
             ->whereIn('id', $sectionTemplateIds)
