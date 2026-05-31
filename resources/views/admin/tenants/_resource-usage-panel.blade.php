@@ -24,7 +24,7 @@
             $over = ($up['level'] === 'over');
             $b = $up['bottleneck'] ?? null;
             $recKey = $up['recommended'] ?? null;
-            $recLabel = $recKey ? (config("packages.packages.{$recKey}.label") ?? ucfirst($recKey)) : null;
+            $recLabel = $recKey ? (\App\Models\Package::get($recKey)['label'] ?? ucfirst($recKey)) : null;
         @endphp
         <div class="mb-4 p-3 rounded-lg border {{ $over ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800' }}">
             <div class="flex items-start gap-2">

@@ -154,18 +154,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
      */
     public function package(): string
     {
-        $pkg = $this->attributes['package'] ?? null;
-        $packages = (array) config('packages.packages', []);
+        $pkg      = $this->attributes['package'] ?? null;
+        $packages = Package::allKeyed();
 
         return (is_string($pkg) && isset($packages[$pkg]))
             ? $pkg
-            : (string) config('packages.default', 'basic');
+            : Package::defaultKey();
     }
 
     /** @return array<string,mixed> */
     public function packageConfig(): array
     {
-        return (array) (config('packages.packages.' . $this->package(), []) ?: []);
+        return Package::get($this->package()) ?? [];
     }
 
     /** İzin verilen yönetici kullanıcı sayısı; null = sınırsız. */

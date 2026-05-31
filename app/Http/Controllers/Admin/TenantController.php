@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\AdminTenantAccess;
+use App\Models\Package;
 use App\Models\SiteTemplate;
 use App\Models\Tenant;
 use App\Models\Theme;
@@ -94,7 +95,7 @@ class TenantController extends Controller
             'domain'   => 'required|string|max:253',
             'theme_id' => ['nullable', Rule::exists('central.themes', 'id')],
             'plan'     => ['nullable', Rule::in($aiPlans)],
-            'package'  => ['nullable', Rule::in(array_keys(config('packages.packages', [])))],
+            'package'  => ['nullable', Rule::in(array_keys(Package::allKeyed()))],
             'site_template_id' => ['nullable', Rule::exists('central.site_templates', 'id')],
             'create_company_admin' => 'nullable|boolean',
             'company_admin_name' => 'required_if:create_company_admin,1|nullable|string|max:255',
@@ -112,7 +113,7 @@ class TenantController extends Controller
             return DB::connection('central')->transaction(function () use ($validated, $domain) {
                 // Insert explicitly into the central table. This avoids both
                 // stancl creation events and Eloquent key casting edge cases.
-                $package = $validated['package'] ?? config('packages.default', 'basic');
+                $package = $validated['package'] ?? Package::defaultKey();
 
                 $tenantData = [
                     'name'     => $validated['name'],
@@ -124,7 +125,7 @@ class TenantController extends Controller
                 // AI planı pakete bağlı (paket öncelikli); paketten gelmezse
                 // formdaki ayrı 'plan' alanına düşer. Kota kontrolleri
                 // provisioning'den hemen sonra çalışsın diye data'ya yazılır.
-                $aiPlan = config("packages.packages.{$package}.ai_plan") ?? ($validated['plan'] ?? null);
+                $aiPlan = (Package::get($package)['ai_plan'] ?? null) ?? ($validated['plan'] ?? null);
                 if (! empty($aiPlan)) {
                     $tenantData['ai_settings'] = ['plan' => $aiPlan];
                 }
@@ -357,7 +358,7 @@ class TenantController extends Controller
             'name'     => 'required|string|max:255',
             'theme_id' => ['nullable', Rule::exists('central.themes', 'id')],
             'status'   => 'required|in:active,suspended',
-            'package'  => ['nullable', Rule::in(array_keys(config('packages.packages', [])))],
+            'package'  => ['nullable', Rule::in(array_keys(Package::allKeyed()))],
         ]);
 
         $tenantId = (string) $tenant->getTenantKey();
@@ -380,7 +381,7 @@ class TenantController extends Controller
         ]);
 
         // Paket değişince AI planını da paketle senkron tut.
-        $aiPlan = config("packages.packages.{$package}.ai_plan");
+        $aiPlan = Package::get($package)['ai_plan'] ?? null;
         if ($aiPlan) {
             $ai = is_array($newData['ai_settings'] ?? null) ? $newData['ai_settings'] : [];
             $ai['plan'] = $aiPlan;

@@ -3,6 +3,7 @@
 namespace App\Services\Tenancy;
 
 use App\Models\AdminTenantAccess;
+use App\Models\Package;
 use App\Models\Tenant;
 use App\Services\Ai\AiQuotaService;
 
@@ -89,7 +90,7 @@ class TenantUpgradeAdvisor
 
     private function recommend(string $level, float $diskMb, int $users, int $requests, string $current): ?string
     {
-        $packages = config('packages.packages', []);
+        $packages = Package::allKeyed();
         $keys = array_keys($packages);
         $ci = array_search($current, $keys, true);
         if ($ci === false) {

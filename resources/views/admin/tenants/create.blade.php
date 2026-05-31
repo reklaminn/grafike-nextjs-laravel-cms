@@ -87,8 +87,8 @@
                 </label>
                 <select name="package"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    @foreach(config('packages.packages', []) as $key => $pkg)
-                    <option value="{{ $key }}" {{ old('package', config('packages.default')) === $key ? 'selected' : '' }}>
+                    @foreach(\App\Models\Package::allKeyed() as $key => $pkg)
+                    <option value="{{ $key }}" {{ old('package', \App\Models\Package::defaultKey()) === $key ? 'selected' : '' }}>
                         {{ $pkg['label'] }} — {{ $pkg['max_users'] === null ? 'sınırsız kullanıcı' : $pkg['max_users'].' kullanıcı' }} · AI: {{ $pkg['ai_plan'] }}
                     </option>
                     @endforeach
