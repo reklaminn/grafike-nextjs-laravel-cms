@@ -133,10 +133,29 @@ class AiQuotaService
      * Calculate USD cost for a completed response using the pricing matrix.
      * Returns 0.0 when the model isn't listed (acceptable — counters still
      * record token counts and the dashboard surfaces "unpriced" calls).
+     *
+     * Lookup order:
+     *   1. Exact match  → e.g. "claude-haiku-4-5"
+     *   2. Prefix match → e.g. "claude-haiku-4-5-20250514" matches "claude-haiku-4-5"
+     *      (Anthropic returns versioned IDs for alias model names)
      */
     public function calculateCost(string $provider, string $model, int $inputTokens, int $outputTokens): float
     {
-        $rate = $this->pricing[$provider][$model] ?? null;
+        $providerRates = $this->pricing[$provider] ?? [];
+
+        // 1. Exact match
+        $rate = $providerRates[$model] ?? null;
+
+        // 2. Prefix match — API may return versioned IDs like "claude-haiku-4-5-20250514"
+        if (! is_array($rate)) {
+            foreach ($providerRates as $configModel => $configRate) {
+                if (str_starts_with($model, $configModel)) {
+                    $rate = $configRate;
+                    break;
+                }
+            }
+        }
+
         if (! is_array($rate)) {
             return 0.0;
         }
