@@ -477,9 +477,6 @@ function siteWizard() {
                 if (!data.ok) { this.step1Error = data.message || 'Kayıt başarısız.'; return; }
 
                 this.step = 2;
-                if (!this.hierarchyText.trim()) {
-                    await this.suggestAndFill();
-                }
             } catch (e) {
                 this.step1Error = e.message || 'Ağ hatası.';
             } finally {
