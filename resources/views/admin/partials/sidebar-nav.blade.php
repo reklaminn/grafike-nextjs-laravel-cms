@@ -84,6 +84,30 @@
     }
 @endphp
 
+{{-- ── Kurulum Sihirbazı — setup tamamlanmadıysa göster ──────────────── --}}
+@php
+    $showWizardLink = false;
+    try {
+        $showWizardLink = $activeTenantId && !\App\Models\SiteSetting::get('site.setup_completed');
+    } catch (\Throwable) {}
+@endphp
+@if($showWizardLink)
+<a href="{{ route('admin.wizard.index') }}"
+   class="sidebar-link mb-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold
+          text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-colors
+          {{ str_starts_with($currentRoute, 'admin.wizard') ? 'active' : '' }}">
+    <i class="fas fa-wand-magic-sparkles w-5 text-center text-base"></i>
+    <span x-show="sidebarOpen" x-transition class="flex items-center justify-between w-full">
+        <span>Site Kur</span>
+        <span class="ml-2 flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+        </span>
+    </span>
+</a>
+<div class="my-1 border-t border-gray-100"></div>
+@endif
+
 <!-- Main navigation -->
 @foreach($navItems as $item)
     <a href="{{ route($item['route']) }}"

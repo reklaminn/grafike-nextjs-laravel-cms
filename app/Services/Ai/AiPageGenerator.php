@@ -9,6 +9,7 @@ use App\Support\FrontendSections;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Generates a full page (title + slug + sections_json) from a single
@@ -31,11 +32,16 @@ class AiPageGenerator
     /** Cap on templates fed to the model — keeps prompt size bounded. */
     private const MAX_TEMPLATES = 40;
 
-    public function __construct(private readonly AiModelRouter $router)
-    {
+    public function __construct(
+        private readonly AiModelRouter $router,
+        private readonly SiteContextBuilder $contextBuilder,
+    ) {
     }
 
     /**
+     * @param  array  $siteContext  Optional site-context overrides (from wizard or caller).
+     *                              When empty, auto-fetched from SiteContextBuilder.
+     *
      * @return array{title:string, slug:string, sections_json:array, picked_template_ids:array<int,int>}
      */
     public function generate(
@@ -43,6 +49,7 @@ class AiPageGenerator
         ?Tenant $tenant = null,
         string $locale = 'tr',
         ?Collection $availableTemplates = null,
+        array $siteContext = [],
     ): array {
         $templates = $availableTemplates ?? $this->fetchTemplates();
         if ($templates->isEmpty()) {
@@ -51,7 +58,20 @@ class AiPageGenerator
             );
         }
 
-        $system = $this->systemPrompt($locale);
+        // Auto-build site context from DB when caller doesn't supply one
+        if (empty($siteContext)) {
+            try {
+                $siteContext = $this->contextBuilder->build();
+            } catch (Throwable) {
+                $siteContext = [];
+            }
+        }
+
+        $contextSnippet = !empty($siteContext)
+            ? $this->contextBuilder->toPromptSnippet($siteContext)
+            : '';
+
+        $system = $this->systemPrompt($locale, $contextSnippet);
         $user   = $this->userPrompt($prompt, $this->buildCatalog($templates));
 
         try {
@@ -112,34 +132,39 @@ class AiPageGenerator
         })->implode("\n");
     }
 
-    private function systemPrompt(string $locale): string
+    private function systemPrompt(string $locale, string $contextSnippet = ''): string
     {
         $langName = $this->humanLanguage($locale);
 
-        return <<<PROMPT
-Sen profesyonel bir web içerik tasarımcısısın. Bir prompt + mevcut blok şablonu listesi alırsın;
-sayfanın blok dizisini ve $langName içeriklerini üretirsin.
+        // Site context block is injected between the intro and the strict rules
+        $ctxBlock = $contextSnippet !== ''
+            ? "\n\n" . $contextSnippet . "\n"
+            : '';
 
-KATI KURALLAR:
-- SADECE listedeki "id" değerlerini kullan; uydurma id KESINLIKLE kullanma.
-- Her blokun content'inde, blokun "alanlar" listesindeki anahtarları kullan; eksik veya fazla key olmasın.
-- İçerikler $langName dilinde, akıcı, doğal, somut olsun. Lorem ipsum yazma.
-- Sayfa için kısa bir title (max 70 karakter) ve URL slug öner. Slug: küçük harf, tire ayraçlı, Türkçe karakterleri ascii'ye çevir, max 60 karakter.
-- Blok sırası mantıklı olsun (hero → kısa anlatım → özellikler → detay → CTA gibi).
-- 3-7 blok yeterli. Aşırıya kaçma.
+        $intro = "Sen profesyonel bir web içerik tasarımcısısın. "
+               . "Bir prompt + mevcut blok şablonu listesi alırsın; "
+               . "sayfanın blok dizisini ve {$langName} içeriklerini üretirsin.";
 
-ÇIKTI: Sadece geçerli JSON. Kod bloğu YOK, ön söz YOK.
+        $rules = "\n\nKATI KURALLAR:\n"
+               . "- SADECE listedeki \"id\" değerlerini kullan; uydurma id KESINLIKLE kullanma.\n"
+               . "- Her blokun content'inde, blokun \"alanlar\" listesindeki anahtarları kullan; eksik veya fazla key olmasın.\n"
+               . "- İçerikler {$langName} dilinde, akıcı, doğal, somut, firmaya özgü olsun. Lorem ipsum yazma.\n"
+               . "- Site bağlamı verilmişse firma adını, sektörü ve iletişim bilgilerini içeriklere doğal biçimde yansıt.\n"
+               . "- Sayfa için kısa bir title (max 70 karakter) ve URL slug öner. Slug: küçük harf, tire ayraçlı, Türkçe karakterleri ascii'ye çevir, max 60 karakter.\n"
+               . "- Blok sırası mantıklı olsun (hero → kısa anlatım → özellikler → detay → CTA gibi).\n"
+               . "- 3-7 blok yeterli. Aşırıya kaçma.\n\n"
+               . "ÇIKTI: Sadece geçerli JSON. Kod bloğu YOK, ön söz YOK.\n\n"
+               . "Beklenen şema:\n"
+               . "{\n"
+               . "  \"title\": \"Sayfa başlığı\",\n"
+               . "  \"slug\": \"url-slug\",\n"
+               . "  \"sections\": [\n"
+               . "    {\"template_id\": <int>, \"content\": {<şablon alan adı>: <değer>, ...}},\n"
+               . "    ...\n"
+               . "  ]\n"
+               . "}";
 
-Beklenen şema:
-{
-  "title": "Sayfa başlığı",
-  "slug": "url-slug",
-  "sections": [
-    {"template_id": <int>, "content": {<şablon alan adı>: <değer>, ...}},
-    ...
-  ]
-}
-PROMPT;
+        return $intro . $ctxBlock . $rules;
     }
 
     private function userPrompt(string $prompt, string $catalog): string

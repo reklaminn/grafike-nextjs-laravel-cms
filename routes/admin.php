@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CurrencyController;
+use App\Http\Controllers\Admin\SiteWizardController;
 use App\Http\Controllers\Admin\TranslationController;
 use Illuminate\Support\Facades\Route;
 
@@ -262,6 +263,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Mail template test
         Route::post('settings/test-mail', [SettingsController::class, 'sendTestMail'])->name('settings.test-mail');
+
+        // ── Site Kurulum Sihirbazı ────────────────────────────────────────
+        Route::prefix('site-wizard')->name('wizard.')->group(function () {
+            Route::get('/',               [SiteWizardController::class, 'index'])->name('index');
+            Route::post('/save-company',  [SiteWizardController::class, 'saveCompany'])->name('save-company');
+            Route::post('/suggest-pages', [SiteWizardController::class, 'suggestPages'])->name('suggest-pages');
+            Route::post('/generate-page', [SiteWizardController::class, 'generatePage'])->name('generate-page');
+            Route::post('/complete',      [SiteWizardController::class, 'complete'])->name('complete');
+        });
 
         }); // end: tenant.admin middleware group
     });
