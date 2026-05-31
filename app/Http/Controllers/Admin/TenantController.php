@@ -239,15 +239,23 @@ class TenantController extends Controller
                 'upgrade'          => app(\App\Services\Tenancy\TenantUpgradeAdvisor::class)->evaluate($tenant),
             ];
         } catch (\Throwable $e) {
-            // Geçici DB/metering hatası (örn. DNS blip) tenant sayfasını komple
-            // düşürmesin — pakete bağlı (config) değerler hep gösterilir.
+            // Geçici DB/metering hatası tenant sayfasını komple düşürmesin.
+            // packageConfig() / package() çağrıları da fail-safe olmalı (catch
+            // içinde ikinci exception → unhandled 500 riski), bu yüzden kendinleri
+            // de try/catch ile sarıyoruz.
             report($e);
-            $resourceUsage = [
-                'storage_quota_mb' => $tenant->packageConfig()['max_storage_mb'] ?? null,
-                'requests_quota'   => $tenant->packageConfig()['max_requests_per_day'] ?? null,
-                'max_users'        => $tenant->maxAdminUsers(),
-                'package_label'    => $tenant->packageConfig()['label'] ?? $tenant->package(),
-            ];
+            try {
+                $pkgCfg = $tenant->packageConfig();
+                $resourceUsage = [
+                    'storage_quota_mb' => $pkgCfg['max_storage_mb']       ?? null,
+                    'requests_quota'   => $pkgCfg['max_requests_per_day']  ?? null,
+                    'max_users'        => $pkgCfg['max_users']             ?? null,
+                    'package_label'    => $pkgCfg['label']                 ?? $tenant->attributes['package'] ?? '—',
+                ];
+            } catch (\Throwable) {
+                // Tamamen sıfır fallback — hiçbir şey patlamasın
+                $resourceUsage = [];
+            }
         }
 
         return view('admin.tenants.show', compact(

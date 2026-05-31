@@ -146,26 +146,47 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
-     * Tenant'ın paketi (config/packages.php). Geçersiz/boşsa varsayılana düşer.
+     * Tenant'ın paketi. Geçersiz/boşsa varsayılana düşer.
      *
      * UYARI: getAttribute('package') KULLANMA — Eloquent, aynı isimli bir metod
      * varsa bunu ilişki zanneder → getAttribute → isRelation → package() döngüsü →
      * sonsuz recursion → OOM. Doğrudan attributes dizisinden oku.
+     *
+     * Fail-safe: packages tablosu henüz migrate edilmemişse (yeni kurulum /
+     * provisioning sırasında) config/packages.php fallback'i kullanılır.
      */
     public function package(): string
     {
-        $pkg      = $this->attributes['package'] ?? null;
-        $packages = Package::allKeyed();
+        $pkg = $this->attributes['package'] ?? null;
 
-        return (is_string($pkg) && isset($packages[$pkg]))
-            ? $pkg
-            : Package::defaultKey();
+        try {
+            $packages = Package::allKeyed();
+            if (is_string($pkg) && isset($packages[$pkg])) {
+                return $pkg;
+            }
+
+            return Package::defaultKey();
+        } catch (\Throwable) {
+            // DB hazır değil — config fallback'i kullan
+            $configPackages = config('packages.packages', []);
+            if (is_string($pkg) && isset($configPackages[$pkg])) {
+                return $pkg;
+            }
+
+            return (string) (is_string($pkg) && $pkg !== '' ? $pkg : config('packages.default', 'basic'));
+        }
     }
 
     /** @return array<string,mixed> */
     public function packageConfig(): array
     {
-        return Package::get($this->package()) ?? [];
+        try {
+            return Package::get($this->package()) ?? [];
+        } catch (\Throwable) {
+            $configPackages = config('packages.packages', []);
+
+            return $configPackages[$this->attributes['package'] ?? ''] ?? [];
+        }
     }
 
     /** İzin verilen yönetici kullanıcı sayısı; null = sınırsız. */

@@ -248,6 +248,18 @@ PROMPT;
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * POST /admin/site-wizard/reset
+     * setup_completed flag'ini temizler; sihirbazı sıfırdan başlatır.
+     * Superadmin istediği zaman çağırabilir.
+     */
+    public function reset(): JsonResponse
+    {
+        SiteSetting::set('site.setup_completed', '', 'general');
+
+        return response()->json(['ok' => true, 'redirect' => route('admin.wizard.index', [], false)]);
+    }
+
     // ─────────────────────────────────────────────────────────────────────
 
     private function parseJsonArray(string $raw): ?array

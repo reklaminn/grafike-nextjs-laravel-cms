@@ -8,18 +8,28 @@
 
     {{-- ── Tamamlandı banner ───────────────────────────────────────────── --}}
     @if($setupCompleted)
-    <div class="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-5 flex items-center justify-between gap-4">
+    <div class="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-5 flex items-center justify-between gap-4"
+         x-data="{ resetting: false }">
         <div class="flex items-center gap-3 text-emerald-800">
             <i class="fas fa-check-circle text-2xl"></i>
             <div>
                 <p class="font-semibold">Kurulum daha önce tamamlandı.</p>
-                <p class="text-sm mt-0.5">Sihirbazı yeniden çalıştırarak bilgilerini güncelleyebilir, yeni sayfalar ekleyebilirsin.</p>
+                <p class="text-sm mt-0.5">Sihirbazı yeniden çalıştırarak firma bilgilerini güncelleyebilir veya yeni sayfalar ekleyebilirsin.</p>
             </div>
         </div>
-        <a href="{{ route('admin.pages.index', [], false) }}"
-           class="flex-shrink-0 bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-emerald-700">
-            Sayfalara Git
-        </a>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button type="button"
+                    :disabled="resetting"
+                    @click="resetting = true; fetch(@js(route('admin.wizard.reset', [], false)), {method:'POST', headers:{'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content, 'Accept':'application/json'}}).then(() => window.location.reload())"
+                    class="bg-white border border-emerald-300 text-emerald-700 text-sm font-medium px-3 py-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50 flex items-center gap-1.5">
+                <i class="fas" :class="resetting ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i>
+                <span x-text="resetting ? 'Sıfırlanıyor…' : 'Yeniden Başlat'"></span>
+            </button>
+            <a href="{{ route('admin.pages.index', [], false) }}"
+               class="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-emerald-700">
+                Sayfalara Git
+            </a>
+        </div>
     </div>
     @endif
 
