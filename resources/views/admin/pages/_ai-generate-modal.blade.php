@@ -38,16 +38,42 @@
         {{-- ── Prompt step ───────────────────────────────────────── --}}
         <div x-show="!preview" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Sayfa Tanımı <span class="text-red-500">*</span>
-                </label>
-                <textarea x-model="prompt" rows="4"
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-700">
+                        Sayfa Tanımı <span class="text-red-500">*</span>
+                    </label>
+                    {{-- Boost butonu --}}
+                    <button type="button"
+                            @click="boostPrompt()"
+                            :disabled="boosting || prompt.trim().length < 5 || loading"
+                            title="Kısa tarifinizi AI ile ayrıntılı prompta dönüştürür"
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all
+                                   bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 text-amber-700
+                                   hover:from-amber-100 hover:to-yellow-100 hover:border-amber-300
+                                   disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fas" :class="boosting ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
+                        <span x-text="boosting ? 'Geliştiriliyor…' : '✨ Promptu Geliştir'"></span>
+                    </button>
+                </div>
+                <textarea x-model="prompt" rows="5"
                           maxlength="1000"
-                          placeholder="Örn: Diş kliniği için 'Hizmetlerimiz' sayfası. Hero alanı, 4 hizmet kartı (implant, gülüş tasarımı, ortodonti, diş beyazlatma), randevu butonu olan CTA bölümü."
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
-                <p class="text-[11px] text-gray-400 mt-1">
-                    <span x-text="prompt.length"></span>/1000 karakter — ne kadar detaylı yazarsanız o kadar iyi sonuç.
-                </p>
+                          :placeholder="boosting ? 'AI promptunuzu geliştiriyor…' : 'Örn: Diş kliniği için \'Hizmetlerimiz\' sayfası. Hero alanı, 4 hizmet kartı (implant, gülüş tasarımı, ortodonti, diş beyazlatma), randevu butonu olan CTA bölümü.'"
+                          :class="boosting ? 'opacity-50' : ''"
+                          :disabled="boosting"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 transition-opacity"></textarea>
+                <div class="flex items-center justify-between mt-1">
+                    <p class="text-[11px] text-gray-400">
+                        <span x-text="prompt.length"></span>/1000 karakter — ne kadar detaylı yazarsanız o kadar iyi sonuç.
+                    </p>
+                    <p x-show="boosted" x-cloak class="text-[11px] text-amber-600 flex items-center gap-1">
+                        <i class="fas fa-check-circle"></i> Prompt AI ile geliştirildi
+                    </p>
+                </div>
+                <div x-show="boostError" x-cloak
+                     class="mt-1 text-xs text-red-600 flex items-center gap-1">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span x-text="boostError"></span>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -169,6 +195,10 @@ function aiPageWizard() {
         status: '',
         statusOk: false,
         preview: null,
+        // Boost state
+        boosting: false,
+        boosted: false,
+        boostError: '',
 
         reset() {
             this.prompt = '';
@@ -178,6 +208,44 @@ function aiPageWizard() {
             this.status = '';
             this.statusOk = false;
             this.preview = null;
+            this.boosting = false;
+            this.boosted = false;
+            this.boostError = '';
+        },
+
+        async boostPrompt() {
+            const raw = this.prompt.trim();
+            if (raw.length < 5 || this.boosting) return;
+
+            this.boosting   = true;
+            this.boostError = '';
+            this.boosted    = false;
+
+            try {
+                const r = await fetch(@js(route('admin.ai.boost-prompt', [], false)), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: raw, locale: this.locale || 'tr' }),
+                });
+                const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
+
+                if (!r.ok || !data.ok) {
+                    this.boostError = data.message || 'Prompt geliştirilemedi.';
+                    return;
+                }
+
+                this.prompt = data.boosted || raw;
+                this.boosted = true;
+            } catch (e) {
+                this.boostError = e.message || 'Ağ hatası.';
+            } finally {
+                this.boosting = false;
+            }
         },
 
         async generate(autoSave) {

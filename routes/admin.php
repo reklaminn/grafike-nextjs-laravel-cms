@@ -105,6 +105,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('ai/pages/generate',              AiPageGenerateController::class)->name('ai.pages.generate');
         Route::post('ai/section-templates/generate',  AiSectionTemplateGenerateController::class)->name('ai.section-templates.generate');
 
+        // Prompt boost — ham tarifi ayrıntılı prompt'a dönüştürür (sayfa sihirbazı).
+        Route::post('ai/boost-prompt',                \App\Http\Controllers\Admin\Ai\BoostPromptController::class)->name('ai.boost-prompt');
+
         // Streaming SSE endpoint (FAZ 3.6) — text deltas + final usage event.
         Route::post('ai/stream/block-edit',           AiStreamBlockEditController::class)->name('ai.stream.block-edit');
 
