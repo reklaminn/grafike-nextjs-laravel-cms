@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiPlan;
 use App\Models\Package;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class PackageController extends Controller
             ->groupBy(fn ($t) => $t->package())
             ->map->count();
 
-        $aiPlans = array_keys(config('ai.plans', []));
+        $aiPlans = array_keys(AiPlan::allKeyed());
 
         return view('admin.packages.index', compact('packages', 'tenantCounts', 'aiPlans'));
     }
@@ -29,7 +30,7 @@ class PackageController extends Controller
     public function create()
     {
         $this->authorizeAgencyAdmin();
-        $aiPlans = array_keys(config('ai.plans', []));
+        $aiPlans = array_keys(AiPlan::allKeyed());
 
         return view('admin.packages.form', [
             'package' => null,
@@ -56,7 +57,7 @@ class PackageController extends Controller
     public function edit(Package $package)
     {
         $this->authorizeAgencyAdmin();
-        $aiPlans = array_keys(config('ai.plans', []));
+        $aiPlans = array_keys(AiPlan::allKeyed());
 
         return view('admin.packages.form', compact('package', 'aiPlans'));
     }
@@ -96,13 +97,13 @@ class PackageController extends Controller
 
     private function validatePackage(Request $request, ?string $currentKey = null): array
     {
-        $aiPlans = array_keys(config('ai.plans', []));
+        $aiPlans = array_keys(AiPlan::allKeyed());
 
         $rules = [
             'key'                  => ['required', 'string', 'max:50', 'alpha_dash',
                                         Rule::unique('central.packages', 'key')->ignore($currentKey, 'key')],
             'label'                => 'required|string|max:100',
-            'ai_plan'              => ['required', Rule::in($aiPlans)],
+            'ai_plan'              => ['required', Rule::in(array_keys(AiPlan::allKeyed()))],
             'max_users'            => 'nullable|integer|min:1',
             'max_storage_mb'       => 'nullable|integer|min:1',
             'max_requests_per_day' => 'nullable|integer|min:1',

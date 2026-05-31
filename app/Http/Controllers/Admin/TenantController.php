@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\AdminTenantAccess;
+use App\Models\AiPlan;
 use App\Models\Package;
 use App\Models\SiteTemplate;
 use App\Models\Tenant;
@@ -60,7 +61,7 @@ class TenantController extends Controller
         $this->authorizeAgencyAdmin();
 
         $themes    = Theme::active()->orderBy('name')->get();
-        $plans     = array_keys(config('ai.plans', []));
+        $plans     = array_keys(AiPlan::allKeyed());
         $industries = SiteTemplate::INDUSTRIES;
 
         // Group active templates by industry for the JS-driven selector
@@ -87,7 +88,7 @@ class TenantController extends Controller
      */
     public function store(Request $request)
     {
-        $aiPlans = array_keys(config('ai.plans', []));
+        $aiPlans = array_keys(AiPlan::allKeyed());
 
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
@@ -455,7 +456,7 @@ class TenantController extends Controller
         $this->authorizeTenantAccess($tenant);
 
         $providers = array_keys(config('ai.providers', []));
-        $plans     = array_keys(config('ai.plans', []));
+        $plans     = array_keys(AiPlan::allKeyed());
 
         $rules = [
             'use_byok'           => 'nullable|boolean',

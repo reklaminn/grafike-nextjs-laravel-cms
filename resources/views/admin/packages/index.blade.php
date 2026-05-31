@@ -40,7 +40,11 @@
                         <div class="text-xs text-gray-400 font-mono">{{ $pkg->key }}</div>
                     </td>
                     <td class="px-5 py-3 text-sm text-gray-700">
-                        {{ $pkg->max_users === null ? '<span class="text-emerald-600">∞</span>' : $pkg->max_users }}
+                        @if($pkg->max_users === null)
+                            <span class="text-emerald-600">∞</span>
+                        @else
+                            {{ $pkg->max_users }}
+                        @endif
                     </td>
                     <td class="px-5 py-3 text-sm text-gray-700">
                         @if($pkg->max_storage_mb === null)
@@ -52,7 +56,11 @@
                         @endif
                     </td>
                     <td class="px-5 py-3 text-sm text-gray-700">
-                        {{ $pkg->max_requests_per_day === null ? '<span class="text-gray-400">—</span>' : number_format($pkg->max_requests_per_day) }}
+                        @if($pkg->max_requests_per_day === null)
+                            <span class="text-gray-400">—</span>
+                        @else
+                            {{ number_format($pkg->max_requests_per_day) }}
+                        @endif
                     </td>
                     <td class="px-5 py-3">
                         <span class="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">{{ $pkg->ai_plan }}</span>

@@ -12,6 +12,7 @@ use App\Services\Ai\AiSeoGenerator;
 use App\Services\Ai\AiTranslator;
 use App\Services\Ai\AiUsageReporter;
 use App\Services\Ai\TenantAiResolver;
+use App\Models\AiPlan;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 
@@ -41,10 +42,19 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
         $this->app->singleton(AiQuotaService::class, function ($app) {
             $cfg = $app['config']->get('ai', []);
 
+            // DB planları öncelikli; tablo yoksa (migration henüz koşmadı) config'e düşer.
+            try {
+                $plans = AiPlan::allKeyed();
+                $defaultPlan = AiPlan::defaultKey();
+            } catch (\Throwable) {
+                $plans = $cfg['plans'] ?? [];
+                $defaultPlan = $cfg['default_plan'] ?? 'free';
+            }
+
             return new AiQuotaService(
-                plans:       $cfg['plans']         ?? [],
-                defaultPlan: $cfg['default_plan']  ?? 'free',
-                pricing:     $cfg['pricing']       ?? [],
+                plans:       $plans,
+                defaultPlan: $defaultPlan,
+                pricing:     $cfg['pricing'] ?? [],
             );
         });
 

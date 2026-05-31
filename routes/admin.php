@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SitemapController;
 use App\Http\Controllers\Admin\SmtpProfileController;
+use App\Http\Controllers\Admin\AiPlanController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\TenantBackupController;
 use App\Http\Controllers\Admin\TenantController;
@@ -56,8 +57,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('tenants/{tenant}/switch',    [TenantController::class, 'switchTo'])->name('tenants.switch');
         Route::post('tenants/clear-active',       [TenantController::class, 'clearActive'])->name('tenants.clear-active');
 
-        // ── Package Management ────────────────────────────────────────────────
+        // ── Package + AI Plan Management ─────────────────────────────────────
         Route::resource('packages', PackageController::class)->except(['show']);
+        Route::resource('ai-plans', AiPlanController::class)->except(['show']);
 
         // ── Tenant Backups ────────────────────────────────────────────────────
         Route::post  ('tenants/{tenant}/backups',                    [TenantBackupController::class, 'store'])   ->name('tenants.backups.store');
