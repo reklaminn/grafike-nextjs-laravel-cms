@@ -92,7 +92,7 @@
                     <span class="text-white font-bold text-sm">{{ mb_substr(config('cms.agency.name', 'G'), 0, 1) }}</span>
                 </div>
                 @endif
-                <span x-show="sidebarOpen" x-transition class="font-bold text-gray-800 truncate">{{ config('cms.agency.name', config('cms.name', 'Grafike CMS')) }}</span>
+                {{-- Logo yanında isim gösterilmiyor; logo görseli yeterli --}}
             </a>
             <button @click="sidebarOpen = !sidebarOpen" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-bars"></i>

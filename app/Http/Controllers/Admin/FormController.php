@@ -83,6 +83,12 @@ class FormController extends Controller
 
     public function destroy(Form $form)
     {
+        if ($form->is_system) {
+            return redirect()
+                ->route('admin.forms.index')
+                ->with('error', '"' . $form->name . '" bir sistem formudur ve silinemez.');
+        }
+
         $form->fields()->delete();
         $form->submissions()->delete();
         $form->delete();

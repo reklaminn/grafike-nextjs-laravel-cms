@@ -16,17 +16,19 @@ class Form extends Model
         'smtp_password', 'smtp_encryption', 'allow_submissions', 'allow_listing',
         'save_to_database', 'language_id', 'legacy_id',
         'webhook_url', 'webhook_enabled',
+        // is_system intentionally excluded from fillable — set only via migration/seeder
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
+            'is_active'        => 'boolean',
+            'is_system'        => 'boolean',
             'requires_captcha' => 'boolean',
-            'allow_submissions' => 'boolean',
-            'allow_listing' => 'boolean',
+            'allow_submissions'=> 'boolean',
+            'allow_listing'    => 'boolean',
             'save_to_database' => 'boolean',
-            'webhook_enabled' => 'boolean',
+            'webhook_enabled'  => 'boolean',
         ];
     }
 
