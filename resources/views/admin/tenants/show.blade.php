@@ -1,5 +1,9 @@
 @php
-    $backups = app(\App\Http\Controllers\Admin\TenantBackupController::class)->backupList($tenant);
+    try {
+        $backups = app(\App\Http\Controllers\Admin\TenantBackupController::class)->backupList($tenant);
+    } catch (\Throwable) {
+        $backups = [];
+    }
 @endphp
 @extends('admin.layouts.app')
 @section('title', ($tenant->name ?? $tenant->id) . ' — Site Detayı')
@@ -164,7 +168,11 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Paket</label>
                     <select name="package" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                        @foreach(\App\Models\Package::allKeyed() as $key => $pkg)
+                        @php
+                            try { $allPackages = \App\Models\Package::allKeyed(); }
+                            catch (\Throwable) { $allPackages = []; }
+                        @endphp
+                        @foreach($allPackages as $key => $pkg)
                         <option value="{{ $key }}" {{ old('package', $tenant->package()) === $key ? 'selected' : '' }}>
                             {{ $pkg['label'] }} — {{ $pkg['max_users'] === null ? 'sınırsız kullanıcı' : $pkg['max_users'].' kullanıcı' }} · AI: {{ $pkg['ai_plan'] }}
                         </option>

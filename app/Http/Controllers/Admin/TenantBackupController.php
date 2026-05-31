@@ -95,8 +95,18 @@ class TenantBackupController extends Controller
      */
     public function backupList(Tenant $tenant): array
     {
-        $dir   = "backups/{$tenant->id}";
-        $files = Storage::disk('local')->files($dir);
+        $dir = "backups/{$tenant->id}";
+
+        // Yeni tenant'larda backup dizini henüz oluşturulmamış olabilir.
+        // Flysystem v3 (Laravel 12) olmayan dizinde files() → UnableToListContents fırlatır.
+        try {
+            if (! Storage::disk('local')->directoryExists($dir)) {
+                return [];
+            }
+            $files = Storage::disk('local')->files($dir);
+        } catch (\Throwable) {
+            return [];
+        }
         rsort($files); // newest first
 
         return collect($files)
