@@ -40,10 +40,27 @@
                 <textarea x-model="prompt" rows="5"
                           maxlength="1500"
                           placeholder="Örn: 3 kolonlu hizmet kartı bölümü. Her kartta ikon (URL), başlık, kısa açıklama ve 'Detay' linki olsun. Üstte ortalı ana başlık + alt başlık. Mobile'da kartlar tek sütun olmalı."
-                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
-                <p class="text-[11px] text-gray-400 mt-1">
-                    <span x-text="prompt.length"></span>/1500 — ne kadar somut yazarsanız o kadar iyi sonuç.
-                </p>
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                          :class="boosted ? 'border-emerald-400 ring-2 ring-emerald-200' : ''"></textarea>
+                <div class="flex items-center justify-between mt-1.5">
+                    <p class="text-[11px] text-gray-400">
+                        <span x-text="prompt.length"></span>/1500 — ne kadar somut yazarsanız o kadar iyi sonuç.
+                    </p>
+                    {{-- Prompt Boost butonu --}}
+                    <button type="button"
+                            @click="boostPrompt()"
+                            :disabled="boosting || loading || prompt.trim().length < 5"
+                            :title="imageBase64 ? 'Görsel + yazıyı AI ile geliştir' : 'Yazıyı AI ile geliştir'"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all
+                                   disabled:opacity-40 disabled:cursor-not-allowed"
+                            :class="boosted
+                                ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'">
+                        <i class="fas text-xs"
+                           :class="boosting ? 'fa-spinner fa-spin' : (boosted ? 'fa-check' : 'fa-bolt')"></i>
+                        <span x-text="boosting ? 'Geliştiriliyor…' : (boosted ? 'Geliştirildi!' : (imageBase64 ? 'Görselle Geliştir' : 'Prompt Boost'))"></span>
+                    </button>
+                </div>
             </div>
 
             {{-- Referans Görsel --}}
@@ -237,6 +254,8 @@ function aiSectionTemplateWizard() {
         style: '',
         language: 'Türkçe',
         loading: false,
+        boosting: false,
+        boosted: false,
         status: '',
         statusOk: false,
         preview: null,
@@ -250,6 +269,8 @@ function aiSectionTemplateWizard() {
             this.style = '';
             this.language = 'Türkçe';
             this.loading = false;
+            this.boosting = false;
+            this.boosted = false;
             this.status = '';
             this.statusOk = false;
             this.preview = null;
@@ -290,6 +311,45 @@ function aiSectionTemplateWizard() {
             this.imageMime = 'image/jpeg';
             this.imagePreview = null;
             if (this.$refs.imageInput) this.$refs.imageInput.value = '';
+        },
+
+        async boostPrompt() {
+            if (this.prompt.trim().length < 5 || this.boosting || this.loading) return;
+            this.boosting = true;
+            this.boosted = false;
+            this.status = '';
+            try {
+                const r = await fetch(@js(route('admin.ai.boost-prompt', [], false)), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: this.prompt,
+                        context: 'block',
+                        locale: this.language === 'İngilizce' ? 'en' : 'tr',
+                        image_base64: this.imageBase64 || null,
+                        image_mime: this.imageBase64 ? this.imageMime : null,
+                    }),
+                });
+                const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
+                if (data.ok && data.boosted) {
+                    this.prompt = data.boosted;
+                    this.boosted = true;
+                    setTimeout(() => { this.boosted = false; }, 3500);
+                } else {
+                    this.status = data.message || 'Prompt geliştirilemedi.';
+                    this.statusOk = false;
+                }
+            } catch (e) {
+                this.status = e.message || 'Ağ hatası.';
+                this.statusOk = false;
+            } finally {
+                this.boosting = false;
+            }
         },
 
         async generate(autoSave) {
