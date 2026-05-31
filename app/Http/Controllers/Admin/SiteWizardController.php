@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Article;
 use App\Models\Language;
 use App\Models\Page;
 use App\Models\SiteSetting;
@@ -216,6 +217,52 @@ PROMPT;
     // ─────────────────────────────────────────────────────────────────────
 
     /**
+     * POST /admin/site-wizard/generate-article
+     * Adım 3: Boş taslak yazı oluşturur (3 boşluk indent = yazı tipi).
+     * parent_id burada page_id olarak kullanılır (yazının ait olduğu sayfa).
+     */
+    public function generateArticle(Request $request): JsonResponse
+    {
+        $v = $request->validate([
+            'title'       => 'required|string|max:200',
+            'slug'        => 'nullable|string|max:100',
+            'language_id' => 'nullable|integer',
+            'sort_order'  => 'nullable|integer',
+            'parent_id'   => 'nullable|integer',  // yazının bağlı olduğu sayfa
+        ]);
+
+        $languageId = $v['language_id'] ?? null;
+        if (! $languageId) {
+            $languageId = Language::where('is_active', true)
+                ->orderBy('sort_order')
+                ->value('id');
+        }
+
+        $slug = $this->uniqueArticleSlug($v['slug'] ?: $v['title']);
+
+        $article = Article::create([
+            'title'       => $v['title'],
+            'slug'        => $slug,
+            'language_id' => $languageId,
+            'page_id'     => $v['parent_id'] ?? null,
+            'status'      => 'draft',
+            'sort_order'  => $v['sort_order'] ?? 0,
+            'body'        => '',
+            'content_json'=> null,
+        ]);
+
+        return response()->json([
+            'ok'      => true,
+            'page_id' => null,   // yazılar parent tracker'ı etkilemesin
+            'title'   => $article->title,
+            'slug'    => $article->slug,
+            'edit_url'=> route('admin.articles.edit', $article, false),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
      * POST /admin/site-wizard/complete
      * Onboarding flag'ini set eder; banner + sidebar linki kaybolur.
      */
@@ -254,6 +301,23 @@ PROMPT;
         $decoded = json_decode($json, true);
 
         return is_array($decoded) ? $decoded : null;
+    }
+
+    private function uniqueArticleSlug(string $base): string
+    {
+        $base = Str::slug($base ?: 'yazi', '-', 'tr');
+        if ($base === '') $base = 'yazi';
+
+        if (! Article::query()->where('slug', $base)->exists()) {
+            return $base;
+        }
+        for ($i = 2; $i < 100; $i++) {
+            $candidate = $base . '-' . $i;
+            if (! Article::query()->where('slug', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+        return $base . '-' . substr(uniqid(), -4);
     }
 
     private function uniqueSlug(string $base): string

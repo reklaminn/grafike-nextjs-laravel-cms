@@ -239,7 +239,8 @@
                 {{-- Format ipucu --}}
                 <div class="absolute top-2 right-2 text-[10px] text-gray-300 pointer-events-none select-none leading-4 text-right">
                     <span>her satır = sayfa</span><br>
-                    <span>2 boşluk = alt sayfa</span>
+                    <span class="text-gray-400">2 boşluk = alt sayfa</span><br>
+                    <span class="text-green-400">3 boşluk = yazı</span>
                 </div>
             </div>
 
@@ -275,6 +276,9 @@
                                 <i class="fas fa-file-alt text-indigo-400 text-xs flex-shrink-0"></i>
                             </template>
                             <span class="text-sm font-medium text-gray-800 flex-1 truncate" x-text="page.title"></span>
+                            <template x-if="page.type === 'article'">
+                                <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-green-100 text-green-700 flex-shrink-0">yazı</span>
+                            </template>
                             <span class="text-[11px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0"
                                   x-text="page.slug ? '/'+page.slug : '/'"></span>
                         </label>
@@ -373,11 +377,14 @@
 
                         {{-- Başlık --}}
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1.5 flex-wrap">
                                 <template x-if="pg.indent > 0">
                                     <span class="text-[10px] text-gray-400 font-mono">↳</span>
                                 </template>
                                 <p class="text-sm font-medium text-gray-900 truncate" x-text="pg.title"></p>
+                                <template x-if="pg.type === 'article'">
+                                    <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-green-100 text-green-700">yazı</span>
+                                </template>
                             </div>
                             <p class="text-[11px] mt-0.5"
                                :class="pg.status === 'error' ? 'text-red-600' : 'text-gray-400'"
@@ -545,10 +552,15 @@ function siteWizard() {
 
             const pages = [];
             for (const line of text.split('\n')) {
-                // Girinti seviyesi: kaç boşluk/tab var
                 const indentMatch = line.match(/^([\s\t]*)/);
-                const rawIndent   = (indentMatch?.[1] || '').replace(/\t/g, '  ').length;
-                const indent      = Math.floor(rawIndent / 2); // 2 boşluk = 1 seviye
+                const rawIndent   = (indentMatch?.[1] || '').replace(/\t/g, '   ').length;
+
+                // 3 boşluk = yazı (article), 2 boşluk = alt sayfa (page)
+                // indent seviyesi: her 2 boşluk = 1 seviye (yazılar için de aynı)
+                const isArticle = rawIndent > 0 && (rawIndent % 3 === 0 || rawIndent === 3);
+                const indent    = isArticle
+                    ? Math.floor(rawIndent / 3)
+                    : Math.floor(rawIndent / 2);
 
                 const title = line.replace(/^[\s\t]+/, '').replace(/^[-*•]\s*/, '').trim();
                 if (!title) continue;
@@ -557,6 +569,7 @@ function siteWizard() {
                 pages.push({
                     title,
                     indent,
+                    type:     isArticle ? 'article' : 'page',
                     slug:     title === 'Ana Sayfa' ? '' : toSlug(title),
                     purpose:  this.pagePurposes[titleLower] || '',
                     selected: !deselected.has(titleLower),
@@ -608,11 +621,15 @@ function siteWizard() {
                 const parentId = (pg.indent > 0) ? (parentIds[pg.indent - 1] ?? null) : null;
 
                 try {
-                    const r = await this._post(@js(route('admin.wizard.generate-page', [], false)), {
+                    const url = pg.type === 'article'
+                        ? @js(route('admin.wizard.generate-article', [], false))
+                        : @js(route('admin.wizard.generate-page', [], false));
+
+                    const r = await this._post(url, {
                         title:       pg.title,
                         slug:        pg.slug,
                         sort_order:  i,
-                        parent_id:   parentId,
+                        parent_id:   parentId,   // article için page_id olarak kullanılır
                         language_id: null,
                     });
                     const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));

@@ -275,7 +275,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/',               [SiteWizardController::class, 'index'])->name('index');
             Route::post('/save-company',  [SiteWizardController::class, 'saveCompany'])->name('save-company');
             Route::post('/suggest-pages', [SiteWizardController::class, 'suggestPages'])->name('suggest-pages');
-            Route::post('/generate-page', [SiteWizardController::class, 'generatePage'])->name('generate-page');
+            Route::post('/generate-page',    [SiteWizardController::class, 'generatePage'])->name('generate-page');
+            Route::post('/generate-article', [SiteWizardController::class, 'generateArticle'])->name('generate-article');
             Route::post('/complete',      [SiteWizardController::class, 'complete'])->name('complete');
             Route::post('/reset',         [SiteWizardController::class, 'reset'])->name('reset');
         });
