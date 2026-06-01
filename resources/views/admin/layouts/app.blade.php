@@ -38,6 +38,13 @@
             );
             $previewTenantName = $tenantForPreview?->name ?? $activeTenantId;
 
+            // Webmail butonu: tenant'ın mailcow_domain'i varsa göster
+            $webmailUrl = null;
+            $mailcowBase = \App\Models\CentralSetting::get('mailcow.url');
+            if ($mailcowBase && $tenantForPreview?->mailcowDomain()) {
+                $webmailUrl = rtrim($mailcowBase, '/');
+            }
+
             // stancl VirtualColumn: data JSON'da 'domains' key varsa Eloquent
             // ilişkisi yerine array döner → Collection metotları çalışmaz.
             $rawDomains = $tenantForPreview?->domains;
@@ -58,6 +65,7 @@
             }
         } catch (\Throwable) {
             $previewTenantName = $activeTenantId;
+            $webmailUrl = null;
         }
 
         $visitSiteUrl = $frontendBaseUrl . (str_contains($frontendBaseUrl, '?') ? '&' : '?') . http_build_query([
@@ -65,6 +73,7 @@
         ]);
     } else {
         $visitSiteUrl = route('admin.tenants.index');
+        $webmailUrl   = null;
     }
 @endphp
 
@@ -159,6 +168,15 @@
                                class="text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg font-medium flex items-center gap-1">
                                 <i class="fas fa-external-link-alt"></i>
                                 <span class="hidden sm:inline">Canlı Site</span>
+                            </a>
+                        @endif
+
+                        @if(!empty($webmailUrl))
+                            <a href="{{ $webmailUrl }}" target="_blank"
+                               title="Webmail: {{ $webmailUrl }}"
+                               class="text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg font-medium flex items-center gap-1">
+                                <i class="fas fa-envelope"></i>
+                                <span class="hidden sm:inline">Webmail</span>
                             </a>
                         @endif
                     @endif
