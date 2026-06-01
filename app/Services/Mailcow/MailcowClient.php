@@ -66,7 +66,7 @@ class MailcowClient
     public function createDomain(array $data): array
     {
         return $this->post('api/v1/add/domain', array_merge([
-            'aliases'    => 400,
+            'aliases'    => 5,
             'mailboxes'  => 10,
             'quota'      => 10240,
             'active'     => 1,

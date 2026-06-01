@@ -51,7 +51,7 @@
                    class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
             <span class="text-xs text-gray-600 group-hover:text-gray-800">
                 Mailcow'da yoksa otomatik oluştur
-                <span class="text-gray-400">(10 mailbox, 400 alias, 10GB kota)</span>
+                <span class="text-gray-400">(10 mailbox, 5 alias, 10GB kota)</span>
             </span>
         </label>
         <p class="text-xs text-gray-400 mt-1">Mailcow'da kayıtlı domain adını girin (ör. firma.com)</p>
