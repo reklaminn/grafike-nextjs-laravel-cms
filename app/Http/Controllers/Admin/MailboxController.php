@@ -226,8 +226,11 @@ class MailboxController extends Controller
 
     /**
      * Aktif tenant ve Mailcow domain'ini çöz.
-     * Agency admin → session active_tenant veya route tenant param
-     * Tenant admin → kendi tenant'ı
+     *
+     * Öncelik sırası:
+     *   1. Request body/query'deki `selected_tenant` parametresi (POST formlarında hidden field)
+     *   2. Request query'deki `tenant` parametresi (GET dropdown seçimi)
+     *   3. session('active_tenant')
      *
      * @return array{0: ?Tenant, 1: ?string}
      */
@@ -235,17 +238,24 @@ class MailboxController extends Controller
     {
         $admin = Auth::guard('admin')->user();
 
-        if ($admin?->isAgencyAdmin()) {
-            $tenantId = session('active_tenant');
-            if (! $tenantId) {
-                return [null, null];
-            }
-            $tenant = Tenant::query()->find($tenantId);
-        } else {
-            // Tenant admin — kendi tenant'ı
-            $tenantId = session('active_tenant');
-            $tenant   = $tenantId ? Tenant::query()->find($tenantId) : null;
+        // Tenant ID çözümleme: POST hidden field → GET param → session
+        $tenantId = request()->input('selected_tenant')
+            ?? request()->query('tenant')
+            ?? session('active_tenant');
+
+        if (! $tenantId) {
+            return [null, null];
         }
+
+        // Tenant admin ise sadece kendi tenant'ına erişebilir
+        if (! $admin?->isAgencyAdmin()) {
+            $ownId = session('active_tenant');
+            if ($tenantId !== $ownId) {
+                abort(403, 'Başka bir tenant\'ın mail hesaplarına erişemezsiniz.');
+            }
+        }
+
+        $tenant = Tenant::query()->find($tenantId);
 
         if (! $tenant) {
             return [null, null];

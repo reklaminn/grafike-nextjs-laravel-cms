@@ -211,6 +211,7 @@
                             <form method="POST" action="{{ route('admin.mail.aliases.destroy') }}"
                                   onsubmit="return confirm('Bu alias silinsin mi?')">
                                 @csrf
+                                <input type="hidden" name="selected_tenant" value="{{ $selectedId ?? $tenant?->id }}">
                                 <input type="hidden" name="id" value="{{ $alias['id'] ?? '' }}">
                                 <button type="submit"
                                         class="px-2 py-1 text-xs bg-red-50 text-red-600 rounded hover:bg-red-100">
@@ -239,6 +240,7 @@
         <h3 class="text-base font-semibold text-gray-800 mb-4"><i class="fas fa-plus text-blue-500 mr-2"></i>Yeni Mail Hesabı</h3>
         <form method="POST" action="{{ route('admin.mail.mailboxes.store') }}">
             @csrf
+            <input type="hidden" name="selected_tenant" value="{{ $selectedId ?? $tenant?->id }}">
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı adı *</label>
@@ -291,6 +293,7 @@
         <h3 class="text-base font-semibold text-gray-800 mb-4"><i class="fas fa-edit text-indigo-500 mr-2"></i>Hesabı Düzenle</h3>
         <form method="POST" action="{{ route('admin.mail.mailboxes.update') }}">
             @csrf
+            <input type="hidden" name="selected_tenant" value="{{ $selectedId ?? $tenant?->id }}">
             <input type="hidden" name="address" id="editAddress">
             <div class="space-y-4">
                 <div>
@@ -333,6 +336,7 @@
         <h3 class="text-base font-semibold text-gray-800 mb-1"><i class="fas fa-key text-amber-500 mr-2"></i>Şifre Sıfırla</h3>
         <p class="text-xs text-gray-400 mb-4" id="passwordModalAddress">—</p>
         <form method="POST" action="{{ route('admin.mail.mailboxes.password') }}">
+            <input type="hidden" name="selected_tenant" value="{{ $selectedId ?? $tenant?->id }}">
             @csrf
             <input type="hidden" name="address" id="passwordAddress">
             <div class="space-y-4">
@@ -366,6 +370,7 @@
         <h3 class="text-base font-semibold text-gray-800 mb-4"><i class="fas fa-random text-blue-500 mr-2"></i>Yeni Alias</h3>
         <form method="POST" action="{{ route('admin.mail.aliases.store') }}">
             @csrf
+            <input type="hidden" name="selected_tenant" value="{{ $selectedId ?? $tenant?->id }}">
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kimden (From) *</label>
@@ -398,6 +403,7 @@
 {{-- Delete Mailbox hidden form --}}
 <form id="deleteMailboxForm" method="POST" action="{{ route('admin.mail.mailboxes.destroy') }}" class="hidden">
     @csrf
+    <input type="hidden" name="selected_tenant" value="{{ $selectedId ?? $tenant?->id }}">
     <input type="hidden" name="address" id="deleteMailboxAddress">
 </form>
 
