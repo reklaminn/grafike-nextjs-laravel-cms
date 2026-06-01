@@ -83,13 +83,24 @@ class MailcowClient
     // ─── Mailbox ──────────────────────────────────────────────────────────
 
     /**
-     * Domain'e ait tüm mailbox'ları getir.
-     * Dönüş: Mailcow'un mailbox obje listesi.
+     * Domain'e ait mailbox'ları getir.
+     * Mailcow API domain filtresini güvenilir uygulamayabiliyor;
+     * PHP tarafında username'e göre de filtreliyoruz.
      */
     public function getMailboxes(string $domain): array
     {
         $result = $this->get("api/v1/get/mailbox/all/{$domain}")->json();
-        return is_array($result) ? $result : [];
+        if (! is_array($result)) {
+            return [];
+        }
+
+        // API bazen tüm domain'leri döndürüyor — client-side filtre
+        return array_values(array_filter($result, function (array $mb) use ($domain): bool {
+            // username: kullanici@domain.com formatında
+            $username = (string) ($mb['username'] ?? '');
+            return str_ends_with($username, '@' . $domain)
+                || ($mb['domain'] ?? '') === $domain;
+        }));
     }
 
     /**
@@ -149,12 +160,23 @@ class MailcowClient
     // ─── Alias ────────────────────────────────────────────────────────────
 
     /**
-     * Domain'e ait tüm alias'ları getir.
+     * Domain'e ait alias'ları getir.
+     * Mailcow API domain filtresini güvenilir uygulamayabiliyor;
+     * PHP tarafında address'e göre de filtreliyoruz.
      */
     public function getAliases(string $domain): array
     {
         $result = $this->get("api/v1/get/alias/all/{$domain}")->json();
-        return is_array($result) ? $result : [];
+        if (! is_array($result)) {
+            return [];
+        }
+
+        return array_values(array_filter($result, function (array $alias) use ($domain): bool {
+            $address = (string) ($alias['address'] ?? '');
+            return str_ends_with($address, '@' . $domain)
+                || str_ends_with($address, '.' . $domain)
+                || ($alias['domain'] ?? '') === $domain;
+        }));
     }
 
     /**
