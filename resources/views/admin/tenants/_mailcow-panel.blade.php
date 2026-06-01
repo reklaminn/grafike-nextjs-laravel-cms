@@ -44,7 +44,17 @@
                 <i class="fas fa-save mr-1"></i> Kaydet
             </button>
         </div>
-        <p class="text-xs text-gray-400 mt-1.5">Mailcow'da kayıtlı domain adını girin (ör. firma.com)</p>
+
+        {{-- Mailcow'da otomatik oluştur seçeneği --}}
+        <label class="mt-2.5 flex items-center gap-2 cursor-pointer group">
+            <input type="checkbox" name="create_in_mailcow" value="1"
+                   class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span class="text-xs text-gray-600 group-hover:text-gray-800">
+                Mailcow'da yoksa otomatik oluştur
+                <span class="text-gray-400">(10 mailbox, 400 alias, 10GB kota)</span>
+            </span>
+        </label>
+        <p class="text-xs text-gray-400 mt-1">Mailcow'da kayıtlı domain adını girin (ör. firma.com)</p>
     </form>
     @endif
 </div>

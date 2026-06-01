@@ -611,19 +611,31 @@ class TenantController extends Controller
             ? strtolower(trim($validated['mailcow_domain']))
             : null;
 
-        // Mailcow'da domain var mı kontrol et
+        // Mailcow'da domain var mı kontrol et; yoksa ve create_in_mailcow işaretliyse oluştur
         $mailcowWarning = null;
+        $mailcowCreated = false;
         if ($domain) {
             try {
                 $client     = app(\App\Services\Mailcow\MailcowClient::class);
                 $domainInfo = $client->getDomain($domain);
+                $exists     = ! empty($domainInfo) && ! (isset($domainInfo[0]['type']) && $domainInfo[0]['type'] === 'error');
 
-                // Mailcow bulamadığında boş array veya hata objesi döner
-                if (empty($domainInfo) || isset($domainInfo[0]['type']) && $domainInfo[0]['type'] === 'error') {
-                    $mailcowWarning = "'{$domain}' Mailcow'da bulunamadı. Domain önce Mailcow panelinden eklenmelidir.";
+                if (! $exists) {
+                    if ($request->boolean('create_in_mailcow')) {
+                        // Mailcow'da domain oluştur
+                        $result = $client->createDomain(['domain' => $domain]);
+                        if (isset($result[0]['type']) && $result[0]['type'] === 'error') {
+                            $msg = $result[0]['msg'] ?? 'Bilinmeyen hata';
+                            $mailcowWarning = "Domain kaydedildi ancak Mailcow'da oluşturulamadı: {$msg}";
+                        } else {
+                            $mailcowCreated = true;
+                        }
+                    } else {
+                        $mailcowWarning = "'{$domain}' Mailcow'da bulunamadı. Mailcow panelinden ekleyin veya otomatik oluştur seçeneğini kullanın.";
+                    }
                 }
-            } catch (\Throwable) {
-                $mailcowWarning = 'Mailcow API erişilemiyor — domain doğrulaması yapılamadı.';
+            } catch (\Throwable $e) {
+                $mailcowWarning = 'Mailcow API erişilemiyor: ' . $e->getMessage();
             }
         }
 
@@ -637,15 +649,16 @@ class TenantController extends Controller
             ->update(['data' => json_encode($data, JSON_THROW_ON_ERROR), 'updated_at' => now()]);
 
         if ($mailcowWarning) {
-            // Kaydedildi ama uyarı var
             return redirect()
                 ->route('admin.tenants.show', $tenant)
                 ->with('mailcow_success', "Domain kaydedildi — ancak: {$mailcowWarning}");
         }
 
-        $msg = $domain
-            ? "'{$domain}' Mailcow'da doğrulandı ve kaydedildi. ✓"
-            : 'Mailcow domain kaldırıldı.';
+        $msg = match(true) {
+            ! $domain      => 'Mailcow domain kaldırıldı.',
+            $mailcowCreated => "'{$domain}' Mailcow'da oluşturuldu ve kaydedildi. ✓",
+            default         => "'{$domain}' Mailcow'da doğrulandı ve kaydedildi. ✓",
+        };
 
         return redirect()->route('admin.tenants.show', $tenant)->with('mailcow_success', $msg);
     }
