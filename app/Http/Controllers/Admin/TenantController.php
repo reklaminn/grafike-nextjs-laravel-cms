@@ -597,6 +597,7 @@ class TenantController extends Controller
 
     /**
      * Tenant'ın Mailcow domain'ini kaydet.
+     * Kaydetmeden önce Mailcow'da domain var mı kontrol eder.
      */
     public function updateMailcowDomain(Request $request, Tenant $tenant)
     {
@@ -610,6 +611,22 @@ class TenantController extends Controller
             ? strtolower(trim($validated['mailcow_domain']))
             : null;
 
+        // Mailcow'da domain var mı kontrol et
+        $mailcowWarning = null;
+        if ($domain) {
+            try {
+                $client     = app(\App\Services\Mailcow\MailcowClient::class);
+                $domainInfo = $client->getDomain($domain);
+
+                // Mailcow bulamadığında boş array veya hata objesi döner
+                if (empty($domainInfo) || isset($domainInfo[0]['type']) && $domainInfo[0]['type'] === 'error') {
+                    $mailcowWarning = "'{$domain}' Mailcow'da bulunamadı. Domain önce Mailcow panelinden eklenmelidir.";
+                }
+            } catch (\Throwable) {
+                $mailcowWarning = 'Mailcow API erişilemiyor — domain doğrulaması yapılamadı.';
+            }
+        }
+
         $tenantId   = (string) $tenant->getTenantKey();
         $currentRaw = DB::connection('central')->table('tenants')->where('id', $tenantId)->value('data');
         $data       = is_string($currentRaw) ? (json_decode($currentRaw, true) ?: []) : (array) $currentRaw;
@@ -619,7 +636,16 @@ class TenantController extends Controller
             ->where('id', $tenantId)
             ->update(['data' => json_encode($data, JSON_THROW_ON_ERROR), 'updated_at' => now()]);
 
-        $msg = $domain ? "Mailcow domain '{$domain}' kaydedildi." : 'Mailcow domain kaldırıldı.';
+        if ($mailcowWarning) {
+            // Kaydedildi ama uyarı var
+            return redirect()
+                ->route('admin.tenants.show', $tenant)
+                ->with('mailcow_success', "Domain kaydedildi — ancak: {$mailcowWarning}");
+        }
+
+        $msg = $domain
+            ? "'{$domain}' Mailcow'da doğrulandı ve kaydedildi. ✓"
+            : 'Mailcow domain kaldırıldı.';
 
         return redirect()->route('admin.tenants.show', $tenant)->with('mailcow_success', $msg);
     }

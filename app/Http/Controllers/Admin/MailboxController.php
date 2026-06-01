@@ -43,10 +43,16 @@ class MailboxController extends Controller
 
         if ($domain) {
             try {
-                $all       = $this->mailcow->getMailboxes($domain);
-                // Sadece aktif mailbox'ları göster
-                $mailboxes = array_values(array_filter($all, fn ($mb) => (int) ($mb['active'] ?? 1) === 1));
-                $aliases   = $this->mailcow->getAliases($domain);
+                // Domain Mailcow'da var mı kontrol et
+                $domainInfo = $this->mailcow->getDomain($domain);
+                if (empty($domainInfo) || (isset($domainInfo[0]['type']) && $domainInfo[0]['type'] === 'error')) {
+                    $error = "'{$domain}' Mailcow'da bulunamadı. Önce Mailcow panelinden bu domain'i ekleyin.";
+                } else {
+                    $all       = $this->mailcow->getMailboxes($domain);
+                    // Sadece aktif mailbox'ları göster
+                    $mailboxes = array_values(array_filter($all, fn ($mb) => (int) ($mb['active'] ?? 1) === 1));
+                    $aliases   = $this->mailcow->getAliases($domain);
+                }
             } catch (Throwable $e) {
                 $error = $e->getMessage();
             }
