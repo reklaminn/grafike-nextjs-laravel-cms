@@ -196,9 +196,6 @@
                         </div>
                     </div>
                     @endif
-                        <span class="font-medium text-gray-700">Özet:</span>
-                        <span x-text="blockSummary(settingsBlock)"></span>
-                    </div>
                 </div>
 
                 <div x-show="settingsTab === 'content'" class="grid gap-3">
