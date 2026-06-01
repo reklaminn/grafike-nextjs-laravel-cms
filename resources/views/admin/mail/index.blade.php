@@ -4,14 +4,35 @@
 
 @section('content')
 
+{{-- ── Agency Admin: Tenant seçici ── --}}
+@if($isAgency)
+<div class="mb-5 flex items-center gap-3">
+    <i class="fas fa-building text-gray-400"></i>
+    <select onchange="window.location.href='{{ route('admin.mail.index') }}?tenant='+this.value"
+            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 min-w-[240px]">
+        <option value="">— Site seçin —</option>
+        @foreach($tenantList as $t)
+            <option value="{{ $t['id'] }}" {{ $selectedId === $t['id'] ? 'selected' : '' }}>
+                {{ $t['name'] }} ({{ $t['domain'] }})
+            </option>
+        @endforeach
+    </select>
+    @if(empty($tenantList))
+        <span class="text-xs text-amber-600"><i class="fas fa-exclamation-triangle mr-1"></i>Mailcow domain tanımlı site yok.</span>
+    @endif
+</div>
+@endif
+
 {{-- Tenant seçilmemişse uyarı --}}
 @if(!$domain)
 <div class="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
     <i class="fas fa-envelope-open-text text-4xl text-amber-400 mb-3"></i>
-    <p class="text-sm font-medium text-amber-800 mb-1">Mailcow domain tanımlanmamış</p>
+    <p class="text-sm font-medium text-amber-800 mb-1">
+        @if($isAgency) Yukarıdan bir site seçin @else Mailcow domain tanımlanmamış @endif
+    </p>
     <p class="text-xs text-amber-600">
-        @if(auth('admin')->user()?->isAgencyAdmin())
-            Site detayından "Mailcow Domain" alanını doldurun veya sol üstten bir site seçin.
+        @if($isAgency)
+            Sadece Mailcow domain'i tanımlı siteler listelenir. Site Detayı → Mailcow Domain bölümünden ekleyin.
         @else
             Yöneticinizle iletişime geçin.
         @endif

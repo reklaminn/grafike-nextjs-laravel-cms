@@ -24,24 +24,55 @@ class MailboxController extends Controller
 
     // ─── Index ────────────────────────────────────────────────────────────
 
-    public function index(): \Illuminate\View\View
+    public function index(Request $request): \Illuminate\View\View
     {
-        [$tenant, $domain] = $this->resolveTenantAndDomain();
+        $admin        = Auth::guard('admin')->user();
+        $isAgency     = $admin?->isAgencyAdmin();
 
+        // Agency admin: URL ?tenant= param ile seçim; yoksa session'dan
+        if ($isAgency && $request->filled('tenant')) {
+            $selectedTenant = Tenant::query()->find($request->input('tenant'));
+        } else {
+            [$selectedTenant] = $this->resolveTenantAndDomain();
+        }
+
+        $domain    = $selectedTenant?->mailcowDomain();
         $mailboxes = [];
         $aliases   = [];
         $error     = null;
 
         if ($domain) {
             try {
-                $mailboxes = $this->mailcow->getMailboxes($domain);
+                $all       = $this->mailcow->getMailboxes($domain);
+                // Sadece aktif mailbox'ları göster
+                $mailboxes = array_values(array_filter($all, fn ($mb) => (int) ($mb['active'] ?? 1) === 1));
                 $aliases   = $this->mailcow->getAliases($domain);
             } catch (Throwable $e) {
                 $error = $e->getMessage();
             }
         }
 
-        return view('admin.mail.index', compact('tenant', 'domain', 'mailboxes', 'aliases', 'error'));
+        // Agency admin için mailcow_domain tanımlı tüm tenant'lar
+        $tenantList = [];
+        if ($isAgency) {
+            $tenantList = Tenant::query()
+                ->get()
+                ->filter(fn ($t) => filled($t->mailcowDomain()))
+                ->map(fn ($t) => ['id' => $t->id, 'name' => $t->name ?? $t->id, 'domain' => $t->mailcowDomain()])
+                ->values()
+                ->all();
+        }
+
+        return view('admin.mail.index', [
+            'tenant'      => $selectedTenant,
+            'domain'      => $domain,
+            'mailboxes'   => $mailboxes,
+            'aliases'     => $aliases,
+            'error'       => $error,
+            'isAgency'    => $isAgency,
+            'tenantList'  => $tenantList,
+            'selectedId'  => $selectedTenant?->id,
+        ]);
     }
 
     // ─── Mailbox CRUD ─────────────────────────────────────────────────────
