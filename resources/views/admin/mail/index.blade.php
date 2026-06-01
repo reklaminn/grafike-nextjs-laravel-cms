@@ -246,7 +246,7 @@
                         <input type="text" name="local_part" required
                                placeholder="kullanici"
                                class="flex-1 px-3 py-2 text-sm border-0 focus:outline-none">
-                        <span class="px-3 py-2 bg-gray-50 text-gray-500 text-sm border-l border-gray-300">@{{ $domain }}</span>
+                        <span class="px-3 py-2 bg-gray-50 text-gray-500 text-sm border-l border-gray-300">{{ $domain }}</span>
                     </div>
                 </div>
                 <div>
@@ -370,14 +370,14 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kimden (From) *</label>
                     <input type="email" name="address" required
-                           placeholder="info@{{ $domain }}"
+                           placeholder="info@{!! $domain !!}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-400 mt-1">Bu adrese gelen mailler yönlendirilir</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kime (To) *</label>
                     <input type="text" name="goto" required
-                           placeholder="gercek@{{ $domain }}"
+                           placeholder="gercek@{!! $domain !!}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-400 mt-1">Birden fazla adres için virgülle ayırın</p>
                 </div>
