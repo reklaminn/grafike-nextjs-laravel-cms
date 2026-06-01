@@ -1,69 +1,131 @@
-# Estetik Dermal — Tenant Go-Live Runbook
+# Estetik Dermal — Tenant Go-Live Runbook (v2, baştan)
 
-Branch: `deploy/estetik-dermal-golive` · Tenant: `estetik_dermal` · DB: `tenant_estetik_dermal`
+**Branch:** `deploy/estetik-dermal-golive` · **Tenant:** `estetik_dermal` · **Tenant DB:** `tenant_estetik_dermal`
+**Canlı sonuç:** kök URL = **Tema 2** (Clinical Luxury), `/klasik/...` = **Tema 1** (turuncu modern). İkisi yan yana.
 
-Bu paket, Estetik Dermal sitesini **CMS-native** (serbest-HTML `content-block` + ortak `header`/`footer` blokları) olarak tenant'a kurar. Tüm seeder'lar **idempotent** (`updateOrCreate`) — tekrar çalıştırılabilir, mevcut veriyi bozmaz.
+---
 
-## İçindekiler (database/seeders/)
-| Dosya | Nereye yazar | Ne yapar |
+## 0. Mimari — önce bunu oku (yanlış anlaşılmayı önler)
+
+Bu site **self-contained content-block** mimarisiyle kuruluyor. Sebebi: frontend (`apps/frontend/app/[locale]/layout.tsx`) **header/footer bloklarını `header_variant`'tan RENDER ETMİYOR** ve CSS'i yalnızca `theme.assets.css` `<link>`'lerinden yüklüyor. Bizim CSS'imiz tema asset'inde değil → o yüzden **her sayfa kendi içinde tam**:
+
+```
+content.html = <link fonts> + <style>tokens+base/v2 css</style> + <header> + <main gövde> + <footer>
+```
+
+Bu HTML, content-block şablonunun `html_template = {{{html}}}` alanı üzerinden **ham** basılır (`basic-html-renderer.ts` → `section.html_override || section.html_template`).
+
+### Admin panelinde göreceğin "tuhaflıklar" NORMAL — hata değil:
+| Gördüğün | Açıklama |
+|---|---|
+| Sayfada **tek blok** (content-block), HEADER/FOOTER bölgeleri **boş** | Kasıtlı. Header/footer o tek bloğun HTML'ine gömülü; ayrı bölge render edilmiyor. |
+| "İçerik / Üretilen HTML Kodu" → `<p><br></p>...` | Admin'in genel zengin-metin editörü `content.html` alanını okumaz. **Yok say.** |
+| Gerçek HTML yalnızca **"Ham JSON"**'da görünür | Doğru yer orası. `content.html` = sayfanın tamamı. |
+| **Render Önizleme** boş | Admin önizlemesi `{{{html}}}`'i simüle etmez. **Gerçeği görmek için tenant URL'sini aç**, admin önizlemesini değil. |
+
+> Özet: Tasarımı doğrulamak için **her zaman canlı tenant URL'sini** ziyaret et (`/tr`, `/tr/klasik`), admin'in iç önizlemesine bakma.
+
+---
+
+## 1. Seeder envanteri (`database/seeders/`)
+
+| Dosya | DB | Ne yapar |
 |---|---|---|
-| `EstetikDermalThemeSeeder.php` | **central** | 6 tema (ana + 5 marka), `tenant_id=estetik_dermal` |
-| `EstetikDermalSectionTemplatesSeeder.php` | **central** | 12 katalog bloğu (mustache) |
-| `EstetikDermalChromeSeeder.php` | **central** | `header` + `footer` (ortak chrome, base.css inline) + `content-block` (serbest HTML) |
-| `EstetikDermalTenantSeeder.php` | **TENANT** | 12 sayfa (gövde = serbest HTML), header/footer menü, site ayarları |
+| `EstetikDermalThemeSeeder.php` | **central** | Tema 1 + 5 marka teması (`estetikdermal`), `tenant_id=estetik_dermal` |
+| `EstetikDermalSectionTemplatesSeeder.php` | **central** | Tema 1 katalog blokları (mustache) — opsiyonel ama zararsız |
+| `EstetikDermalChromeSeeder.php` | **central** | Tema 1 `content-block` (`free-html`, `{{{html}}}`) + header/footer şablonları |
+| `EstetikDermalV2ThemeSeeder.php` | **central** | Tema 2 teması (`estetikdermal-v2`) |
+| `EstetikDermalV2ChromeSeeder.php` | **central** | Tema 2 `content-block` (`v2-free-html`, `{{{html}}}`) + header/footer şablonları |
+| `EstetikDermalV2TenantSeeder.php` | **TENANT** | Tema 2 sayfaları — **kök slug** (`home`, `hakkimizda`, `marka/skintech`...) |
+| `EstetikDermalKlasikTenantSeeder.php` | **TENANT** | Tema 1 sayfaları — **`klasik/` önekli** (`klasik`, `klasik/hakkimizda`...) + site ayarları |
 
-## Ön koşullar
-1. `estetik_dermal` tenant'ı mevcut olmalı (yoksa admin / Site Wizard ile oluştur, domain `estetikdermal.com` ekle).
-2. Tenant DB migrate edilmiş olmalı: `php artisan tenants:migrate --tenants=estetik_dermal`
-3. Central'da `languages` tablosunda `tr` dili olmalı (seeder `code='tr'` arar, yoksa ilk dili kullanır).
+İki tenant seeder **farklı slug** kullandığı için çakışmaz; ikisi de aynı tenant'ta canlı kalır.
+Tüm seeder'lar **idempotent** (`updateOrCreate`) → tekrar çalıştırmak güvenli.
 
-## Deploy adımları (VPS)
+---
+
+## 2. Ön koşullar (bir kez)
+
+1. `estetik_dermal` tenant'ı mevcut (yoksa admin → Site Wizard, domain ekle).
+2. Tenant DB migrate edilmiş: `docker exec grafike_cms_app1 php artisan tenants:migrate --tenants=estetik_dermal`
+3. Central'da `languages` tablosunda `tr` var (yoksa seeder ilk dili kullanır).
+
+> **Container adları:** app replikaları `grafike_cms_app1/2/3`, frontend `grafike_cms_frontend`.
+> **Uygulama image'a "baked"** (volume-mount değil) → seeder dosyalarını çalıştırmadan önce `docker cp` ile container'a kopyalamak **şart**. `db:seed` derlenmiş asset gerektirmez, kopyala-çalıştır yeterli (rebuild gerekmez).
+
+---
+
+## 3. Deploy adımları (VPS) — kopyala-yapıştır
+
 ```bash
-# 1) Branch'i çek + deploy
-cd /opt/graficms   # proje kökü (kendi yolunuza göre)
+# ── 0) Host'ta güncel dosyalar
+cd /opt/graficms
 git fetch && git checkout deploy/estetik-dermal-golive && git pull
-/opt/graficms/deploy-vps.sh      # composer install + migrate + frontend build (her zamanki akış)
 
-# 2) CENTRAL seed (tema + bloklar + chrome) — central DB
-php artisan db:seed --class=EstetikDermalThemeSeeder --force
-php artisan db:seed --class=EstetikDermalSectionTemplatesSeeder --force
-php artisan db:seed --class=EstetikDermalChromeSeeder --force
+# ── 1) Tüm seeder dosyalarını app container'a kopyala (image baked → şart)
+for f in EstetikDermalThemeSeeder EstetikDermalSectionTemplatesSeeder EstetikDermalChromeSeeder \
+         EstetikDermalV2ThemeSeeder EstetikDermalV2ChromeSeeder \
+         EstetikDermalV2TenantSeeder EstetikDermalKlasikTenantSeeder; do
+  docker cp database/seeders/$f.php grafike_cms_app1:/var/www/html/database/seeders/
+done
 
-# 3) TENANT seed (sayfalar + menü + ayarlar) — TENANT context'inde!
-#    (projenizin tenant-seed komutunu kullanın; stancl tipik kullanımları:)
-php artisan tenants:run "db:seed --class=EstetikDermalTenantSeeder --force" --tenants=estetik_dermal
-#    Alternatif: tinker ile
-#      $t = App\Models\Tenant::find('estetik_dermal');
-#      $t->run(fn() => Artisan::call('db:seed', ['--class'=>'EstetikDermalTenantSeeder','--force'=>true]));
+# ── 2) CENTRAL seed (tema + bloklar + chrome) — central DB
+docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalThemeSeeder --force
+docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalSectionTemplatesSeeder --force
+docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalChromeSeeder --force
+docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2ThemeSeeder --force
+docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2ChromeSeeder --force
+
+# ── 3) TENANT seed (tenant context) — iki tema tek komutta
+docker exec grafike_cms_app1 php artisan tinker --execute="App\Models\Tenant::find('estetik_dermal')->run(function(){ Artisan::call('db:seed',['--class'=>'EstetikDermalV2TenantSeeder','--force'=>true]); Artisan::call('db:seed',['--class'=>'EstetikDermalKlasikTenantSeeder','--force'=>true]); echo PHP_EOL.'TENANT SEED OK'.PHP_EOL; });"
+
+# ── 4) Frontend cache temizle
+docker restart grafike_cms_frontend
 ```
 
-## Görseller & logo (önemli)
-Sayfa gövdeleri görselleri **`assets/img/...jpg`** göreli yoluyla çağırır (image-ready: dosya yoksa krem fallback, bozuk ikon yok).
-1. **Logo:** `dermallogo.png`'yi frontend'in servis ettiği yere koy (örn. `apps/frontend/public/assets/img/dermallogo.png`) **veya** medyaya yükle; sonra admin'de **Ayarlar → `site.logo`** değerini bu URL yap (header `{{logo_url}}` kullanır).
-2. **Ürün/marka görselleri:** `apps/frontend/public/assets/img/` altına yorumlardaki adlarla koy (`hero-rrs.jpg`, `product-<slug>.jpg`, `brand-panel-<slug>.jpg`, `{marka}-hero.jpg`...). Geldikçe otomatik görünür.
+> Komutları **3 app replikasının hepsine** uygulamana gerek yok — hepsi **aynı DB'ye** yazar; tek replikadan (`app1`) seed yeterli. `docker cp`'yi de yalnız `app1`'e yaptık çünkü dosyalar DB'ye değil, sadece o an çalıştıran process'e lazım.
+>
+> **Yeni seeder sınıfı bulunamazsa** ("Class not found"): `docker exec grafike_cms_app1 composer dump-autoload -o` çalıştırıp 2-3. adımı tekrarla. (Laravel 12 `Database\Seeders` PSR-4 olduğu için genelde gerekmez.)
 
-## Doğrulama (staging/preview'da ÖNCE)
-- [ ] Tenant domain'inde site açılıyor, header/footer (Estetik Dermal + yeşil WhatsApp) render ediliyor.
-  - Header/footer **`theme.header_variant=estetikdermal-header`** / **`-footer`** ayarlarıyla çözülür — gelmiyorsa frontend'in header/footer çözümleme mantığını + bu ayar anahtarlarını kontrol et.
-- [ ] 12 sayfa geziliyor (home, hakkimizda, urunler, urun-detay, markalar, etkinlikler, iletisim, marka/*), slider çalışıyor (custom_js), kategori çipleri, premium görünüm.
-- [ ] Logo görünüyor (`site.logo` set edildi mi).
-- [ ] Menü linkleri doğru.
-- [ ] Ayar anahtarları (`site.logo`, `contact.*`, `social.*`) frontend'in beklediğiyle uyuşuyor — uyuşmazsa `EstetikDermalTenantSeeder` içindeki anahtarları frontend'e göre düzelt.
+---
 
-## TEMA 2 (Clinical Luxury) — alternatif tasarım
-İkinci bir tema (`estetikdermal-v2`, "Tema 2 — Clinical Luxury": Fraunces serif + turuncu, premium) ayrı seeder'larla eklenir. Her iki tema CMS'te **yan yana** kayıtlı olur (admin görür/seçer).
-```bash
-# central — Tema 2 + chrome
-php artisan db:seed --class=EstetikDermalV2ThemeSeeder --force
-php artisan db:seed --class=EstetikDermalV2ChromeSeeder --force
-# tenant — Tema 2 sayfaları (TENANT context)
-php artisan tenants:run "db:seed --class=EstetikDermalV2TenantSeeder --force" --tenants=estetik_dermal
-```
-> **DİKKAT:** V2TenantSeeder, Tema 1 ile **AYNI slug'ları** kullanır → çalıştırınca canlı sayfaları Tema 2 ile **değiştirir**. İki tasarımı aynı anda canlı tutmak için Tema 2'yi **ayrı bir staging tenant'ta** seed edin (örn. `estetik_dermal_v2`), karşılaştırıp karar verin.
-> **Animasyon notu:** v2 scroll-reveal/sayaç animasyonları JS ister; CMS bloklarındaki `<script>` Next.js'te çalışmayabilir. Bu yüzden v2 chrome'una `.reveal{opacity:1!important}` override kondu → içerik JS olmadan da görünür (animasyon olmasa bile). İstenirse v2.js sayfa `custom_js`'ine eklenip animasyonlar aktive edilebilir.
+## 4. Doğrulama (canlı URL'de — admin önizlemesinde DEĞİL)
 
-## Notlar
-- Seeder'lar idempotent: tekrar çalıştırmak güvenli.
-- Marka sayfaları ortak ED header/footer kullanır; marka kimliği gövde + `custom_css` (`:root` palet override) ile gelir (header/footer'ı da o sayfada marka rengine boyar).
-- Lokal sqlite kopyasında uçtan uca test edildi: 12 sayfa + chrome + menü + ayar hatasız.
-- Geri alma: sayfaları silmek için tenant DB'de ilgili slug'lı `pages` kayıtlarını kaldır (idempotent olduğu için yeniden seed eski hale getirir).
+Tenant kök adresi (örn. `https://estetikdermal.com/tr` ya da `https://cms.grafcore.com/tr?tenant=estetik_dermal`). Her kontrolde **Ctrl+Shift+R** (hard refresh):
+
+- [ ] **Kök = Tema 2:** `/tr` → Clinical Luxury (Fraunces serif başlıklar, turuncu aksan, yeşil WhatsApp ikonu, header+footer var, layout düzgün).
+- [ ] **Tema 2 sayfaları:** `/tr/hakkimizda`, `/tr/urunler`, `/tr/markalar`, `/tr/etkinlikler`, `/tr/iletisim`, `/tr/marka/{skintech,seffiline,aespio,woorhi,mi-medical,neogenesis}` — her marka kendi paletinde.
+- [ ] **Klasik = Tema 1:** `/tr/klasik` → turuncu modern anasayfa (header+footer, hero, stat'lar).
+- [ ] **Tema 1 sayfaları:** `/tr/klasik/hakkimizda`, `/tr/klasik/urunler`, `/tr/klasik/markalar`, `/tr/klasik/marka/skintech` ...
+- [ ] WhatsApp ikonu **küçük** (dev yeşil kare değil), header/footer **stilli** geliyor.
+- [ ] Konsolda kırık görsel/404 sadece henüz yüklenmemiş `assets/img/*.jpg` olmalı (krem fallback'li, kırık ikon yok).
+
+---
+
+## 5. Görseller & logo (sonradan eklenir)
+
+Sayfa gövdeleri görselleri **`/assets/img/...`** mutlak yoluyla çağırır → bu dosyaları frontend'in servis ettiği `apps/frontend/public/assets/img/` altına koy:
+
+1. **Logo:** `dermallogo.png` (yoksa `logo-full.svg` fallback'i devrede). `apps/frontend/public/assets/img/dermallogo.png`.
+2. **Ürün/marka görselleri:** `hero-*.jpg`, `product-<slug>.jpg`, `brand-panel-<slug>.jpg`, `{marka}-hero.jpg` — geldikçe otomatik görünür.
+
+> Image-ready desen: dosya yokken krem zemin fallback gösterilir, bozuk-ikon çıkmaz.
+
+---
+
+## 6. Bakım / geri alma
+
+- **Yeniden seed:** herhangi bir seeder'ı tekrar çalıştır — idempotent, mevcut kaydı günceller.
+- **Tasarımı güncelleme:** statik kaynağı (`/Volumes/Dev/estetikdermal/site/`) düzenle → generator'ı çalıştır:
+  - Tema 2: `python3 /tmp/gen_cms_v2.py`
+  - Tema 1 (klasik): `python3 /tmp/gen_cms_klasik.py`
+  - Üretilen dosyayı `seeder/`'dan repoya kopyala, commit/push, VPS'te 3. adımı tekrarla.
+- **Bir temayı kaldırma:** ilgili tenant seeder'ın slug'larına sahip `pages` kayıtlarını tenant DB'den sil. Örn. yalnız Tema 1'i kaldır: `slug LIKE 'klasik%'` kayıtlarını sil.
+- **Kök tasarımı takas etme (Tema 1 ↔ Tema 2):** slug stratejisini ters çevirmek gerekir (generator'larda prefix'i swap'le, yeniden üret). Sor, yapayım.
+
+---
+
+## 7. Bilinen sınırlar
+
+- CMS bloklarındaki `<script>` Next.js'te çalışmaz → v2/v1 scroll-reveal & slider **oto-animasyonları pasif**. İçerik JS'siz de görünür (`.reveal{opacity:1!important}` override + slider 1. slaytta sabit). İstenirse animasyon, sayfa `custom_js`'ine `v2.js`/slider JS eklenerek aktive edilebilir.
+- Admin panelinden bu sayfaları **blok-blok düzenlemek pratik değil** (tek opak HTML bloğu). Düzenleme = statik kaynağı güncelle + yeniden seed (bkz. §6).
