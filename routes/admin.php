@@ -43,6 +43,7 @@ use App\Http\Controllers\Admin\CurrencyController;
 use App\Http\Controllers\Admin\SiteWizardController;
 use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\TranslationController;
+use App\Http\Controllers\Admin\MailboxController;
 use Illuminate\Support\Facades\Route;
 
 // Admin Auth Routes
@@ -74,6 +75,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // ── Tenant Vertical Modules (Tours, Commerce, …) ─────────────────────
         Route::put('tenants/{tenant}/modules', [TenantController::class, 'updateModules'])->name('tenants.modules.update');
+        Route::put('tenants/{tenant}/mailcow-domain', [TenantController::class, 'updateMailcowDomain'])->name('tenants.mailcow-domain.update');
 
         // ── Tenant Iyzico Settings (BYOK) ─────────────────────────────────────
         Route::put('tenants/{tenant}/iyzico-settings', [TenantController::class, 'updateIyzicoSettings'])->name('tenants.iyzico-settings.update');
@@ -266,6 +268,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Sistem geneli AI Anahtarları — sadece agency admin (superadmin) erişebilir
         Route::get('settings/ai-keys',  [SystemSettingsController::class, 'aiKeys'])->name('settings.ai-keys');
         Route::post('settings/ai-keys', [SystemSettingsController::class, 'updateAiKeys'])->name('settings.ai-keys.update');
+
+        // Mail (Mailcow) ayarları — agency admin
+        Route::get ('settings/mailcow',       [SystemSettingsController::class, 'mailcow'])->name('settings.mailcow');
+        Route::post('settings/mailcow',       [SystemSettingsController::class, 'updateMailcow'])->name('settings.mailcow.update');
+        Route::post('settings/mailcow/test',  [SystemSettingsController::class, 'testMailcow'])->name('settings.mailcow.test');
+
+        // ── Mail Hesapları (Mailcow entegrasyonu) ─────────────────────────────
+        Route::prefix('mail')->name('mail.')->group(function () {
+            Route::get('/', [MailboxController::class, 'index'])->name('index');
+
+            // Mailbox CRUD
+            Route::post('mailboxes',          [MailboxController::class, 'storeMailbox'])->name('mailboxes.store');
+            Route::post('mailboxes/update',   [MailboxController::class, 'updateMailbox'])->name('mailboxes.update');
+            Route::post('mailboxes/destroy',  [MailboxController::class, 'destroyMailbox'])->name('mailboxes.destroy');
+            Route::post('mailboxes/password', [MailboxController::class, 'resetPassword'])->name('mailboxes.password');
+
+            // Alias CRUD
+            Route::post('aliases',         [MailboxController::class, 'storeAlias'])->name('aliases.store');
+            Route::post('aliases/destroy', [MailboxController::class, 'destroyAlias'])->name('aliases.destroy');
+        });
 
         // Mail template test
         Route::post('settings/test-mail', [SettingsController::class, 'sendTestMail'])->name('settings.test-mail');

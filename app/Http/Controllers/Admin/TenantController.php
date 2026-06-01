@@ -596,6 +596,35 @@ class TenantController extends Controller
     }
 
     /**
+     * Tenant'ın Mailcow domain'ini kaydet.
+     */
+    public function updateMailcowDomain(Request $request, Tenant $tenant)
+    {
+        $this->authorizeAgencyAdmin();
+
+        $validated = $request->validate([
+            'mailcow_domain' => 'nullable|string|max:253|regex:/^[a-zA-Z0-9._-]+$/',
+        ]);
+
+        $domain = filled($validated['mailcow_domain'])
+            ? strtolower(trim($validated['mailcow_domain']))
+            : null;
+
+        $tenantId   = (string) $tenant->getTenantKey();
+        $currentRaw = DB::connection('central')->table('tenants')->where('id', $tenantId)->value('data');
+        $data       = is_string($currentRaw) ? (json_decode($currentRaw, true) ?: []) : (array) $currentRaw;
+        $data['mailcow_domain'] = $domain;
+
+        DB::connection('central')->table('tenants')
+            ->where('id', $tenantId)
+            ->update(['data' => json_encode($data, JSON_THROW_ON_ERROR), 'updated_at' => now()]);
+
+        $msg = $domain ? "Mailcow domain '{$domain}' kaydedildi." : 'Mailcow domain kaldırıldı.';
+
+        return redirect()->route('admin.tenants.show', $tenant)->with('mailcow_success', $msg);
+    }
+
+    /**
      * Smoke-test a tenant's AI key by sending a tiny prompt. Does not
      * mutate state. Returns JSON with status + token usage.
      */

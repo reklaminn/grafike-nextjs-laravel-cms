@@ -227,6 +227,9 @@
             'usage'   => $aiUsage,
         ])
 
+        {{-- ─── Mailcow Domain ─────────────────────────────────────────────── --}}
+        @include('admin.tenants._mailcow-panel', ['tenant' => $tenant, 'canManage' => $canManageTenants])
+
         {{-- ─── AI Ayarları (BYOK) ─────────────────────────────────────────── --}}
         @include('admin.tenants._ai-settings-panel', [
             'tenant'    => $tenant,

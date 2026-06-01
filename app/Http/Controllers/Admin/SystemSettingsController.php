@@ -90,6 +90,59 @@ class SystemSettingsController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────────
 
+    /** GET /admin/settings/mailcow */
+    public function mailcow(): View
+    {
+        $this->authorizeAgencyAdmin();
+
+        return view('admin.settings.mailcow', [
+            'mailcowUrl'    => CentralSetting::get('mailcow.url') ?? '',
+            'hasApiKey'     => filled(CentralSetting::get('mailcow.api_key')),
+        ]);
+    }
+
+    /** POST /admin/settings/mailcow */
+    public function updateMailcow(Request $request): RedirectResponse
+    {
+        $this->authorizeAgencyAdmin();
+
+        $validated = $request->validate([
+            'mailcow_url'     => 'nullable|url|max:512',
+            'mailcow_api_key' => 'nullable|string|max:512',
+            'clear_api_key'   => 'nullable|boolean',
+        ]);
+
+        if (! empty($validated['mailcow_url'])) {
+            CentralSetting::set('mailcow.url', rtrim($validated['mailcow_url'], '/'), 'string', 'mailcow');
+        }
+
+        if (! empty($validated['clear_api_key'])) {
+            CentralSetting::remove('mailcow.api_key');
+        } elseif (! empty($validated['mailcow_api_key'])) {
+            CentralSetting::set('mailcow.api_key', trim($validated['mailcow_api_key']), 'encrypted', 'mailcow');
+        }
+
+        return redirect()
+            ->route('admin.settings.mailcow')
+            ->with('success', 'Mailcow ayarları güncellendi.');
+    }
+
+    /** POST /admin/settings/mailcow/test  — AJAX */
+    public function testMailcow(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $this->authorizeAgencyAdmin();
+
+        try {
+            $client = app(\App\Services\Mailcow\MailcowClient::class);
+            $ok     = $client->ping();
+            return response()->json(['ok' => $ok, 'message' => $ok ? 'Bağlantı başarılı.' : 'Bağlantı kurulamadı.']);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
     private function authorizeAgencyAdmin(): void
     {
         abort_unless(Auth::guard('admin')->user()?->isAgencyAdmin(), 403);

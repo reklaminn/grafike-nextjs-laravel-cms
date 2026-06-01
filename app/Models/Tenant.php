@@ -383,4 +383,27 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
         $this->setEnabledModules($modules);
     }
+
+    // ─── Mailcow entegrasyonu ─────────────────────────────────────────────────
+    //
+    // Her tenant'ın Mailcow'daki mail domain'i data JSON'ına
+    // `mailcow_domain` anahtarı altında saklanır.
+
+    /**
+     * Tenant'ın Mailcow domain'ini döndür (ör. "firma.com").
+     * Domain tanımlanmamışsa null döner.
+     */
+    public function mailcowDomain(): ?string
+    {
+        $val = $this->getAttribute('mailcow_domain');
+        return filled($val) ? (string) $val : null;
+    }
+
+    /**
+     * Tenant'ın Mailcow domain'ini kaydet.
+     */
+    public function setMailcowDomain(?string $domain): void
+    {
+        $this->setAttribute('mailcow_domain', $domain ? strtolower(trim($domain)) : null);
+    }
 }
