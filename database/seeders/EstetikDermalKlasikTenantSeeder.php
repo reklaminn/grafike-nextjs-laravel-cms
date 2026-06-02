@@ -33,6 +33,8 @@ class EstetikDermalKlasikTenantSeeder extends Seeder
         if(! $byvar(SectionTemplate::where('theme_id',$theme?->id)->where('variation','like','%-s-%')->value('variation') ?? '__none')){
             $this->command?->warn('Alan şablonları yok — önce FieldChromeSeeder.'); return;
         }
+        // Admin editörü tenant temasına göre şablon yükler (PageController) → tenant'ı bu temaya sabitle
+        $tnt=\App\Models\Tenant::find('estetik_dermal'); if($tnt && $theme){ $tnt->theme_id=$theme->id; $tnt->save(); }
         $lang=Language::query()->where('code','tr')->first() ?? Language::query()->first();
         $langId=$lang?->id;
         Page::where('slug','like','klasik%')->delete(); Page::where('slug','like','marka/%')->delete(); Page::where('slug','marka-neogenesis')->delete(); // v2 kaldırıldı: klasik kök slug'ları v2'yi ezer, v2-özel neogenesis silinir
