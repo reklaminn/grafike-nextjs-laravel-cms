@@ -299,6 +299,14 @@
                                                                     class="rounded px-1 py-0.5 text-[11px] text-indigo-500 hover:bg-indigo-50">
                                                                 <i class="fas fa-cog"></i>
                                                             </button>
+                                                            <template x-if="block.section_template_id">
+                                                                <a :href="@js(rtrim(route('admin.section-templates.edit', '_id_'), '_id_')) + block.section_template_id"
+                                                                   target="_blank"
+                                                                   title="Block şablonunu düzenle"
+                                                                   class="rounded px-1 py-0.5 text-[11px] text-purple-400 hover:bg-purple-50">
+                                                                    <i class="fas fa-pen-to-square"></i>
+                                                                </a>
+                                                            </template>
                                                             <button type="button"
                                                                     @click="duplicateBlock(region, rowIndex, columnIndex, blockIndex)"
                                                                     title="Çoğalt"
