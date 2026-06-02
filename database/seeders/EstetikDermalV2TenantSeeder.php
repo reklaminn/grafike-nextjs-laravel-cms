@@ -10,19 +10,21 @@ use Illuminate\Database\Seeder;
 
 /**
  * Estetik Dermal — TEMA 2 (Clinical Luxury) tenant sayfaları. TENANT CONTEXT'inde çalıştır.
- * version-2 REGION formatı: header/body/footer ayrı bloklar, HTML html_override'da (Quill ezmez).
- * Kök slug (home, hakkimizda, marka-skintech...). Önce: V2ThemeSeeder + V2ChromeSeeder (central).
+ * version-2 REGION: header + footer ayrı bloklar; body bölüm-bölüm AYRI bloklara bölünür.
+ * HTML html_override'da (Quill ezmez, Kod sekmesinden düzenlenir). Kök slug (home, marka-skintech...).
+ * Önce: V2ThemeSeeder + V2ChromeSeeder (central).
  */
 class EstetikDermalV2TenantSeeder extends Seeder
 {
-    /** region row->col->block (html_override ile ham HTML; isim section_template'ten gelir) */
-    private function reg(string $r, string $type, string $variation, int $tid, string $override): array
+    private function blk(string $id,string $type,string $variation,int $tid,string $override,int $sort): array
+    {
+        return ['id'=>$id,'type'=>$type,'variation'=>$variation,'render_mode'=>'html',
+            'section_template_id'=>$tid,'is_active'=>true,'sort_order'=>$sort,'content'=>[],'html_override'=>$override];
+    }
+    private function regRow(string $r, array $blocks): array
     {
         return ['id'=>'row_'.$r.'_1','type'=>'row','is_active'=>true,
-            'columns'=>[['id'=>'col_'.$r.'_1','width'=>12,'is_active'=>true,
-                'blocks'=>[['id'=>'b_'.$r,'type'=>$type,'variation'=>$variation,
-                    'render_mode'=>'html','section_template_id'=>$tid,'is_active'=>true,'sort_order'=>1,
-                    'content'=>[],'html_override'=>$override]]]]];
+            'columns'=>[['id'=>'col_'.$r.'_1','width'=>12,'is_active'=>true,'blocks'=>$blocks]]];
     }
 
     public function run(): void
@@ -331,8 +333,9 @@ EDV2HDRX;
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
   </footer>
 EDV2FTRX;
-        $b0 = <<<'EDV2B0'
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- ===================== HERO ===================== -->
+        $p0s0 = <<<'EDV2P0S0'
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- HERO -->
+
     <section class="hero">
       <div class="hero__grid" aria-hidden="true"></div>
       <div class="wrap hero__in">
@@ -365,7 +368,11 @@ EDV2FTRX;
       </div>
     </section>
 
-    <!-- ===================== TRUST BAND + COUNTERS + MARQUEE ===================== -->
+    
+EDV2P0S0;
+        $p0s1 = <<<'EDV2P0S1'
+<!-- TRUST BAND + COUNTERS + MARQUEE -->
+
     <section class="band">
       <div class="wrap stats">
         <div class="reveal"><div class="stat__n"><span data-count="20">0</span><span class="accent">+</span></div><div class="stat__l">Yıllık deneyim</div></div>
@@ -381,7 +388,11 @@ EDV2FTRX;
       </div>
     </section>
 
-    <!-- ===================== FEATURED PRODUCTS ===================== -->
+    
+EDV2P0S1;
+        $p0s2 = <<<'EDV2P0S2'
+<!-- FEATURED PRODUCTS -->
+
     <section class="section" id="urunler">
       <div class="wrap">
         <div class="feature">
@@ -413,7 +424,11 @@ EDV2FTRX;
       </div>
     </section>
 
-    <!-- ===================== CATEGORIES ===================== -->
+    
+EDV2P0S2;
+        $p0s3 = <<<'EDV2P0S3'
+<!-- CATEGORIES -->
+
     <section class="section" style="background:var(--surface);border-block:1px solid var(--line);">
       <div class="wrap">
         <div class="reveal" style="max-width:620px;margin-bottom:46px;">
@@ -452,7 +467,11 @@ EDV2FTRX;
       </div>
     </section>
 
-    <!-- ===================== REPRESENTED BRANDS ===================== -->
+    
+EDV2P0S3;
+        $p0s4 = <<<'EDV2P0S4'
+<!-- REPRESENTED BRANDS -->
+
     <section class="section" id="markalar">
       <div class="wrap">
         <div class="reveal" style="max-width:620px;margin-bottom:44px;">
@@ -470,7 +489,11 @@ EDV2FTRX;
       </div>
     </section>
 
-    <!-- ===================== FOR DOCTORS ===================== -->
+    
+EDV2P0S4;
+        $p0s5 = <<<'EDV2P0S5'
+<!-- FOR DOCTORS -->
+
     <section class="section" id="doktorlar">
       <div class="wrap">
         <div class="docs reveal">
@@ -488,7 +511,11 @@ EDV2FTRX;
       </div>
     </section>
 
-    <!-- ===================== ABOUT TEASER ===================== -->
+    
+EDV2P0S5;
+        $p0s6 = <<<'EDV2P0S6'
+<!-- ABOUT TEASER -->
+
     <section class="section" id="hakkimizda">
       <div class="wrap about">
         <div class="about__media reveal">
@@ -504,7 +531,11 @@ EDV2FTRX;
       </div>
     </section>
 
-    <!-- ===================== CONTACT ===================== -->
+    
+EDV2P0S6;
+        $p0s7 = <<<'EDV2P0S7'
+<!-- CONTACT -->
+
     <section class="section" id="iletisim" style="background:var(--surface);border-top:1px solid var(--line);">
       <div class="wrap">
         <div class="reveal" style="max-width:620px;margin-bottom:40px;">
@@ -530,9 +561,10 @@ EDV2FTRX;
         </div>
       </div>
     </section>
-EDV2B0;
-        $b1 = <<<'EDV2B1'
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- ===================== PAGE HERO ===================== -->
+EDV2P0S7;
+        $p1s0 = <<<'EDV2P1S0'
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- PAGE HERO -->
+
     <section class="phero">
       <div class="wrap">
         <nav class="crumb" aria-label="Breadcrumb">
@@ -543,7 +575,11 @@ EDV2B0;
       </div>
     </section>
 
-    <!-- ===================== ABOUT STORY (split) ===================== -->
+    
+EDV2P1S0;
+        $p1s1 = <<<'EDV2P1S1'
+<!-- ABOUT STORY (split) -->
+
     <section class="section">
       <div class="wrap">
         <div class="feature">
@@ -566,7 +602,11 @@ EDV2B0;
       </div>
     </section>
 
-    <!-- ===================== VİZYON & MİSYON ===================== -->
+    
+EDV2P1S1;
+        $p1s2 = <<<'EDV2P1S2'
+<!-- VİZYON & MİSYON -->
+
     <section class="section" style="background:var(--surface);border-block:1px solid var(--line);">
       <div class="wrap">
         <div class="reveal" style="max-width:620px;margin-bottom:46px;">
@@ -588,7 +628,11 @@ EDV2B0;
       </div>
     </section>
 
-    <!-- ===================== STATS BAND ===================== -->
+    
+EDV2P1S2;
+        $p1s3 = <<<'EDV2P1S3'
+<!-- STATS BAND -->
+
     <section class="band">
       <div class="wrap stats">
         <div class="reveal"><div class="stat__n"><span>20</span><span class="accent">+</span></div><div class="stat__l">Yıllık deneyim</div></div>
@@ -598,7 +642,11 @@ EDV2B0;
       </div>
     </section>
 
-    <!-- ===================== PORTFOLIO BRANDS ===================== -->
+    
+EDV2P1S3;
+        $p1s4 = <<<'EDV2P1S4'
+<!-- PORTFOLIO BRANDS -->
+
     <section class="section">
       <div class="wrap">
         <div class="reveal" style="max-width:640px;margin-bottom:44px;">
@@ -617,7 +665,11 @@ EDV2B0;
       </div>
     </section>
 
-    <!-- ===================== FOR DOCTORS / TRAINING ===================== -->
+    
+EDV2P1S4;
+        $p1s5 = <<<'EDV2P1S5'
+<!-- FOR DOCTORS / TRAINING -->
+
     <section class="section" style="background:var(--surface);border-top:1px solid var(--line);">
       <div class="wrap">
         <div class="docs reveal">
@@ -635,7 +687,11 @@ EDV2B0;
       </div>
     </section>
 
-    <!-- ===================== CTA / CONTACT ===================== -->
+    
+EDV2P1S5;
+        $p1s6 = <<<'EDV2P1S6'
+<!-- CTA / CONTACT -->
+
     <section class="section">
       <div class="wrap">
         <div class="reveal" style="max-width:620px;margin-bottom:40px;">
@@ -652,9 +708,10 @@ EDV2B0;
         </div>
       </div>
     </section>
-EDV2B1;
-        $b2 = <<<'EDV2B2'
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- ===================== PAGE HERO ===================== -->
+EDV2P1S6;
+        $p2s0 = <<<'EDV2P2S0'
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- PAGE HERO -->
+
     <section class="phero">
       <div class="wrap">
         <nav class="crumb" aria-label="Breadcrumb">
@@ -665,7 +722,11 @@ EDV2B1;
       </div>
     </section>
 
-    <!-- ===================== FILTER CHIPS (statik) ===================== -->
+    
+EDV2P2S0;
+        $p2s1 = <<<'EDV2P2S1'
+<!-- FILTER CHIPS (statik) -->
+
     <section style="background:var(--surface);border-bottom:1px solid var(--line);">
       <div class="wrap" style="display:flex;flex-wrap:wrap;gap:10px;padding:24px 0;" aria-label="Marka filtresi">
         <a class="btn btn--primary" href="/urunler" style="padding:10px 22px;font-size:14px;">Tümü</a>
@@ -677,7 +738,11 @@ EDV2B1;
       </div>
     </section>
 
-    <!-- ===================== CATEGORY GROUPS ===================== -->
+    
+EDV2P2S1;
+        $p2s2 = <<<'EDV2P2S2'
+<!-- CATEGORY GROUPS -->
+
     <section class="section" style="background:var(--surface);border-bottom:1px solid var(--line);">
       <div class="wrap">
         <div class="reveal" style="max-width:620px;margin-bottom:46px;">
@@ -716,7 +781,11 @@ EDV2B1;
       </div>
     </section>
 
-    <!-- ===================== PRODUCT GRID ===================== -->
+    
+EDV2P2S2;
+        $p2s3 = <<<'EDV2P2S3'
+<!-- PRODUCT GRID -->
+
     <section class="section">
       <div class="wrap">
         <div class="reveal" style="max-width:620px;margin-bottom:44px;">
@@ -865,7 +934,11 @@ EDV2B1;
       </div>
     </section>
 
-    <!-- ===================== INFO BAND + CTA ===================== -->
+    
+EDV2P2S3;
+        $p2s4 = <<<'EDV2P2S4'
+<!-- INFO BAND + CTA -->
+
     <section class="section" style="background:var(--surface);border-top:1px solid var(--line);">
       <div class="wrap">
         <div class="info-row reveal" style="padding:26px 30px;flex-wrap:wrap;gap:18px;">
@@ -877,9 +950,10 @@ EDV2B1;
         </div>
       </div>
     </section>
-EDV2B2;
-        $b3 = <<<'EDV2B3'
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- ===================== PAGE HERO / BREADCRUMB ===================== -->
+EDV2P2S4;
+        $p3s0 = <<<'EDV2P3S0'
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- PAGE HERO / BREADCRUMB -->
+
     <section class="phero">
       <div class="wrap">
         <nav class="crumb" aria-label="Breadcrumb">
@@ -892,7 +966,11 @@ EDV2B2;
       </div>
     </section>
 
-    <!-- ===================== PRODUCT DETAIL (split) ===================== -->
+    
+EDV2P3S0;
+        $p3s1 = <<<'EDV2P3S1'
+<!-- PRODUCT DETAIL (split) -->
+
     <section class="section">
       <div class="wrap">
         <div class="feature">
@@ -924,7 +1002,11 @@ EDV2B2;
       </div>
     </section>
 
-    <!-- ===================== PRODUCT DESCRIPTION (rich text) ===================== -->
+    
+EDV2P3S1;
+        $p3s2 = <<<'EDV2P3S2'
+<!-- PRODUCT DESCRIPTION (rich text) -->
+
     <section class="section" style="background:var(--surface);border-block:1px solid var(--line);">
       <div class="wrap" style="max-width:860px;">
         <div class="reveal" style="margin-bottom:46px;">
@@ -961,7 +1043,11 @@ EDV2B2;
       </div>
     </section>
 
-    <!-- ===================== RELATED PRODUCTS ===================== -->
+    
+EDV2P3S2;
+        $p3s3 = <<<'EDV2P3S3'
+<!-- RELATED PRODUCTS -->
+
     <section class="section">
       <div class="wrap">
         <div class="reveal" style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:44px;">
@@ -1000,7 +1086,11 @@ EDV2B2;
       </div>
     </section>
 
-    <!-- ===================== CTA / FOR DOCTORS ===================== -->
+    
+EDV2P3S3;
+        $p3s4 = <<<'EDV2P3S4'
+<!-- CTA / FOR DOCTORS -->
+
     <section class="section" style="background:var(--surface);border-top:1px solid var(--line);">
       <div class="wrap">
         <div class="docs reveal">
@@ -1017,9 +1107,10 @@ EDV2B2;
         </div>
       </div>
     </section>
-EDV2B3;
-        $b4 = <<<'EDV2B4'
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- ===================== PAGE HERO ===================== -->
+EDV2P3S4;
+        $p4s0 = <<<'EDV2P4S0'
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- PAGE HERO -->
+
     <section class="phero">
       <div class="wrap">
         <nav class="crumb" aria-label="Sayfa konumu">
@@ -1031,7 +1122,11 @@ EDV2B3;
       </div>
     </section>
 
-    <!-- ===================== BRAND CARDS ===================== -->
+    
+EDV2P4S0;
+        $p4s1 = <<<'EDV2P4S1'
+<!-- BRAND CARDS -->
+
     <section class="section">
       <div class="wrap">
         <div class="brandgrid">
@@ -1095,7 +1190,11 @@ EDV2B3;
       </div>
     </section>
 
-    <!-- ===================== KISA BANT ===================== -->
+    
+EDV2P4S1;
+        $p4s2 = <<<'EDV2P4S2'
+<!-- KISA BANT -->
+
     <section class="section" style="padding-block:0;">
       <div class="wrap">
         <div class="band-note reveal">
@@ -1105,7 +1204,11 @@ EDV2B3;
       </div>
     </section>
 
-    <!-- ===================== CTA ===================== -->
+    
+EDV2P4S2;
+        $p4s3 = <<<'EDV2P4S3'
+<!-- CTA -->
+
     <section class="section">
       <div class="wrap">
         <div class="docs reveal" style="text-align:center;">
@@ -1122,9 +1225,10 @@ EDV2B3;
         </div>
       </div>
     </section>
-EDV2B4;
-        $b5 = <<<'EDV2B5'
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- ===================== PAGE HERO ===================== -->
+EDV2P4S3;
+        $p5s0 = <<<'EDV2P5S0'
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- PAGE HERO -->
+
     <section class="phero">
       <div class="wrap">
         <nav class="crumb" aria-label="Sayfa konumu">
@@ -1136,7 +1240,11 @@ EDV2B4;
       </div>
     </section>
 
-    <!-- ===================== EVENT GRID ===================== -->
+    
+EDV2P5S0;
+        $p5s1 = <<<'EDV2P5S1'
+<!-- EVENT GRID -->
+
     <section class="section">
       <div class="wrap">
         <div class="band-note reveal" style="margin-bottom:40px;">
@@ -1225,7 +1333,11 @@ EDV2B4;
       </div>
     </section>
 
-    <!-- ===================== INFO BLOCK ===================== -->
+    
+EDV2P5S1;
+        $p5s2 = <<<'EDV2P5S2'
+<!-- INFO BLOCK -->
+
     <section class="section" style="padding-top:0;">
       <div class="wrap">
         <div class="infoband reveal">
@@ -1243,7 +1355,11 @@ EDV2B4;
       </div>
     </section>
 
-    <!-- ===================== CTA ===================== -->
+    
+EDV2P5S2;
+        $p5s3 = <<<'EDV2P5S3'
+<!-- CTA -->
+
     <section class="section" style="padding-top:0;">
       <div class="wrap">
         <div class="docs reveal" style="text-align:center;">
@@ -1260,9 +1376,10 @@ EDV2B4;
         </div>
       </div>
     </section>
-EDV2B5;
-        $b6 = <<<'EDV2B6'
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- ===================== PAGE HERO ===================== -->
+EDV2P5S3;
+        $p6s0 = <<<'EDV2P6S0'
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><!-- PAGE HERO -->
+
     <section class="phero">
       <div class="wrap">
         <nav class="crumb" aria-label="Sayfa konumu">
@@ -1274,7 +1391,11 @@ EDV2B5;
       </div>
     </section>
 
-    <!-- ===================== CONTACT ===================== -->
+    
+EDV2P6S0;
+        $p6s1 = <<<'EDV2P6S1'
+<!-- CONTACT -->
+
     <section class="section">
       <div class="wrap">
         <div class="contact">
@@ -1322,8 +1443,8 @@ EDV2B5;
         </div>
       </div>
     </section>
-EDV2B6;
-        $b7 = <<<'EDV2B7'
+EDV2P6S1;
+        $p7s0 = <<<'EDV2P7S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>
     .st{
       --navy:#0B2A4A;
@@ -1571,7 +1692,8 @@ EDV2B6;
       .st-hero__meta > div{ border-right:0; padding-right:0; margin-right:0; margin-bottom:18px; }
       .st-hv__float{ left:0; }
     }
-  </style><!-- ===================== 1 · HERO ===================== -->
+  </style><!-- 1 · HERO -->
+
     <section class="st-hero" aria-labelledby="st-h1">
       <div class="st-hero__lines" aria-hidden="true"></div>
       <div class="st-wrap st-hero__in">
@@ -1615,7 +1737,11 @@ EDV2B6;
       </div>
     </section>
 
-    <!-- ===================== 2 · MARKA HİKAYESİ ===================== -->
+    
+EDV2P7S0;
+        $p7s1 = <<<'EDV2P7S1'
+<!-- 2 · MARKA HİKAYESİ -->
+
     <section class="st-sec st-sec--paper" aria-labelledby="st-story-h">
       <div class="st-wrap st-story">
         <div class="st-story__media reveal">
@@ -1636,7 +1762,11 @@ EDV2B6;
       </div>
     </section>
 
-    <!-- ===================== 3 · KREDİBİLİTE ŞERİDİ ===================== -->
+    
+EDV2P7S1;
+        $p7s2 = <<<'EDV2P7S2'
+<!-- 3 · KREDİBİLİTE ŞERİDİ -->
+
     <section class="st-cred" aria-label="Kredibilite ve sertifikasyon">
       <div class="st-wrap" style="padding-inline:0;">
         <div class="st-cred__grid">
@@ -1661,7 +1791,11 @@ EDV2B6;
       </div>
     </section>
 
-    <!-- ===================== 4 · ÖNE ÇIKAN ÜRÜNLER (split) ===================== -->
+    
+EDV2P7S2;
+        $p7s3 = <<<'EDV2P7S3'
+<!-- 4 · ÖNE ÇIKAN ÜRÜNLER (split) -->
+
     <section class="st-sec st-sec--paper" id="urunler" aria-labelledby="st-feat-h">
       <div class="st-wrap">
         <div class="st-head reveal">
@@ -1700,7 +1834,11 @@ EDV2B6;
       </div>
     </section>
 
-    <!-- ===================== 5 · ÜRÜN YELPAZESİ (grid) ===================== -->
+    
+EDV2P7S3;
+        $p7s4 = <<<'EDV2P7S4'
+<!-- 5 · ÜRÜN YELPAZESİ (grid) -->
+
     <section class="st-sec st-sec--ice" aria-labelledby="st-range-h">
       <div class="st-wrap">
         <div class="st-head st-head--center reveal">
@@ -1751,7 +1889,11 @@ EDV2B6;
       </div>
     </section>
 
-    <!-- ===================== 6 · DOKTORLAR İÇİN / UYGULAMA ===================== -->
+    
+EDV2P7S4;
+        $p7s5 = <<<'EDV2P7S5'
+<!-- 6 · DOKTORLAR İÇİN / UYGULAMA -->
+
     <section class="st-sec st-sec--paper" aria-labelledby="st-doc-h">
       <div class="st-wrap">
         <div class="st-doc reveal">
@@ -1788,7 +1930,11 @@ EDV2B6;
       </div>
     </section>
 
-    <!-- ===================== 7 · CTA BANDI ===================== -->
+    
+EDV2P7S5;
+        $p7s6 = <<<'EDV2P7S6'
+<!-- 7 · CTA BANDI -->
+
     <section class="st-sec st-sec--paper" style="padding-top:0;" id="iletisim" aria-labelledby="st-cta-h">
       <div class="st-wrap">
         <div class="st-cta reveal">
@@ -1807,8 +1953,8 @@ EDV2B6;
         </div>
       </div>
     </section>
-EDV2B7;
-        $b8 = <<<'EDV2B8'
+EDV2P7S6;
+        $p8s0 = <<<'EDV2P8S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>
     /* ============================================================
        SEFFILINE — özgün, zarif, sıcak minimal kozmesötik palet.
@@ -1919,7 +2065,8 @@ EDV2B7;
     .sf-doc { background: var(--cream); border: 1px solid var(--line); border-radius: 24px; padding: 30px 28px; }
     .sf-doc h4 { font-size: 17px; color: var(--plum); margin: 16px 0 8px; font-weight: 600; }
     .sf-doc p { font-size: 14px; color: var(--plum-soft); line-height: 1.7; margin: 0; }
-  </style><!-- ===================== 1. HERO ===================== -->
+  </style><!-- 1. HERO -->
+
     <section class="sf-hero">
       <div class="sf-blob" aria-hidden="true" style="top:-160px;right:-120px;width:480px;height:480px;background:radial-gradient(circle at 35% 35%, rgba(232,160,168,.32), transparent 70%);"></div>
       <div class="sf-blob" aria-hidden="true" style="bottom:-180px;left:-140px;width:420px;height:420px;background:radial-gradient(circle at 50% 50%, rgba(201,138,109,.20), transparent 70%);"></div>
@@ -1957,7 +2104,11 @@ EDV2B7;
       </div>
     </section>
 
-    <!-- ===================== 2. MARKA HİKAYESİ ===================== -->
+    
+EDV2P8S0;
+        $p8s1 = <<<'EDV2P8S1'
+<!-- 2. MARKA HİKAYESİ -->
+
     <section style="padding:clamp(72px,9vw,104px) 0;background:var(--paper);">
       <div class="sf-wrap" style="max-width:820px;text-align:center;">
         <p class="sf-eyebrow sf-eyebrow--c sf-eyebrow--blush" data-sf>Marka Hikayesi</p>
@@ -1971,7 +2122,11 @@ EDV2B7;
       </div>
     </section>
 
-    <!-- ===================== 3. KREDİBİLİTE ŞERİDİ ===================== -->
+    
+EDV2P8S1;
+        $p8s2 = <<<'EDV2P8S2'
+<!-- 3. KREDİBİLİTE ŞERİDİ -->
+
     <section style="padding:0 0 clamp(56px,7vw,88px);background:var(--paper);">
       <div class="sf-wrap">
         <div class="sf-cred" data-sf>
@@ -1999,7 +2154,11 @@ EDV2B7;
       </div>
     </section>
 
-    <!-- ===================== 4a. ÖNE ÇIKAN SPLIT: SeffiHair ===================== -->
+    
+EDV2P8S2;
+        $p8s3 = <<<'EDV2P8S3'
+<!-- 4a. ÖNE ÇIKAN SPLIT: SeffiHair -->
+
     <section style="padding:clamp(72px,9vw,100px) 0;background:var(--cream);position:relative;overflow:hidden;">
       <div class="sf-blob" aria-hidden="true" style="top:-120px;right:8%;width:300px;height:300px;background:radial-gradient(circle,rgba(232,160,168,.22),transparent 70%);"></div>
       <div class="sf-wrap sf-split" style="position:relative;">
@@ -2024,7 +2183,11 @@ EDV2B7;
       </div>
     </section>
 
-    <!-- ===================== 4b. ÖNE ÇIKAN SPLIT: Seffiller (ters) ===================== -->
+    
+EDV2P8S3;
+        $p8s4 = <<<'EDV2P8S4'
+<!-- 4b. ÖNE ÇIKAN SPLIT: Seffiller (ters) -->
+
     <section style="padding:clamp(72px,9vw,100px) 0;background:var(--paper);position:relative;overflow:hidden;">
       <div class="sf-blob" aria-hidden="true" style="bottom:-120px;left:6%;width:300px;height:300px;background:radial-gradient(circle,rgba(201,138,109,.18),transparent 70%);"></div>
       <div class="sf-wrap sf-split" style="position:relative;flex-direction:row-reverse;">
@@ -2049,7 +2212,11 @@ EDV2B7;
       </div>
     </section>
 
-    <!-- ===================== 5. ÜRÜN AİLESİ GRID ===================== -->
+    
+EDV2P8S4;
+        $p8s5 = <<<'EDV2P8S5'
+<!-- 5. ÜRÜN AİLESİ GRID -->
+
     <section id="koleksiyon" style="padding:clamp(72px,9vw,100px) 0;background:var(--cream);">
       <div class="sf-wrap">
         <div style="text-align:center;max-width:620px;margin:0 auto 56px;">
@@ -2100,7 +2267,11 @@ EDV2B7;
       </div>
     </section>
 
-    <!-- ===================== 6. DOKTORLAR İÇİN / UYGULAMA ===================== -->
+    
+EDV2P8S5;
+        $p8s6 = <<<'EDV2P8S6'
+<!-- 6. DOKTORLAR İÇİN / UYGULAMA -->
+
     <section style="padding:clamp(72px,9vw,100px) 0;background:var(--paper);">
       <div class="sf-wrap">
         <div style="max-width:660px;margin:0 0 48px;">
@@ -2128,7 +2299,11 @@ EDV2B7;
       </div>
     </section>
 
-    <!-- ===================== 7. CTA BANDI ===================== -->
+    
+EDV2P8S6;
+        $p8s7 = <<<'EDV2P8S7'
+<!-- 7. CTA BANDI -->
+
     <section style="padding:0 0 clamp(72px,9vw,104px);background:var(--paper);">
       <div class="sf-wrap">
         <div data-sf style="position:relative;overflow:hidden;border-radius:36px;background:var(--grad-rose);padding:clamp(48px,7vw,84px);text-align:center;color:#fff;">
@@ -2145,8 +2320,8 @@ EDV2B7;
         </div>
       </div>
     </section>
-EDV2B8;
-        $b9 = <<<'EDV2B9'
+EDV2P8S7;
+        $p9s0 = <<<'EDV2P9S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>
     .aespio {
       --ae-bg:        #15171C;   /* koyu antrasit */
@@ -2389,7 +2564,8 @@ EDV2B8;
     @media (max-width: 520px) {
       .ae-cred__in { grid-template-columns: 1fr; }
     }
-  </style><!-- ===================== 1) HERO ===================== -->
+  </style><!-- 1) HERO -->
+
     <section class="ae-hero">
       <div class="ae-hero__grid" aria-hidden="true"></div>
       <div class="ae-hero__scan" aria-hidden="true"></div>
@@ -2432,7 +2608,11 @@ EDV2B8;
       </div>
     </section>
 
-    <!-- ===================== 2) MARKA HİKAYESİ ===================== -->
+    
+EDV2P9S0;
+        $p9s1 = <<<'EDV2P9S1'
+<!-- 2) MARKA HİKAYESİ -->
+
     <section class="ae-sec">
       <div class="ae-wrap">
         <div class="ae-story">
@@ -2459,7 +2639,11 @@ EDV2B8;
       </div>
     </section>
 
-    <!-- ===================== 3) KREDİBİLİTE ŞERİDİ ===================== -->
+    
+EDV2P9S1;
+        $p9s2 = <<<'EDV2P9S2'
+<!-- 3) KREDİBİLİTE ŞERİDİ -->
+
     <section class="ae-cred">
       <div class="ae-wrap ae-cred__in">
         <div class="ae-cred__item ae-rev"><b>Yenilikçi</b><span>İleri formül &amp; cihaz odaklı yeni nesil yaklaşım</span></div>
@@ -2469,7 +2653,11 @@ EDV2B8;
       </div>
     </section>
 
-    <!-- ===================== 4) ÖNE ÇIKAN SPLIT: LFL Anchor + Beta-Glukan ===================== -->
+    
+EDV2P9S2;
+        $p9s3 = <<<'EDV2P9S3'
+<!-- 4) ÖNE ÇIKAN SPLIT: LFL Anchor + Beta-Glukan -->
+
     <section class="ae-sec">
       <div class="ae-wrap">
         <div class="ae-rev" style="max-width:640px;margin-bottom:46px;">
@@ -2516,7 +2704,11 @@ EDV2B8;
       </div>
     </section>
 
-    <!-- ===================== 5) ÜRÜN YELPAZESİ GRID ===================== -->
+    
+EDV2P9S3;
+        $p9s4 = <<<'EDV2P9S4'
+<!-- 5) ÜRÜN YELPAZESİ GRID -->
+
     <section class="ae-sec" id="urunler" style="background:var(--ae-bg-2);border-block:1px solid var(--ae-line);">
       <div class="ae-wrap">
         <div class="ae-rev" style="max-width:640px;margin-bottom:48px;">
@@ -2585,7 +2777,11 @@ EDV2B8;
       </div>
     </section>
 
-    <!-- ===================== 6) DOKTORLAR İÇİN / UYGULAMA ===================== -->
+    
+EDV2P9S4;
+        $p9s5 = <<<'EDV2P9S5'
+<!-- 6) DOKTORLAR İÇİN / UYGULAMA -->
+
     <section class="ae-sec">
       <div class="ae-wrap">
         <div class="ae-docs ae-rev">
@@ -2616,7 +2812,11 @@ EDV2B8;
       </div>
     </section>
 
-    <!-- ===================== 7) CTA BANDI (WhatsApp) ===================== -->
+    
+EDV2P9S5;
+        $p9s6 = <<<'EDV2P9S6'
+<!-- 7) CTA BANDI (WhatsApp) -->
+
     <section class="ae-sec" style="padding-top:0;">
       <div class="ae-wrap">
         <div class="ae-cta ae-rev">
@@ -2630,8 +2830,8 @@ EDV2B8;
         </div>
       </div>
     </section>
-EDV2B9;
-        $b10 = <<<'EDV2B10'
+EDV2P9S6;
+        $p10s0 = <<<'EDV2P10S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style>
     /* Sayfa-özel marka değişkenleri (wh- ad alanı) — global :root'a dokunmaz */
     .wh {
@@ -2705,9 +2905,8 @@ EDV2B9;
     .wh-2col { display:grid; gap:clamp(40px,6vw,76px); align-items:center; }
     @media (max-width:960px){ .wh-2col { grid-template-columns:1fr !important; } }
     @media (prefers-reduced-motion:reduce){ .wh-scanline,.wh-live{ animation:none; } .wh-scanline{display:none;} }
-  </style><!-- ============================================================ -->
-    <!-- 1 · HERO — gri mühendislik gridi + cihaz silüeti + elektrik glow -->
-    <!-- ============================================================ -->
+  </style><!-- 1 · HERO — gri mühendislik gridi + cihaz silüeti + elektrik glow -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(1000px 540px at 84% -10%, rgba(45,168,255,.30), transparent 60%),radial-gradient(760px 540px at 6% 112%, rgba(91,230,212,.16), transparent 62%),linear-gradient(180deg,#0E1116 0%,#161A22 100%);">
       <div aria-hidden="true" class="wh-gridbg" style="-webkit-mask-image:radial-gradient(1000px 620px at 72% 4%,#000,transparent 78%);mask-image:radial-gradient(1000px 620px at 72% 4%,#000,transparent 78%);"></div>
       <div class="wrap wh-2col" style="position:relative;grid-template-columns:1.06fr .94fr;padding:clamp(72px,9vw,104px) 0 clamp(80px,9vw,108px);">
@@ -2761,9 +2960,11 @@ EDV2B9;
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- 2 · MARKA HİKAYESİ — Kore mühendisliği, hassas kontrol, tekrarlanabilirlik -->
-    <!-- ============================================================ -->
+    
+EDV2P10S0;
+        $p10s1 = <<<'EDV2P10S1'
+<!-- 2 · MARKA HİKAYESİ — Kore mühendisliği, hassas kontrol, tekrarlanabilirlik -->
+
     <section class="wh-sec" style="background:var(--wh-ink);background-image:radial-gradient(720px 460px at 100% 0%, rgba(45,168,255,.10), transparent 60%);">
       <div class="wrap wh-2col" style="grid-template-columns:.95fr 1.05fr;">
         <div class="reveal" style="position:relative;min-height:380px;">
@@ -2800,9 +3001,11 @@ EDV2B9;
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- 3 · KREDİBİLİTE ŞERİDİ -->
-    <!-- ============================================================ -->
+    
+EDV2P10S1;
+        $p10s2 = <<<'EDV2P10S2'
+<!-- 3 · KREDİBİLİTE ŞERİDİ -->
+
     <section style="background:var(--wh-ink-2);border-top:1px solid var(--wh-line);border-bottom:1px solid var(--wh-line);">
       <div class="wrap" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;padding:40px 0;">
         <!-- Güney Kore -->
@@ -2828,9 +3031,11 @@ EDV2B9;
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- 4 · RAFFINE SPOTLIGHT + monospace teknik spec tablosu -->
-    <!-- ============================================================ -->
+    
+EDV2P10S2;
+        $p10s3 = <<<'EDV2P10S3'
+<!-- 4 · RAFFINE SPOTLIGHT + monospace teknik spec tablosu -->
+
     <section id="raffine" class="wh-sec" style="background:var(--wh-ink);background-image:radial-gradient(820px 520px at 100% 50%, rgba(91,230,212,.12), transparent 60%);scroll-margin-top:80px;">
       <div class="wrap wh-2col" style="grid-template-columns:.9fr 1.1fr;">
         <!-- Dikey ürün spotlight -->
@@ -2866,9 +3071,11 @@ EDV2B9;
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- 5 · ÜRÜN / CİHAZ GRID (Raffine + ilgili sarf) -->
-    <!-- ============================================================ -->
+    
+EDV2P10S3;
+        $p10s4 = <<<'EDV2P10S4'
+<!-- 5 · ÜRÜN / CİHAZ GRID (Raffine + ilgili sarf) -->
+
     <section class="wh-sec" style="background:var(--wh-ink-2);border-top:1px solid var(--wh-line);">
       <div class="wrap">
         <div class="reveal" style="max-width:640px;margin-bottom:46px;">
@@ -2925,9 +3132,11 @@ EDV2B9;
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- 6 · DOKTORLAR İÇİN / UYGULAMA — klinik cihaz kullanımı, demo/eğitim -->
-    <!-- ============================================================ -->
+    
+EDV2P10S4;
+        $p10s5 = <<<'EDV2P10S5'
+<!-- 6 · DOKTORLAR İÇİN / UYGULAMA — klinik cihaz kullanımı, demo/eğitim -->
+
     <section class="wh-sec" style="background:var(--wh-ink);">
       <div class="wrap">
         <div style="text-align:center;max-width:660px;margin:0 auto 52px;">
@@ -2958,9 +3167,11 @@ EDV2B9;
       </div>
     </section>
 
-    <!-- ============================================================ -->
-    <!-- 7 · CTA BANDI — WhatsApp / demo talebi -->
-    <!-- ============================================================ -->
+    
+EDV2P10S5;
+        $p10s6 = <<<'EDV2P10S6'
+<!-- 7 · CTA BANDI — WhatsApp / demo talebi -->
+
     <section style="padding:0 0 clamp(70px,9vw,108px);background:var(--wh-ink);">
       <div class="wrap">
         <div class="reveal" style="position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(120deg,#0E2A44 0%,#0E1C2C 46%,#0B2A2A 100%);border:1px solid var(--wh-line-2);padding:clamp(40px,6vw,72px);text-align:center;box-shadow:0 0 60px rgba(45,168,255,.18);">
@@ -2980,8 +3191,8 @@ EDV2B9;
         </div>
       </div>
     </section>
-EDV2B10;
-        $b11 = <<<'EDV2B11'
+EDV2P10S6;
+        $p11s0 = <<<'EDV2P11S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>
     /* ============================================================
        MI-MEDICAL INNOVATION — temiz klinik, güven-odaklı teal palet.
@@ -3132,7 +3343,8 @@ EDV2B10;
     @media (max-width: 720px) {
       .mi-hero__in { min-height: auto; }
     }
-  </style><!-- ===================== 1. HERO (full-height) ===================== -->
+  </style><!-- 1. HERO (full-height) -->
+
     <section class="mi-hero">
       <div class="mi-hero__grid" aria-hidden="true"></div>
       <div class="mi-glow" aria-hidden="true" style="top:-180px;right:-100px;width:520px;height:520px;background:radial-gradient(circle at 40% 40%, rgba(14,140,140,.18), transparent 70%);"></div>
@@ -3173,7 +3385,11 @@ EDV2B10;
       </div>
     </section>
 
-    <!-- ===================== 2. MARKA HİKAYESİ ===================== -->
+    
+EDV2P11S0;
+        $p11s1 = <<<'EDV2P11S1'
+<!-- 2. MARKA HİKAYESİ -->
+
     <section style="padding:clamp(72px,9vw,104px) 0;background:var(--paper);">
       <div class="mi-wrap" style="max-width:840px;text-align:center;">
         <p class="mi-eyebrow mi-eyebrow--c" data-mi>Marka Hikayesi</p>
@@ -3187,7 +3403,11 @@ EDV2B10;
       </div>
     </section>
 
-    <!-- ===================== 3. KREDİBİLİTE ŞERİDİ ===================== -->
+    
+EDV2P11S1;
+        $p11s2 = <<<'EDV2P11S2'
+<!-- 3. KREDİBİLİTE ŞERİDİ -->
+
     <section style="padding:0 0 clamp(56px,7vw,88px);background:var(--paper);">
       <div class="mi-wrap">
         <div class="mi-cred" data-mi>
@@ -3215,7 +3435,11 @@ EDV2B10;
       </div>
     </section>
 
-    <!-- ===================== 4. ÖNE ÇIKAN: PISTOR ELIANCE SPOTLIGHT ===================== -->
+    
+EDV2P11S2;
+        $p11s3 = <<<'EDV2P11S3'
+<!-- 4. ÖNE ÇIKAN: PISTOR ELIANCE SPOTLIGHT -->
+
     <section id="spotlight" style="padding:clamp(72px,9vw,104px) 0;background:var(--mist-soft);position:relative;overflow:hidden;">
       <div class="mi-glow" aria-hidden="true" style="top:-120px;right:6%;width:320px;height:320px;background:radial-gradient(circle,rgba(14,140,140,.14),transparent 70%);"></div>
       <div class="mi-wrap mi-split" style="position:relative;">
@@ -3242,7 +3466,11 @@ EDV2B10;
       </div>
     </section>
 
-    <!-- ===================== 5. ÜRÜN GRID ===================== -->
+    
+EDV2P11S3;
+        $p11s4 = <<<'EDV2P11S4'
+<!-- 5. ÜRÜN GRID -->
+
     <section id="urunler" style="padding:clamp(72px,9vw,104px) 0;background:var(--paper);">
       <div class="mi-wrap">
         <div style="text-align:center;max-width:640px;margin:0 auto 56px;">
@@ -3291,7 +3519,11 @@ EDV2B10;
       </div>
     </section>
 
-    <!-- ===================== 6. DOKTORLAR İÇİN / UYGULAMA ===================== -->
+    
+EDV2P11S4;
+        $p11s5 = <<<'EDV2P11S5'
+<!-- 6. DOKTORLAR İÇİN / UYGULAMA -->
+
     <section style="padding:clamp(72px,9vw,104px) 0;background:var(--mist-soft);">
       <div class="mi-wrap">
         <div style="max-width:680px;margin:0 0 48px;">
@@ -3319,7 +3551,11 @@ EDV2B10;
       </div>
     </section>
 
-    <!-- ===================== 7. CTA BANDI ===================== -->
+    
+EDV2P11S5;
+        $p11s6 = <<<'EDV2P11S6'
+<!-- 7. CTA BANDI -->
+
     <section style="padding:clamp(56px,8vw,96px) 0 clamp(72px,9vw,104px);background:var(--paper);">
       <div class="mi-wrap">
         <div data-mi style="position:relative;overflow:hidden;border-radius:32px;background:var(--grad-teal);padding:clamp(48px,7vw,84px);text-align:center;color:#fff;">
@@ -3336,8 +3572,8 @@ EDV2B10;
         </div>
       </div>
     </section>
-EDV2B11;
-        $b12 = <<<'EDV2B12'
+EDV2P11S6;
+        $p12s0 = <<<'EDV2P12S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>
     .ng {
       --ng-green:   #5B8C6E;   /* yumuşak sage yeşil */
@@ -3497,7 +3733,8 @@ EDV2B11;
       .ng-docs__cards{ grid-template-columns:1fr; }
     }
     @media (prefers-reduced-motion:reduce){ .ng-hero__blob{ animation:none; } }
-  </style><!-- ===================== 1 · HERO ===================== -->
+  </style><!-- 1 · HERO -->
+
     <section class="ng-hero">
       <div class="ng-hero__cells" aria-hidden="true"></div>
       <div class="wrap ng-hero__in">
@@ -3537,7 +3774,11 @@ EDV2B11;
       </div>
     </section>
 
-    <!-- ===================== 2 · MARKA HİKAYESİ ===================== -->
+    
+EDV2P12S0;
+        $p12s1 = <<<'EDV2P12S1'
+<!-- 2 · MARKA HİKAYESİ -->
+
     <section class="ng-section">
       <div class="wrap">
         <div class="ng-story">
@@ -3570,7 +3811,11 @@ EDV2B11;
       </div>
     </section>
 
-    <!-- ===================== 3 · KREDİBİLİTE ŞERİDİ ===================== -->
+    
+EDV2P12S1;
+        $p12s2 = <<<'EDV2P12S2'
+<!-- 3 · KREDİBİLİTE ŞERİDİ -->
+
     <section class="ng-section" style="padding-top:0;">
       <div class="wrap">
         <div class="ng-cred reveal">
@@ -3596,7 +3841,11 @@ EDV2B11;
       </div>
     </section>
 
-    <!-- ===================== 4 · ÖNE ÇIKAN ÜRÜNLER (split) ===================== -->
+    
+EDV2P12S2;
+        $p12s3 = <<<'EDV2P12S3'
+<!-- 4 · ÖNE ÇIKAN ÜRÜNLER (split) -->
+
     <section class="ng-section" style="background:var(--ng-ivory);border-block:1px solid var(--ng-line);">
       <div class="wrap">
         <div class="ng-head reveal">
@@ -3639,7 +3888,11 @@ EDV2B11;
       </div>
     </section>
 
-    <!-- ===================== 5 · ÜRÜN YELPAZESİ GRID ===================== -->
+    
+EDV2P12S3;
+        $p12s4 = <<<'EDV2P12S4'
+<!-- 5 · ÜRÜN YELPAZESİ GRID -->
+
     <section class="ng-section" id="yelpaze">
       <div class="wrap">
         <div class="ng-head reveal">
@@ -3713,7 +3966,11 @@ EDV2B11;
       </div>
     </section>
 
-    <!-- ===================== 6 · DOKTORLAR İÇİN / UYGULAMA ===================== -->
+    
+EDV2P12S4;
+        $p12s5 = <<<'EDV2P12S5'
+<!-- 6 · DOKTORLAR İÇİN / UYGULAMA -->
+
     <section class="ng-section" style="background:var(--ng-ivory);border-block:1px solid var(--ng-line);">
       <div class="wrap">
         <div class="ng-docs reveal">
@@ -3746,7 +4003,11 @@ EDV2B11;
       </div>
     </section>
 
-    <!-- ===================== 7 · CTA BANDI ===================== -->
+    
+EDV2P12S5;
+        $p12s6 = <<<'EDV2P12S6'
+<!-- 7 · CTA BANDI -->
+
     <section class="ng-section" style="padding-top:clamp(56px,8vh,96px);">
       <div class="wrap">
         <div class="ng-ctaband reveal">
@@ -3763,37 +4024,129 @@ EDV2B11;
         </div>
       </div>
     </section>
-EDV2B12;
+EDV2P12S6;
 
         $pages=[
-            ['slug'=>'home','title'=>'Ana Sayfa','sort_order'=>1,'show_in_menu'=>true,'html'=>$b0],
-            ['slug'=>'hakkimizda','title'=>'Hakkımızda','sort_order'=>2,'show_in_menu'=>true,'html'=>$b1],
-            ['slug'=>'urunler','title'=>'Ürünler','sort_order'=>3,'show_in_menu'=>true,'html'=>$b2],
-            ['slug'=>'urun-detay','title'=>'RRS® HA Long Lasting','sort_order'=>99,'show_in_menu'=>false,'html'=>$b3],
-            ['slug'=>'markalar','title'=>'Markalar','sort_order'=>4,'show_in_menu'=>true,'html'=>$b4],
-            ['slug'=>'etkinlikler','title'=>'Kongre & Etkinlikler','sort_order'=>5,'show_in_menu'=>true,'html'=>$b5],
-            ['slug'=>'iletisim','title'=>'İletişim','sort_order'=>6,'show_in_menu'=>true,'html'=>$b6],
-            ['slug'=>'marka-skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'html'=>$b7],
-            ['slug'=>'marka-seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'html'=>$b8],
-            ['slug'=>'marka-aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'html'=>$b9],
-            ['slug'=>'marka-woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'html'=>$b10],
-            ['slug'=>'marka-mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'html'=>$b11],
-            ['slug'=>'marka-neogenesis','title'=>'Neogenesis','sort_order'=>106,'show_in_menu'=>false,'html'=>$b12],
+            ['slug'=>'home','title'=>'Ana Sayfa','sort_order'=>1,'show_in_menu'=>true,'sections'=>[
+                ['HERO', $p0s0],
+                ['TRUST BAND + COUNTERS + MARQUEE', $p0s1],
+                ['FEATURED PRODUCTS', $p0s2],
+                ['CATEGORIES', $p0s3],
+                ['REPRESENTED BRANDS', $p0s4],
+                ['FOR DOCTORS', $p0s5],
+                ['ABOUT TEASER', $p0s6],
+                ['CONTACT', $p0s7]
+            ]],
+            ['slug'=>'hakkimizda','title'=>'Hakkımızda','sort_order'=>2,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO', $p1s0],
+                ['ABOUT STORY (split)', $p1s1],
+                ['VİZYON & MİSYON', $p1s2],
+                ['STATS BAND', $p1s3],
+                ['PORTFOLIO BRANDS', $p1s4],
+                ['FOR DOCTORS / TRAINING', $p1s5],
+                ['CTA / CONTACT', $p1s6]
+            ]],
+            ['slug'=>'urunler','title'=>'Ürünler','sort_order'=>3,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO', $p2s0],
+                ['FILTER CHIPS (statik)', $p2s1],
+                ['CATEGORY GROUPS', $p2s2],
+                ['PRODUCT GRID', $p2s3],
+                ['INFO BAND + CTA', $p2s4]
+            ]],
+            ['slug'=>'urun-detay','title'=>'RRS® HA Long Lasting','sort_order'=>99,'show_in_menu'=>false,'sections'=>[
+                ['PAGE HERO / BREADCRUMB', $p3s0],
+                ['PRODUCT DETAIL (split)', $p3s1],
+                ['PRODUCT DESCRIPTION (rich text)', $p3s2],
+                ['RELATED PRODUCTS', $p3s3],
+                ['CTA / FOR DOCTORS', $p3s4]
+            ]],
+            ['slug'=>'markalar','title'=>'Markalar','sort_order'=>4,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO', $p4s0],
+                ['BRAND CARDS', $p4s1],
+                ['KISA BANT', $p4s2],
+                ['CTA', $p4s3]
+            ]],
+            ['slug'=>'etkinlikler','title'=>'Kongre & Etkinlikler','sort_order'=>5,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO', $p5s0],
+                ['EVENT GRID', $p5s1],
+                ['INFO BLOCK', $p5s2],
+                ['CTA', $p5s3]
+            ]],
+            ['slug'=>'iletisim','title'=>'İletişim','sort_order'=>6,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO', $p6s0],
+                ['CONTACT', $p6s1]
+            ]],
+            ['slug'=>'marka-skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'sections'=>[
+                ['1 · HERO', $p7s0],
+                ['2 · MARKA HİKAYESİ', $p7s1],
+                ['3 · KREDİBİLİTE ŞERİDİ', $p7s2],
+                ['4 · ÖNE ÇIKAN ÜRÜNLER (split)', $p7s3],
+                ['5 · ÜRÜN YELPAZESİ (grid)', $p7s4],
+                ['6 · DOKTORLAR İÇİN / UYGULAMA', $p7s5],
+                ['7 · CTA BANDI', $p7s6]
+            ]],
+            ['slug'=>'marka-seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'sections'=>[
+                ['1. HERO', $p8s0],
+                ['2. MARKA HİKAYESİ', $p8s1],
+                ['3. KREDİBİLİTE ŞERİDİ', $p8s2],
+                ['4a. ÖNE ÇIKAN SPLIT: SeffiHair', $p8s3],
+                ['4b. ÖNE ÇIKAN SPLIT: Seffiller (ters)', $p8s4],
+                ['5. ÜRÜN AİLESİ GRID', $p8s5],
+                ['6. DOKTORLAR İÇİN / UYGULAMA', $p8s6],
+                ['7. CTA BANDI', $p8s7]
+            ]],
+            ['slug'=>'marka-aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'sections'=>[
+                ['1) HERO', $p9s0],
+                ['2) MARKA HİKAYESİ', $p9s1],
+                ['3) KREDİBİLİTE ŞERİDİ', $p9s2],
+                ['4) ÖNE ÇIKAN SPLIT: LFL Anchor + Beta-Glukan', $p9s3],
+                ['5) ÜRÜN YELPAZESİ GRID', $p9s4],
+                ['6) DOKTORLAR İÇİN / UYGULAMA', $p9s5],
+                ['7) CTA BANDI (WhatsApp)', $p9s6]
+            ]],
+            ['slug'=>'marka-woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'sections'=>[
+                ['1 · HERO — gri mühendislik gridi + cihaz silüeti + elektrik glow', $p10s0],
+                ['2 · MARKA HİKAYESİ — Kore mühendisliği, hassas kontrol, tekrarlanabilirlik', $p10s1],
+                ['3 · KREDİBİLİTE ŞERİDİ', $p10s2],
+                ['4 · RAFFINE SPOTLIGHT + monospace teknik spec tablosu', $p10s3],
+                ['5 · ÜRÜN / CİHAZ GRID (Raffine + ilgili sarf)', $p10s4],
+                ['6 · DOKTORLAR İÇİN / UYGULAMA — klinik cihaz kullanımı, demo/eğitim', $p10s5],
+                ['7 · CTA BANDI — WhatsApp / demo talebi', $p10s6]
+            ]],
+            ['slug'=>'marka-mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'sections'=>[
+                ['1. HERO (full-height)', $p11s0],
+                ['2. MARKA HİKAYESİ', $p11s1],
+                ['3. KREDİBİLİTE ŞERİDİ', $p11s2],
+                ['4. ÖNE ÇIKAN: PISTOR ELIANCE SPOTLIGHT', $p11s3],
+                ['5. ÜRÜN GRID', $p11s4],
+                ['6. DOKTORLAR İÇİN / UYGULAMA', $p11s5],
+                ['7. CTA BANDI', $p11s6]
+            ]],
+            ['slug'=>'marka-neogenesis','title'=>'Neogenesis','sort_order'=>106,'show_in_menu'=>false,'sections'=>[
+                ['1 · HERO', $p12s0],
+                ['2 · MARKA HİKAYESİ', $p12s1],
+                ['3 · KREDİBİLİTE ŞERİDİ', $p12s2],
+                ['4 · ÖNE ÇIKAN ÜRÜNLER (split)', $p12s3],
+                ['5 · ÜRÜN YELPAZESİ GRID', $p12s4],
+                ['6 · DOKTORLAR İÇİN / UYGULAMA', $p12s5],
+                ['7 · CTA BANDI', $p12s6]
+            ]],
         ];
         foreach($pages as $p){
+            $bodyBlocks=[];
+            foreach($p['sections'] as $k=>$sec){
+                $bodyBlocks[]=$this->blk('b_body_'.$k,'content-block','v2-free-html',$cb->id,$sec[1],$k+1);
+            }
             Page::updateOrCreate(['slug'=>$p['slug'],'language_id'=>$langId],
                 ['title'=>$p['title'],'status'=>'published','show_in_menu'=>$p['show_in_menu'],
                  'sort_order'=>$p['sort_order'],'show_breadcrumb'=>true,
-                 'sections_json'=>[
-                   'version'=>2,
-                   'regions'=>[
-                     'header'=>[$this->reg('header','header','estetikdermal-v2-header',$hid,$hdr)],
-                     'body'  =>[$this->reg('body','content-block','v2-free-html',$cb->id,$p['html'])],
-                     'footer'=>[$this->reg('footer','footer','estetikdermal-v2-footer',$fid,$ftr)],
-                   ],
-                 ]]
+                 'sections_json'=>['version'=>2,'regions'=>[
+                     'header'=>[$this->regRow('header',[$this->blk('b_header','header','estetikdermal-v2-header',$hid,$hdr,1)])],
+                     'body'  =>[$this->regRow('body',$bodyBlocks)],
+                     'footer'=>[$this->regRow('footer',[$this->blk('b_footer','footer','estetikdermal-v2-footer',$fid,$ftr,1)])],
+                 ]]]
             );
         }
-        $this->command?->info('Tema 2: '.count($pages).' sayfa (region+html_override, doğru isimler) kuruldu.');
+        $this->command?->info('Tema 2: '.count($pages).' sayfa (bölünmüş body blokları) kuruldu.');
     }
 }

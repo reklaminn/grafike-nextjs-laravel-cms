@@ -18,14 +18,15 @@ use Illuminate\Database\Seeder;
  */
 class EstetikDermalKlasikTenantSeeder extends Seeder
 {
-    /** region row->col->block (html_override ile ham HTML; isim section_template'ten gelir) */
-    private function reg(string $r, string $type, string $variation, int $tid, string $override): array
+    private function blk(string $id,string $type,string $variation,int $tid,string $override,int $sort): array
+    {
+        return ['id'=>$id,'type'=>$type,'variation'=>$variation,'render_mode'=>'html',
+            'section_template_id'=>$tid,'is_active'=>true,'sort_order'=>$sort,'content'=>[],'html_override'=>$override];
+    }
+    private function regRow(string $r, array $blocks): array
     {
         return ['id'=>'row_'.$r.'_1','type'=>'row','is_active'=>true,
-            'columns'=>[['id'=>'col_'.$r.'_1','width'=>12,'is_active'=>true,
-                'blocks'=>[['id'=>'b_'.$r,'type'=>$type,'variation'=>$variation,
-                    'render_mode'=>'html','section_template_id'=>$tid,'is_active'=>true,'sort_order'=>1,
-                    'content'=>[],'html_override'=>$override]]]]];
+            'columns'=>[['id'=>'col_'.$r.'_1','width'=>12,'is_active'=>true,'blocks'=>$blocks]]];
     }
 
     public function run(): void
@@ -342,8 +343,9 @@ EDKHDRX;
     </div>
   </footer>
 EDKFTRX;
-        $b0 = <<<'EDK0'
-<!-- ===================== HERO (split) ===================== -->
+        $p0s0 = <<<'EDKP0S0'
+<!-- HERO (split) -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(1200px 600px at 80% -10%, rgba(244,161,78,.28), transparent 60%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#FBF4EE) 100%);">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:48px;align-items:center;padding:84px 0 92px;">
         <div style="flex:1 1 460px;">
@@ -412,7 +414,11 @@ EDKFTRX;
       </div>
     </section>
 
-    <!-- ===================== TRUST STATS ===================== -->
+    
+EDKP0S0;
+        $p0s1 = <<<'EDKP0S1'
+<!-- TRUST STATS -->
+
     <section style="background:#fff;">
       <div class="container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:24px;padding:48px 0;border-bottom:1px solid var(--border-soft,#ece6df);">
         <div style="text-align:center;"><div style="font-size:clamp(30px,4vw,44px);font-weight:800;color:var(--color-primary,#E8702A);">20+</div><div style="color:var(--text-soft,#6b6b6b);font-weight:600;">Yıllık Deneyim</div></div>
@@ -422,7 +428,11 @@ EDKFTRX;
       </div>
     </section>
 
-    <!-- ===================== BRAND SHOWCASE ===================== -->
+    
+EDKP0S1;
+        $p0s2 = <<<'EDKP0S2'
+<!-- BRAND SHOWCASE -->
+
     <section style="padding:84px 0;background:#fff;">
       <div class="container">
         <div style="text-align:center;max-width:640px;margin:0 auto 52px;">
@@ -465,7 +475,11 @@ EDKFTRX;
       </div>
     </section>
 
-    <!-- ===================== FEATURED PRODUCTS ===================== -->
+    
+EDKP0S2;
+        $p0s3 = <<<'EDKP0S3'
+<!-- FEATURED PRODUCTS -->
+
     <section style="padding:84px 0;background:var(--color-secondary,#FBF4EE);">
       <div class="container">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:44px;">
@@ -516,7 +530,11 @@ EDKFTRX;
       </div>
     </section>
 
-    <!-- ===================== CATEGORY GRID ===================== -->
+    
+EDKP0S3;
+        $p0s4 = <<<'EDKP0S4'
+<!-- CATEGORY GRID -->
+
     <section style="padding:84px 0;background:#fff;">
       <div class="container">
         <div style="text-align:center;max-width:600px;margin:0 auto 48px;">
@@ -542,7 +560,11 @@ EDKFTRX;
       </div>
     </section>
 
-    <!-- ===================== ABOUT TEASER ===================== -->
+    
+EDKP0S4;
+        $p0s5 = <<<'EDKP0S5'
+<!-- ABOUT TEASER -->
+
     <section style="padding:84px 0;background:var(--color-secondary,#FBF4EE);">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:52px;align-items:center;">
         <div style="position:relative;min-height:360px;flex:1 1 320px;">
@@ -566,7 +588,11 @@ EDKFTRX;
       </div>
     </section>
 
-    <!-- ===================== TRAINING / SUPPORT ===================== -->
+    
+EDKP0S5;
+        $p0s6 = <<<'EDKP0S6'
+<!-- TRAINING / SUPPORT -->
+
     <section style="padding:84px 0;background:#fff;">
       <div class="container">
         <div style="text-align:center;max-width:620px;margin:0 auto 52px;">
@@ -593,7 +619,11 @@ EDKFTRX;
       </div>
     </section>
 
-    <!-- ===================== CTA ===================== -->
+    
+EDKP0S6;
+        $p0s7 = <<<'EDKP0S7'
+<!-- CTA -->
+
     <section style="padding:20px 0 84px;background:#fff;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:#262220;padding:clamp(44px,6vw,76px);text-align:center;color:#fff;">
@@ -611,9 +641,10 @@ EDKFTRX;
         </div>
       </div>
     </section>
-EDK0;
-        $b1 = <<<'EDK1'
-<!-- ===================== PAGE HERO (compact başlık bandı) ===================== -->
+EDKP0S7;
+        $p1s0 = <<<'EDKP1S0'
+<!-- PAGE HERO (compact başlık bandı) -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(900px 480px at 85% -20%, rgba(244,161,78,.26), transparent 60%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#FBF4EE) 100%);border-bottom:1px solid var(--border-soft,#ece6df);">
       <div class="container" style="padding:54px 0 60px;">
         <nav aria-label="Breadcrumb" style="margin:0 0 18px;">
@@ -628,7 +659,11 @@ EDK0;
       </div>
     </section>
 
-    <!-- ===================== ABOUT STORY (2 kolon split) ===================== -->
+    
+EDKP1S0;
+        $p1s1 = <<<'EDKP1S1'
+<!-- ABOUT STORY (2 kolon split) -->
+
     <section style="padding:84px 0;background:#fff;">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:52px;align-items:center;">
         <div style="position:relative;min-height:380px;flex:1 1 380px;">
@@ -652,7 +687,11 @@ EDK0;
       </div>
     </section>
 
-    <!-- ===================== VİZYON & MİSYON (2 kart) ===================== -->
+    
+EDKP1S1;
+        $p1s2 = <<<'EDKP1S2'
+<!-- VİZYON & MİSYON (2 kart) -->
+
     <section style="padding:84px 0;background:var(--color-secondary,#FBF4EE);">
       <div class="container">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;">
@@ -670,7 +709,11 @@ EDK0;
       </div>
     </section>
 
-    <!-- ===================== STATS BAR ===================== -->
+    
+EDKP1S2;
+        $p1s3 = <<<'EDKP1S3'
+<!-- STATS BAR -->
+
     <section style="background:#fff;">
       <div class="container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:24px;padding:48px 0;border-bottom:1px solid var(--border-soft,#ece6df);">
         <div style="text-align:center;"><div style="font-size:clamp(30px,4vw,44px);font-weight:800;color:var(--color-primary,#E8702A);">20+</div><div style="color:var(--text-soft,#6b6b6b);font-weight:600;">Yıllık Deneyim</div></div>
@@ -680,7 +723,11 @@ EDK0;
       </div>
     </section>
 
-    <!-- ===================== PORTFOLIO BRANDS ===================== -->
+    
+EDKP1S3;
+        $p1s4 = <<<'EDKP1S4'
+<!-- PORTFOLIO BRANDS -->
+
     <section style="padding:84px 0;background:#fff;">
       <div class="container">
         <div style="text-align:center;max-width:640px;margin:0 auto 52px;">
@@ -733,7 +780,11 @@ EDK0;
       </div>
     </section>
 
-    <!-- ===================== TRAINING / SUPPORT ===================== -->
+    
+EDKP1S4;
+        $p1s5 = <<<'EDKP1S5'
+<!-- TRAINING / SUPPORT -->
+
     <section style="padding:84px 0;background:var(--color-secondary,#FBF4EE);">
       <div class="container">
         <div style="text-align:center;max-width:620px;margin:0 auto 52px;">
@@ -760,7 +811,11 @@ EDK0;
       </div>
     </section>
 
-    <!-- ===================== CTA ===================== -->
+    
+EDKP1S5;
+        $p1s6 = <<<'EDKP1S6'
+<!-- CTA -->
+
     <section style="padding:84px 0;background:#fff;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:#262220;padding:clamp(44px,6vw,76px);text-align:center;color:#fff;">
@@ -778,9 +833,10 @@ EDK0;
         </div>
       </div>
     </section>
-EDK1;
-        $b2 = <<<'EDK2'
-<!-- ===================== PAGE HERO (compact) ===================== -->
+EDKP1S6;
+        $p2s0 = <<<'EDKP2S0'
+<!-- PAGE HERO (compact) -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(900px 400px at 85% -20%, rgba(244,161,78,.26), transparent 60%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#FBF4EE) 100%);">
       <div class="container" style="padding:48px 0 56px;">
         <nav aria-label="Breadcrumb" style="font-size:13.5px;color:var(--text-soft,#6b6b6b);margin:0 0 16px;">
@@ -793,7 +849,11 @@ EDK1;
       </div>
     </section>
 
-    <!-- ===================== FILTER CHIPS (görsel, statik) ===================== -->
+    
+EDKP2S0;
+        $p2s1 = <<<'EDKP2S1'
+<!-- FILTER CHIPS (görsel, statik) -->
+
     <section style="background:#fff;border-bottom:1px solid var(--border-soft,#ece6df);">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:10px;padding:24px 0;">
         <a href="/klasik-urunler" style="display:inline-flex;align-items:center;background:var(--color-primary,#E8702A);color:#fff;border:1.5px solid var(--color-primary,#E8702A);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(232,112,42,.26);">Tümü</a>
@@ -805,7 +865,11 @@ EDK1;
       </div>
     </section>
 
-    <!-- ===================== CATEGORY GRID (14 kategori) ===================== -->
+    
+EDKP2S1;
+        $p2s2 = <<<'EDKP2S2'
+<!-- CATEGORY GRID (14 kategori) -->
+
     <section style="padding:64px 0 56px;background:#fff;">
       <div class="container">
         <div style="text-align:center;max-width:600px;margin:0 auto 40px;">
@@ -831,7 +895,11 @@ EDK1;
       </div>
     </section>
 
-    <!-- ===================== PRODUCT GRID ===================== -->
+    
+EDKP2S2;
+        $p2s3 = <<<'EDKP2S3'
+<!-- PRODUCT GRID -->
+
     <section style="padding:8px 0 72px;background:#fff;">
       <div class="container">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:36px;">
@@ -1041,7 +1109,11 @@ EDK1;
       </div>
     </section>
 
-    <!-- ===================== BİLGİ ŞERİDİ ===================== -->
+    
+EDKP2S3;
+        $p2s4 = <<<'EDKP2S4'
+<!-- BİLGİ ŞERİDİ -->
+
     <section style="padding:0 0 56px;background:#fff;">
       <div class="container">
         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;background:var(--color-secondary,#FBF4EE);border:1px solid var(--border-soft,#ece6df);border-radius:var(--radius-card,18px);padding:26px 30px;">
@@ -1054,7 +1126,11 @@ EDK1;
       </div>
     </section>
 
-    <!-- ===================== CTA ===================== -->
+    
+EDKP2S4;
+        $p2s5 = <<<'EDKP2S5'
+<!-- CTA -->
+
     <section style="padding:20px 0 84px;background:#fff;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:#262220;padding:clamp(44px,6vw,76px);text-align:center;color:#fff;">
@@ -1072,9 +1148,10 @@ EDK1;
         </div>
       </div>
     </section>
-EDK2;
-        $b3 = <<<'EDK3'
-<!-- ===================== PAGE HERO (compact) + BREADCRUMB ===================== -->
+EDKP2S5;
+        $p3s0 = <<<'EDKP3S0'
+<!-- PAGE HERO (compact) + BREADCRUMB -->
+
     <section style="background:radial-gradient(900px 460px at 85% -20%, rgba(244,161,78,.24), transparent 60%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#FBF4EE) 100%);border-bottom:1px solid var(--border-soft,#ece6df);">
       <div class="container" style="padding:34px 0 30px;">
         <nav aria-label="Breadcrumb" style="font-size:14px;color:var(--text-soft,#6b6b6b);display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
@@ -1087,7 +1164,11 @@ EDK2;
       </div>
     </section>
 
-    <!-- ===================== PRODUCT DETAIL (2 kolon) ===================== -->
+    
+EDKP3S0;
+        $p3s1 = <<<'EDKP3S1'
+<!-- PRODUCT DETAIL (2 kolon) -->
+
     <section style="padding:48px 0 64px;background:#fff;">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:52px;align-items:flex-start;">
 
@@ -1159,7 +1240,11 @@ EDK2;
       </div>
     </section>
 
-    <!-- ===================== PRODUCT DESCRIPTION (rich-text) ===================== -->
+    
+EDKP3S1;
+        $p3s2 = <<<'EDKP3S2'
+<!-- PRODUCT DESCRIPTION (rich-text) -->
+
     <section style="padding:64px 0;background:var(--color-secondary,#FBF4EE);">
       <div class="container" style="max-width:860px;">
         <div style="margin-bottom:42px;">
@@ -1193,7 +1278,11 @@ EDK2;
       </div>
     </section>
 
-    <!-- ===================== RELATED PRODUCTS ===================== -->
+    
+EDKP3S2;
+        $p3s3 = <<<'EDKP3S3'
+<!-- RELATED PRODUCTS -->
+
     <section style="padding:84px 0;background:#fff;">
       <div class="container">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:44px;">
@@ -1249,7 +1338,11 @@ EDK2;
       </div>
     </section>
 
-    <!-- ===================== CTA (full) ===================== -->
+    
+EDKP3S3;
+        $p3s4 = <<<'EDKP3S4'
+<!-- CTA (full) -->
+
     <section style="padding:20px 0 84px;background:#fff;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:#262220;padding:clamp(44px,6vw,76px);text-align:center;color:#fff;">
@@ -1267,9 +1360,10 @@ EDK2;
         </div>
       </div>
     </section>
-EDK3;
-        $b4 = <<<'EDK4'
-<!-- ===================== PAGE HERO (compact) ===================== -->
+EDKP3S4;
+        $p4s0 = <<<'EDKP4S0'
+<!-- PAGE HERO (compact) -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(900px 460px at 85% -20%, rgba(244,161,78,.26), transparent 60%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#FBF4EE) 100%);">
       <div class="container" style="padding:56px 0 60px;">
         <nav aria-label="Breadcrumb" style="margin:0 0 18px;">
@@ -1284,7 +1378,11 @@ EDK3;
       </div>
     </section>
 
-    <!-- ===================== BRAND CARDS ===================== -->
+    
+EDKP4S0;
+        $p4s1 = <<<'EDKP4S1'
+<!-- BRAND CARDS -->
+
     <section style="padding:72px 0;background:#fff;">
       <div class="container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:26px;">
 
@@ -1370,7 +1468,11 @@ EDK3;
       </div>
     </section>
 
-    <!-- ===================== KISA BANT ===================== -->
+    
+EDKP4S1;
+        $p4s2 = <<<'EDKP4S2'
+<!-- KISA BANT -->
+
     <section style="background:var(--color-secondary,#FBF4EE);">
       <div class="container" style="padding:34px 0;">
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;text-align:center;background:#fff;border:1px solid var(--border-soft,#ece6df);border-radius:var(--radius-card,18px);padding:24px 30px;">
@@ -1380,7 +1482,11 @@ EDK3;
       </div>
     </section>
 
-    <!-- ===================== CTA ===================== -->
+    
+EDKP4S2;
+        $p4s3 = <<<'EDKP4S3'
+<!-- CTA -->
+
     <section style="padding:64px 0 84px;background:var(--color-secondary,#FBF4EE);">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:#262220;padding:clamp(44px,6vw,76px);text-align:center;color:#fff;">
@@ -1398,9 +1504,10 @@ EDK3;
         </div>
       </div>
     </section>
-EDK4;
-        $b5 = <<<'EDK5'
-<!-- ===================== PAGE HERO (compact) ===================== -->
+EDKP4S3;
+        $p5s0 = <<<'EDKP5S0'
+<!-- PAGE HERO (compact) -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(1000px 500px at 85% -20%, rgba(244,161,78,.26), transparent 60%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#FBF4EE) 100%);">
       <div class="container" style="padding:54px 0 60px;">
         <nav aria-label="Sayfa konumu" style="font-size:13.5px;color:var(--text-soft,#6b6b6b);margin:0 0 20px;">
@@ -1414,7 +1521,11 @@ EDK4;
       </div>
     </section>
 
-    <!-- ===================== EVENT GRID ===================== -->
+    
+EDKP5S0;
+        $p5s1 = <<<'EDKP5S1'
+<!-- EVENT GRID -->
+
     <section style="padding:72px 0 40px;background:#fff;">
       <div class="container">
         <p style="display:inline-flex;align-items:center;gap:9px;background:var(--color-secondary,#FBF4EE);border:1px solid var(--border-soft,#ece6df);color:var(--text-soft,#6b6b6b);border-radius:12px;padding:10px 16px;font-size:13.5px;line-height:1.5;margin:0 0 36px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;color:var(--color-primary,#E8702A);"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>Aşağıdaki etkinlikler temsili örneklerdir; gerçek tarihler ve katılım bilgileri yakında güncellenecektir.</p>
@@ -1541,7 +1652,11 @@ EDK4;
       </div>
     </section>
 
-    <!-- ===================== INFO BLOCK ===================== -->
+    
+EDKP5S1;
+        $p5s2 = <<<'EDKP5S2'
+<!-- INFO BLOCK -->
+
     <section style="padding:40px 0 84px;background:#fff;">
       <div class="container">
         <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:center;justify-content:space-between;background:var(--color-secondary,#FBF4EE);border:1px solid var(--border-soft,#ece6df);border-radius:var(--radius-card,18px);padding:clamp(28px,4vw,44px);">
@@ -1557,7 +1672,11 @@ EDK4;
       </div>
     </section>
 
-    <!-- ===================== CTA (full) ===================== -->
+    
+EDKP5S2;
+        $p5s3 = <<<'EDKP5S3'
+<!-- CTA (full) -->
+
     <section style="padding:20px 0 84px;background:#fff;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:#262220;padding:clamp(44px,6vw,76px);text-align:center;color:#fff;">
@@ -1575,9 +1694,10 @@ EDK4;
         </div>
       </div>
     </section>
-EDK5;
-        $b6 = <<<'EDK6'
-<!-- ===================== PAGE HERO (compact) ===================== -->
+EDKP5S3;
+        $p6s0 = <<<'EDKP6S0'
+<!-- PAGE HERO (compact) -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(1000px 460px at 85% -20%, rgba(244,161,78,.26), transparent 60%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#FBF4EE) 100%);">
       <div class="container" style="padding:54px 0 58px;">
         <nav aria-label="Breadcrumb" style="margin:0 0 18px;font-size:14px;color:var(--text-soft,#6b6b6b);">
@@ -1590,7 +1710,11 @@ EDK5;
       </div>
     </section>
 
-    <!-- ===================== CONTACT SPLIT ===================== -->
+    
+EDKP6S0;
+        $p6s1 = <<<'EDKP6S1'
+<!-- CONTACT SPLIT -->
+
     <section style="padding:72px 0;background:#fff;">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:40px;align-items:stretch;">
 
@@ -1662,7 +1786,11 @@ EDK5;
       </div>
     </section>
 
-    <!-- ===================== CONTACT FORM (KVKK'lı) ===================== -->
+    
+EDKP6S1;
+        $p6s2 = <<<'EDKP6S2'
+<!-- CONTACT FORM (KVKK'lı) -->
+
     <section style="padding:0 0 84px;background:#fff;">
       <div class="container">
         <div style="max-width:760px;margin:0 auto;background:var(--color-secondary,#FBF4EE);border:1px solid var(--border-soft,#ece6df);border-radius:24px;box-shadow:var(--shadow-card,0 14px 44px rgba(200,87,22,.10));padding:clamp(28px,5vw,48px);">
@@ -1725,8 +1853,8 @@ EDK5;
         </div>
       </div>
     </section>
-EDK6;
-        $b7 = <<<'EDK7'
+EDKP6S2;
+        $p7s0 = <<<'EDKP7S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"><style>
     :root{
       --color-primary:#0C6E72;
@@ -1742,7 +1870,8 @@ EDK6;
     body{ font-family:"Manrope","Segoe UI",system-ui,-apple-system,Arial,sans-serif; }
     a.st-card{ transition:transform .2s, box-shadow .2s, border-color .2s; }
     a.st-card:hover{ transform:translateY(-4px); box-shadow:0 18px 50px rgba(12,110,114,.16); border-color:#3FBFA8; }
-  </style><!-- ===================== HERO (split) ===================== -->
+  </style><!-- HERO (split) -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(1100px 560px at 82% -8%, rgba(63,191,168,.20), transparent 62%), linear-gradient(180deg,#FFFFFF 0%, var(--color-secondary,#EAF6F4) 100%);">
       <!-- ince grid çizgi dokusu -->
       <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(12,110,114,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(12,110,114,.05) 1px,transparent 1px);background-size:46px 46px;mask-image:linear-gradient(180deg,#000,transparent 80%);"></div>
@@ -1787,7 +1916,11 @@ EDK6;
       </div>
     </section>
 
-    <!-- ===================== GÜVEN / KREDİBİLİTE ŞERİDİ ===================== -->
+    
+EDKP7S0;
+        $p7s1 = <<<'EDKP7S1'
+<!-- GÜVEN / KREDİBİLİTE ŞERİDİ -->
+
     <section style="background:var(--primary-deep,#0B2E34);">
       <div class="container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;padding:0;background:rgba(255,255,255,.08);">
         <div style="background:var(--primary-deep,#0B2E34);padding:30px 24px;text-align:center;">
@@ -1813,7 +1946,11 @@ EDK6;
       </div>
     </section>
 
-    <!-- ===================== ÜRÜN AİLELERİ ===================== -->
+    
+EDKP7S1;
+        $p7s2 = <<<'EDKP7S2'
+<!-- ÜRÜN AİLELERİ -->
+
     <section style="padding:88px 0;background:#fff;">
       <div class="container">
         <div style="text-align:center;max-width:660px;margin:0 auto 56px;">
@@ -1897,7 +2034,11 @@ EDK6;
       </div>
     </section>
 
-    <!-- ===================== RRS SPOTLIGHT ===================== -->
+    
+EDKP7S2;
+        $p7s3 = <<<'EDKP7S3'
+<!-- RRS SPOTLIGHT -->
+
     <section style="padding:88px 0;background:var(--color-secondary,#EAF6F4);">
       <div class="container">
         <div style="display:flex;flex-wrap:wrap;gap:52px;align-items:center;">
@@ -1930,7 +2071,11 @@ EDK6;
       </div>
     </section>
 
-    <!-- ===================== EĞİTİM & DESTEK NOTU ===================== -->
+    
+EDKP7S3;
+        $p7s4 = <<<'EDKP7S4'
+<!-- EĞİTİM & DESTEK NOTU -->
+
     <section style="padding:72px 0;background:#fff;">
       <div class="container">
         <div style="border:1px solid var(--border-soft,#cfe6e1);border-radius:var(--radius-card,18px);padding:clamp(28px,4vw,44px);display:flex;flex-wrap:wrap;gap:28px;align-items:center;background:linear-gradient(180deg,#fff,var(--color-secondary,#EAF6F4));">
@@ -1944,7 +2089,11 @@ EDK6;
       </div>
     </section>
 
-    <!-- ===================== CTA BANDI ===================== -->
+    
+EDKP7S4;
+        $p7s5 = <<<'EDKP7S5'
+<!-- CTA BANDI -->
+
     <section style="padding:20px 0 88px;background:#fff;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:var(--grad-brand,linear-gradient(135deg,#0C6E72,#3FBFA8));padding:clamp(40px,6vw,72px);text-align:center;color:#fff;">
@@ -1962,8 +2111,8 @@ EDK6;
         </div>
       </div>
     </section>
-EDK7;
-        $b8 = <<<'EDK8'
+EDKP7S5;
+        $p8s0 = <<<'EDKP8S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet"><style>
     /* Seffiline — feminen / zarif / editoryal palet override */
     :root {
@@ -1985,7 +2134,8 @@ EDK7;
     a.sf-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-petal); }
     a.sf-btn-fill:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(201,138,109,.34); }
     a.sf-btn-ghost:hover { background: #fff; border-color: #C98A6D; }
-  </style><!-- ===================== 1. HERO ===================== -->
+  </style><!-- 1. HERO -->
+
     <section style="position:relative;overflow:hidden;background:var(--grad-blush,linear-gradient(160deg,#FBE7E6,#FBF0EF,#fff));">
       <!-- organik yuvarlak formlar -->
       <div aria-hidden="true" style="position:absolute;top:-160px;right:-120px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle at 35% 35%, rgba(232,160,168,.32), transparent 70%);"></div>
@@ -2024,7 +2174,11 @@ EDK7;
       </div>
     </section>
 
-    <!-- ===================== 2. MARKA FELSEFESİ ===================== -->
+    
+EDKP8S0;
+        $p8s1 = <<<'EDKP8S1'
+<!-- 2. MARKA FELSEFESİ -->
+
     <section style="padding:96px 0;background:#FFFCFB;">
       <div class="container" style="max-width:780px;text-align:center;">
         <p style="color:var(--color-accent,#E8A0A8);font-weight:700;letter-spacing:3px;text-transform:uppercase;font-size:12px;margin:0 0 22px;">Marka Felsefesi</p>
@@ -2038,7 +2192,11 @@ EDK7;
       </div>
     </section>
 
-    <!-- ===================== 3. 4 ÜRÜN AİLESİ ===================== -->
+    
+EDKP8S1;
+        $p8s2 = <<<'EDKP8S2'
+<!-- 3. 4 ÜRÜN AİLESİ -->
+
     <section id="koleksiyon" style="padding:32px 0 100px;background:#FFFCFB;">
       <div class="container">
         <div style="text-align:center;max-width:620px;margin:0 auto 56px;">
@@ -2089,7 +2247,11 @@ EDK7;
       </div>
     </section>
 
-    <!-- ===================== 4. ÖNE ÇIKAN: SeffiHair (editoryal split) ===================== -->
+    
+EDKP8S2;
+        $p8s3 = <<<'EDKP8S3'
+<!-- 4. ÖNE ÇIKAN: SeffiHair (editoryal split) -->
+
     <section style="padding:100px 0;background:var(--color-secondary,#FBF0EF);position:relative;overflow:hidden;">
       <div aria-hidden="true" style="position:absolute;top:-120px;right:8%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,160,168,.22),transparent 70%);"></div>
       <div class="container" style="position:relative;display:flex;flex-wrap:wrap;gap:64px;align-items:center;">
@@ -2118,7 +2280,11 @@ EDK7;
       </div>
     </section>
 
-    <!-- ===================== 5. GÜVEN / KALİTE NOTU ===================== -->
+    
+EDKP8S3;
+        $p8s4 = <<<'EDKP8S4'
+<!-- 5. GÜVEN / KALİTE NOTU -->
+
     <section style="padding:96px 0;background:#FFFCFB;">
       <div class="container" style="max-width:760px;text-align:center;">
         <div style="display:inline-block;width:70px;height:70px;border-radius:50%;background:linear-gradient(150deg,#FBE7E6,#F4D4CE);margin:0 0 26px;"></div>
@@ -2127,7 +2293,11 @@ EDK7;
       </div>
     </section>
 
-    <!-- ===================== 6. CTA BANDI ===================== -->
+    
+EDKP8S4;
+        $p8s5 = <<<'EDKP8S5'
+<!-- 6. CTA BANDI -->
+
     <section style="padding:20px 0 96px;background:#FFFCFB;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:36px;background:var(--grad-rose,linear-gradient(135deg,#C98A6D,#E8A0A8));padding:clamp(48px,7vw,84px);text-align:center;color:#fff;">
@@ -2142,8 +2312,8 @@ EDK7;
         </div>
       </div>
     </section>
-EDK8;
-        $b9 = <<<'EDK9'
+EDKP8S5;
+        $p9s0 = <<<'EDKP9S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet"><style>
     :root {
       --color-primary: #6C5CE0;
@@ -2164,7 +2334,8 @@ EDK8;
     .aespio-card { transition: transform .22s ease, box-shadow .22s ease; }
     .aespio-pill:hover { transform: translateY(-2px); }
     .aespio-pill { transition: transform .18s ease; }
-  </style><!-- ===================== HERO ===================== -->
+  </style><!-- HERO -->
+
     <section style="position:relative;overflow:hidden;background:linear-gradient(150deg,#6C5CE0 0%, #5A4BD4 40%, #2FC4C0 100%);">
       <!-- geometrik blob şekiller -->
       <div style="position:absolute;top:-120px;right:-80px;width:420px;height:420px;border-radius:48% 52% 60% 40%/55% 45% 55% 45%;background:radial-gradient(circle at 30% 30%, rgba(33,212,180,.55), transparent 70%);filter:blur(8px);"></div>
@@ -2208,7 +2379,11 @@ EDK8;
       </div>
     </section>
 
-    <!-- ===================== STAT / ÖZELLİK ŞERİDİ ===================== -->
+    
+EDKP9S0;
+        $p9s1 = <<<'EDKP9S1'
+<!-- STAT / ÖZELLİK ŞERİDİ -->
+
     <section style="background:#fff;">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:18px;padding:40px 0;justify-content:center;">
         <div class="aespio-pill" style="flex:1 1 200px;display:flex;align-items:center;gap:14px;background:var(--grad-aespio-soft,linear-gradient(135deg,#ECE6FB,#DFF8F2));border-radius:20px;padding:20px 22px;">
@@ -2226,7 +2401,11 @@ EDK8;
       </div>
     </section>
 
-    <!-- ===================== ÜRÜN SHOWCASE ===================== -->
+    
+EDKP9S1;
+        $p9s2 = <<<'EDKP9S2'
+<!-- ÜRÜN SHOWCASE -->
+
     <section id="urunler" style="padding:84px 0;background:var(--color-secondary,#F0ECFB);">
       <div class="container">
         <div style="text-align:center;max-width:640px;margin:0 auto 52px;">
@@ -2295,7 +2474,11 @@ EDK8;
       </div>
     </section>
 
-    <!-- ===================== ÖNE ÇIKAN SPLIT ===================== -->
+    
+EDKP9S2;
+        $p9s3 = <<<'EDKP9S3'
+<!-- ÖNE ÇIKAN SPLIT -->
+
     <section style="padding:90px 0;background:#fff;">
       <!-- 🖼️ GÖRSEL: /assets/img/aespio-lfl-anchor.jpg (oran 1:1)
            PROMPT: "Modern K-beauty thread-lift product hero shot, an anchor-design PDO lifting thread with cannula, vibrant purple and mint gradient backdrop, glossy bright clinical-studio lighting, dynamic youthful aesthetic, sleek futuristic Korean medical aesthetics styling, crisp precise detail, holographic violet-mint highlights; photorealistic, detailed, high resolution; no text, no logo, no watermark"
@@ -2323,7 +2506,11 @@ EDK8;
       </div>
     </section>
 
-    <!-- ===================== GÜVEN NOTU ===================== -->
+    
+EDKP9S3;
+        $p9s4 = <<<'EDKP9S4'
+<!-- GÜVEN NOTU -->
+
     <section style="padding:0 0 84px;background:#fff;">
       <div class="container">
         <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center;background:var(--grad-aespio-soft,linear-gradient(135deg,#ECE6FB,#DFF8F2));border-radius:24px;padding:32px 36px;text-align:center;">
@@ -2333,7 +2520,11 @@ EDK8;
       </div>
     </section>
 
-    <!-- ===================== CTA BANDI ===================== -->
+    
+EDKP9S4;
+        $p9s5 = <<<'EDKP9S5'
+<!-- CTA BANDI -->
+
     <section style="padding:0 0 90px;background:#fff;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:32px;background:linear-gradient(120deg,#6C5CE0 0%, #5A4BD4 45%, #21D4B4 110%);padding:clamp(44px,6vw,76px);text-align:center;color:#fff;">
@@ -2348,8 +2539,8 @@ EDK8;
         </div>
       </div>
     </section>
-EDK9;
-        $b10 = <<<'EDK10'
+EDKP9S5;
+        $p10s0 = <<<'EDKP10S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"><style>
     :root {
       --color-primary: #2DA8FF;   /* elektrik mavi */
@@ -2363,7 +2554,8 @@ EDK9;
     .wh-mono { font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }
     ::selection { background:#2DA8FF; color:#0B0E14; }
     a.wh-link:focus-visible { outline:3px solid #16E0C8; outline-offset:3px; }
-  </style><!-- ===================== 1 · BESPOKE KOYU HERO ===================== -->
+  </style><!-- 1 · BESPOKE KOYU HERO -->
+
     <section style="position:relative;overflow:hidden;background:#0B0E14;background-image:radial-gradient(900px 480px at 82% -8%, rgba(45,168,255,.30), transparent 60%),radial-gradient(700px 520px at 8% 110%, rgba(22,224,200,.20), transparent 60%),linear-gradient(180deg,#0B0E14 0%, #10131A 100%);">
       <!-- teknik grid çizgileri -->
       <div aria-hidden="true" style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(1000px 600px at 70% 0%,#000,transparent 80%);"></div>
@@ -2412,7 +2604,11 @@ EDK9;
       </div>
     </section>
 
-    <!-- ===================== 2 · TEKNOLOJİ / MÜHENDİSLİK ŞERİDİ ===================== -->
+    
+EDKP10S0;
+        $p10s1 = <<<'EDKP10S1'
+<!-- 2 · TEKNOLOJİ / MÜHENDİSLİK ŞERİDİ -->
+
     <section style="background:#10131A;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);">
       <div class="container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;padding:40px 0;">
         <div style="display:flex;align-items:center;gap:14px;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:18px 20px;backdrop-filter:blur(6px);">
@@ -2434,7 +2630,11 @@ EDK9;
       </div>
     </section>
 
-    <!-- ===================== 3 · RAFFINE CİHAZ SPOTLIGHT ===================== -->
+    
+EDKP10S1;
+        $p10s2 = <<<'EDKP10S2'
+<!-- 3 · RAFFINE CİHAZ SPOTLIGHT -->
+
     <section style="padding:92px 0;background:#0B0E14;background-image:radial-gradient(800px 500px at 100% 50%, rgba(22,224,200,.12), transparent 60%);">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:56px;align-items:center;">
         <!-- sol görsel placeholder -->
@@ -2470,7 +2670,11 @@ EDK9;
       </div>
     </section>
 
-    <!-- ===================== 4 · NEDEN WOORHI ===================== -->
+    
+EDKP10S2;
+        $p10s3 = <<<'EDKP10S3'
+<!-- 4 · NEDEN WOORHI -->
+
     <section style="padding:92px 0;background:#10131A;border-top:1px solid rgba(255,255,255,.06);">
       <div class="container">
         <div style="text-align:center;max-width:640px;margin:0 auto 52px;">
@@ -2501,7 +2705,11 @@ EDK9;
       </div>
     </section>
 
-    <!-- ===================== 5 · CTA BANDI (neon gradient koyu) ===================== -->
+    
+EDKP10S3;
+        $p10s4 = <<<'EDKP10S4'
+<!-- 5 · CTA BANDI (neon gradient koyu) -->
+
     <section style="padding:30px 0 92px;background:#0B0E14;">
       <div class="container">
         <div style="position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(120deg,#0E2A44 0%,#0B1C2C 45%,#0A2A2A 100%);border:1px solid rgba(45,168,255,.3);padding:clamp(40px,6vw,72px);text-align:center;box-shadow:0 0 60px rgba(45,168,255,.18);">
@@ -2519,8 +2727,8 @@ EDK9;
         </div>
       </div>
     </section>
-EDK10;
-        $b11 = <<<'EDK11'
+EDKP10S4;
+        $p11s0 = <<<'EDKP11S0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@500;600;700&display=swap"><style>
     /* Mi Medical — premium siyah-altın palet override (yalnızca bu sayfa) */
     :root {
@@ -2537,7 +2745,8 @@ EDK10;
     }
     .mi-serif { font-family: "Playfair Display", "Cormorant Garamond", Georgia, "Times New Roman", serif; }
     .mi-serif-light { font-family: "Cormorant Garamond", "Playfair Display", Georgia, serif; }
-  </style><!-- ===================== 1 · BESPOKE PREMIUM HERO ===================== -->
+  </style><!-- 1 · BESPOKE PREMIUM HERO -->
+
     <section style="position:relative;overflow:hidden;background:radial-gradient(900px 520px at 78% -8%, rgba(201,162,75,.16), transparent 62%), linear-gradient(180deg,#141414 0%, #181715 100%);">
       <!-- ince altın çerçeve -->
       <div aria-hidden="true" style="position:absolute;inset:22px;border:1px solid var(--mi-gold-line,rgba(201,162,75,.32));border-radius:6px;pointer-events:none;"></div>
@@ -2580,7 +2789,11 @@ EDK10;
       </div>
     </section>
 
-    <!-- ===================== 2 · İNCE ALTIN AYRAÇLI DEĞER ŞERİDİ ===================== -->
+    
+EDKP11S0;
+        $p11s1 = <<<'EDKP11S1'
+<!-- 2 · İNCE ALTIN AYRAÇLI DEĞER ŞERİDİ -->
+
     <section style="background:var(--mi-black-soft,#1d1d1d);border-top:1px solid var(--mi-gold-line,rgba(201,162,75,.32));border-bottom:1px solid var(--mi-gold-line,rgba(201,162,75,.32));">
       <!-- 🖼️ DEĞER KARTI GÖRSELLERİ (tekrarlayan grid) — her kartın ◇/◈ glifinin yerine opsiyonel görsel.
            Dosya adı deseni: /assets/img/mi-medical-value-1.jpg, mi-medical-value-2.jpg, mi-medical-value-3.jpg (oran 1:1)
@@ -2607,7 +2820,11 @@ EDK10;
       </div>
     </section>
 
-    <!-- ===================== 3 · PISTOR ELIANCE SPOTLIGHT (fildişi) ===================== -->
+    
+EDKP11S1;
+        $p11s2 = <<<'EDKP11S2'
+<!-- 3 · PISTOR ELIANCE SPOTLIGHT (fildişi) -->
+
     <section style="background:var(--color-secondary,#F7F3EA);padding:104px 0;">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:64px;align-items:center;">
         <!-- görsel -->
@@ -2643,7 +2860,11 @@ EDK10;
       </div>
     </section>
 
-    <!-- ===================== 4 · MARKA VAADİ (fildişi, zarif) ===================== -->
+    
+EDKP11S2;
+        $p11s3 = <<<'EDKP11S3'
+<!-- 4 · MARKA VAADİ (fildişi, zarif) -->
+
     <section style="background:var(--mi-ivory-soft,#FBF8F0);padding:100px 0;border-top:1px solid rgba(201,162,75,.18);">
       <div class="container" style="max-width:780px;margin:0 auto;text-align:center;">
         <div aria-hidden="true" style="width:46px;height:1px;background:var(--color-primary,#C9A24B);margin:0 auto 30px;"></div>
@@ -2654,7 +2875,11 @@ EDK10;
       </div>
     </section>
 
-    <!-- ===================== 5 · CTA BANDI (siyah + altın) ===================== -->
+    
+EDKP11S3;
+        $p11s4 = <<<'EDKP11S4'
+<!-- 5 · CTA BANDI (siyah + altın) -->
+
     <section style="background:linear-gradient(180deg,#181715 0%, #141414 100%);padding:90px 0;border-top:1px solid var(--mi-gold-line,rgba(201,162,75,.32));">
       <div class="container">
         <div style="position:relative;overflow:hidden;border:1px solid var(--mi-gold-line,rgba(201,162,75,.32));border-radius:24px;padding:clamp(44px,6vw,76px);text-align:center;background:radial-gradient(700px 360px at 50% -20%, rgba(201,162,75,.14), transparent 60%);">
@@ -2665,34 +2890,112 @@ EDK10;
         </div>
       </div>
     </section>
-EDK11;
+EDKP11S4;
 
         $pages = [
-            ['slug'=>'klasik','title'=>'Ana Sayfa (Klasik)','sort_order'=>1,'show_in_menu'=>true,'html'=>$b0],
-            ['slug'=>'klasik-hakkimizda','title'=>'Hakkımızda','sort_order'=>2,'show_in_menu'=>true,'html'=>$b1],
-            ['slug'=>'klasik-urunler','title'=>'Ürünler','sort_order'=>3,'show_in_menu'=>true,'html'=>$b2],
-            ['slug'=>'klasik-urun-detay','title'=>'RRS® HA Long Lasting','sort_order'=>99,'show_in_menu'=>false,'html'=>$b3],
-            ['slug'=>'klasik-markalar','title'=>'Markalar','sort_order'=>4,'show_in_menu'=>true,'html'=>$b4],
-            ['slug'=>'klasik-etkinlikler','title'=>'Kongre & Etkinlikler','sort_order'=>5,'show_in_menu'=>true,'html'=>$b5],
-            ['slug'=>'klasik-iletisim','title'=>'İletişim','sort_order'=>6,'show_in_menu'=>true,'html'=>$b6],
-            ['slug'=>'klasik-marka-skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'html'=>$b7],
-            ['slug'=>'klasik-marka-seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'html'=>$b8],
-            ['slug'=>'klasik-marka-aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'html'=>$b9],
-            ['slug'=>'klasik-marka-woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'html'=>$b10],
-            ['slug'=>'klasik-marka-mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'html'=>$b11],
+            ['slug'=>'klasik','title'=>'Ana Sayfa (Klasik)','sort_order'=>1,'show_in_menu'=>true,'sections'=>[
+                ['HERO (split)', $p0s0],
+                ['TRUST STATS', $p0s1],
+                ['BRAND SHOWCASE', $p0s2],
+                ['FEATURED PRODUCTS', $p0s3],
+                ['CATEGORY GRID', $p0s4],
+                ['ABOUT TEASER', $p0s5],
+                ['TRAINING / SUPPORT', $p0s6],
+                ['CTA', $p0s7]
+            ]],
+            ['slug'=>'klasik-hakkimizda','title'=>'Hakkımızda','sort_order'=>2,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO (compact başlık bandı)', $p1s0],
+                ['ABOUT STORY (2 kolon split)', $p1s1],
+                ['VİZYON & MİSYON (2 kart)', $p1s2],
+                ['STATS BAR', $p1s3],
+                ['PORTFOLIO BRANDS', $p1s4],
+                ['TRAINING / SUPPORT', $p1s5],
+                ['CTA', $p1s6]
+            ]],
+            ['slug'=>'klasik-urunler','title'=>'Ürünler','sort_order'=>3,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO (compact)', $p2s0],
+                ['FILTER CHIPS (görsel, statik)', $p2s1],
+                ['CATEGORY GRID (14 kategori)', $p2s2],
+                ['PRODUCT GRID', $p2s3],
+                ['BİLGİ ŞERİDİ', $p2s4],
+                ['CTA', $p2s5]
+            ]],
+            ['slug'=>'klasik-urun-detay','title'=>'RRS® HA Long Lasting','sort_order'=>99,'show_in_menu'=>false,'sections'=>[
+                ['PAGE HERO (compact) + BREADCRUMB', $p3s0],
+                ['PRODUCT DETAIL (2 kolon)', $p3s1],
+                ['PRODUCT DESCRIPTION (rich-text)', $p3s2],
+                ['RELATED PRODUCTS', $p3s3],
+                ['CTA (full)', $p3s4]
+            ]],
+            ['slug'=>'klasik-markalar','title'=>'Markalar','sort_order'=>4,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO (compact)', $p4s0],
+                ['BRAND CARDS', $p4s1],
+                ['KISA BANT', $p4s2],
+                ['CTA', $p4s3]
+            ]],
+            ['slug'=>'klasik-etkinlikler','title'=>'Kongre & Etkinlikler','sort_order'=>5,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO (compact)', $p5s0],
+                ['EVENT GRID', $p5s1],
+                ['INFO BLOCK', $p5s2],
+                ['CTA (full)', $p5s3]
+            ]],
+            ['slug'=>'klasik-iletisim','title'=>'İletişim','sort_order'=>6,'show_in_menu'=>true,'sections'=>[
+                ['PAGE HERO (compact)', $p6s0],
+                ['CONTACT SPLIT', $p6s1],
+                ['CONTACT FORM (KVKK\'lı)', $p6s2]
+            ]],
+            ['slug'=>'klasik-marka-skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'sections'=>[
+                ['HERO (split)', $p7s0],
+                ['GÜVEN / KREDİBİLİTE ŞERİDİ', $p7s1],
+                ['ÜRÜN AİLELERİ', $p7s2],
+                ['RRS SPOTLIGHT', $p7s3],
+                ['EĞİTİM & DESTEK NOTU', $p7s4],
+                ['CTA BANDI', $p7s5]
+            ]],
+            ['slug'=>'klasik-marka-seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'sections'=>[
+                ['1. HERO', $p8s0],
+                ['2. MARKA FELSEFESİ', $p8s1],
+                ['3. 4 ÜRÜN AİLESİ', $p8s2],
+                ['4. ÖNE ÇIKAN: SeffiHair (editoryal split)', $p8s3],
+                ['5. GÜVEN / KALİTE NOTU', $p8s4],
+                ['6. CTA BANDI', $p8s5]
+            ]],
+            ['slug'=>'klasik-marka-aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'sections'=>[
+                ['HERO', $p9s0],
+                ['STAT / ÖZELLİK ŞERİDİ', $p9s1],
+                ['ÜRÜN SHOWCASE', $p9s2],
+                ['ÖNE ÇIKAN SPLIT', $p9s3],
+                ['GÜVEN NOTU', $p9s4],
+                ['CTA BANDI', $p9s5]
+            ]],
+            ['slug'=>'klasik-marka-woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'sections'=>[
+                ['1 · BESPOKE KOYU HERO', $p10s0],
+                ['2 · TEKNOLOJİ / MÜHENDİSLİK ŞERİDİ', $p10s1],
+                ['3 · RAFFINE CİHAZ SPOTLIGHT', $p10s2],
+                ['4 · NEDEN WOORHI', $p10s3],
+                ['5 · CTA BANDI (neon gradient koyu)', $p10s4]
+            ]],
+            ['slug'=>'klasik-marka-mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'sections'=>[
+                ['1 · BESPOKE PREMIUM HERO', $p11s0],
+                ['2 · İNCE ALTIN AYRAÇLI DEĞER ŞERİDİ', $p11s1],
+                ['3 · PISTOR ELIANCE SPOTLIGHT (fildişi)', $p11s2],
+                ['4 · MARKA VAADİ (fildişi, zarif)', $p11s3],
+                ['5 · CTA BANDI (siyah + altın)', $p11s4]
+            ]],
         ];
         foreach ($pages as $p) {
+            $bodyBlocks=[];
+            foreach($p['sections'] as $k=>$sec){
+                $bodyBlocks[]=$this->blk('b_body_'.$k,'content-block','free-html',$cb->id,$sec[1],$k+1);
+            }
             Page::updateOrCreate(['slug'=>$p['slug'],'language_id'=>$langId],
                 ['title'=>$p['title'],'status'=>'published','show_in_menu'=>$p['show_in_menu'],
                  'sort_order'=>$p['sort_order'],'show_breadcrumb'=>true,
-                 'sections_json'=>[
-                   'version'=>2,
-                   'regions'=>[
-                     'header'=>[$this->reg('header','header','estetikdermal-header',$hid,$hdr)],
-                     'body'  =>[$this->reg('body','content-block','free-html',$cb->id,$p['html'])],
-                     'footer'=>[$this->reg('footer','footer','estetikdermal-footer',$fid,$ftr)],
-                   ],
-                 ]]
+                 'sections_json'=>['version'=>2,'regions'=>[
+                     'header'=>[$this->regRow('header',[$this->blk('b_header','header','estetikdermal-header',$hid,$hdr,1)])],
+                     'body'  =>[$this->regRow('body',$bodyBlocks)],
+                     'footer'=>[$this->regRow('footer',[$this->blk('b_footer','footer','estetikdermal-footer',$fid,$ftr,1)])],
+                 ]]]
             );
         }
 
