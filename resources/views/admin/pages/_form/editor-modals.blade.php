@@ -120,18 +120,17 @@
                 <p class="mt-1 text-xs text-gray-500" x-text="settingsBlock ? (settingsBlock.template_name || settingsBlock.type) : ''"></p>
             </div>
             <div class="flex items-center gap-2">
-                <template x-if="settingsBlock">
-                    <a :href="settingsBlock.section_template_id
-                            ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit')
-                            : @js(route('admin.section-templates.index'))"
-                       :title="settingsBlock.section_template_id ? 'Block şablonunu düzenle' : 'Block şablonları listesi'"
-                       target="_blank"
-                       title="Block şablonunu düzenle"
-                       class="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">
-                        <i class="fas fa-pen-to-square text-[11px]"></i>
-                        <span>Şablonu Düzenle</span>
-                    </a>
-                </template>
+                <a x-show="settingsBlock"
+                   x-cloak
+                   :href="settingsBlock?.section_template_id
+                           ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit')
+                           : @js(route('admin.section-templates.index'))"
+                   :title="settingsBlock?.section_template_id ? 'Block şablonunu düzenle' : 'Block şablonları listesi'"
+                   target="_blank"
+                   class="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-pen-to-square text-[11px]"></i>
+                    <span>Şablonu Düzenle</span>
+                </a>
                 <button type="button"
                         @click="closeBlockSettings()"
                         class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200">
