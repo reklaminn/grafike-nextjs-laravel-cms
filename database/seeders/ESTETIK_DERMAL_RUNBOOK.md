@@ -65,16 +65,20 @@ git fetch && git checkout deploy/estetik-dermal-golive && git pull
 # ── 1) Tüm seeder dosyalarını app container'a kopyala (image baked → şart)
 for f in EstetikDermalThemeSeeder EstetikDermalSectionTemplatesSeeder EstetikDermalChromeSeeder \
          EstetikDermalV2ThemeSeeder EstetikDermalV2ChromeSeeder \
+         EstetikDermalV2FieldChromeSeeder EstetikDermalKlasikFieldChromeSeeder \
          EstetikDermalV2TenantSeeder EstetikDermalKlasikTenantSeeder; do
   docker cp database/seeders/$f.php grafike_cms_app1:/var/www/html/database/seeders/
 done
 
-# ── 2) CENTRAL seed (tema + bloklar + chrome) — central DB
+# ── 2) CENTRAL seed (tema + chrome + ALAN ŞABLONLARI) — central DB
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalThemeSeeder --force
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalSectionTemplatesSeeder --force
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalChromeSeeder --force
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2ThemeSeeder --force
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2ChromeSeeder --force
+# Alan-tabanlı bölüm şablonları (İçerik sekmesinde düzenleme + repeater) — TENANT'tan ÖNCE şart
+docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2FieldChromeSeeder --force
+docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalKlasikFieldChromeSeeder --force
 
 # ── 3) TENANT seed (tenant context) — iki tema tek komutta
 docker exec grafike_cms_app1 php artisan tinker --execute="App\Models\Tenant::find('estetik_dermal')->run(function(){ Artisan::call('db:seed',['--class'=>'EstetikDermalV2TenantSeeder','--force'=>true]); Artisan::call('db:seed',['--class'=>'EstetikDermalKlasikTenantSeeder','--force'=>true]); echo PHP_EOL.'TENANT SEED OK'.PHP_EOL; });"
