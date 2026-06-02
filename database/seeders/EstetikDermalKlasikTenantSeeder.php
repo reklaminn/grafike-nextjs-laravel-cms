@@ -35,7 +35,7 @@ class EstetikDermalKlasikTenantSeeder extends Seeder
         }
         $lang=Language::query()->where('code','tr')->first() ?? Language::query()->first();
         $langId=$lang?->id;
-        Page::where('slug','like','klasik/%')->delete();
+        Page::where('slug','like','klasik%')->delete(); Page::where('slug','like','marka/%')->delete(); Page::where('slug','marka-neogenesis')->delete(); // v2 kaldırıldı: klasik kök slug'ları v2'yi ezer, v2-özel neogenesis silinir
         $hdr=<<<'EDV2HDRX'
 <style>
 /* ============================================================================
@@ -273,19 +273,19 @@ p { margin: 0; }
 .reveal{opacity:1 !important;transform:none !important}
 </style><header class="site-header">
     <div class="container site-header__inner">
-      <a class="brand" href="/klasik" aria-label="Estetik Dermal ana sayfa">
+      <a class="brand" href="/" aria-label="Estetik Dermal ana sayfa">
         <span class="brand__logo" role="img" aria-label="Estetik Dermal — Medikal Estetik"></span>
       </a>
       <input type="checkbox" id="navToggle" class="nav-toggle" aria-hidden="true">
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
-        <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik-hakkimizda">Hakkımızda</a>
-        <a href="/klasik-urunler">Ürünler</a>
-        <a href="/klasik-markalar">Markalar</a>
-        <a href="/klasik-etkinlikler">Etkinlikler</a>
+        <a href="/" aria-current="page">Ana Sayfa</a>
+        <a href="/hakkimizda">Hakkımızda</a>
+        <a href="/urunler">Ürünler</a>
+        <a href="/markalar">Markalar</a>
+        <a href="/etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik-iletisim">İletişim</a>
+        <a href="/iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -305,20 +305,20 @@ EDV2HDRX;
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik-markalar">Markalar</a></li>
-          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik-iletisim">İletişim</a></li>
+          <li><a href="/hakkimizda">Hakkımızda</a></li>
+          <li><a href="/markalar">Markalar</a></li>
+          <li><a href="/etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
-          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
-          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/marka-seffiline">Seffiline</a></li>
+          <li><a href="/marka-aespio">Grand Aespio</a></li>
+          <li><a href="/marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -338,41 +338,41 @@ EDV2HDRX;
   </footer>
 EDV2FTRX;
         $pages=[
-            ['slug'=>'klasik','title'=>'Ana Sayfa (Klasik)','order'=>1,'menu'=>true,'vars'=>[
-                'klasik-s-klasik-0','klasik-s-klasik-1','klasik-s-klasik-2','klasik-s-klasik-3','klasik-s-klasik-4','klasik-s-klasik-5','klasik-s-klasik-6','klasik-s-klasik-7'
+            ['slug'=>'home','title'=>'Ana Sayfa','order'=>1,'menu'=>true,'vars'=>[
+                'klasik-s-home-0','klasik-s-home-1','klasik-s-home-2','klasik-s-home-3','klasik-s-home-4','klasik-s-home-5','klasik-s-home-6','klasik-s-home-7'
             ]],
-            ['slug'=>'klasik-hakkimizda','title'=>'Hakkımızda','order'=>2,'menu'=>true,'vars'=>[
-                'klasik-s-klasik-hakkimizda-0','klasik-s-klasik-hakkimizda-1','klasik-s-klasik-hakkimizda-2','klasik-s-klasik-hakkimizda-3','klasik-s-klasik-hakkimizda-4','klasik-s-klasik-hakkimizda-5','klasik-s-klasik-hakkimizda-6'
+            ['slug'=>'hakkimizda','title'=>'Hakkımızda','order'=>2,'menu'=>true,'vars'=>[
+                'klasik-s-hakkimizda-0','klasik-s-hakkimizda-1','klasik-s-hakkimizda-2','klasik-s-hakkimizda-3','klasik-s-hakkimizda-4','klasik-s-hakkimizda-5','klasik-s-hakkimizda-6'
             ]],
-            ['slug'=>'klasik-urunler','title'=>'Ürünler','order'=>3,'menu'=>true,'vars'=>[
-                'klasik-s-klasik-urunler-0','klasik-s-klasik-urunler-1','klasik-s-klasik-urunler-2','klasik-s-klasik-urunler-3','klasik-s-klasik-urunler-4','klasik-s-klasik-urunler-5'
+            ['slug'=>'urunler','title'=>'Ürünler','order'=>3,'menu'=>true,'vars'=>[
+                'klasik-s-urunler-0','klasik-s-urunler-1','klasik-s-urunler-2','klasik-s-urunler-3','klasik-s-urunler-4','klasik-s-urunler-5'
             ]],
-            ['slug'=>'klasik-urun-detay','title'=>'RRS® HA Long Lasting','order'=>99,'menu'=>false,'vars'=>[
-                'klasik-s-klasik-urun-detay-0','klasik-s-klasik-urun-detay-1','klasik-s-klasik-urun-detay-2','klasik-s-klasik-urun-detay-3','klasik-s-klasik-urun-detay-4'
+            ['slug'=>'urun-detay','title'=>'RRS® HA Long Lasting','order'=>99,'menu'=>false,'vars'=>[
+                'klasik-s-urun-detay-0','klasik-s-urun-detay-1','klasik-s-urun-detay-2','klasik-s-urun-detay-3','klasik-s-urun-detay-4'
             ]],
-            ['slug'=>'klasik-markalar','title'=>'Markalar','order'=>4,'menu'=>true,'vars'=>[
-                'klasik-s-klasik-markalar-0','klasik-s-klasik-markalar-1','klasik-s-klasik-markalar-2','klasik-s-klasik-markalar-3'
+            ['slug'=>'markalar','title'=>'Markalar','order'=>4,'menu'=>true,'vars'=>[
+                'klasik-s-markalar-0','klasik-s-markalar-1','klasik-s-markalar-2','klasik-s-markalar-3'
             ]],
-            ['slug'=>'klasik-etkinlikler','title'=>'Kongre & Etkinlikler','order'=>5,'menu'=>true,'vars'=>[
-                'klasik-s-klasik-etkinlikler-0','klasik-s-klasik-etkinlikler-1','klasik-s-klasik-etkinlikler-2','klasik-s-klasik-etkinlikler-3'
+            ['slug'=>'etkinlikler','title'=>'Kongre & Etkinlikler','order'=>5,'menu'=>true,'vars'=>[
+                'klasik-s-etkinlikler-0','klasik-s-etkinlikler-1','klasik-s-etkinlikler-2','klasik-s-etkinlikler-3'
             ]],
-            ['slug'=>'klasik-iletisim','title'=>'İletişim','order'=>6,'menu'=>true,'vars'=>[
-                'klasik-s-klasik-iletisim-0','klasik-s-klasik-iletisim-1','klasik-s-klasik-iletisim-2'
+            ['slug'=>'iletisim','title'=>'İletişim','order'=>6,'menu'=>true,'vars'=>[
+                'klasik-s-iletisim-0','klasik-s-iletisim-1','klasik-s-iletisim-2'
             ]],
-            ['slug'=>'klasik-marka-skintech','title'=>'Skin Tech Pharma Group','order'=>101,'menu'=>false,'vars'=>[
-                'klasik-s-klasik-marka-skintech-0','klasik-s-klasik-marka-skintech-1','klasik-s-klasik-marka-skintech-2','klasik-s-klasik-marka-skintech-3','klasik-s-klasik-marka-skintech-4','klasik-s-klasik-marka-skintech-5'
+            ['slug'=>'marka-skintech','title'=>'Skin Tech Pharma Group','order'=>101,'menu'=>false,'vars'=>[
+                'klasik-s-marka-skintech-0','klasik-s-marka-skintech-1','klasik-s-marka-skintech-2','klasik-s-marka-skintech-3','klasik-s-marka-skintech-4','klasik-s-marka-skintech-5'
             ]],
-            ['slug'=>'klasik-marka-seffiline','title'=>'Seffiline','order'=>102,'menu'=>false,'vars'=>[
-                'klasik-s-klasik-marka-seffiline-0','klasik-s-klasik-marka-seffiline-1','klasik-s-klasik-marka-seffiline-2','klasik-s-klasik-marka-seffiline-3','klasik-s-klasik-marka-seffiline-4','klasik-s-klasik-marka-seffiline-5'
+            ['slug'=>'marka-seffiline','title'=>'Seffiline','order'=>102,'menu'=>false,'vars'=>[
+                'klasik-s-marka-seffiline-0','klasik-s-marka-seffiline-1','klasik-s-marka-seffiline-2','klasik-s-marka-seffiline-3','klasik-s-marka-seffiline-4','klasik-s-marka-seffiline-5'
             ]],
-            ['slug'=>'klasik-marka-aespio','title'=>'Grand Aespio','order'=>103,'menu'=>false,'vars'=>[
-                'klasik-s-klasik-marka-aespio-0','klasik-s-klasik-marka-aespio-1','klasik-s-klasik-marka-aespio-2','klasik-s-klasik-marka-aespio-3','klasik-s-klasik-marka-aespio-4','klasik-s-klasik-marka-aespio-5'
+            ['slug'=>'marka-aespio','title'=>'Grand Aespio','order'=>103,'menu'=>false,'vars'=>[
+                'klasik-s-marka-aespio-0','klasik-s-marka-aespio-1','klasik-s-marka-aespio-2','klasik-s-marka-aespio-3','klasik-s-marka-aespio-4','klasik-s-marka-aespio-5'
             ]],
-            ['slug'=>'klasik-marka-woorhi','title'=>'Woorhi Mechatronics','order'=>104,'menu'=>false,'vars'=>[
-                'klasik-s-klasik-marka-woorhi-0','klasik-s-klasik-marka-woorhi-1','klasik-s-klasik-marka-woorhi-2','klasik-s-klasik-marka-woorhi-3','klasik-s-klasik-marka-woorhi-4'
+            ['slug'=>'marka-woorhi','title'=>'Woorhi Mechatronics','order'=>104,'menu'=>false,'vars'=>[
+                'klasik-s-marka-woorhi-0','klasik-s-marka-woorhi-1','klasik-s-marka-woorhi-2','klasik-s-marka-woorhi-3','klasik-s-marka-woorhi-4'
             ]],
-            ['slug'=>'klasik-marka-mi-medical','title'=>'Mi Medical Innovation','order'=>105,'menu'=>false,'vars'=>[
-                'klasik-s-klasik-marka-mi-medical-0','klasik-s-klasik-marka-mi-medical-1','klasik-s-klasik-marka-mi-medical-2','klasik-s-klasik-marka-mi-medical-3','klasik-s-klasik-marka-mi-medical-4'
+            ['slug'=>'marka-mi-medical','title'=>'Mi Medical Innovation','order'=>105,'menu'=>false,'vars'=>[
+                'klasik-s-marka-mi-medical-0','klasik-s-marka-mi-medical-1','klasik-s-marka-mi-medical-2','klasik-s-marka-mi-medical-3','klasik-s-marka-mi-medical-4'
             ]],
         ];
         foreach($pages as $p){
