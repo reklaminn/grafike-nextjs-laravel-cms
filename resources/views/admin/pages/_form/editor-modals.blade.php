@@ -120,8 +120,11 @@
                 <p class="mt-1 text-xs text-gray-500" x-text="settingsBlock ? (settingsBlock.template_name || settingsBlock.type) : ''"></p>
             </div>
             <div class="flex items-center gap-2">
-                <template x-if="settingsBlock && settingsBlock.section_template_id">
-                    <a :href="@js(rtrim(route('admin.section-templates.edit', '_id_'), '_id_')) + settingsBlock.section_template_id"
+                <template x-if="settingsBlock">
+                    <a :href="settingsBlock.section_template_id
+                            ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit')
+                            : @js(route('admin.section-templates.index'))"
+                       :title="settingsBlock.section_template_id ? 'Block şablonunu düzenle' : 'Block şablonları listesi'"
                        target="_blank"
                        title="Block şablonunu düzenle"
                        class="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">

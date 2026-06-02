@@ -300,7 +300,7 @@
                                                                 <i class="fas fa-cog"></i>
                                                             </button>
                                                             <template x-if="block.section_template_id">
-                                                                <a :href="@js(rtrim(route('admin.section-templates.edit', '_id_'), '_id_')) + block.section_template_id"
+                                                                <a :href="@js(url('admin/section-templates')) + '/' + block.section_template_id + '/edit'"
                                                                    target="_blank"
                                                                    title="Block şablonunu düzenle"
                                                                    class="rounded px-1 py-0.5 text-[11px] text-purple-400 hover:bg-purple-50">
