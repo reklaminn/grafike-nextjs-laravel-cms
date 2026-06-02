@@ -23,6 +23,8 @@ class EstetikDermalV2TenantSeeder extends Seeder
         if(! $cb){ $this->command?->warn('Tema2 content-block yok — önce V2ChromeSeeder.'); return; }
         $lang=Language::query()->where('code','tr')->first() ?? Language::query()->first();
         $langId=$lang?->id;
+        // Eski nested-slug marka sayfalarını temizle (route slash desteklemez → düz 'marka-x')
+        Page::where('slug','like','marka/%')->delete();
         $b0 = <<<'EDV2B0'
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>/* ============================================================================
    Estetik Dermal — Alternatif Anasayfa (v2) "Clinical Luxury"
@@ -503,7 +505,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -860,12 +862,12 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
           <p class="lead" style="margin-top:14px;">Her biri kendi alanında uzman; mezoterapiden cihaza, peelingden ip askıya geniş bir ürün yelpazesi.</p>
         </div>
         <div class="brandgrid">
-          <a class="brandc reveal" href="/marka/skintech"><div class="brandc__origin">İspanya</div><div class="brandc__logo">Skin Tech Pharma Group</div><p>Kimyasal peeling, mezoterapi ve RRS skinbooster serisinde dünya lideri.</p></a>
-          <a class="brandc reveal d1" href="/marka/mi-medical"><div class="brandc__origin">Premium</div><div class="brandc__logo">MI-Medical Innovation</div><p>Premium mezoterapi ve enjeksiyon sistemleri.</p></a>
+          <a class="brandc reveal" href="/marka-skintech"><div class="brandc__origin">İspanya</div><div class="brandc__logo">Skin Tech Pharma Group</div><p>Kimyasal peeling, mezoterapi ve RRS skinbooster serisinde dünya lideri.</p></a>
+          <a class="brandc reveal d1" href="/marka-mi-medical"><div class="brandc__origin">Premium</div><div class="brandc__logo">MI-Medical Innovation</div><p>Premium mezoterapi ve enjeksiyon sistemleri.</p></a>
           <div class="brandc reveal d2"><div class="brandc__origin">Kök Hücre</div><div class="brandc__logo">Neogenesis</div><p>Kök hücre teknolojili profesyonel cilt bakım serisi.</p></div>
-          <a class="brandc reveal" href="/marka/seffiline"><div class="brandc__origin">Cilt &amp; Saç</div><div class="brandc__logo">Seffiline</div><p>Cilt, saç, intim bakım ve dolgu çözümleri serisi.</p></a>
-          <a class="brandc reveal d1" href="/marka/woorhi"><div class="brandc__origin">Güney Kore</div><div class="brandc__logo">Woorhi Mechatronics</div><p>Kore mühendisliğiyle geliştirilen medikal estetik cihazları.</p></a>
-          <a class="brandc reveal d2" href="/marka/aespio"><div class="brandc__origin">K-Beauty</div><div class="brandc__logo">Grand Aespio</div><p>Yüz maskeleri ve ip askı (thread lift) ürünleri.</p></a>
+          <a class="brandc reveal" href="/marka-seffiline"><div class="brandc__origin">Cilt &amp; Saç</div><div class="brandc__logo">Seffiline</div><p>Cilt, saç, intim bakım ve dolgu çözümleri serisi.</p></a>
+          <a class="brandc reveal d1" href="/marka-woorhi"><div class="brandc__origin">Güney Kore</div><div class="brandc__logo">Woorhi Mechatronics</div><p>Kore mühendisliğiyle geliştirilen medikal estetik cihazları.</p></a>
+          <a class="brandc reveal d2" href="/marka-aespio"><div class="brandc__origin">K-Beauty</div><div class="brandc__logo">Grand Aespio</div><p>Yüz maskeleri ve ip askı (thread lift) ürünleri.</p></a>
         </div>
       </div>
     </section>
@@ -911,7 +913,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -1422,7 +1424,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -1848,7 +1850,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -2148,7 +2150,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <div class="brandgrid">
 
           <!-- Skin Tech Pharma Group -->
-          <a class="brandc reveal" href="/marka/skintech">
+          <a class="brandc reveal" href="/marka-skintech">
             <!-- 🖼️ GÖRSEL: assets/img/brand-panel-skintech.jpg (oran 16:9) — premium minimal ürün still life -->
             <div class="brandc__img" style="background-image:url('assets/img/brand-panel-skintech.jpg')"></div>
             <div class="brandc__origin">İspanya · Amiral Marka</div>
@@ -2158,7 +2160,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
           </a>
 
           <!-- MI-Medical Innovation -->
-          <a class="brandc reveal d1" href="/marka/mi-medical">
+          <a class="brandc reveal d1" href="/marka-mi-medical">
             <div class="brandc__img" style="background-image:url('assets/img/brand-panel-mi-medical.jpg')"></div>
             <div class="brandc__origin">Premium · Enjeksiyon Sistemleri</div>
             <div class="brandc__logo">MI-Medical Innovation</div>
@@ -2167,7 +2169,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
           </a>
 
           <!-- Neogenesis -->
-          <a class="brandc reveal d2" href="/marka/neogenesis">
+          <a class="brandc reveal d2" href="/marka-neogenesis">
             <div class="brandc__img" style="background-image:url('assets/img/brand-panel-neogenesis.jpg')"></div>
             <div class="brandc__origin">Portföy · Rejeneratif Bakım</div>
             <div class="brandc__logo">Neogenesis</div>
@@ -2176,7 +2178,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
           </a>
 
           <!-- Seffiline -->
-          <a class="brandc reveal" href="/marka/seffiline">
+          <a class="brandc reveal" href="/marka-seffiline">
             <div class="brandc__img" style="background-image:url('assets/img/brand-panel-seffiline.jpg')"></div>
             <div class="brandc__origin">Bakım &amp; Dolgu Serisi</div>
             <div class="brandc__logo">Seffiline</div>
@@ -2185,7 +2187,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
           </a>
 
           <!-- Woorhi Mechatronics -->
-          <a class="brandc reveal d1" href="/marka/woorhi">
+          <a class="brandc reveal d1" href="/marka-woorhi">
             <div class="brandc__img" style="background-image:url('assets/img/brand-panel-woorhi.jpg')"></div>
             <div class="brandc__origin">Güney Kore · Mekatronik</div>
             <div class="brandc__logo">Woorhi Mechatronics</div>
@@ -2194,7 +2196,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
           </a>
 
           <!-- Grand Aespio -->
-          <a class="brandc reveal d2" href="/marka/aespio">
+          <a class="brandc reveal d2" href="/marka-aespio">
             <div class="brandc__img" style="background-image:url('assets/img/brand-panel-aespio.jpg')"></div>
             <div class="brandc__origin">K-Beauty · Thread Lift</div>
             <div class="brandc__logo">Grand Aespio</div>
@@ -2239,7 +2241,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -2663,7 +2665,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -3011,7 +3013,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -3782,7 +3784,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -4406,7 +4408,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -5177,7 +5179,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -5813,7 +5815,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -6455,7 +6457,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -7168,7 +7170,7 @@ h1,h2,h3,h4 { font-family:var(--font-serif); color:var(--ink); font-weight:480; 
         <p style="margin:16px 0 0;max-width:300px;font-size:14.5px;line-height:1.7;">2004'ten bu yana medikal estetiğin yenilikçi ürünlerini doktorlara sunan resmi distribütör. Kuşadası / Aydın.</p>
       </div>
       <div><h5>Kurumsal</h5><ul><li><a href="/hakkimizda">Hakkımızda</a></li><li><a href="/markalar">Markalar</a></li><li><a href="/etkinlikler">Eğitim &amp; Kongre</a></li><li><a href="/iletisim">İletişim</a></li></ul></div>
-      <div><h5>Markalar</h5><ul><li><a href="/marka/skintech">Skin Tech Pharma</a></li><li><a href="/marka/seffiline">Seffiline</a></li><li><a href="/marka/aespio">Grand Aespio</a></li><li><a href="/marka/woorhi">Woorhi</a></li><li><a href="/marka/mi-medical">Mi Medical</a></li></ul></div>
+      <div><h5>Markalar</h5><ul><li><a href="/marka-skintech">Skin Tech Pharma</a></li><li><a href="/marka-seffiline">Seffiline</a></li><li><a href="/marka-aespio">Grand Aespio</a></li><li><a href="/marka-woorhi">Woorhi</a></li><li><a href="/marka-mi-medical">Mi Medical</a></li></ul></div>
       <div><h5>İletişim</h5><ul><li><a href="tel:+902566121813">0 256 612 18 13</a></li><li><a href="https://wa.me/905426205100" target="_blank" rel="noopener">+90 542 620 51 00</a></li><li><a href="mailto:info@estetikdermal.com">info@estetikdermal.com</a></li><li><a href="https://www.instagram.com/estetikdermal/" target="_blank" rel="noopener">Instagram</a></li></ul></div>
     </div>
     <div class="wrap footer__bottom"><span>© 2026 Estetik Dermal. Tüm hakları saklıdır.</span><span>Resmi medikal estetik distribütörü · Kuşadası / Aydın</span></div>
@@ -7183,12 +7185,12 @@ EDV2B12;
             ['slug'=>'markalar','title'=>'Markalar','sort_order'=>4,'show_in_menu'=>true,'html'=>$b4],
             ['slug'=>'etkinlikler','title'=>'Kongre & Etkinlikler','sort_order'=>5,'show_in_menu'=>true,'html'=>$b5],
             ['slug'=>'iletisim','title'=>'İletişim','sort_order'=>6,'show_in_menu'=>true,'html'=>$b6],
-            ['slug'=>'marka/skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'html'=>$b7],
-            ['slug'=>'marka/seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'html'=>$b8],
-            ['slug'=>'marka/aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'html'=>$b9],
-            ['slug'=>'marka/woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'html'=>$b10],
-            ['slug'=>'marka/mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'html'=>$b11],
-            ['slug'=>'marka/neogenesis','title'=>'Neogenesis','sort_order'=>106,'show_in_menu'=>false,'html'=>$b12],
+            ['slug'=>'marka-skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'html'=>$b7],
+            ['slug'=>'marka-seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'html'=>$b8],
+            ['slug'=>'marka-aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'html'=>$b9],
+            ['slug'=>'marka-woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'html'=>$b10],
+            ['slug'=>'marka-mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'html'=>$b11],
+            ['slug'=>'marka-neogenesis','title'=>'Neogenesis','sort_order'=>106,'show_in_menu'=>false,'html'=>$b12],
         ];
         foreach($pages as $p){
             Page::updateOrCreate(['slug'=>$p['slug'],'language_id'=>$langId],

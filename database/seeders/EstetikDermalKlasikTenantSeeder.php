@@ -25,6 +25,8 @@ class EstetikDermalKlasikTenantSeeder extends Seeder
         if (! $cb) { $this->command?->warn('content-block (free-html) yok — önce EstetikDermalChromeSeeder.'); return; }
         $lang = Language::query()->where('code','tr')->first() ?? Language::query()->first();
         $langId = $lang?->id;
+        // Eski nested-slug klasik sayfalarını temizle (route slash desteklemez → düz 'klasik-x')
+        Page::where('slug','like','klasik/%')->delete();
         $b0 = <<<'EDK0'
 <style>/* ============================================================================
    Estetik Dermal — Design Tokens
@@ -269,12 +271,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -286,7 +288,7 @@ p { margin: 0; }
           <h1 style="font-size:clamp(34px,5vw,56px);line-height:1.08;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 20px;">Medikal estetikte<br><span style="background:var(--grad-brand,linear-gradient(135deg,#E8702A,#F4A14E));-webkit-background-clip:text;background-clip:text;color:transparent;">yenilikçi çözümler</span></h1>
           <p style="font-size:clamp(16px,2vw,20px);color:var(--text-soft,#6b6b6b);line-height:1.7;max-width:560px;margin:0 0 32px;">Tek seansta uzun etkili sonuçlarla yüksek memnuniyet. Uluslararası markaların resmi temsilcisi olarak, doktorlara ürün ve uygulamalı eğitim sunuyoruz.</p>
           <div style="display:flex;gap:14px;flex-wrap:wrap;">
-            <a href="/klasik/urunler" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#E8702A);color:#fff;padding:15px 30px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 10px 30px rgba(232,112,42,.32);">Ürünleri Keşfet →</a>
+            <a href="/klasik-urunler" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#E8702A);color:#fff;padding:15px 30px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 10px 30px rgba(232,112,42,.32);">Ürünleri Keşfet →</a>
             <a href="https://wa.me/905426205100" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);padding:15px 26px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;"><svg viewBox="0 0 32 32" fill="#25D366" aria-hidden="true" style="width:19px;height:19px;flex-shrink:0;"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp Danışma</a>
           </div>
           <div style="display:flex;gap:28px;flex-wrap:wrap;margin-top:38px;">
@@ -366,31 +368,31 @@ p { margin: 0; }
           <p style="color:var(--text-soft,#6b6b6b);font-size:17px;line-height:1.7;">Her biri kendi alanında uzman; mezoterapiden cihaza, peelingden ip askıya geniş bir portföy.</p>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;">
-          <a href="/klasik/marka/skintech" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #0C6E72;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-skintech" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #0C6E72;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#0C6E72;margin-bottom:10px;">İspanya</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 8px;">Skin Tech Pharma</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 16px;">Peeling, mezoterapi ve RRS skinbooster serisi.</p>
             <span style="color:var(--color-primary,#E8702A);font-weight:700;font-size:14px;">Keşfet →</span>
           </a>
-          <a href="/klasik/marka/seffiline" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C98A6D;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-seffiline" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C98A6D;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#C98A6D;margin-bottom:10px;">Cilt & Saç</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 8px;">Seffiline</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 16px;">Cilt, saç, intim bakım ve dolgu çözümleri.</p>
             <span style="color:var(--color-primary,#E8702A);font-weight:700;font-size:14px;">Keşfet →</span>
           </a>
-          <a href="/klasik/marka/aespio" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #6C5CE0;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-aespio" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #6C5CE0;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6C5CE0;margin-bottom:10px;">K-Beauty</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 8px;">Grand Aespio</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 16px;">Yüz maskeleri ve ip askı (thread) ürünleri.</p>
             <span style="color:var(--color-primary,#E8702A);font-weight:700;font-size:14px;">Keşfet →</span>
           </a>
-          <a href="/klasik/marka/woorhi" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #2DA8FF;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-woorhi" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #2DA8FF;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#2480C8;margin-bottom:10px;">Güney Kore</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 8px;">Woorhi Mechatronics</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 16px;">Kore mühendisliği medikal estetik cihazları.</p>
             <span style="color:var(--color-primary,#E8702A);font-weight:700;font-size:14px;">Keşfet →</span>
           </a>
-          <a href="/klasik/marka/mi-medical" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C9A24B;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-mi-medical" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C9A24B;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#B08A38;margin-bottom:10px;">Premium</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 8px;">Mi Medical Innovation</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 16px;">Premium mezoterapi ve enjeksiyon sistemleri.</p>
@@ -408,14 +410,14 @@ p { margin: 0; }
             <p style="color:var(--color-primary,#E8702A);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-size:13px;margin:0 0 10px;">Öne Çıkan Ürünler</p>
             <h2 style="font-size:clamp(26px,4vw,38px);font-weight:800;color:var(--text-main,#2a2a2a);margin:0;line-height:1.15;">Kliniğinizin en çok tercih ettikleri</h2>
           </div>
-          <a href="/klasik/urunler" style="color:var(--color-primary,#E8702A);font-weight:700;font-size:15px;white-space:nowrap;">Tüm ürünler →</a>
+          <a href="/klasik-urunler" style="color:var(--color-primary,#E8702A);font-weight:700;font-size:15px;white-space:nowrap;">Tüm ürünler →</a>
         </div>
         <!-- 🖼️ GÖRSEL (öne çıkan ürün kartları – temsili blok, her kart için aynı desen):
              /assets/img/product-{slug}.jpg (oran 4:3) — örn. product-rrs-ha-long-lasting.jpg, product-melablock-spf50.jpg, product-benebellum-lumina-vitc.jpg, product-beta-glukan-mask.jpg
              PROMPT: "Clean studio product photography of a {ürün adı} professional medical aesthetics product, isolated on a soft cream-to-peach gradient background, premium clinical packaging, subtle soft shadow and reflection, warm terracotta and amber brand lighting, dermatology catalog style, no text, no logo, no watermark, high resolution"
              DEĞİŞTİR → her kartın gradyanlı div'i yerine: <img src="assets/img/product-{slug}.jpg" alt="{ÜRÜN ADI} ürün görseli" style="width:100%;height:100%;object-fit:cover;"> -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px;">
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-rrs-ha-long-lasting.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · RRS</span>
@@ -423,7 +425,7 @@ p { margin: 0; }
               <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0;">Çapraz bağlı hyalüronik asit içeren CE Class III dermal implant.</p>
             </div>
           </a>
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-melablock-hsp-spf-50.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Krem</span>
@@ -431,7 +433,7 @@ p { margin: 0; }
               <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0;">Cildi güneşin zararlı etkilerine karşı 360° koruyan yüksek faktör.</p>
             </div>
           </a>
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-benebellum-lumina-vit-c-18.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Mezoterapi</span>
@@ -439,7 +441,7 @@ p { margin: 0; }
               <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0;">Yüksek konsantrasyonlu C vitamini ile aydınlatıcı bakım.</p>
             </div>
           </a>
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-beta-glukan-mask.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#6C5CE0;text-transform:uppercase;letter-spacing:.6px;">Grand Aespio · Maske</span>
@@ -459,20 +461,20 @@ p { margin: 0; }
           <h2 style="font-size:clamp(26px,4vw,38px);font-weight:800;color:var(--text-main,#2a2a2a);margin:0;line-height:1.15;">İhtiyacınız olan her şey, 14 kategoride</h2>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:940px;margin:0 auto;">
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">İp</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kanül &amp; İğne Ucu</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kimyasal Peeling</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kozmetik</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kremler</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi Tabancası</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Micro İğneleme</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Otolog Rejeneratif Terapi</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Peeling</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Profesyonel Ürünler</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">RRS</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Terapi</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Yüz Maskesi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">İp</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kanül &amp; İğne Ucu</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kimyasal Peeling</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kozmetik</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kremler</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi Tabancası</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Micro İğneleme</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Otolog Rejeneratif Terapi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Peeling</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Profesyonel Ürünler</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">RRS</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Terapi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Yüz Maskesi</a>
         </div>
       </div>
     </section>
@@ -496,7 +498,7 @@ p { margin: 0; }
             <li style="display:flex;align-items:center;gap:12px;color:var(--text-main,#2a2a2a);font-weight:600;"><span style="color:var(--color-primary,#E8702A);font-size:18px;">✓</span> CE Class III sertifikalı RRS serisi</li>
             <li style="display:flex;align-items:center;gap:12px;color:var(--text-main,#2a2a2a);font-weight:600;"><span style="color:var(--color-primary,#E8702A);font-size:18px;">✓</span> Doktorlara uygulamalı eğitim ve teknik destek</li>
           </ul>
-          <a href="/klasik/hakkimizda" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#E8702A);color:#fff;padding:14px 28px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;">Hakkımızda →</a>
+          <a href="/klasik-hakkimizda" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#E8702A);color:#fff;padding:14px 28px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;">Hakkımızda →</a>
         </div>
       </div>
     </section>
@@ -558,20 +560,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -834,12 +836,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -923,13 +925,13 @@ p { margin: 0; }
              PROMPT: "Minimalist square brand emblem tile for a medical aesthetics brand, single bold monogram on a flat solid brand-color background, clean modern flat design, soft subtle gradient, professional pharma identity look, no text, no logo, no watermark, high resolution"
              DEĞİŞTİR → her kartın harf-tile div'i yerine: <img src="assets/img/brand-{slug}.jpg" alt="{MARKA ADI} logosu" style="width:52px;height:52px;object-fit:cover;border-radius:14px;"> -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;">
-          <a href="/klasik/marka/skintech" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #0C6E72;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-skintech" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #0C6E72;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#0C6E72;margin-bottom:10px;">İspanya</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 6px;">Skin Tech Pharma</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 14px;">Peeling, mezoterapi ve RRS skinbooster serisi.</p>
             <span style="color:var(--color-primary,#E8702A);font-weight:700;font-size:14px;">Keşfet →</span>
           </a>
-          <a href="/klasik/marka/mi-medical" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C9A24B;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-mi-medical" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C9A24B;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#B08A38;margin-bottom:10px;">Premium</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 6px;">Mi Medical Innovation</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 14px;">Premium mezoterapi ve enjeksiyon sistemleri.</p>
@@ -941,19 +943,19 @@ p { margin: 0; }
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 14px;">Kök hücre teknolojili profesyonel cilt bakım serisi.</p>
             <span style="color:var(--text-soft,#6b6b6b);font-weight:700;font-size:14px;">Portföyümüzde</span>
           </div>
-          <a href="/klasik/marka/seffiline" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C98A6D;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-seffiline" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #C98A6D;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#C98A6D;margin-bottom:10px;">Cilt &amp; Saç</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 6px;">Seffiline</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 14px;">Cilt, saç, intim bakım ve dolgu çözümleri.</p>
             <span style="color:var(--color-primary,#E8702A);font-weight:700;font-size:14px;">Keşfet →</span>
           </a>
-          <a href="/klasik/marka/woorhi" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #2DA8FF;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-woorhi" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #2DA8FF;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#2480C8;margin-bottom:10px;">Güney Kore</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 6px;">Woorhi Mechatronics</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 14px;">Kore mühendisliği medikal estetik cihazları.</p>
             <span style="color:var(--color-primary,#E8702A);font-weight:700;font-size:14px;">Keşfet →</span>
           </a>
-          <a href="/klasik/marka/aespio" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #6C5CE0;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-marka-aespio" style="display:block;background:#fff;border:1px solid var(--border-soft,#ece6df);border-top:3px solid #6C5CE0;border-radius:0 0 var(--radius-card,18px) var(--radius-card,18px);padding:28px 26px 26px;transition:transform .2s,box-shadow .2s;">
             <div style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6C5CE0;margin-bottom:10px;">K-Beauty</div>
             <h3 style="font-size:18px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 6px;">Grand Aespio</h3>
             <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0 0 14px;">Yüz maskeleri ve ip askı (thread) ürünleri.</p>
@@ -1020,20 +1022,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -1296,12 +1298,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -1321,12 +1323,12 @@ p { margin: 0; }
     <!-- ===================== FILTER CHIPS (görsel, statik) ===================== -->
     <section style="background:#fff;border-bottom:1px solid var(--border-soft,#ece6df);">
       <div class="container" style="display:flex;flex-wrap:wrap;gap:10px;padding:24px 0;">
-        <a href="/klasik/urunler" style="display:inline-flex;align-items:center;background:var(--color-primary,#E8702A);color:#fff;border:1.5px solid var(--color-primary,#E8702A);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(232,112,42,.26);">Tümü</a>
-        <a href="/klasik/urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Skin Tech</a>
-        <a href="/klasik/urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Seffiline</a>
-        <a href="/klasik/urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Grand Aespio</a>
-        <a href="/klasik/urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Woorhi</a>
-        <a href="/klasik/urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Mi Medical</a>
+        <a href="/klasik-urunler" style="display:inline-flex;align-items:center;background:var(--color-primary,#E8702A);color:#fff;border:1.5px solid var(--color-primary,#E8702A);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;box-shadow:0 6px 18px rgba(232,112,42,.26);">Tümü</a>
+        <a href="/klasik-urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Skin Tech</a>
+        <a href="/klasik-urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Seffiline</a>
+        <a href="/klasik-urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Grand Aespio</a>
+        <a href="/klasik-urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Woorhi</a>
+        <a href="/klasik-urunler" style="display:inline-flex;align-items:center;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;">Mi Medical</a>
       </div>
     </section>
 
@@ -1338,20 +1340,20 @@ p { margin: 0; }
           <h2 style="font-size:clamp(26px,4vw,38px);font-weight:800;color:var(--text-main,#2a2a2a);margin:0;line-height:1.15;">İhtiyacınız olan her şey, 14 kategoride</h2>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:940px;margin:0 auto;">
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">İp</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kanül &amp; İğne Ucu</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kimyasal Peeling</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kozmetik</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kremler</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi Tabancası</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Micro İğneleme</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Otolog Rejeneratif Terapi</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Peeling</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Profesyonel Ürünler</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">RRS</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Terapi</a>
-          <a href="/klasik/urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Yüz Maskesi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">İp</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kanül &amp; İğne Ucu</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kimyasal Peeling</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kozmetik</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Kremler</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Mezoterapi Tabancası</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Micro İğneleme</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Otolog Rejeneratif Terapi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Peeling</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Profesyonel Ürünler</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">RRS</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Terapi</a>
+          <a href="/klasik-urunler" class="cat-pill" style="background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);">Yüz Maskesi</a>
         </div>
       </div>
     </section>
@@ -1400,7 +1402,7 @@ p { margin: 0; }
                freshness, blue-teal and warm cream accent tones, glossy reflective
                surface, photorealistic, high resolution, no text, no logo, no watermark"
                DEĞİŞTİR → <img src="assets/img/product-rrs-ha-long-lasting.jpg" alt="RRS HA Long Lasting ürün ambalaj görseli" style="width:100%;height:100%;aspect-ratio:4/3;object-fit:cover;"> -->
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-rrs-ha-long-lasting.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · RRS</span>
@@ -1409,7 +1411,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-melablock-hsp-spf-50.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Krem</span>
@@ -1418,7 +1420,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-benebellum-lumina-vit-c-18.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Mezoterapi</span>
@@ -1427,7 +1429,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-benebellum-lumina-vit-a-e.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Mezoterapi</span>
@@ -1436,7 +1438,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-benebellum-tx-solution.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Mezoterapi</span>
@@ -1445,7 +1447,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-aclaranse.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Peeling</span>
@@ -1454,7 +1456,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-actilift.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · İp</span>
@@ -1463,7 +1465,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-atrofillin.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Mezoterapi</span>
@@ -1473,7 +1475,7 @@ p { margin: 0; }
           </a>
 
           <!-- Grand Aespio -->
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-beta-glukan-mask.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#6C5CE0;text-transform:uppercase;letter-spacing:.6px;">Grand Aespio · Yüz Maskesi</span>
@@ -1482,7 +1484,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-hyaluronic-acid-mask.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#6C5CE0;text-transform:uppercase;letter-spacing:.6px;">Grand Aespio · Yüz Maskesi</span>
@@ -1491,7 +1493,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-lfl-anchor.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#6C5CE0;text-transform:uppercase;letter-spacing:.6px;">Grand Aespio · İp</span>
@@ -1501,7 +1503,7 @@ p { margin: 0; }
           </a>
 
           <!-- Seffiline -->
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-seffihair.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#C98A6D;text-transform:uppercase;letter-spacing:.6px;">Seffiline · Mezoterapi</span>
@@ -1510,7 +1512,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-sefficare.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#C98A6D;text-transform:uppercase;letter-spacing:.6px;">Seffiline · Kozmetik</span>
@@ -1519,7 +1521,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-seffiller.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#C98A6D;text-transform:uppercase;letter-spacing:.6px;">Seffiline · Mezoterapi</span>
@@ -1536,7 +1538,7 @@ p { margin: 0; }
                diffused studio lighting, high-tech premium clinical aesthetic, subtle
                reflection, photorealistic, high resolution, no text, no logo, no watermark"
                DEĞİŞTİR → <img src="assets/img/product-raffine.jpg" alt="Woorhi Raffine mezoterapi tabancası cihaz görseli" style="width:100%;height:100%;aspect-ratio:4/3;object-fit:cover;"> -->
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-raffine.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#2DA8FF;text-transform:uppercase;letter-spacing:.6px;">Woorhi · Mezoterapi Tabancası</span>
@@ -1553,7 +1555,7 @@ p { margin: 0; }
                diffused studio lighting, luxurious high-end clinical aesthetic, subtle
                reflection, photorealistic, high resolution, no text, no logo, no watermark"
                DEĞİŞTİR → <img src="assets/img/product-pistor-eliance.jpg" alt="Mi Medical Pistor Eliance enjeksiyon sistemi cihaz görseli" style="width:100%;height:100%;aspect-ratio:4/3;object-fit:cover;"> -->
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-pistor-eliance.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#C9A24B;text-transform:uppercase;letter-spacing:.6px;">Mi Medical · Mezoterapi Tabancası</span>
@@ -1609,20 +1611,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -1885,12 +1887,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -1900,7 +1902,7 @@ p { margin: 0; }
         <nav aria-label="Breadcrumb" style="font-size:14px;color:var(--text-soft,#6b6b6b);display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
           <a href="/klasik" style="color:var(--text-soft,#6b6b6b);font-weight:600;">Ana Sayfa</a>
           <span aria-hidden="true" style="opacity:.5;">/</span>
-          <a href="/klasik/urunler" style="color:var(--text-soft,#6b6b6b);font-weight:600;">Ürünler</a>
+          <a href="/klasik-urunler" style="color:var(--text-soft,#6b6b6b);font-weight:600;">Ürünler</a>
           <span aria-hidden="true" style="opacity:.5;">/</span>
           <span aria-current="page" style="color:var(--color-primary,#E8702A);font-weight:700;">RRS® HA Long Lasting</span>
         </nav>
@@ -1971,7 +1973,7 @@ p { margin: 0; }
 
           <div style="display:flex;gap:14px;flex-wrap:wrap;">
             <a href="https://wa.me/905426205100" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;padding:15px 30px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(37,211,102,.3);"><svg viewBox="0 0 32 32" fill="#fff" aria-hidden="true" style="width:19px;height:19px;flex-shrink:0;"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp ile Sipariş</a>
-            <a href="/klasik/iletisim" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);padding:15px 28px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;">Teklif İste</a>
+            <a href="/klasik-iletisim" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);padding:15px 28px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;">Teklif İste</a>
           </div>
 
           <p style="margin:22px 0 0;font-size:13.5px;color:var(--text-soft,#6b6b6b);display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary,#E8702A)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3 5 6v5c0 4 3 7 7 8 4-1 7-4 7-8V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg> Yalnızca hekim/klinik kullanımına yöneliktir.</p>
@@ -2021,14 +2023,14 @@ p { margin: 0; }
             <p style="color:var(--color-primary,#E8702A);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-size:13px;margin:0 0 10px;">Benzer Ürünler</p>
             <h2 style="font-size:clamp(26px,4vw,38px);font-weight:800;color:var(--text-main,#2a2a2a);margin:0;line-height:1.15;">İlginizi çekebilecek diğer ürünler</h2>
           </div>
-          <a href="/klasik/urunler" style="color:var(--color-primary,#E8702A);font-weight:700;font-size:15px;white-space:nowrap;">Tüm ürünler →</a>
+          <a href="/klasik-urunler" style="color:var(--color-primary,#E8702A);font-weight:700;font-size:15px;white-space:nowrap;">Tüm ürünler →</a>
         </div>
         <!-- ════════════════════════════════════════════════════════════════════
              🖼️ BENZER ÜRÜN KART GÖRSELLERİ (her kart için tekrarlanır, oran 4:3)
              Aşağıdaki her kartın üstündeki gradyan+emoji kutusu bir görsel
              placeholder'dır. İsimlendirme: /assets/img/product-{slug}.jpg
              (örn. product-melablock-hsp-spf50.jpg, product-benebellum-lumina-vitc.jpg,
-              product-atrofillin.jpg) — /klasik/urunler ile aynı görseller tekrar kullanılır.
+              product-atrofillin.jpg) — /klasik-urunler ile aynı görseller tekrar kullanılır.
              PROMPT: "Professional studio product photography of a single medical
              aesthetic / dermatology product package — pharmaceutical box and glass vial
              or syringe — centered on a clean white-to-cream seamless background, soft
@@ -2041,7 +2043,7 @@ p { margin: 0; }
                <img src="assets/img/product-{slug}.jpg" alt="{ÜRÜN ADI} ürün ambalaj görseli" style="width:100%;height:100%;aspect-ratio:4/3;object-fit:cover;">
         ════════════════════════════════════════════════════════════════════ -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px;">
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-melablock-hsp-spf-50.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Krem</span>
@@ -2049,7 +2051,7 @@ p { margin: 0; }
               <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0;">Cildi güneşin zararlı etkilerine karşı 360° koruyan yüksek faktör.</p>
             </div>
           </a>
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-benebellum-lumina-vit-c-18.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · Mezoterapi</span>
@@ -2057,7 +2059,7 @@ p { margin: 0; }
               <p style="color:var(--text-soft,#6b6b6b);font-size:14px;line-height:1.6;margin:0;">Yüksek konsantrasyonlu C vitamini ile aydınlatıcı bakım.</p>
             </div>
           </a>
-          <a href="/klasik/urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
+          <a href="/klasik-urun-detay" style="display:block;background:#fff;border-radius:var(--radius-card,18px);overflow:hidden;border:1px solid var(--border-soft,#ece6df);transition:transform .2s,box-shadow .2s;">
             <div style="aspect-ratio:4/3;background:var(--color-secondary,#FBF4EE) url('assets/img/product-atrofillin.jpg') center/cover no-repeat;border-bottom:1px solid var(--border-soft,#ece6df);"></div>
             <div style="padding:22px;">
               <span style="font-size:12px;font-weight:700;color:#0C6E72;text-transform:uppercase;letter-spacing:.6px;">Skin Tech · RRS</span>
@@ -2099,20 +2101,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -2375,12 +2377,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -2417,7 +2419,7 @@ p { margin: 0; }
           </div>
           <h2 style="font-size:22px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 10px;">Skin Tech Pharma Group</h2>
           <p style="color:var(--text-soft,#6b6b6b);font-size:15px;line-height:1.7;margin:0 0 22px;">Kimyasal peeling, mezoterapi ve RRS skinbooster serisinde dünya lideri.</p>
-          <a href="/klasik/marka/skintech" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
+          <a href="/klasik-marka-skintech" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
         
           </div>
         </article>
@@ -2432,7 +2434,7 @@ p { margin: 0; }
           </div>
           <h2 style="font-size:22px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 10px;">Seffiline</h2>
           <p style="color:var(--text-soft,#6b6b6b);font-size:15px;line-height:1.7;margin:0 0 22px;">Cilt, saç, intim bakım ve dolgu çözümleri serisi.</p>
-          <a href="/klasik/marka/seffiline" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
+          <a href="/klasik-marka-seffiline" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
         
           </div>
         </article>
@@ -2447,7 +2449,7 @@ p { margin: 0; }
           </div>
           <h2 style="font-size:22px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 10px;">Grand Aespio</h2>
           <p style="color:var(--text-soft,#6b6b6b);font-size:15px;line-height:1.7;margin:0 0 22px;">Yüz maskeleri ve ip askı (thread lift) ürünleri. Modern K-beauty yaklaşımı.</p>
-          <a href="/klasik/marka/aespio" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
+          <a href="/klasik-marka-aespio" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
         
           </div>
         </article>
@@ -2462,7 +2464,7 @@ p { margin: 0; }
           </div>
           <h2 style="font-size:22px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 10px;">Woorhi Mechatronics Co. Ltd.</h2>
           <p style="color:var(--text-soft,#6b6b6b);font-size:15px;line-height:1.7;margin:0 0 22px;">Güney Kore · Medikal estetik cihaz ve mekatronik mühendisliği.</p>
-          <a href="/klasik/marka/woorhi" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
+          <a href="/klasik-marka-woorhi" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
         
           </div>
         </article>
@@ -2477,7 +2479,7 @@ p { margin: 0; }
           </div>
           <h2 style="font-size:22px;font-weight:800;color:var(--text-main,#2a2a2a);margin:0 0 10px;">Mi Medical Innovation</h2>
           <p style="color:var(--text-soft,#6b6b6b);font-size:15px;line-height:1.7;margin:0 0 22px;">Premium mezoterapi ve enjeksiyon sistemleri.</p>
-          <a href="/klasik/marka/mi-medical" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
+          <a href="/klasik-marka-mi-medical" style="margin-top:auto;align-self:flex-start;color:var(--color-primary,#E8702A);font-weight:700;font-size:14.5px;">Markayı Keşfet →</a>
         
           </div>
         </article>
@@ -2525,20 +2527,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -2801,12 +2803,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -2961,7 +2963,7 @@ p { margin: 0; }
           </div>
           <div style="display:flex;gap:14px;flex-wrap:wrap;flex:0 1 auto;">
             <a href="https://wa.me/905426205100" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;padding:15px 28px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(37,211,102,.3);"><svg viewBox="0 0 32 32" fill="#fff" aria-hidden="true" style="width:19px;height:19px;flex-shrink:0;"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp ile Yaz</a>
-            <a href="/klasik/iletisim" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);padding:15px 26px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;">İletişim →</a>
+            <a href="/klasik-iletisim" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--text-main,#2a2a2a);border:1.5px solid var(--border-soft,#ece6df);padding:15px 26px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;">İletişim →</a>
           </div>
         </div>
       </div>
@@ -2997,20 +2999,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -3273,12 +3275,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -3442,20 +3444,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -3733,12 +3735,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -3752,7 +3754,7 @@ p { margin: 0; }
           <h1 style="font-size:clamp(34px,5.2vw,58px);line-height:1.06;font-weight:800;color:var(--primary-deep,#0B2E34);margin:0 0 22px;letter-spacing:-.5px;">Klinik kanıtlı<br><span style="background:var(--grad-brand,linear-gradient(135deg,#0C6E72,#3FBFA8));-webkit-background-clip:text;background-clip:text;color:transparent;">cilt bilimi</span></h1>
           <p style="font-size:clamp(16px,2vw,19px);color:#3A5860;line-height:1.75;max-width:580px;margin:0 0 34px;">Skin Tech Pharma Group; kimyasal peeling, mezoterapi ve RRS® skinbooster serisinde dünya çapında öncü. Laboratuvar disiplini, dermatolojik kanıt ve CE Class III standartlarıyla geliştirilen profesyonel çözümler.</p>
           <div style="display:flex;gap:14px;flex-wrap:wrap;">
-            <a href="/klasik/urunler" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#0C6E72);color:#fff;padding:15px 30px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 12px 32px rgba(12,110,114,.30);">Ürünleri Gör →</a>
+            <a href="/klasik-urunler" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#0C6E72);color:#fff;padding:15px 30px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 12px 32px rgba(12,110,114,.30);">Ürünleri Gör →</a>
             <a href="https://wa.me/905426205100" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;border:1.5px solid #25D366;padding:15px 28px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;"><svg viewBox="0 0 32 32" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp Danışma</a>
           </div>
           <div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:40px;">
@@ -3835,7 +3837,7 @@ p { margin: 0; }
               <div><div style="font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--color-accent,#3FBFA8);">Skinbooster</div><h3 style="font-size:21px;font-weight:800;color:#fff;margin:4px 0 0;">RRS® Skinbooster</h3></div>
             </div>
             <div style="padding:8px 16px 18px;">
-              <a href="/klasik/urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
+              <a href="/klasik-urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
                 <span><span style="display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;">RRS® HA Long Lasting</span><span style="display:block;color:#5A7B82;font-size:13px;margin-top:2px;">Çapraz bağlı HA · CE Class III</span></span>
                 <span style="color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;">→</span>
               </a>
@@ -3848,15 +3850,15 @@ p { margin: 0; }
               <div><div style="font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--color-accent,#3FBFA8);">Mezoterapi</div><h3 style="font-size:21px;font-weight:800;color:#fff;margin:4px 0 0;">Benebellum</h3></div>
             </div>
             <div style="padding:8px 16px 18px;">
-              <a href="/klasik/urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
+              <a href="/klasik-urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
                 <span><span style="display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;">LUMINA VİT-C 18%</span><span style="display:block;color:#5A7B82;font-size:13px;margin-top:2px;">Aydınlatıcı C vitamini</span></span>
                 <span style="color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;">→</span>
               </a>
-              <a href="/klasik/urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
+              <a href="/klasik-urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
                 <span><span style="display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;">VİT A + E</span><span style="display:block;color:#5A7B82;font-size:13px;margin-top:2px;">Antioksidan onarım</span></span>
                 <span style="color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;">→</span>
               </a>
-              <a href="/klasik/urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
+              <a href="/klasik-urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
                 <span><span style="display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;">TX SOLUTION</span><span style="display:block;color:#5A7B82;font-size:13px;margin-top:2px;">Leke karşıtı çözüm</span></span>
                 <span style="color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;">→</span>
               </a>
@@ -3869,11 +3871,11 @@ p { margin: 0; }
               <div><div style="font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--color-accent,#3FBFA8);">Peeling</div><h3 style="font-size:21px;font-weight:800;color:#fff;margin:4px 0 0;">Kimyasal Peeling</h3></div>
             </div>
             <div style="padding:8px 16px 18px;">
-              <a href="/klasik/urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
+              <a href="/klasik-urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
                 <span><span style="display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;">Aclaranse</span><span style="display:block;color:#5A7B82;font-size:13px;margin-top:2px;">Depigmentasyon peelingi</span></span>
                 <span style="color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;">→</span>
               </a>
-              <a href="/klasik/urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
+              <a href="/klasik-urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
                 <span><span style="display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;">Easy Phytic</span><span style="display:block;color:#5A7B82;font-size:13px;margin-top:2px;">Nötralizasyonsuz fitik asit</span></span>
                 <span style="color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;">→</span>
               </a>
@@ -3886,7 +3888,7 @@ p { margin: 0; }
               <div><div style="font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--color-accent,#3FBFA8);">SPF</div><h3 style="font-size:21px;font-weight:800;color:#fff;margin:4px 0 0;">Güneş Koruma</h3></div>
             </div>
             <div style="padding:8px 16px 18px;">
-              <a href="/klasik/urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
+              <a href="/klasik-urun-detay" class="st-card" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;">
                 <span><span style="display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;">Melablock HSP SPF 50+</span><span style="display:block;color:#5A7B82;font-size:13px;margin-top:2px;">Yüksek faktör · leke koruması</span></span>
                 <span style="color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;">→</span>
               </a>
@@ -3924,7 +3926,7 @@ p { margin: 0; }
               <li style="display:flex;align-items:center;gap:12px;color:var(--primary-deep,#0B2E34);font-weight:600;"><span style="width:26px;height:26px;flex-shrink:0;border-radius:8px;background:var(--primary-soft,#D6EFEB);color:var(--color-primary,#0C6E72);display:grid;place-items:center;font-weight:800;">✓</span> Çapraz bağlı HA ile uzun etkili sonuç</li>
               <li style="display:flex;align-items:center;gap:12px;color:var(--primary-deep,#0B2E34);font-weight:600;"><span style="width:26px;height:26px;flex-shrink:0;border-radius:8px;background:var(--primary-soft,#D6EFEB);color:var(--color-primary,#0C6E72);display:grid;place-items:center;font-weight:800;">✓</span> Skinbooster protokolleri için optimize</li>
             </ul>
-            <a href="/klasik/urun-detay" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#0C6E72);color:#fff;padding:14px 30px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 12px 30px rgba(12,110,114,.28);">Ürün Detayı →</a>
+            <a href="/klasik-urun-detay" style="display:inline-flex;align-items:center;gap:8px;background:var(--color-primary,#0C6E72);color:#fff;padding:14px 30px;border-radius:var(--radius-button,999px);font-weight:700;font-size:15px;box-shadow:0 12px 30px rgba(12,110,114,.28);">Ürün Detayı →</a>
           </div>
         </div>
       </div>
@@ -3974,20 +3976,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -4271,12 +4273,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -4349,7 +4351,7 @@ p { margin: 0; }
              <img src="/assets/img/seffiline-product-sefficare.jpg" alt="Seffiline SeffiCare cilt bakımı ürün çekimi" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:22px;margin-bottom:20px;"> -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:26px;">
           <!-- SeffiCare -->
-          <a href="/klasik/urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
+          <a href="/klasik-urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
             <div style="width:66px;height:66px;border-radius:50%;background:linear-gradient(150deg,#FBE7E6,#F4D4CE);margin-bottom:24px;"></div>
             <h3 class="sf-serif" style="font-size:25px;font-weight:600;color:var(--text-main,#4A2E35);margin:0 0 4px;">SeffiCare</h3>
             <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--color-primary,#C98A6D);font-weight:700;margin:0 0 14px;">Cilt Bakımı</p>
@@ -4357,7 +4359,7 @@ p { margin: 0; }
             <span style="color:var(--color-primary,#C98A6D);font-weight:600;font-size:14px;letter-spacing:.3px;">İncele →</span>
           </a>
           <!-- SeffiGyn -->
-          <a href="/klasik/urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
+          <a href="/klasik-urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
             <div style="width:66px;height:66px;border-radius:50%;background:linear-gradient(150deg,#FBE7E6,#F4D4CE);margin-bottom:24px;"></div>
             <h3 class="sf-serif" style="font-size:25px;font-weight:600;color:var(--text-main,#4A2E35);margin:0 0 4px;">SeffiGyn</h3>
             <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--color-primary,#C98A6D);font-weight:700;margin:0 0 14px;">İntim Bakım</p>
@@ -4365,7 +4367,7 @@ p { margin: 0; }
             <span style="color:var(--color-primary,#C98A6D);font-weight:600;font-size:14px;letter-spacing:.3px;">İncele →</span>
           </a>
           <!-- SeffiHair -->
-          <a href="/klasik/urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
+          <a href="/klasik-urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
             <div style="width:66px;height:66px;border-radius:50%;background:linear-gradient(150deg,#FBE7E6,#F4D4CE);margin-bottom:24px;"></div>
             <h3 class="sf-serif" style="font-size:25px;font-weight:600;color:var(--text-main,#4A2E35);margin:0 0 4px;">SeffiHair</h3>
             <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--color-primary,#C98A6D);font-weight:700;margin:0 0 14px;">Saç Bakımı & Mezoterapi</p>
@@ -4373,7 +4375,7 @@ p { margin: 0; }
             <span style="color:var(--color-primary,#C98A6D);font-weight:600;font-size:14px;letter-spacing:.3px;">İncele →</span>
           </a>
           <!-- Seffiller -->
-          <a href="/klasik/urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
+          <a href="/klasik-urun-detay" class="sf-card" style="display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;">
             <div style="width:66px;height:66px;border-radius:50%;background:linear-gradient(150deg,#FBE7E6,#F4D4CE);margin-bottom:24px;"></div>
             <h3 class="sf-serif" style="font-size:25px;font-weight:600;color:var(--text-main,#4A2E35);margin:0 0 4px;">Seffiller</h3>
             <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--color-primary,#C98A6D);font-weight:700;margin:0 0 14px;">Dolgu Serisi</p>
@@ -4408,7 +4410,7 @@ p { margin: 0; }
             <li style="display:flex;align-items:center;gap:12px;color:var(--text-main,#4A2E35);font-weight:500;"><span style="color:var(--color-accent,#E8A0A8);font-size:16px;">❀</span> Mezoterapi ile uyumlu profesyonel formül</li>
             <li style="display:flex;align-items:center;gap:12px;color:var(--text-main,#4A2E35);font-weight:500;"><span style="color:var(--color-accent,#E8A0A8);font-size:16px;">❀</span> Dolgun ve canlı bir saç görünümü</li>
           </ul>
-          <a href="/klasik/urun-detay" class="sf-btn-fill" style="display:inline-flex;align-items:center;gap:9px;background:var(--grad-rose,linear-gradient(135deg,#C98A6D,#E8A0A8));color:#fff;padding:15px 32px;border-radius:999px;font-weight:600;font-size:15px;letter-spacing:.3px;box-shadow:0 12px 30px rgba(201,138,109,.30);transition:transform .2s,box-shadow .2s;">SeffiHair'i İncele →</a>
+          <a href="/klasik-urun-detay" class="sf-btn-fill" style="display:inline-flex;align-items:center;gap:9px;background:var(--grad-rose,linear-gradient(135deg,#C98A6D,#E8A0A8));color:#fff;padding:15px 32px;border-radius:999px;font-weight:600;font-size:15px;letter-spacing:.3px;box-shadow:0 12px 30px rgba(201,138,109,.30);transition:transform .2s,box-shadow .2s;">SeffiHair'i İncele →</a>
         </div>
       </div>
     </section>
@@ -4449,20 +4451,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -4745,12 +4747,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -4831,7 +4833,7 @@ p { margin: 0; }
              <img src="/assets/img/aespio-product-beta-glukan-mask.jpg" alt="Grand Aespio Beta-Glukan Mask ürün çekimi" style="width:100%;aspect-ratio:4/3;object-fit:cover;"> -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px;">
 
-          <a href="/klasik/urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
+          <a href="/klasik-urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
             <div style="aspect-ratio:4/3;background:linear-gradient(135deg,#C6BBF7,#8E7DF0) url('/assets/img/aespio-product-beta-glukan-mask.jpg') center/cover no-repeat;"></div>
             <div style="padding:24px;">
               <span style="font-size:11.5px;font-weight:800;color:var(--color-primary,#6C5CE0);text-transform:uppercase;letter-spacing:.8px;">Yatıştırıcı Maske</span>
@@ -4841,7 +4843,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
+          <a href="/klasik-urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
             <div style="aspect-ratio:4/3;background:linear-gradient(135deg,#7FE9D8,#2FC4C0) url('/assets/img/aespio-product-hyaluronic-acid-mask.jpg') center/cover no-repeat;"></div>
             <div style="padding:24px;">
               <span style="font-size:11.5px;font-weight:800;color:#0E9E86;text-transform:uppercase;letter-spacing:.8px;">Nemlendirici Maske</span>
@@ -4851,7 +4853,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
+          <a href="/klasik-urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
             <div style="aspect-ratio:4/3;background:linear-gradient(135deg,#B8AEF5,#6C5CE0) url('/assets/img/aespio-product-feelsoft.jpg') center/cover no-repeat;"></div>
             <div style="padding:24px;">
               <span style="font-size:11.5px;font-weight:800;color:var(--color-primary,#6C5CE0);text-transform:uppercase;letter-spacing:.8px;">İp Askı</span>
@@ -4861,7 +4863,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
+          <a href="/klasik-urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
             <div style="aspect-ratio:4/3;background:linear-gradient(135deg,#9FE7DC,#5BD0C0) url('/assets/img/aespio-product-fmc.jpg') center/cover no-repeat;"></div>
             <div style="padding:24px;">
               <span style="font-size:11.5px;font-weight:800;color:#0E9E86;text-transform:uppercase;letter-spacing:.8px;">İp Askı</span>
@@ -4871,7 +4873,7 @@ p { margin: 0; }
             </div>
           </a>
 
-          <a href="/klasik/urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
+          <a href="/klasik-urun-detay" class="aespio-card" style="display:block;background:#fff;border-radius:24px;overflow:hidden;">
             <div style="aspect-ratio:4/3;background:var(--grad-aespio,linear-gradient(135deg,#6C5CE0,#21D4B4)) url('/assets/img/aespio-product-lfl-anchor.jpg') center/cover no-repeat;"></div>
             <div style="padding:24px;">
               <span style="font-size:11.5px;font-weight:800;color:var(--color-primary,#6C5CE0);text-transform:uppercase;letter-spacing:.8px;">Thread Lift</span>
@@ -4908,7 +4910,7 @@ p { margin: 0; }
             <li style="display:flex;align-items:center;gap:12px;color:var(--text-main,#221A40);font-weight:700;"><span style="width:26px;height:26px;border-radius:8px;background:var(--aespio-purple-soft,#ECE6FB);color:var(--color-primary,#6C5CE0);display:grid;place-items:center;font-size:14px;flex-shrink:0;">✓</span> Maske + thread tamamlayıcı protokoller</li>
             <li style="display:flex;align-items:center;gap:12px;color:var(--text-main,#221A40);font-weight:700;"><span style="width:26px;height:26px;border-radius:8px;background:var(--aespio-mint-soft,#DFF8F2);color:#0E9E86;display:grid;place-items:center;font-size:14px;flex-shrink:0;">✓</span> Yeni nesil K-beauty üretim kalitesi</li>
           </ul>
-          <a href="/klasik/urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:var(--grad-aespio,linear-gradient(135deg,#6C5CE0,#21D4B4));color:#fff;padding:15px 32px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 14px 36px rgba(108,92,224,.32);">LFL Anchor'ı İncele →</a>
+          <a href="/klasik-urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:var(--grad-aespio,linear-gradient(135deg,#6C5CE0,#21D4B4));color:#fff;padding:15px 32px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 14px 36px rgba(108,92,224,.32);">LFL Anchor'ı İncele →</a>
         </div>
       </div>
     </section>
@@ -4950,20 +4952,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -5239,12 +5241,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -5258,7 +5260,7 @@ p { margin: 0; }
           <h1 class="wh-display" style="font-size:clamp(36px,5.4vw,60px);line-height:1.05;font-weight:700;color:#F4F8FF;margin:0 0 22px;">Mühendislik hassasiyetinde<br><span style="background:linear-gradient(110deg,#2DA8FF 0%,#16E0C8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;">estetik teknolojisi</span></h1>
           <p style="font-size:clamp(16px,2vw,19px);color:#AEBCCC;line-height:1.75;max-width:560px;margin:0 0 34px;">Woorhi Mechatronics Co. Ltd., Kore mühendisliğiyle geliştirilen medikal estetik cihazları üretir. Hassas kontrol, klinik dayanıklılık ve tekrarlanabilir sonuçlar — kliniğinizin teknolojik altyapısı için tasarlandı.</p>
           <div style="display:flex;gap:14px;flex-wrap:wrap;">
-            <a class="wh-link" href="/klasik/urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,#2DA8FF,#16E0C8);color:#0B0E14;padding:15px 30px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 0 30px rgba(45,168,255,.45);">Cihazı İncele →</a>
+            <a class="wh-link" href="/klasik-urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,#2DA8FF,#16E0C8);color:#0B0E14;padding:15px 30px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 0 30px rgba(45,168,255,.45);">Cihazı İncele →</a>
             <a class="wh-link" href="https://wa.me/905426205100" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;border:1px solid rgba(255,255,255,.18);padding:15px 28px;border-radius:999px;font-weight:700;font-size:15px;box-shadow:0 10px 30px rgba(37,211,102,.35);"><svg viewBox="0 0 32 32" fill="#fff" aria-hidden="true" style="width:19px;height:19px;flex-shrink:0;"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp Danışma</a>
           </div>
           <div class="wh-mono" style="display:flex;gap:26px;flex-wrap:wrap;margin-top:40px;color:#8FA2B6;font-size:13px;">
@@ -5350,7 +5352,7 @@ p { margin: 0; }
             <div style="display:flex;justify-content:space-between;gap:14px;padding:12px 20px;font-size:13px;"><span style="color:#7E92A8;">[ KULLANIM ]</span><span style="color:#16E0C8;">Klinik / profesyonel</span></div>
           </div>
 
-          <a class="wh-link" href="/klasik/urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,#2DA8FF,#16E0C8);color:#0B0E14;padding:15px 30px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 0 30px rgba(45,168,255,.45);">Raffine Detayları →</a>
+          <a class="wh-link" href="/klasik-urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,#2DA8FF,#16E0C8);color:#0B0E14;padding:15px 30px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 0 30px rgba(45,168,255,.45);">Raffine Detayları →</a>
         </div>
       </div>
     </section>
@@ -5398,7 +5400,7 @@ p { margin: 0; }
             <p style="font-size:18px;color:#C7D3E2;max-width:600px;margin:0 auto 32px;line-height:1.65;">Raffine ve Woorhi cihaz serisi hakkında detaylı bilgi, demo planlaması ve fiyat teklifi için Estetik Dermal ekibine ulaşın.</p>
             <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
               <a class="wh-link" href="https://wa.me/905426205100" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;padding:15px 32px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 0 30px rgba(37,211,102,.5);"><svg viewBox="0 0 32 32" fill="#fff" aria-hidden="true" style="width:19px;height:19px;flex-shrink:0;"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp ile Yaz</a>
-              <a class="wh-link" href="/klasik/urun-detay" style="background:rgba(255,255,255,.06);color:#E6EDF5;border:1px solid rgba(255,255,255,.22);padding:15px 32px;border-radius:999px;font-weight:700;font-size:15px;">Cihazı İncele</a>
+              <a class="wh-link" href="/klasik-urun-detay" style="background:rgba(255,255,255,.06);color:#E6EDF5;border:1px solid rgba(255,255,255,.22);padding:15px 32px;border-radius:999px;font-weight:700;font-size:15px;">Cihazı İncele</a>
             </div>
           </div>
         </div>
@@ -5416,20 +5418,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -5708,12 +5710,12 @@ p { margin: 0; }
       <label for="navToggle" class="nav-toggle-label" aria-label="Menüyü aç / kapat"><span></span><span></span><span></span></label>
       <nav class="nav" aria-label="Ana menü">
         <a href="/klasik" aria-current="page">Ana Sayfa</a>
-        <a href="/klasik/hakkimizda">Hakkımızda</a>
-        <a href="/klasik/urunler">Ürünler</a>
-        <a href="/klasik/markalar">Markalar</a>
-        <a href="/klasik/etkinlikler">Etkinlikler</a>
+        <a href="/klasik-hakkimizda">Hakkımızda</a>
+        <a href="/klasik-urunler">Ürünler</a>
+        <a href="/klasik-markalar">Markalar</a>
+        <a href="/klasik-etkinlikler">Etkinlikler</a>
         <a href="https://apps.skintechpharmagroup.com/medinet" target="_blank" rel="noopener">MEDINET ↗</a>
-        <a href="/klasik/iletisim">İletişim</a>
+        <a href="/klasik-iletisim">İletişim</a>
         <a class="header-cta" href="https://wa.me/905426205100" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>WhatsApp</a>
       </nav>
     </div>
@@ -5734,7 +5736,7 @@ p { margin: 0; }
             Mi Medical Innovation; premium mezoterapi ve enjeksiyon sistemlerinde inovasyonu zarafetle buluşturur. Her ayrıntısı, hekimin elinde kusursuz kontrol ve hastada üst düzey konfor için tasarlanmıştır.
           </p>
           <div style="display:flex;gap:16px;flex-wrap:wrap;">
-            <a href="/klasik/urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:var(--mi-gold-grad,linear-gradient(135deg,#C9A24B,#E3C97E));color:#141414;padding:16px 32px;border-radius:999px;font-weight:700;font-size:15px;box-shadow:0 14px 34px rgba(201,162,75,.26);">Pistor Eliance'ı Keşfet →</a>
+            <a href="/klasik-urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:var(--mi-gold-grad,linear-gradient(135deg,#C9A24B,#E3C97E));color:#141414;padding:16px 32px;border-radius:999px;font-weight:700;font-size:15px;box-shadow:0 14px 34px rgba(201,162,75,.26);">Pistor Eliance'ı Keşfet →</a>
             <a href="https://wa.me/905426205100" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;border:1px solid rgba(255,255,255,.18);padding:16px 30px;border-radius:999px;font-weight:600;font-size:15px;box-shadow:0 10px 30px rgba(37,211,102,.3);"><svg viewBox="0 0 32 32" fill="#fff" aria-hidden="true" style="width:19px;height:19px;flex-shrink:0;"><path d="M16 .4C7.4.4.4 7.4.4 16c0 2.8.7 5.5 2.1 7.9L.3 31.6l7.9-2.1c2.3 1.3 5 1.9 7.7 1.9 8.6 0 15.6-7 15.6-15.6S24.6.4 16 .4zm0 28.5c-2.5 0-4.9-.7-7-1.9l-.5-.3-4.7 1.2 1.3-4.6-.3-.5c-1.4-2.2-2.1-4.7-2.1-7.3C2.7 8.6 8.6 2.7 16 2.7S29.3 8.6 29.3 16 23.4 28.9 16 28.9zm8.2-9.9c-.4-.2-2.6-1.3-3-1.4-.4-.1-.7-.2-1 .2-.3.4-1.1 1.4-1.4 1.7-.3.3-.5.3-.9.1-.4-.2-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3-.3-.4 0-.6.2-.8.2-.2.4-.5.6-.7.2-.3.3-.5.4-.8.1-.3 0-.5 0-.7-.1-.2-.9-2.4-1.3-3.3-.3-.8-.7-.7-.9-.7h-.8c-.3 0-.7.1-1.1.5-.4.4-1.4 1.4-1.4 3.4s1.5 4 1.7 4.3c.2.3 2.9 4.5 7.1 6.3 1 .4 1.8.7 2.4.9 1 .3 1.9.3 2.6.2.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.8-.5z"/></svg>Ayrıcalıklı Danışmanlık</a>
           </div>
         </div>
@@ -5818,7 +5820,7 @@ p { margin: 0; }
             <li style="display:flex;align-items:flex-start;gap:14px;color:var(--mi-ink,#2a2622);font-size:16px;font-weight:500;"><span aria-hidden="true" style="color:var(--color-primary,#C9A24B);font-size:18px;line-height:1.4;">✓</span> Hasta konforunu artıran konforlu, hızlı uygulama</li>
             <li style="display:flex;align-items:flex-start;gap:14px;color:var(--mi-ink,#2a2622);font-size:16px;font-weight:500;"><span aria-hidden="true" style="color:var(--color-primary,#C9A24B);font-size:18px;line-height:1.4;">✓</span> Premium malzeme ve uzun ömürlü cihaz kalitesi</li>
           </ul>
-          <a href="/klasik/urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:var(--mi-black,#141414);color:var(--color-accent,#E3C97E);border:1px solid var(--color-primary,#C9A24B);padding:15px 30px;border-radius:999px;font-weight:600;font-size:15px;">Ürün Detayını Gör →</a>
+          <a href="/klasik-urun-detay" style="display:inline-flex;align-items:center;gap:9px;background:var(--mi-black,#141414);color:var(--color-accent,#E3C97E);border:1px solid var(--color-primary,#C9A24B);padding:15px 30px;border-radius:999px;font-weight:600;font-size:15px;">Ürün Detayını Gör →</a>
         </div>
       </div>
     </section>
@@ -5857,20 +5859,20 @@ p { margin: 0; }
       <div>
         <h4>Kurumsal</h4>
         <ul>
-          <li><a href="/klasik/hakkimizda">Hakkımızda</a></li>
-          <li><a href="/klasik/markalar">Markalar</a></li>
-          <li><a href="/klasik/etkinlikler">Kongre & Etkinlikler</a></li>
-          <li><a href="/klasik/iletisim">İletişim</a></li>
+          <li><a href="/klasik-hakkimizda">Hakkımızda</a></li>
+          <li><a href="/klasik-markalar">Markalar</a></li>
+          <li><a href="/klasik-etkinlikler">Kongre & Etkinlikler</a></li>
+          <li><a href="/klasik-iletisim">İletişim</a></li>
         </ul>
       </div>
       <div>
         <h4>Markalar</h4>
         <ul>
-          <li><a href="/klasik/marka/skintech">Skin Tech Pharma</a></li>
-          <li><a href="/klasik/marka/seffiline">Seffiline</a></li>
-          <li><a href="/klasik/marka/aespio">Grand Aespio</a></li>
-          <li><a href="/klasik/marka/woorhi">Woorhi Mechatronics</a></li>
-          <li><a href="/klasik/marka/mi-medical">Mi Medical Innovation</a></li>
+          <li><a href="/klasik-marka-skintech">Skin Tech Pharma</a></li>
+          <li><a href="/klasik-marka-seffiline">Seffiline</a></li>
+          <li><a href="/klasik-marka-aespio">Grand Aespio</a></li>
+          <li><a href="/klasik-marka-woorhi">Woorhi Mechatronics</a></li>
+          <li><a href="/klasik-marka-mi-medical">Mi Medical Innovation</a></li>
         </ul>
       </div>
       <div>
@@ -5892,17 +5894,17 @@ EDK11;
 
         $pages = [
             ['slug'=>'klasik','title'=>'Ana Sayfa (Klasik)','sort_order'=>1,'show_in_menu'=>true,'html'=>$b0],
-            ['slug'=>'klasik/hakkimizda','title'=>'Hakkımızda','sort_order'=>2,'show_in_menu'=>true,'html'=>$b1],
-            ['slug'=>'klasik/urunler','title'=>'Ürünler','sort_order'=>3,'show_in_menu'=>true,'html'=>$b2],
-            ['slug'=>'klasik/urun-detay','title'=>'RRS® HA Long Lasting','sort_order'=>99,'show_in_menu'=>false,'html'=>$b3],
-            ['slug'=>'klasik/markalar','title'=>'Markalar','sort_order'=>4,'show_in_menu'=>true,'html'=>$b4],
-            ['slug'=>'klasik/etkinlikler','title'=>'Kongre & Etkinlikler','sort_order'=>5,'show_in_menu'=>true,'html'=>$b5],
-            ['slug'=>'klasik/iletisim','title'=>'İletişim','sort_order'=>6,'show_in_menu'=>true,'html'=>$b6],
-            ['slug'=>'klasik/marka/skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'html'=>$b7],
-            ['slug'=>'klasik/marka/seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'html'=>$b8],
-            ['slug'=>'klasik/marka/aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'html'=>$b9],
-            ['slug'=>'klasik/marka/woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'html'=>$b10],
-            ['slug'=>'klasik/marka/mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'html'=>$b11],
+            ['slug'=>'klasik-hakkimizda','title'=>'Hakkımızda','sort_order'=>2,'show_in_menu'=>true,'html'=>$b1],
+            ['slug'=>'klasik-urunler','title'=>'Ürünler','sort_order'=>3,'show_in_menu'=>true,'html'=>$b2],
+            ['slug'=>'klasik-urun-detay','title'=>'RRS® HA Long Lasting','sort_order'=>99,'show_in_menu'=>false,'html'=>$b3],
+            ['slug'=>'klasik-markalar','title'=>'Markalar','sort_order'=>4,'show_in_menu'=>true,'html'=>$b4],
+            ['slug'=>'klasik-etkinlikler','title'=>'Kongre & Etkinlikler','sort_order'=>5,'show_in_menu'=>true,'html'=>$b5],
+            ['slug'=>'klasik-iletisim','title'=>'İletişim','sort_order'=>6,'show_in_menu'=>true,'html'=>$b6],
+            ['slug'=>'klasik-marka-skintech','title'=>'Skin Tech Pharma Group','sort_order'=>101,'show_in_menu'=>false,'html'=>$b7],
+            ['slug'=>'klasik-marka-seffiline','title'=>'Seffiline','sort_order'=>102,'show_in_menu'=>false,'html'=>$b8],
+            ['slug'=>'klasik-marka-aespio','title'=>'Grand Aespio','sort_order'=>103,'show_in_menu'=>false,'html'=>$b9],
+            ['slug'=>'klasik-marka-woorhi','title'=>'Woorhi Mechatronics','sort_order'=>104,'show_in_menu'=>false,'html'=>$b10],
+            ['slug'=>'klasik-marka-mi-medical','title'=>'Mi Medical Innovation','sort_order'=>105,'show_in_menu'=>false,'html'=>$b11],
         ];
         foreach ($pages as $p) {
             Page::updateOrCreate(['slug'=>$p['slug'],'language_id'=>$langId],

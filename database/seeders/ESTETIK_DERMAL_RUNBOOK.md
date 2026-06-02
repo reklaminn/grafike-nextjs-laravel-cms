@@ -94,9 +94,11 @@ docker restart grafike_cms_frontend
 Tenant kök adresi (örn. `https://estetikdermal.com/tr` ya da `https://cms.grafcore.com/tr?tenant=estetik_dermal`). Her kontrolde **Ctrl+Shift+R** (hard refresh):
 
 - [ ] **Kök = Tema 2:** `/tr` → Clinical Luxury (Fraunces serif başlıklar, turuncu aksan, yeşil WhatsApp ikonu, header+footer var, layout düzgün).
-- [ ] **Tema 2 sayfaları:** `/tr/hakkimizda`, `/tr/urunler`, `/tr/markalar`, `/tr/etkinlikler`, `/tr/iletisim`, `/tr/marka/{skintech,seffiline,aespio,woorhi,mi-medical,neogenesis}` — her marka kendi paletinde.
+- [ ] **Tema 2 sayfaları:** `/tr/hakkimizda`, `/tr/urunler`, `/tr/markalar`, `/tr/etkinlikler`, `/tr/iletisim`, `/tr/marka-{skintech,seffiline,aespio,woorhi,mi-medical,neogenesis}` — her marka kendi paletinde.
 - [ ] **Klasik = Tema 1:** `/tr/klasik` → turuncu modern anasayfa (header+footer, hero, stat'lar).
-- [ ] **Tema 1 sayfaları:** `/tr/klasik/hakkimizda`, `/tr/klasik/urunler`, `/tr/klasik/markalar`, `/tr/klasik/marka/skintech` ...
+- [ ] **Tema 1 sayfaları:** `/tr/klasik-hakkimizda`, `/tr/klasik-urunler`, `/tr/klasik-markalar`, `/tr/klasik-marka-skintech` ...
+
+> **ÖNEMLİ — DÜZ SLUG:** Frontend route'u (`pages/{slug}`) slug'ta **slash kabul etmez** → `marka/seffiline` gibi nested slug **404** verir. Bu yüzden tüm marka/alt sayfalar **düz** slug kullanır: `marka-seffiline`, `klasik-marka-seffiline`. Seeder'lar çalışırken eski nested kayıtları (`marka/%`, `klasik/%`) otomatik siler.
 - [ ] WhatsApp ikonu **küçük** (dev yeşil kare değil), header/footer **stilli** geliyor.
 - [ ] Konsolda kırık görsel/404 sadece henüz yüklenmemiş `assets/img/*.jpg` olmalı (krem fallback'li, kırık ikon yok).
 
