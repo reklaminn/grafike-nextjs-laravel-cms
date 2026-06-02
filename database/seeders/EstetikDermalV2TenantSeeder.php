@@ -15,12 +15,12 @@ use Illuminate\Database\Seeder;
  */
 class EstetikDermalV2TenantSeeder extends Seeder
 {
-    /** region row->col->content-block (html_override ile ham HTML) */
-    private function reg(string $r, int $tid, string $override): array
+    /** region row->col->block (html_override ile ham HTML; isim section_template'ten gelir) */
+    private function reg(string $r, string $type, string $variation, int $tid, string $override): array
     {
         return ['id'=>'row_'.$r.'_1','type'=>'row','is_active'=>true,
             'columns'=>[['id'=>'col_'.$r.'_1','width'=>12,'is_active'=>true,
-                'blocks'=>[['id'=>'cb_'.$r,'type'=>'content-block','variation'=>'v2-free-html',
+                'blocks'=>[['id'=>'b_'.$r,'type'=>$type,'variation'=>$variation,
                     'render_mode'=>'html','section_template_id'=>$tid,'is_active'=>true,'sort_order'=>1,
                     'content'=>[],'html_override'=>$override]]]]];
     }
@@ -28,8 +28,12 @@ class EstetikDermalV2TenantSeeder extends Seeder
     public function run(): void
     {
         $theme=Theme::where('slug','estetikdermal-v2')->first();
-        $cb=$theme?SectionTemplate::where('theme_id',$theme->id)->where('type','content-block')->where('variation','v2-free-html')->first():null;
+        $tpl=fn($type,$var)=>$theme?SectionTemplate::where('theme_id',$theme->id)->where('type',$type)->where('variation',$var)->first():null;
+        $cb =$tpl('content-block','v2-free-html');
+        $hdrTpl=$tpl('header','estetikdermal-v2-header');
+        $ftrTpl=$tpl('footer','estetikdermal-v2-footer');
         if(! $cb){ $this->command?->warn('Tema2 content-block yok — önce V2ChromeSeeder.'); return; }
+        $hid=$hdrTpl?->id ?? $cb->id;  $fid=$ftrTpl?->id ?? $cb->id;
         $lang=Language::query()->where('code','tr')->first() ?? Language::query()->first();
         $langId=$lang?->id;
         // Eski nested-slug marka sayfalarını temizle (route slash desteklemez → düz 'marka-x')
@@ -3783,13 +3787,13 @@ EDV2B12;
                  'sections_json'=>[
                    'version'=>2,
                    'regions'=>[
-                     'header'=>[$this->reg('header',$cb->id,$hdr)],
-                     'body'  =>[$this->reg('body',$cb->id,$p['html'])],
-                     'footer'=>[$this->reg('footer',$cb->id,$ftr)],
+                     'header'=>[$this->reg('header','header','estetikdermal-v2-header',$hid,$hdr)],
+                     'body'  =>[$this->reg('body','content-block','v2-free-html',$cb->id,$p['html'])],
+                     'footer'=>[$this->reg('footer','footer','estetikdermal-v2-footer',$fid,$ftr)],
                    ],
                  ]]
             );
         }
-        $this->command?->info('Tema 2: '.count($pages).' sayfa (region+html_override) kuruldu.');
+        $this->command?->info('Tema 2: '.count($pages).' sayfa (region+html_override, doğru isimler) kuruldu.');
     }
 }
