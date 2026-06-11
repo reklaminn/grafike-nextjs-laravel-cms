@@ -49,7 +49,10 @@ use Illuminate\Support\Facades\Route;
 // Admin Auth Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.submit');
+    // Brute-force koruması: IP başına dakikada 5 deneme
+    Route::post('login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login.submit');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Protected Admin Routes

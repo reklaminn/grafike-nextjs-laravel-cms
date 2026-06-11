@@ -17,5 +17,7 @@ Route::prefix('v1')->group(function () {
     Route::get('articles', [ArticleController::class, 'index']);
     Route::get('articles/{slug}', [ArticleController::class, 'show']);
     Route::get('forms/{form}', [FormController::class, 'show']);
-    Route::post('forms/{form}/submit', [FormController::class, 'submit']);
+    // Spam/abuse koruması: IP başına dakikada 10 gönderim
+    Route::post('forms/{form}/submit', [FormController::class, 'submit'])
+        ->middleware('throttle:10,1');
 });
