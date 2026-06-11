@@ -165,6 +165,11 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         aiStatus: '',
         aiStatusOk: false,
 
+        // Şablon kataloğu canlı senkronizasyon state'i
+        templateSyncToast: '',
+        templateSyncToastVisible: false,
+        catalogRefreshing: false,
+
         init() {
             this.regions = this.normalizeRegions(initialRegions);
             this.normalizeSortOrder();
@@ -181,6 +186,16 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 this.regions = this.normalizeRegions(incoming);
                 this.normalizeSortOrder();
                 this.syncSerializedRegions();
+            });
+
+            // Başka bir sekmede şablon kaydedildiğinde (edit.blade.php
+            // localStorage sinyali yazar) kataloğu ve blokları tazele.
+            // storage event'i yalnızca diğer sekmelerde tetiklenir.
+            window.addEventListener('storage', (event) => {
+                if (event.key !== 'grafike:section-template-updated' || !event.newValue) return;
+                let info = null;
+                try { info = JSON.parse(event.newValue); } catch (e) { /* bozuk sinyal — adsız yenile */ }
+                this.refreshTemplateCatalog(info?.name || null);
             });
 
             this.$nextTick(() => {
@@ -239,6 +254,93 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         sectionsJsonIsDirty() {
             return this.initialSerializedRegions !== null
                 && this.serializedRegions !== this.initialSerializedRegions;
+        },
+
+        // ── Şablon kataloğu canlı senkronizasyonu ────────────────────────
+        //
+        // catalog-json endpoint'inden güncel şablonları çeker, bu şablonları
+        // kullanan blokların schema/html_template gibi şablon-türevi
+        // alanlarını yeniler. Kullanıcının girdiği content KORUNUR — yalnızca
+        // yeni schema alanları için default değerler eklenir.
+        async refreshTemplateCatalog(updatedName = null) {
+            if (this.catalogRefreshing) return false;
+            this.catalogRefreshing = true;
+
+            try {
+                const response = await fetch(@js(route('admin.section-templates.catalog-json', [], false)), {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (!response.ok) return false;
+
+                const data = await response.json();
+                if (!Array.isArray(data.templates)) return false;
+
+                this.availableTemplates = data.templates;
+                this.rehydrateBlocksFromCatalog();
+                this.showTemplateSyncToast(updatedName
+                    ? `"${updatedName}" şablonu güncellendi — bloklar yenilendi`
+                    : 'Şablon kataloğu yenilendi');
+                return true;
+            } catch (e) {
+                return false;
+            } finally {
+                this.catalogRefreshing = false;
+            }
+        },
+
+        rehydrateBlocksFromCatalog() {
+            this.regionNames.forEach((region) => {
+                (this.regions[region] || []).forEach((row) => {
+                    (row.columns || []).forEach((column) => {
+                        (column.blocks || []).forEach((block) => {
+                            this.applyTemplateToBlock(block);
+                        });
+                    });
+                });
+            });
+
+            // Ayarlar modalı açıksa draft da tazelensin — yeni alanlar anında görünür
+            if (this.settingsDraft) {
+                this.applyTemplateToBlock(this.settingsDraft);
+            }
+
+            this.queueSerializedRegionsSync();
+        },
+
+        applyTemplateToBlock(block) {
+            if (!block?.section_template_id) return;
+            const template = this.getTemplateById(block.section_template_id);
+            if (!template) return;
+
+            block.type          = template.type || block.type;
+            block.variation     = template.variation || block.variation;
+            block.render_mode   = template.render_mode || block.render_mode;
+            block.component_key = template.component_key ?? block.component_key;
+            block.template_name = template.name || block.template_name;
+            block.schema        = template.schema || {};
+            block.html_template = template.html_template || null;
+            block.content       = {
+                ...(template.default_content || {}),
+                ...(block.content || {}),
+            };
+        },
+
+        // Blok schema'sı katalogdaki güncel şablondan farklı mı?
+        // (modal açıkken başka tarayıcıdan şablon değiştirilmiş olabilir)
+        blockSchemaIsStale(block) {
+            if (!block?.section_template_id) return false;
+            const template = this.getTemplateById(block.section_template_id);
+            if (!template) return false;
+            return JSON.stringify(block.schema || {}) !== JSON.stringify(template.schema || {});
+        },
+
+        showTemplateSyncToast(message) {
+            this.templateSyncToast = message;
+            this.templateSyncToastVisible = true;
+            clearTimeout(this._templateSyncToastTimer);
+            this._templateSyncToastTimer = setTimeout(() => {
+                this.templateSyncToastVisible = false;
+            }, 4000);
         },
 
         getTemplateById(templateId) {
