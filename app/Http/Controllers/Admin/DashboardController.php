@@ -8,6 +8,8 @@ use App\Models\FormSubmission;
 use App\Models\Page;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Redis;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
@@ -15,27 +17,37 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $stats = Cache::remember('dashboard.stats', 60, function () {
-            $mediaSize = Media::sum('size');
-
-            return [
+        // Tenant içerik istatistikleri yalnızca aktif bir site varken anlamlı.
+        // Aktif site yokken (ajans admini, site seçilmemiş) tenant tabloları
+        // merkezi DB'de aranıp 500 vermesin diye sıfırlanır.
+        if (tenancy()->initialized) {
+            $stats = [
                 'total_pages'          => Page::count(),
                 'published_pages'      => Page::where('status', 'published')->count(),
                 'total_articles'       => Article::count(),
                 'published_articles'   => Article::where('status', 'published')->count(),
                 'total_media'          => Media::count(),
-                'total_media_size'     => $mediaSize,
+                'total_media_size'     => Media::sum('size'),
                 'new_submissions'      => FormSubmission::where('status', 'new')->count(),
                 'today_submissions'    => FormSubmission::whereDate('created_at', today())->count(),
             ];
-        });
+            $recentPages    = Page::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
+            $recentArticles = Article::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
+        } else {
+            $stats = [
+                'total_pages' => 0, 'published_pages' => 0,
+                'total_articles' => 0, 'published_articles' => 0,
+                'total_media' => 0, 'total_media_size' => 0,
+                'new_submissions' => 0, 'today_submissions' => 0,
+            ];
+            $recentPages    = collect();
+            $recentArticles = collect();
+        }
 
+        $noActiveTenant = ! tenancy()->initialized;
         $health = $this->systemHealth();
 
-        $recentPages = Page::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
-        $recentArticles = Article::latest('updated_at')->limit(5)->get(['id', 'title', 'status', 'updated_at']);
-
-        return view('admin.dashboard', compact('stats', 'health', 'recentPages', 'recentArticles'));
+        return view('admin.dashboard', compact('stats', 'health', 'recentPages', 'recentArticles', 'noActiveTenant'));
     }
 
     // ─── System health ─────────────────────────────────────────────────────────
@@ -63,7 +75,10 @@ class DashboardController extends Controller
     private function checkStorage(): array
     {
         try {
+            $this->ensureStorageDirectories();
+
             $writable = is_writable(storage_path('app'));
+
             return [
                 'status' => $writable ? 'ok' : 'warning',
                 'label'  => 'Depolama',
@@ -74,8 +89,33 @@ class DashboardController extends Controller
         }
     }
 
+    private function ensureStorageDirectories(): void
+    {
+        foreach ([
+            storage_path('app'),
+            storage_path('app/public'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+        ] as $path) {
+            File::ensureDirectoryExists($path, 0775, true);
+        }
+    }
+
     private function checkQueue(): array
     {
+        $connection = config('queue.default');
+        $driver = config("queue.connections.{$connection}.driver", $connection);
+
+        if ($driver === 'redis') {
+            return $this->checkRedisQueue($connection);
+        }
+
+        if ($driver === 'sync') {
+            return ['status' => 'ok', 'label' => 'Kuyruk', 'detail' => 'Sync çalışıyor'];
+        }
+
         try {
             $pending = DB::table('jobs')->count();
             $failed  = DB::table('failed_jobs')->count();
@@ -88,6 +128,28 @@ class DashboardController extends Controller
         } catch (Throwable) {
             // jobs table might not exist yet
             return ['status' => 'ok', 'label' => 'Kuyruk', 'detail' => 'Kontrol edilemiyor'];
+        }
+    }
+
+    private function checkRedisQueue(string $queueConnection): array
+    {
+        try {
+            $config = config("queue.connections.{$queueConnection}", []);
+            $redisConnection = $config['connection'] ?? 'default';
+            $queue = $config['queue'] ?? 'default';
+            $redis = Redis::connection($redisConnection);
+
+            $pending = (int) $redis->llen("queues:{$queue}");
+            $delayed = (int) $redis->zcard("queues:{$queue}:delayed");
+            $reserved = (int) $redis->zcard("queues:{$queue}:reserved");
+
+            return [
+                'status' => 'ok',
+                'label' => 'Kuyruk',
+                'detail' => "Redis: {$pending} bekliyor, {$delayed} gecikmiş, {$reserved} işleniyor",
+            ];
+        } catch (Throwable) {
+            return ['status' => 'error', 'label' => 'Kuyruk', 'detail' => 'Redis bağlantı hatası'];
         }
     }
 

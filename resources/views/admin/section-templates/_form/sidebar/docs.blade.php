@@ -23,6 +23,19 @@
         <p><strong>Schema Alanları:</strong> Builder formunda hangi alanların çıkacağını tanımlar.</p>
         <p><strong>Default Content JSON:</strong> Yeni block eklendiğinde ilk doldurulacak varsayılan değerlerdir.</p>
         <p><strong>Sistem Placeholder'ları:</strong> <code>site_name</code>, <code>phone</code>, <code>email</code>, <code>address</code> gibi alanlar panel ayarlarından gelir.</p>
-        <p><strong>Menü Placeholder'ları:</strong> <code>menu_header_html</code>, <code>menu_footer_html</code> veya <code>menu_&lt;slug&gt;_html</code> kullanabilirsin.</p>
+        <p><strong>Menü Placeholder'ları:</strong> <code>menu_header_html</code>, <code>menu_footer_html</code> veya <code>menu_&lt;slug&gt;_html</code> kullanabilirsin. Sadece item listesi gerekiyorsa <code>menu_header_items_html</code> kullan.</p>
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            <p class="font-semibold">Özel menü HTML/class şablonu</p>
+            <p class="mt-1">Dropdown ve class düzenini korumak için <code>schema_json</code> içine <code>menu_templates</code> ekle. HTML Template içinde aynı placeholder kalır: <code>@{{{menu_header_items_html}}}</code>.</p>
+            <pre class="mt-2 overflow-auto rounded bg-white p-2 text-[11px] leading-relaxed"><code>{
+  "menu_templates": {
+    "header": {
+      "item_template": "&lt;li&gt;&lt;a href=\"@{{url}}\" class=\"text-decoration-none nav-link-custom @{{active_class}}\"@{{{target_attr}}}&gt;@{{title}}&lt;/a&gt;&lt;/li&gt;",
+      "item_with_children_template": "&lt;li class=\"dropdown position-relative group\"&gt;&lt;a href=\"@{{url}}\" class=\"text-decoration-none nav-link-custom d-flex align-items-center gap-1\"@{{{target_attr}}}&gt;@{{title}} &lt;i class=\"bi bi-chevron-down\" style=\"font-size: 0.7rem;\"&gt;&lt;/i&gt;&lt;/a&gt;&lt;ul class=\"dropdown-menu custom-dropdown-menu border-0 mt-0 list-unstyled\"&gt;@{{{children_html}}}&lt;/ul&gt;&lt;/li&gt;",
+      "child_item_template": "&lt;li&gt;&lt;a class=\"dropdown-item text-decoration-none\" href=\"@{{url}}\"@{{{target_attr}}}&gt;@{{title}}&lt;/a&gt;&lt;/li&gt;"
+    }
+  }
+}</code></pre>
+        </div>
     </div>
 </details>

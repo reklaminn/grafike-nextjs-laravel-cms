@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-    <form method="POST" action="{{ route('admin.admin-users.update', $admin_user) }}">
+    <form method="POST" action="{{ route('admin.admin-users.update', $admin_user, false) }}">
         @csrf
         @method('PUT')
         @include('admin.admin-users._form')

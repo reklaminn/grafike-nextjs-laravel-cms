@@ -13,6 +13,7 @@
         @include('admin.pages._form.sidebar.publish')
         @include('admin.pages._form.sidebar.cover')
         @include('admin.pages._form.sidebar.options')
+        @include('admin.pages._form.sidebar.access', ['memberGroups' => $memberGroups ?? collect()])
         @if(isset($page))
             @include('admin.pages._form.sidebar.translations')
         @endif

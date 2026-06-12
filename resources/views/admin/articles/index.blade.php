@@ -17,7 +17,7 @@
             Tüm yazıları ve makaleleri yönetin.
             <span class="ml-1 font-medium text-gray-700">{{ $articles->total() }} yazı</span>
         </p>
-        <a href="{{ route('admin.articles.create') }}"
+        <a href="{{ route('admin.articles.create', [], false) }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
             <i class="fas fa-plus"></i> Yeni Yazı
         </a>
@@ -86,7 +86,7 @@
                     <i class="fas fa-search mr-1"></i> Filtrele
                 </button>
                 @if(request()->hasAny(['search','status','page_id','language_id','is_featured']))
-                    <a href="{{ route('admin.articles.index') }}"
+                    <a href="{{ route('admin.articles.index', [], false) }}"
                        class="px-3 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200" title="Filtreleri temizle">
                         <i class="fas fa-xmark"></i>
                     </a>
@@ -125,7 +125,7 @@
                                         </div>
                                     @endif
                                     <div class="min-w-0">
-                                        <a href="{{ route('admin.articles.edit', $article) }}"
+                                        <a href="{{ route('admin.articles.edit', $article->id, false) }}"
                                            class="text-sm font-medium text-gray-900 hover:text-indigo-600 block truncate max-w-xs">
                                             {{ $article->title }}
                                         </a>
@@ -180,11 +180,11 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('admin.articles.edit', $article) }}"
+                                    <a href="{{ route('admin.articles.edit', $article->id, false) }}"
                                        class="p-2 text-gray-400 hover:text-indigo-600" title="Düzenle">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('admin.articles.destroy', $article) }}"
+                                    <form method="POST" action="{{ route('admin.articles.destroy', $article->id, false) }}"
                                           onsubmit="return confirm('Bu yazıyı silmek istediğinize emin misiniz?')">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="p-2 text-gray-400 hover:text-red-600" title="Sil">
@@ -200,7 +200,7 @@
                                 <i class="fas fa-newspaper text-4xl mb-3 block"></i>
                                 <p class="text-sm">Henüz yazı bulunmuyor.</p>
                                 @if(request()->hasAny(['search','status','page_id','language_id','is_featured']))
-                                    <a href="{{ route('admin.articles.index') }}"
+                                    <a href="{{ route('admin.articles.index', [], false) }}"
                                        class="mt-2 inline-block text-indigo-600 text-sm hover:underline">Filtreleri temizle</a>
                                 @endif
                             </td>

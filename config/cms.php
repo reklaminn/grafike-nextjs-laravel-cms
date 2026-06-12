@@ -2,6 +2,17 @@
 
 return [
     'name' => env('CMS_NAME', 'Grafike CMS'),
+
+    // ── Agency / White-label ─────────────────────────────────────────────────
+    // Override these in .env to white-label the admin panel for your agency.
+    'agency' => [
+        'name'       => env('AGENCY_NAME',       env('CMS_NAME', 'Grafike CMS')),
+        'logo_url'   => env('AGENCY_LOGO_URL',   ''),   // Full URL or empty for text-only
+        'logo_dark'  => env('AGENCY_LOGO_DARK',  ''),   // Dark-bg variant (sidebar)
+        'favicon_url'=> env('AGENCY_FAVICON_URL',''),   // Override favicon
+        'primary_color' => env('AGENCY_PRIMARY_COLOR', '#6366f1'),
+    ],
+
     'frontend_url'      => env('CMS_FRONTEND_URL', 'http://127.0.0.1:3000'),
     'revalidate_secret' => env('CMS_REVALIDATE_SECRET', ''),
     'version' => '2.0.0',
@@ -29,6 +40,14 @@ return [
         'enabled' => env('RECAPTCHA_ENABLED', false),
         'site_key' => env('RECAPTCHA_SITE_KEY', ''),
         'secret_key' => env('RECAPTCHA_SECRET_KEY', ''),
+    ],
+
+    // Cloudflare Turnstile — form spam protection (Next.js/API form path).
+    // site_key is public (rendered in the widget); secret_key is server-only.
+    'turnstile' => [
+        'enabled' => env('TURNSTILE_ENABLED', false),
+        'site_key' => env('TURNSTILE_SITE_KEY', ''),
+        'secret_key' => env('TURNSTILE_SECRET_KEY', ''),
     ],
 
     'social' => [

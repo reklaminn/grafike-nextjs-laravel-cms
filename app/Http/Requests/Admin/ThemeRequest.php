@@ -37,11 +37,15 @@ class ThemeRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('themes', 'slug')->ignore($themeId)],
+            'slug' => ['required', 'string', 'max:255', Rule::unique('central.themes', 'slug')->ignore($themeId)],
             'engine' => ['required', Rule::in(['nextjs-basic-html', 'nextjs-component', 'legacy-blade'])],
             'description' => ['nullable', 'string'],
             'preview_image' => ['nullable', 'string', 'max:500'],
             'assets_json' => ['nullable', 'array'],
+            'css_files' => ['nullable', 'array'],
+            'css_files.*' => ['file', 'max:5120', 'extensions:css'],
+            'js_files' => ['nullable', 'array'],
+            'js_files.*' => ['file', 'max:5120', 'extensions:js'],
             'tokens_json' => ['nullable', 'array'],
             'settings_schema_json' => ['nullable', 'array'],
             'is_active' => ['nullable', 'boolean'],
@@ -77,7 +81,17 @@ class ThemeRequest extends FormRequest
         return collect(preg_split('/\r\n|\r|\n/', $value) ?: [])
             ->map(fn (string $line) => trim($line))
             ->filter()
+            ->map(fn (string $path) => $this->normalizeAssetPath($path))
             ->values()
             ->all();
+    }
+
+    private function normalizeAssetPath(string $path): string
+    {
+        if (str_starts_with($path, '/tenancy/assets/')) {
+            return preg_replace('#^/tenancy/assets/#', '/tenant-assets/', $path) ?: $path;
+        }
+
+        return $path;
     }
 }

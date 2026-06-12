@@ -13,6 +13,10 @@ class SiteResource extends JsonResource
             'site' => [
                 'name' => $this['name'],
                 'domain' => $this['domain'],
+                // Vertical modules enabled for this tenant.  Empty array
+                // means "core kurumsal CMS only" — Next.js skips the
+                // Tours / Commerce / etc. dynamic bundle imports.
+                'modules' => $this['modules'] ?? [],
                 'theme' => $this['theme'],
                 'tokens' => $this['tokens'],
                 'header_variant' => $this['header_variant'],

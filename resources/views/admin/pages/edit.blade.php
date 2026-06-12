@@ -20,7 +20,9 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.pages.update', $page) }}" enctype="multipart/form-data">
+    {{-- Use a relative URL (no scheme) so the form always submits to the current
+         origin (HTTPS) regardless of what route() generates for the scheme. --}}
+    <form method="POST" action="{{ route('admin.pages.update', $page, false) }}" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         @include('admin.pages._form')

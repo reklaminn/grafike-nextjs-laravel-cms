@@ -6,7 +6,7 @@
 @section('content')
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <form method="POST" action="{{ route('admin.currencies.fetch-rates') }}" class="inline">
+            <form method="POST" action="{{ route('admin.currencies.fetch-rates', [], false) }}" class="inline">
                 @csrf
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 text-sm font-medium rounded-lg hover:bg-green-100 transition-colors">
                     <i class="fas fa-sync-alt"></i> TCMB'den Güncelle

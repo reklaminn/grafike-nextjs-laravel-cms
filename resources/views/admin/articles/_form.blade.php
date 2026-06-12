@@ -115,6 +115,28 @@
                            value="{{ old('seo_keywords', $article->seo?->meta_keywords ?? '') }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">H1 Geçersiz Kıl</label>
+                        <input type="text" name="seo_h1"
+                               value="{{ old('seo_h1', $article->seo?->h1_override ?? '') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Canonical URL</label>
+                        <input type="url" name="seo_canonical"
+                               value="{{ old('seo_canonical', $article->seo?->canonical_url ?? '') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                               placeholder="https://...">
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="seo_noindex" value="0">
+                    <input type="checkbox" id="seo_noindex_article" name="seo_noindex" value="1"
+                           {{ old('seo_noindex', $article->seo?->is_noindex ?? false) ? 'checked' : '' }}
+                           class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="seo_noindex_article" class="text-sm text-gray-700">noindex (Arama motorlarından gizle)</label>
+                </div>
             </div>
         </div>
 
@@ -244,7 +266,7 @@
                         class="flex-1 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
                     <i class="fas fa-save mr-1"></i> {{ isset($article) ? 'Güncelle' : 'Oluştur' }}
                 </button>
-                <a href="{{ route('admin.articles.index') }}"
+                <a href="{{ route('admin.articles.index', [], false) }}"
                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">İptal</a>
             </div>
         </div>
@@ -257,7 +279,7 @@
                 <div class="relative mb-4 group">
                     <img src="{{ $article->getFirstMediaUrl('cover') }}"
                          class="w-full rounded-lg object-cover max-h-48" alt="">
-                    <form method="POST" action="{{ route('admin.articles.cover-destroy', $article) }}"
+                    <form method="POST" action="{{ route('admin.articles.cover-destroy', $article->id, false) }}"
                           class="absolute top-2 right-2">
                         @csrf @method('DELETE')
                         <button type="submit"

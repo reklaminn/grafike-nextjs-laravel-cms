@@ -10,6 +10,7 @@ use App\Support\FrontendSections;
 use App\Support\LegacyLayoutToSections;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 
 class PageResource extends JsonResource
 {
@@ -21,10 +22,61 @@ class PageResource extends JsonResource
         $tenant = tenancy()->tenant ?? null;
         $theme  = $tenant?->theme_id ? Theme::find($tenant->theme_id) : null;
 
-        $rawSections  = $this->resolveRenderableSections($page, $theme);
-        $sections     = $this->enrichSections(FrontendSections::flattenBlocks($rawSections));
-        $regionLayout = $this->enrichRegionBlocks($rawSections);
+        $rawSections    = $this->resolveRenderableSections($page, $theme);
+        $member         = Auth::guard('member')->user();
+        $memberLoggedIn = $member !== null;
+        $memberGroupId  = $member?->group_id;
+
+        // ── Page-level group restriction ──────────────────────────────────────
+        $allowedGroupIds   = array_filter((array) ($page->allowed_group_ids ?? []));
+        $isGroupRestricted = false;
+        $requiredGroupNames = [];
+
+        if (! empty($allowedGroupIds)) {
+            if (! $memberLoggedIn || ! in_array($memberGroupId, $allowedGroupIds, false)) {
+                $isGroupRestricted = true;
+                // Resolve group names for the frontend banner
+                $requiredGroupNames = \App\Models\MemberGroup::whereIn('id', $allowedGroupIds)
+                    ->pluck('name')
+                    ->all();
+            }
+        }
+
+        // ── Block-level filtering ──────────────────────────────────────────────
+        // Remove blocks that are member-only (visitor not logged in)
+        // OR restricted to groups the current member doesn't belong to.
+        [$filteredSections, $memberOnlyRemoved] = FrontendSections::filterBlocks(
+            $rawSections,
+            function (array $block) use ($memberLoggedIn, $memberGroupId): bool {
+                // Strip if member-only and visitor is not logged in
+                if (! empty($block['is_member_only']) && ! $memberLoggedIn) {
+                    return true;
+                }
+                // Strip if block has group restriction and member's group isn't in the list
+                $blockGroups = array_filter((array) ($block['allowed_group_ids'] ?? []));
+                if (! empty($blockGroups)) {
+                    if (! $memberLoggedIn || ! in_array($memberGroupId, $blockGroups, false)) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+        );
+
+        $sections     = $this->enrichSections(FrontendSections::flattenBlocks($filteredSections));
+        $regionLayout = $this->enrichRegionBlocks($filteredSections);
         $themeSlug    = $theme?->slug ?: 'porto-furniture';
+        $breadcrumbs  = $this->buildBreadcrumbs($page);
+
+        $isPasswordProtected = (bool) $page->is_password_protected;
+        $isLocked            = $isPasswordProtected && ! in_array(
+            $page->id,
+            session('unlocked_pages', []),
+            true,
+        );
+
+        // When group-restricted, strip all sections (same pattern as password lock)
+        $hideSections = $isLocked || $isGroupRestricted;
 
         return [
             'page' => [
@@ -35,10 +87,16 @@ class PageResource extends JsonResource
                 'featured_image' => $page->getFirstMediaUrl('cover'),
                 'template' => $page->template ?: $page->page_template,
                 'layout' => $page->layout_json ?? [],
-                'sections' => $sections,
+                'sections' => $hideSections ? [] : $sections,
                 'region_version' => $regionLayout['version'] ?? 2,
-                'regions' => $regionLayout['regions'] ?? [],
+                'regions' => $hideSections ? [] : ($regionLayout['regions'] ?? []),
                 'language' => $page->language?->code,
+                'breadcrumbs' => $breadcrumbs,
+                'is_password_protected'   => $isPasswordProtected,
+                'is_locked'               => $isLocked,
+                'has_member_only_content' => $memberOnlyRemoved > 0,
+                'is_group_restricted'     => $isGroupRestricted,
+                'required_group_names'    => $requiredGroupNames,
             ],
             'seo' => [
                 'title'           => $page->seo?->meta_title       ?: $page->title,
@@ -52,7 +110,7 @@ class PageResource extends JsonResource
                 'structured_data' => $this->resolveStructuredData($page),
                 'schema_type'     => $page->seo?->schema_type       ?: null,
             ],
-            'breadcrumbs' => $this->buildBreadcrumbs($page),
+            'breadcrumbs' => $breadcrumbs,
             'theme' => [
                 'slug' => $themeSlug,
             ],
@@ -141,6 +199,9 @@ class PageResource extends JsonResource
                 }
 
                 $section['template_name'] = $template->name;
+                $section['type'] = $template->type;
+                $section['variation'] = $template->variation;
+                $section['render_mode'] = $template->render_mode;
                 $section['html_template'] = $template->html_template;
                 $section['component_key'] = $template->component_key;
                 $section['schema'] = $template->schema_json ?? [];
@@ -171,6 +232,9 @@ class PageResource extends JsonResource
             }
 
             $block['template_name'] = $template->name;
+            $block['type'] = $template->type;
+            $block['variation'] = $template->variation;
+            $block['render_mode'] = $template->render_mode;
             $block['html_template'] = $template->html_template;
             $block['component_key'] = $template->component_key;
             $block['schema'] = $template->schema_json ?? [];

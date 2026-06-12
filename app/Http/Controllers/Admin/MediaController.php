@@ -90,6 +90,24 @@ class MediaController extends Controller
             return response()->json(['error' => 'Bu dosya uzantısına izin verilmiyor.'], 422);
         }
 
+        // SVG → gömülü script/onload XSS riski; içeriği sanitize et
+        if (! \App\Services\Media\SvgGuard::sanitizeIfSvg($file)) {
+            return response()->json(['error' => 'SVG dosyası güvenli değil veya bozuk.'], 422);
+        }
+
+        // Pakete göre depolama kotası — aktif tenant kotasını aşacaksa reddet.
+        $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
+        if ($tenant) {
+            $meter = app(\App\Services\Tenancy\TenantUsageMeter::class);
+            if ($meter->wouldExceedStorage($tenant, (int) $file->getSize())) {
+                $quota = $tenant->packageConfig()['max_storage_mb'] ?? null;
+
+                return response()->json([
+                    'error' => "Depolama kotası ({$quota} MB) aşıldı. Paketi yükseltin veya dosya silin.",
+                ], 422);
+            }
+        }
+
         // Store as orphan media (not associated with a model yet)
         $path = $file->store('uploads/' . date('Y/m'), 'public');
 

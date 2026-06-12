@@ -7,7 +7,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Form Settings -->
         <div>
-            <form method="POST" action="{{ route('admin.forms.update', $form) }}">
+            <form method="POST" action="{{ route('admin.forms.update', $form, false) }}">
                 @csrf @method('PUT')
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                     <h3 class="text-base font-semibold text-gray-800">Form Ayarları</h3>
@@ -27,6 +27,17 @@
                         <input type="email" name="notification_email" value="{{ $form->notification_email }}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     </div>
+                    <div class="pt-2 border-t border-gray-100">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SendPulse / Webhook URL</label>
+                        <input type="url" name="webhook_url" value="{{ $form->webhook_url }}" placeholder="https://...sendpulse..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <p class="text-xs text-gray-400 mt-1">Form gönderimleri buraya da JSON olarak POST edilir (alan adı → değer).</p>
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" name="webhook_enabled" value="1" {{ $form->webhook_enabled ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        Webhook'a göndermeyi aç
+                    </label>
                     <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
                         <i class="fas fa-save mr-1"></i> Kaydet
                     </button>

@@ -7,6 +7,7 @@ use App\Models\Form;
 use App\Models\FormSubmission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -31,6 +32,11 @@ class FormController extends Controller
                 'slug'              => $form->slug,
                 'description'       => $form->description,
                 'requires_captcha'  => $form->requires_captcha,
+                // Public site key — only sent when Turnstile is enabled AND the
+                // form requires a captcha, so the frontend renders the widget.
+                'turnstile_site_key' => ($form->requires_captcha && config('cms.turnstile.enabled'))
+                    ? config('cms.turnstile.site_key')
+                    : null,
                 'fields'            => $form->fields->map(fn ($f) => [
                     'id'            => $f->id,
                     'name'          => $f->name,
@@ -62,6 +68,23 @@ class FormController extends Controller
 
         if (! $form->is_active || ! $form->allow_submissions) {
             return response()->json(['error' => 'Bu form şu anda aktif değil.'], 422);
+        }
+
+        // Honeypot: a hidden field humans never fill. If a bot filled it, fake
+        // success (don't persist/email) so the bot wastes its attempt silently.
+        if (filled($request->input('_hp_url'))) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Formunuz başarıyla gönderildi. Teşekkürler!',
+            ]);
+        }
+
+        // Cloudflare Turnstile — verify when the form requires a captcha and
+        // Turnstile is configured.
+        if ($form->requires_captcha && config('cms.turnstile.enabled')) {
+            if (! $this->verifyTurnstile($request->input('cf-turnstile-response'), $request->ip())) {
+                return response()->json(['error' => 'Doğrulama başarısız. Lütfen tekrar deneyin.'], 422);
+            }
         }
 
         // Build validation rules from form fields
@@ -121,6 +144,16 @@ class FormController extends Controller
             }
         }
 
+        // Outbound webhook (e.g. SendPulse) — runs AFTER the response so it
+        // adds zero latency. Flatten field values to name => value.
+        if ($form->webhook_enabled && $form->webhook_url) {
+            $flatValues = array_map(fn ($f) => $f['value'] ?? null, $submissionData);
+            $ip = $request->ip();
+            app()->terminating(function () use ($form, $flatValues, $ip) {
+                app(\App\Services\Forms\FormWebhookDispatcher::class)->dispatch($form, $flatValues, $ip);
+            });
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Formunuz başarıyla gönderildi. Teşekkürler!',
@@ -129,6 +162,34 @@ class FormController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Verify a Cloudflare Turnstile token server-side.
+     * https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
+     */
+    protected function verifyTurnstile(?string $token, ?string $ip): bool
+    {
+        if (! $token) {
+            return false;
+        }
+
+        try {
+            $resp = Http::asForm()->timeout(8)->post(
+                'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+                [
+                    'secret'   => (string) config('cms.turnstile.secret_key'),
+                    'response' => $token,
+                    'remoteip' => $ip,
+                ],
+            );
+
+            return (bool) ($resp->json('success') ?? false);
+        } catch (\Throwable $e) {
+            Log::error('Turnstile verify failed: ' . $e->getMessage());
+
+            return false;
+        }
+    }
 
     protected function sendNotification(Form $form, array $data, ?FormSubmission $submission): void
     {

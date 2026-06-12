@@ -49,6 +49,11 @@ services:
     volumes:
       - grafike_storage_app:/var/www/html/storage/app
       - grafike_storage_logs:/var/www/html/storage/logs
+      # Shared mount for Traefik file provider.  Laravel writes
+      # /var/traefik-dynamic/tenants.json on Domain CRUD; Traefik reads it
+      # from /etc/traefik/dynamic and hot-reloads (~2s).  Host directory
+      # ./traefik-dynamic must exist before `compose up`.
+      - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
       - traefik_proxy
@@ -57,38 +62,62 @@ services:
       - "traefik.docker.network=traefik_proxy"
 
       # ── HTTP → HTTPS global redirect ──────────────────────────────────────
-      # Catches ALL http:// requests (any host) and permanently redirects to https://.
-      # Entrypoint name 'web' is Traefik's standard port-80 entrypoint.
-      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
+      # Catches ALL http:// requests (any host) and redirects to https://.
+      # permanent=false → 307 Temporary Redirect (method-preserving).
+      # DO NOT use permanent=true (301): browsers convert POST → GET on 301,
+      # silently discarding form bodies (sections_json, CSRF tokens, etc.).
+      # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
+      - "traefik.http.routers.http-catchall.rule=HostRegexp(`.+`)"
       - "traefik.http.routers.http-catchall.entrypoints=web"
       - "traefik.http.routers.http-catchall.middlewares=https-redirect"
       - "traefik.http.routers.http-catchall.priority=1"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=false"
 
       # ── /admin → Laravel ──────────────────────────────────────────────────
-      - "traefik.http.routers.grafike-admin.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/admin`)"
+      # LEGACY: `graficms.grafike.site` OR'd alongside ${APP_DOMAIN} during
+      # the cms.grafcore.com migration so both hosts reach the admin panel
+      # in parallel.  Remove the `|| Host(`graficms.grafike.site`)` clause
+      # (here + in api/assets/frontend rules below) once the old domain is
+      # decommissioned.
+      #
+      # NOTE: Traefik v3.7.x parses `Host()` with exactly one argument —
+      # the documented multi-arg form `Host(`a`, `b`)` fails with
+      # "unexpected number of parameters".  Use `Host(`a`) || Host(`b`)`
+      # explicitly.
+      - "traefik.http.routers.grafike-admin.rule=(Host(`${APP_DOMAIN}`) || Host(`graficms.grafike.site`)) && PathPrefix(`/admin`)"
       - "traefik.http.routers.grafike-admin.entrypoints=websecure"
       - "traefik.http.routers.grafike-admin.tls=true"
       - "traefik.http.routers.grafike-admin.tls.certresolver=mytlschallenge"
+      # ACME scope: ONLY request a LE cert for graficms.grafike.site (see
+      # docker-compose.yml's grafike-admin block for the full rationale).
+      # cms.grafcore.com gets its cert from the CF Origin Certificate
+      # loaded via the file provider, matched by SNI.
+      - "traefik.http.routers.grafike-admin.tls.domains[0].main=graficms.grafike.site"
       - "traefik.http.routers.grafike-admin.service=grafike-lb"
       - "traefik.http.routers.grafike-admin.middlewares=grafike-headers@docker"
       - "traefik.http.routers.grafike-admin.priority=200"
 
       # ── /api → Laravel ────────────────────────────────────────────────────
-      - "traefik.http.routers.grafike-api.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api`)"
+      # LEGACY graficms.grafike.site — see grafike-admin note above.
+      - "traefik.http.routers.grafike-api.rule=(Host(`${APP_DOMAIN}`) || Host(`graficms.grafike.site`)) && PathPrefix(`/api`)"
       - "traefik.http.routers.grafike-api.entrypoints=websecure"
       - "traefik.http.routers.grafike-api.tls=true"
       - "traefik.http.routers.grafike-api.tls.certresolver=mytlschallenge"
+      # ACME scope — see grafike-admin note above.
+      - "traefik.http.routers.grafike-api.tls.domains[0].main=graficms.grafike.site"
       - "traefik.http.routers.grafike-api.service=grafike-lb"
       - "traefik.http.routers.grafike-api.middlewares=grafike-headers@docker"
       - "traefik.http.routers.grafike-api.priority=200"
 
       # ── Static assets + health → Laravel ──────────────────────────────────
-      - "traefik.http.routers.grafike-assets.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
+      # LEGACY graficms.grafike.site — see grafike-admin note above.
+      - "traefik.http.routers.grafike-assets.rule=(Host(`${APP_DOMAIN}`) || Host(`graficms.grafike.site`)) && (PathPrefix(`/build`) || PathPrefix(`/storage`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || PathPrefix(`/up`))"
       - "traefik.http.routers.grafike-assets.entrypoints=websecure"
       - "traefik.http.routers.grafike-assets.tls=true"
       - "traefik.http.routers.grafike-assets.tls.certresolver=mytlschallenge"
+      # ACME scope — see grafike-admin note above.
+      - "traefik.http.routers.grafike-assets.tls.domains[0].main=graficms.grafike.site"
       - "traefik.http.routers.grafike-assets.service=grafike-lb"
       - "traefik.http.routers.grafike-assets.middlewares=grafike-headers@docker"
       - "traefik.http.routers.grafike-assets.priority=200"
@@ -106,20 +135,87 @@ services:
       - "traefik.http.middlewares.grafike-headers.headers.STSIncludeSubdomains=true"
       - "traefik.http.middlewares.grafike-headers.headers.STSPreload=true"
 
-      # ── Tenant domain catch-all ────────────────────────────────────────────
-      # Matches ANY domain that is NOT graficms.grafike.site (priority 1 =
-      # lowest, so the explicit /admin|/api|/assets routers always win for
-      # the CMS domain). All tenant custom domains (nuhcicek.com.tr, etc.)
-      # fall through here → Laravel port 80 → stancl reads the Host header
-      # → looks up domain in the `domains` table → initialises the tenant DB.
-      # Traefik requests a Let's Encrypt certificate for each new hostname
-      # automatically via the HTTP-01 challenge.
-      - "traefik.http.routers.grafike-tenants.rule=HostRegexp(`{host:.+}`)"
-      - "traefik.http.routers.grafike-tenants.entrypoints=websecure"
-      - "traefik.http.routers.grafike-tenants.tls=true"
-      - "traefik.http.routers.grafike-tenants.tls.certresolver=mytlschallenge"
-      - "traefik.http.routers.grafike-tenants.service=grafike-lb"
-      - "traefik.http.routers.grafike-tenants.priority=1"
+      # ── Tenant backend paths → Laravel (any domain, priority 50) ─────────────
+      # Catches Laravel-served paths on EVERY domain (including tenant custom
+      # domains).  Higher priority than the frontend catch-all (1) so member
+      # auth, form submissions, sitemap, etc. always reach Laravel even when
+      # the request comes from nuhcicek.com.tr instead of the CMS domain.
+      # APP_DOMAIN backend paths are already handled by the priority-200 routers
+      # above; this rule only "wins" for tenant custom domains.
+      - "traefik.http.routers.grafike-backend.rule=PathPrefix(`/member`) || PathPrefix(`/api`) || PathPrefix(`/forms`) || PathPrefix(`/reviews`) || PathPrefix(`/pages`) || PathPrefix(`/lang`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/storage`) || PathPrefix(`/build`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`) || Path(`/sitemap.xml`) || Path(`/robots.txt`) || Path(`/llms.txt`) || Path(`/llms-full.txt`) || PathPrefix(`/.well-known`)"
+      - "traefik.http.routers.grafike-backend.entrypoints=websecure"
+      - "traefik.http.routers.grafike-backend.tls=true"
+      - "traefik.http.routers.grafike-backend.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.grafike-backend.service=grafike-lb"
+      - "traefik.http.routers.grafike-backend.priority=50"
+
+  # ── Next.js frontend (SSR + ISR) ─────────────────────────────────────────────
+  # Serves public pages for the CMS domain AND all tenant custom domains.
+  # SSR calls Laravel internally via CMS_API_URL (bypasses Traefik).
+  # On-demand ISR revalidation is triggered by Laravel observers via
+  # POST /api/revalidate using the REVALIDATE_SECRET shared secret.
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL:-https://localhost:3000}
+        NEXT_PUBLIC_API_URL: ${APP_URL}
+        NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-tr}
+        NEXT_PUBLIC_SUPPORTED_LOCALES: ${NEXT_PUBLIC_SUPPORTED_LOCALES:-tr}
+        NEXT_PUBLIC_APP_ENV: production
+    container_name: ${FRONTEND_CONTAINER_NAME:-grafike_cms_frontend}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Internal Docker network — bypasses Traefik for low-latency SSR API calls
+      CMS_API_URL: http://app:80
+      NEXT_PUBLIC_SITE_URL: ${CMS_FRONTEND_URL}
+      NEXT_PUBLIC_API_URL: ${APP_URL}
+      NEXT_PUBLIC_DEFAULT_LOCALE: ${NEXT_PUBLIC_DEFAULT_LOCALE:-tr}
+      NEXT_PUBLIC_SUPPORTED_LOCALES: ${NEXT_PUBLIC_SUPPORTED_LOCALES:-tr}
+      REVALIDATE_SECRET: ${CMS_REVALIDATE_SECRET}
+      NEXT_PUBLIC_APP_ENV: production
+    depends_on:
+      - app
+    networks:
+      - app_net
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+
+      # ── CMS domain public pages → Next.js (priority 10) ───────────────────
+      # Non-backend paths on APP_DOMAIN go to Next.js SSR.
+      # Priority 10 loses to backend routers (200) but wins over catch-all (1).
+      # LEGACY graficms.grafike.site — see grafike-admin note above.
+      - "traefik.http.routers.grafike-frontend.rule=(Host(`${APP_DOMAIN}`) || Host(`graficms.grafike.site`)) && !(PathPrefix(`/admin`) || PathPrefix(`/api`) || PathPrefix(`/member`) || PathPrefix(`/forms`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/storage`) || PathPrefix(`/build`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`) || Path(`/sitemap.xml`) || Path(`/robots.txt`))"
+      - "traefik.http.routers.grafike-frontend.entrypoints=websecure"
+      - "traefik.http.routers.grafike-frontend.tls=true"
+      - "traefik.http.routers.grafike-frontend.tls.certresolver=mytlschallenge"
+      # ACME scope — see grafike-admin note above.
+      - "traefik.http.routers.grafike-frontend.tls.domains[0].main=graficms.grafike.site"
+      - "traefik.http.routers.grafike-frontend.service=grafike-frontend-lb"
+      - "traefik.http.routers.grafike-frontend.priority=10"
+
+      # ── Tenant custom domains → Next.js (priority 1, LAST-RESORT fallback) ──
+      # Per-tenant Host() routers are generated dynamically by Laravel's
+      # TraefikDynamicConfig service (file provider, priority 100) and take
+      # precedence for every domain in the `domains` table.  This wildcard
+      # exists only so unknown-host requests get a clean fallback.
+      #
+      # NO cert resolver here: HostRegexp can't enumerate domains for ACME.
+      # Tenant certs are issued by the file-provider routers (per-domain
+      # HTTP-01).  Unknown-host HTTPS requests get Traefik's default cert.
+      # Traefik v3 syntax: plain regex inside HostRegexp (no `{name:pattern}` group).
+      - "traefik.http.routers.grafike-tenant-frontend.rule=HostRegexp(`.+`)"
+      - "traefik.http.routers.grafike-tenant-frontend.entrypoints=websecure"
+      - "traefik.http.routers.grafike-tenant-frontend.tls=true"
+      - "traefik.http.routers.grafike-tenant-frontend.service=grafike-frontend-lb"
+      - "traefik.http.routers.grafike-tenant-frontend.priority=1"
+
+      # ── Load balancer ──────────────────────────────────────────────────────
+      - "traefik.http.services.grafike-frontend-lb.loadbalancer.server.port=3000"
 
   # ── Queue worker ─────────────────────────────────────────────────────────────
   queue:
@@ -155,6 +251,11 @@ services:
     volumes:
       - grafike_storage_app:/var/www/html/storage/app
       - grafike_storage_logs:/var/www/html/storage/logs
+      # Shared mount for Traefik file provider.  Laravel writes
+      # /var/traefik-dynamic/tenants.json on Domain CRUD; Traefik reads it
+      # from /etc/traefik/dynamic and hot-reloads (~2s).  Host directory
+      # ./traefik-dynamic must exist before `compose up`.
+      - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
 
@@ -191,6 +292,11 @@ services:
     volumes:
       - grafike_storage_app:/var/www/html/storage/app
       - grafike_storage_logs:/var/www/html/storage/logs
+      # Shared mount for Traefik file provider.  Laravel writes
+      # /var/traefik-dynamic/tenants.json on Domain CRUD; Traefik reads it
+      # from /etc/traefik/dynamic and hot-reloads (~2s).  Host directory
+      # ./traefik-dynamic must exist before `compose up`.
+      - ./traefik-dynamic:/var/traefik-dynamic:rw
     networks:
       - app_net
 

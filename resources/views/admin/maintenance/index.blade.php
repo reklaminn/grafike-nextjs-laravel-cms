@@ -59,7 +59,7 @@
                         </div>
                     </div>
                     @if($orphans[$item['key']] > 0)
-                        <form method="POST" action="{{ route('admin.maintenance.cleanup') }}"
+                        <form method="POST" action="{{ route('admin.maintenance.cleanup', [], false) }}"
                               onsubmit="return confirm('{{ $orphans[$item['key']] }} kayıt kalıcı olarak silinecek. Emin misiniz?')">
                             @csrf
                             <input type="hidden" name="type" value="{{ $item['key'] }}">

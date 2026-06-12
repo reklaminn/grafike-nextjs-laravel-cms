@@ -38,7 +38,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.settings.crawl.update') }}" class="space-y-6">
+    <form method="POST" action="{{ route('admin.settings.crawl.update', [], false) }}" class="space-y-6">
         @csrf @method('PUT')
 
         {{-- ─── AI Bot İzinleri ──────────────────────────────────────────────── --}}

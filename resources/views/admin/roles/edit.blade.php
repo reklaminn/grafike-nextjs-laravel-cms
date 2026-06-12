@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-    <form method="POST" action="{{ route('admin.roles.update', $role) }}">
+    <form method="POST" action="{{ route('admin.roles.update', $role, false) }}">
         @csrf
         @method('PUT')
         @include('admin.roles._form')

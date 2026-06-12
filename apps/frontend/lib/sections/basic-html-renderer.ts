@@ -20,19 +20,85 @@ type RepeaterSchema = {
   item_template?: unknown;
 };
 
-function renderMenuItems(items: MenuItem[]): string {
+type MenuTemplateSet = {
+  wrapper_template?: unknown;
+  item_template?: unknown;
+  item_with_children_template?: unknown;
+  child_item_template?: unknown;
+  child_item_with_children_template?: unknown;
+};
+
+function normalizeMenuKey(key: string): string {
+  return key.toLowerCase().replaceAll(/[^a-z0-9_]+/g, "_").replaceAll(/^_+|_+$/g, "");
+}
+
+function getMenuTemplateSet(schema: PageSection["schema"] | undefined, key: string): MenuTemplateSet {
+  const container = schema?.menu_templates ?? schema?.menuTemplates;
+
+  if (!container || typeof container !== "object" || Array.isArray(container)) {
+    return {};
+  }
+
+  const value = (container as Record<string, unknown>)[key];
+
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as MenuTemplateSet) : {};
+}
+
+function renderMenuTemplate(template: string, values: Record<string, unknown>): string {
+  const rawValues = template.replaceAll(/{{{\s*([a-zA-Z0-9_]+)\s*}}}/g, (_match, key: string) => {
+    return String(values[key] ?? "");
+  });
+
+  return rawValues.replaceAll(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_match, key: string) => {
+    return escapeHtml(values[key]);
+  });
+}
+
+function defaultMenuItemTemplate(): string {
+  return `<li><a href="{{url}}"{{{target_attr}}}>{{title}}</a></li>`;
+}
+
+function defaultMenuItemWithChildrenTemplate(): string {
+  return `<li><a href="{{url}}"{{{target_attr}}}>{{title}}</a><ul>{{{children_html}}}</ul></li>`;
+}
+
+function selectMenuItemTemplate(templateSet: MenuTemplateSet, hasChildren: boolean, isChild: boolean): string {
+  if (hasChildren) {
+    const template = isChild
+      ? templateSet.child_item_with_children_template || templateSet.item_with_children_template
+      : templateSet.item_with_children_template;
+
+    return typeof template === "string" ? template : defaultMenuItemWithChildrenTemplate();
+  }
+
+  const template = isChild
+    ? templateSet.child_item_template || templateSet.item_template
+    : templateSet.item_template;
+
+  return typeof template === "string" ? template : defaultMenuItemTemplate();
+}
+
+function renderMenuItems(items: MenuItem[], templateSet: MenuTemplateSet = {}, isChild = false): string {
   return items
     .map((item) => {
-      const children = item.children?.length
-        ? `<ul>${renderMenuItems(item.children)}</ul>`
-        : "";
+      const childrenHtml = item.children?.length ? renderMenuItems(item.children, templateSet, true) : "";
+      const template = selectMenuItemTemplate(templateSet, childrenHtml !== "", isChild);
 
-      return `<li><a href="${escapeHtml(item.url)}"${item.target ? ` target="${escapeHtml(item.target)}"` : ""}>${escapeHtml(item.title)}</a>${children}</li>`;
+      return renderMenuTemplate(template, {
+        id: item.id,
+        title: item.title,
+        url: item.url || "#",
+        target: item.target || "",
+        target_attr: item.target ? ` target="${escapeHtml(item.target)}"` : "",
+        children_html: childrenHtml,
+        active_class: "",
+        has_children_class: childrenHtml !== "" ? "has-children" : "",
+      });
     })
     .join("");
 }
 
-function buildSystemPlaceholders(context: SectionRenderContext): Record<string, string> {
+function buildSystemPlaceholders(context: SectionRenderContext, schema?: PageSection["schema"]): Record<string, string> {
   const { site, settings, menus } = context;
   const placeholders: Record<string, string> = {
     site_name: site.name,
@@ -62,9 +128,18 @@ function buildSystemPlaceholders(context: SectionRenderContext): Record<string, 
     const keyParts = [menu.location, menu.slug].filter(Boolean);
 
     keyParts.forEach((key) => {
-      placeholders[`menu_${key}_html`] = `<ul>${renderMenuItems(menu.items || [])}</ul>`;
-      placeholders[`menu_${key}_items_html`] = renderMenuItems(menu.items || []);
-      placeholders[`menu_${key}_name`] = menu.name;
+      const normalizedKey = normalizeMenuKey(key);
+      const templateSet = getMenuTemplateSet(schema, normalizedKey);
+      const itemsHtml = renderMenuItems(menu.items || [], templateSet);
+      const wrapperTemplate = typeof templateSet.wrapper_template === "string" ? templateSet.wrapper_template : `<ul>{{{items_html}}}</ul>`;
+
+      placeholders[`menu_${normalizedKey}_html`] = renderMenuTemplate(wrapperTemplate, {
+        items_html: itemsHtml,
+        menu_name: menu.name,
+        menu_key: normalizedKey,
+      });
+      placeholders[`menu_${normalizedKey}_items_html`] = itemsHtml;
+      placeholders[`menu_${normalizedKey}_name`] = menu.name;
     });
   });
 
@@ -114,7 +189,7 @@ function renderTemplateString(
   context: SectionRenderContext,
   schema?: PageSection["schema"],
 ): string {
-  const systemValues = buildSystemPlaceholders(context);
+  const systemValues = buildSystemPlaceholders(context, schema);
 
   const withRawValues = template.replaceAll(/{{{\s*([a-zA-Z0-9_]+)\s*}}}/g, (_match, key: string) => {
     const repeaterHtml = resolveRepeaterHtml(key, content, systemValues, context, schema);

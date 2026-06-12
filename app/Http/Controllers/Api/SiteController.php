@@ -22,9 +22,17 @@ class SiteController extends Controller
         $theme    = $tenant?->theme_id ? Theme::find($tenant->theme_id) : null;
         $tokens   = $theme?->tokens_json ?? [];
 
+        // Enabled vertical modules drive frontend conditional loading
+        // (Tours catalog, Commerce storefront, …).  Empty array means
+        // the tenant runs core "kurumsal" only.
+        $modules = $tenant && method_exists($tenant, 'enabledModules')
+            ? $tenant->enabledModules()
+            : [];
+
         return SiteResource::make([
             'name' => $tenant?->name ?? SiteSetting::get('site.title', config('cms.name', 'Grafike CMS')),
             'domain' => request()->getHost(),
+            'modules' => $modules,
             'theme' => [
                 'slug'   => $theme?->slug ?? 'porto-furniture',
                 'engine' => $theme?->engine ?? 'next',

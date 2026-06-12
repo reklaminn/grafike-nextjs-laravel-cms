@@ -53,6 +53,33 @@
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h3 class="text-base font-semibold text-gray-900">Tema Verileri</h3>
             <div class="mt-4 space-y-4">
+                <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    @if(tenancy()->initialized)
+                        <strong>Tenant storage aktif:</strong> Yüklenen CSS/JS dosyaları seçili sitenin storage alanına kaydedilir ve <code>/tenant-assets/...</code> yolu ile temaya eklenir.
+                    @else
+                        <strong>Genel storage aktif:</strong> Aktif tenant yok. Yüklenen CSS/JS dosyaları merkezi storage alanına kaydedilir ve <code>/storage/...</code> yolu ile temaya eklenir.
+                    @endif
+                </div>
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">CSS Dosyası Yükle</label>
+                        <input type="file" name="css_files[]" multiple accept=".css,text/css"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100">
+                        <p class="mt-1 text-xs text-gray-500">Birden fazla <code>.css</code> dosyası seçebilirsin. Kaydedilince CSS yollarına eklenir.</p>
+                        @error('css_files.*')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-gray-700">JS Dosyası Yükle</label>
+                        <input type="file" name="js_files[]" multiple accept=".js,text/javascript,application/javascript"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100">
+                        <p class="mt-1 text-xs text-gray-500">Birden fazla <code>.js</code> dosyası seçebilirsin. Kaydedilince JS yollarına eklenir.</p>
+                        @error('js_files.*')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">CSS Yolları</label>
                     <textarea name="css_paths" rows="6"

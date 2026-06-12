@@ -38,4 +38,42 @@ class Admin extends Authenticatable
     {
         return $this->hasMany(Article::class, 'author_id');
     }
+
+    public function tenantAccesses()
+    {
+        return $this->hasMany(AdminTenantAccess::class);
+    }
+
+    public function tenants()
+    {
+        return $this->belongsToMany(Tenant::class, 'admin_tenant_access', 'admin_id', 'tenant_id')
+            ->withPivot(['role', 'is_default'])
+            ->withTimestamps();
+    }
+
+    public function isAgencyAdmin(): bool
+    {
+        return $this->hasRole('super-admin') || ! $this->tenantAccesses()->exists();
+    }
+
+    public function canAccessTenant(Tenant|string $tenant): bool
+    {
+        if ($this->isAgencyAdmin()) {
+            return true;
+        }
+
+        $tenantId = $tenant instanceof Tenant ? $tenant->getTenantKey() : $tenant;
+
+        return $this->tenantAccesses()
+            ->where('tenant_id', $tenantId)
+            ->exists();
+    }
+
+    public function defaultTenantId(): ?string
+    {
+        return $this->tenantAccesses()
+            ->where('is_default', true)
+            ->value('tenant_id')
+            ?? $this->tenantAccesses()->orderBy('tenant_id')->value('tenant_id');
+    }
 }

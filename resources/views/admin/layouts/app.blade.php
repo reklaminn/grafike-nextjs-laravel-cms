@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Panel') - {{ config('cms.name', 'Grafike CMS') }}</title>
+    <title>@yield('title', 'Admin Panel') - {{ config('cms.agency.name', config('cms.name', 'Grafike CMS')) }}</title>
+    @if(config('cms.agency.favicon_url'))
+    <link rel="icon" href="{{ config('cms.agency.favicon_url') }}">
+    @endif
 
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,6 +24,58 @@
     @stack('styles')
 </head>
 <body class="h-full" x-data="{ sidebarOpen: true, mobileMenuOpen: false }">
+@php
+    $frontendBaseUrl = rtrim(config('cms.frontend_url'), '/') ?: url('/');
+    $activeTenantId = session('active_tenant') ?: Auth::guard('admin')->user()?->defaultTenantId();
+    $isAdminAuthenticated = Auth::guard('admin')->check();
+    $previewTenantName = null;
+    $liveSiteUrl = null;
+
+    if ($isAdminAuthenticated && $activeTenantId) {
+        try {
+            $tenantForPreview = tenancy()->central(
+                fn () => \App\Models\Tenant::with('domains')->find($activeTenantId)
+            );
+            $previewTenantName = $tenantForPreview?->name ?? $activeTenantId;
+
+            // Webmail butonu: tenant'ın mailcow_domain'i varsa göster
+            $webmailUrl = null;
+            $mailcowBase = \App\Models\CentralSetting::get('mailcow.url');
+            if ($mailcowBase && $tenantForPreview?->mailcowDomain()) {
+                $webmailUrl = rtrim($mailcowBase, '/');
+            }
+
+            // stancl VirtualColumn: data JSON'da 'domains' key varsa Eloquent
+            // ilişkisi yerine array döner → Collection metotları çalışmaz.
+            $rawDomains = $tenantForPreview?->domains;
+            $firstDomain = null;
+            if ($rawDomains instanceof \Illuminate\Support\Collection) {
+                $firstDomain = $rawDomains->first();
+            } elseif (is_array($rawDomains) && !empty($rawDomains)) {
+                $firstDomain = $rawDomains[0];
+            }
+            $tenantDomain = is_object($firstDomain)
+                ? $firstDomain->domain
+                : ($firstDomain['domain'] ?? null);
+
+            if ($tenantDomain) {
+                $liveSiteUrl = str_starts_with($tenantDomain, 'http://') || str_starts_with($tenantDomain, 'https://')
+                    ? $tenantDomain
+                    : 'https://' . $tenantDomain;
+            }
+        } catch (\Throwable) {
+            $previewTenantName = $activeTenantId;
+            $webmailUrl = null;
+        }
+
+        $visitSiteUrl = $frontendBaseUrl . (str_contains($frontendBaseUrl, '?') ? '&' : '?') . http_build_query([
+            'tenant' => $activeTenantId,
+        ]);
+    } else {
+        $visitSiteUrl = route('admin.tenants.index');
+        $webmailUrl   = null;
+    }
+@endphp
 
 <div class="min-h-full">
     <!-- Mobile sidebar backdrop -->
@@ -34,11 +89,19 @@
 
         <!-- Logo -->
         <div class="flex h-16 items-center justify-between px-4 border-b border-gray-200">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                    <span class="text-white font-bold text-sm">G</span>
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 min-w-0">
+                @if(config('cms.agency.logo_url') || config('cms.agency.logo_dark'))
+                {{-- Sidebar beyaz zeminli → koyu/normal logo (logo_url) kullan.
+                     logo_dark koyu-zemin (açık renkli) varyant; sadece fallback. --}}
+                <img src="{{ config('cms.agency.logo_url') ?: config('cms.agency.logo_dark') }}"
+                     alt="{{ config('cms.agency.name') }}"
+                     class="h-8 w-auto object-contain flex-shrink-0">
+                @else
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span class="text-white font-bold text-sm">{{ mb_substr(config('cms.agency.name', 'G'), 0, 1) }}</span>
                 </div>
-                <span x-show="sidebarOpen" x-transition class="font-bold text-gray-800">Grafike CMS</span>
+                @endif
+                {{-- Logo yanında isim gösterilmiyor; logo görseli yeterli --}}
             </a>
             <button @click="sidebarOpen = !sidebarOpen" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-bars"></i>
@@ -62,7 +125,11 @@
            x-transition:leave-end="-translate-x-full">
 
         <div class="flex h-16 items-center justify-between px-4 border-b">
-            <span class="font-bold text-gray-800">Grafike CMS</span>
+            @if(config('cms.agency.logo_url'))
+            <img src="{{ config('cms.agency.logo_url') }}" alt="{{ config('cms.agency.name') }}" class="h-7 w-auto object-contain">
+            @else
+            <span class="font-bold text-gray-800">{{ config('cms.agency.name', config('cms.name', 'Grafike CMS')) }}</span>
+            @endif
             <button @click="mobileMenuOpen = false" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times"></i>
             </button>
@@ -86,12 +153,67 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <!-- Visit site -->
-                    <a href="{{ url('/') }}" target="_blank"
-                       class="text-sm text-gray-500 hover:text-indigo-600 flex items-center gap-1">
-                        <i class="fas fa-external-link-alt"></i>
-                        <span class="hidden sm:inline">Siteyi Gör</span>
-                    </a>
+                    @if($isAdminAuthenticated)
+                        <!-- Global search -->
+                        <div x-data="adminGlobalSearch()" class="relative hidden md:block"
+                             @keydown.escape.window="open = false" @click.away="open = false">
+                            <div class="relative">
+                                <i class="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" x-model="query" @input.debounce.300ms="search()"
+                                       @focus="query.length >= 2 && (open = true)"
+                                       placeholder="Ara: sayfa, yazı, form, şablon…"
+                                       class="w-48 lg:w-64 rounded-lg border border-gray-200 bg-gray-50 py-2 pl-8 pr-3 text-sm focus:border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                            </div>
+
+                            <div x-show="open" x-cloak
+                                 class="absolute left-0 right-0 z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl">
+                                <template x-if="loading">
+                                    <div class="px-4 py-3 text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i> Aranıyor…</div>
+                                </template>
+                                <template x-if="!loading && Object.keys(groups).length === 0">
+                                    <div class="px-4 py-3 text-xs text-gray-400">Sonuç bulunamadı.</div>
+                                </template>
+                                <template x-for="[groupKey, rows] in Object.entries(groups)" :key="groupKey">
+                                    <div class="border-b border-gray-50 last:border-0">
+                                        <p class="px-4 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400"
+                                           x-text="groupLabels[groupKey] || groupKey"></p>
+                                        <template x-for="row in rows" :key="row.url">
+                                            <a :href="row.url" class="block px-4 py-2 hover:bg-indigo-50">
+                                                <span class="block truncate text-sm text-gray-800" x-text="row.label"></span>
+                                                <span class="block truncate text-[11px] text-gray-400" x-text="row.sublabel"></span>
+                                            </a>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Tenant preview -->
+                        <a href="{{ $visitSiteUrl }}" target="{{ $activeTenantId ? '_blank' : '_self' }}"
+                           title="{{ $activeTenantId ? 'Preview: ' . $previewTenantName : 'Önizleme için önce site seç' }}"
+                           class="text-sm {{ $activeTenantId ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg font-medium' : 'text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-lg font-medium' }} flex items-center gap-1">
+                            <i class="fas fa-eye"></i>
+                            <span class="hidden sm:inline">{{ $activeTenantId ? 'Preview' : 'Site seç' }}</span>
+                        </a>
+
+                        @if($liveSiteUrl)
+                            <a href="{{ $liveSiteUrl }}" target="_blank"
+                               title="Canlı site: {{ $liveSiteUrl }}"
+                               class="text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg font-medium flex items-center gap-1">
+                                <i class="fas fa-external-link-alt"></i>
+                                <span class="hidden sm:inline">Canlı Site</span>
+                            </a>
+                        @endif
+
+                        @if(!empty($webmailUrl))
+                            <a href="{{ $webmailUrl }}" target="_blank"
+                               title="Webmail: {{ $webmailUrl }}"
+                               class="text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg font-medium flex items-center gap-1">
+                                <i class="fas fa-envelope"></i>
+                                <span class="hidden sm:inline">Webmail</span>
+                            </a>
+                        @endif
+                    @endif
 
                     <!-- User dropdown -->
                     <div x-data="{ open: false }" class="relative">
@@ -121,6 +243,33 @@
                 </div>
             </div>
         </header>
+
+        {{-- ── Kurulum Sihirbazı Onboarding Banner ───────────────────────── --}}
+        @php
+            $showSetupBanner = false;
+            if ($isAdminAuthenticated && $activeTenantId
+                && \Illuminate\Support\Facades\Route::has('admin.wizard.index')) {
+                try {
+                    $showSetupBanner = !\App\Models\SiteSetting::get('site.setup_completed')
+                                      && !request()->routeIs('admin.wizard.*');
+                } catch (\Throwable) {}
+            }
+        @endphp
+        @if($showSetupBanner)
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600">
+            <div class="flex items-center justify-between gap-4 px-6 py-2.5">
+                <div class="flex items-center gap-2.5 text-white text-sm">
+                    <i class="fas fa-wand-magic-sparkles animate-pulse"></i>
+                    <span class="font-medium">Siteniz henüz kurulmadı.</span>
+                    <span class="hidden sm:inline text-indigo-200">AI destekli sihirbaz ile dakikalar içinde tüm sayfalarınızı hazırlayın.</span>
+                </div>
+                <a href="{{ route('admin.wizard.index', [], false) }}"
+                   class="flex-shrink-0 bg-white text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors whitespace-nowrap">
+                    Kurulumu Başlat <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+        @endif
 
         <!-- Page content -->
         <main class="py-6 px-4 sm:px-6 lg:px-8">
@@ -169,6 +318,46 @@
         </main>
     </div>
 </div>
+
+<script>
+// Header global arama bileşeni — GET /admin/search?q=… (GlobalSearchController)
+function adminGlobalSearch() {
+    return {
+        query: '',
+        open: false,
+        loading: false,
+        groups: {},
+        groupLabels: {
+            pages: 'Sayfalar',
+            articles: 'Yazılar',
+            forms: 'Formlar',
+            templates: 'Block Şablonları',
+        },
+        async search() {
+            const q = this.query.trim();
+            if (q.length < 2) { this.open = false; this.groups = {}; return; }
+
+            this.open = true;
+            this.loading = true;
+            try {
+                const r = await fetch(@js(route('admin.search', [], false)) + '?q=' + encodeURIComponent(q), {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' },
+                });
+                const data = await r.json().catch(() => ({ groups: {} }));
+                // Yanıt gelene kadar kullanıcı yazmaya devam etmiş olabilir
+                if (this.query.trim() === q) {
+                    this.groups = data.groups || {};
+                }
+            } catch (e) {
+                this.groups = {};
+            } finally {
+                this.loading = false;
+            }
+        },
+    };
+}
+</script>
 
 @stack('scripts')
 </body>

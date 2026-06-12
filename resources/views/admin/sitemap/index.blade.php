@@ -4,7 +4,7 @@
 @section('page-title', 'Sitemap Konfigürasyonu')
 
 @section('content')
-<form method="POST" action="{{ route('admin.sitemap.update') }}">
+<form method="POST" action="{{ route('admin.sitemap.update', [], false) }}">
     @csrf
     @method('PUT')
 
@@ -16,7 +16,7 @@
                    class="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
                     <i class="fas fa-external-link-alt mr-1"></i> Sitemap'i Gör
                 </a>
-                <form method="POST" action="{{ route('admin.sitemap.refresh') }}" class="inline">
+                <form method="POST" action="{{ route('admin.sitemap.refresh', [], false) }}" class="inline">
                     @csrf
                     <button type="submit"
                             class="px-4 py-2 border border-amber-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors"
@@ -43,32 +43,57 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @foreach($entries as $entry)
-                        <tr class="hover:bg-gray-50">
+                        @php
+                            $isNoindex  = (bool) ($entry->is_noindex ?? false);
+                            $isExcluded = (bool) ($entry->sitemap_exclude ?? false);
+                            $willSkip   = $isNoindex || $isExcluded;
+                        @endphp
+                        <tr class="hover:bg-gray-50 {{ $willSkip ? 'opacity-50' : '' }}">
                             <input type="hidden" name="entries[{{ $loop->index }}][id]" value="{{ $entry->id }}">
                             <td class="px-6 py-3">
-                                <span class="text-sm text-gray-800">/{{ $entry->slug }}</span>
-                                <span class="text-xs text-gray-400 ml-2">({{ class_basename($entry->seoable_type ?? 'N/A') }})</span>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-sm {{ $willSkip ? 'text-gray-400 line-through' : 'text-gray-800' }}">/{{ $entry->slug }}</span>
+                                    <span class="text-xs text-gray-400">({{ class_basename($entry->seoable_type ?? 'N/A') }})</span>
+                                    @if($isNoindex)
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-50 text-red-600 text-[10px] font-semibold rounded border border-red-200"
+                                              title="Bu sayfa noindex olarak işaretlenmiş — sitemap.xml'e dahil edilmez">
+                                            <i class="fas fa-eye-slash text-[9px]"></i> noindex → sitemap'ta yok
+                                        </span>
+                                    @elseif($isExcluded)
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-semibold rounded border border-orange-200">
+                                            <i class="fas fa-ban text-[9px]"></i> hariç tutuldu
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-4 py-3">
                                 <select name="entries[{{ $loop->index }}][sitemap_priority]"
-                                        class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                        {{ $willSkip ? 'disabled' : '' }}>
                                     @foreach(['1.0','0.9','0.8','0.7','0.6','0.5','0.4','0.3','0.2','0.1'] as $p)
                                         <option value="{{ $p }}" {{ number_format($entry->sitemap_priority ?? 0.5, 1) == $p ? 'selected' : '' }}>{{ $p }}</option>
                                     @endforeach
                                 </select>
+                                @if($willSkip)
+                                    <input type="hidden" name="entries[{{ $loop->index }}][sitemap_priority]" value="{{ number_format($entry->sitemap_priority ?? 0.5, 1) }}">
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <select name="entries[{{ $loop->index }}][sitemap_changefreq]"
-                                        class="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                        class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                                        {{ $willSkip ? 'disabled' : '' }}>
                                     @foreach(['always','hourly','daily','weekly','monthly','yearly','never'] as $freq)
                                         <option value="{{ $freq }}" {{ ($entry->sitemap_changefreq ?? 'weekly') === $freq ? 'selected' : '' }}>{{ $freq }}</option>
                                     @endforeach
                                 </select>
+                                @if($willSkip)
+                                    <input type="hidden" name="entries[{{ $loop->index }}][sitemap_changefreq]" value="{{ $entry->sitemap_changefreq ?? 'weekly' }}">
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <input type="hidden" name="entries[{{ $loop->index }}][sitemap_exclude]" value="0">
                                 <input type="checkbox" name="entries[{{ $loop->index }}][sitemap_exclude]" value="1"
-                                       {{ ($entry->sitemap_exclude ?? false) ? 'checked' : '' }}
+                                       {{ $isExcluded ? 'checked' : '' }}
                                        class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500">
                             </td>
                         </tr>

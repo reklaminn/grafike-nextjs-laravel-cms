@@ -130,15 +130,17 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
     };
 }
 
-function frontendSectionEditor({ initialRegions = null, availableTemplates = [] }) {
+function frontendSectionEditor({ initialRegions = null, availableTemplates = [], fieldErrors = {} }) {
     return {
         regions: { header: [], body: [], footer: [] },
         regionNames: ['header', 'body', 'footer'],
         availableTemplates,
+        fieldErrors,
         pickerModalOpen: false,
         pickerSearch: '',
         pickerTarget: null,
         openBlockMenuFor: null,
+        openFrontendJson: false,
         settingsModalOpen: false,
         settingsTarget: null,
         settingsTab: 'content',
@@ -151,10 +153,72 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
         rowSettingsTarget: null,
         rowSettingsTab: 'layout',
         rowSettingsDraft: null,
+        initialSerializedRegions: null,
+
+        // AI block-edit state (FAZ 3.6 streaming)
+        aiAction: 'shorten',
+        aiCustomPrompt: '',
+        aiLoading: false,
+        aiStreaming: false,   // true while SSE stream is open
+        aiStreamText: '',     // accumulated raw text (typewriter preview)
+        aiAbortController: null,
+        aiStatus: '',
+        aiStatusOk: false,
+
+        // Şablon kataloğu canlı senkronizasyon state'i
+        templateSyncToast: '',
+        templateSyncToastVisible: false,
+        catalogRefreshing: false,
 
         init() {
             this.regions = this.normalizeRegions(initialRegions);
             this.normalizeSortOrder();
+            this.initialSerializedRegions = this.serializedRegions;
+
+            // Listen for AI translation results — when the translate-content
+            // endpoint returns a fully-translated sections_json (FAZ 4.6),
+            // it dispatches an "ai-translate-sections" event with the new
+            // structure; we hot-swap the editor's regions so the translated
+            // blocks render immediately.
+            window.addEventListener('ai-translate-sections', (event) => {
+                const incoming = event?.detail?.sections_json;
+                if (!incoming || typeof incoming !== 'object') return;
+                this.regions = this.normalizeRegions(incoming);
+                this.normalizeSortOrder();
+                this.syncSerializedRegions();
+            });
+
+            // Başka bir sekmede şablon kaydedildiğinde (edit.blade.php
+            // localStorage sinyali yazar) kataloğu ve blokları tazele.
+            // storage event'i yalnızca diğer sekmelerde tetiklenir.
+            window.addEventListener('storage', (event) => {
+                if (event.key !== 'grafike:section-template-updated' || !event.newValue) return;
+                let info = null;
+                try { info = JSON.parse(event.newValue); } catch (e) { /* bozuk sinyal — adsız yenile */ }
+                this.refreshTemplateCatalog(info?.name || null);
+            });
+
+            this.$nextTick(() => {
+                this.syncSerializedRegions();
+
+                const form = this.$root.closest('form');
+                if (!form || form.dataset.frontendSectionsSyncBound === '1') {
+                    return;
+                }
+
+                form.dataset.frontendSectionsSyncBound = '1';
+                form.addEventListener('submit', () => {
+                    this.syncSerializedRegions();
+                }, { capture: true });
+                form.addEventListener('formdata', (event) => {
+                    event.formData.set('sections_json', this.syncSerializedRegions());
+                    event.formData.set('sections_json_dirty', this.sectionsJsonIsDirty() ? '1' : '0');
+                });
+
+                this.$watch('regions', () => {
+                    this.syncSerializedRegions();
+                });
+            });
         },
 
         get serializedRegions() {
@@ -162,6 +226,121 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
                 version: 2,
                 regions: this.serializeRegions(),
             }, null, 2);
+        },
+
+        syncSerializedRegions() {
+            const value = this.serializedRegions;
+
+            if (this.$refs?.sectionsJsonInput) {
+                this.$refs.sectionsJsonInput.value = value;
+            }
+
+            if (this.$refs?.sectionsJsonDirtyInput) {
+                this.$refs.sectionsJsonDirtyInput.value = this.sectionsJsonIsDirty() ? '1' : '0';
+            }
+
+            return value;
+        },
+
+        queueSerializedRegionsSync() {
+            if (typeof this.$nextTick === 'function') {
+                this.$nextTick(() => this.syncSerializedRegions());
+                return;
+            }
+
+            this.syncSerializedRegions();
+        },
+
+        sectionsJsonIsDirty() {
+            return this.initialSerializedRegions !== null
+                && this.serializedRegions !== this.initialSerializedRegions;
+        },
+
+        // ── Şablon kataloğu canlı senkronizasyonu ────────────────────────
+        //
+        // catalog-json endpoint'inden güncel şablonları çeker, bu şablonları
+        // kullanan blokların schema/html_template gibi şablon-türevi
+        // alanlarını yeniler. Kullanıcının girdiği content KORUNUR — yalnızca
+        // yeni schema alanları için default değerler eklenir.
+        async refreshTemplateCatalog(updatedName = null) {
+            if (this.catalogRefreshing) return false;
+            this.catalogRefreshing = true;
+
+            try {
+                const response = await fetch(@js(route('admin.section-templates.catalog-json', [], false)), {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (!response.ok) return false;
+
+                const data = await response.json();
+                if (!Array.isArray(data.templates)) return false;
+
+                this.availableTemplates = data.templates;
+                this.rehydrateBlocksFromCatalog();
+                this.showTemplateSyncToast(updatedName
+                    ? `"${updatedName}" şablonu güncellendi — bloklar yenilendi`
+                    : 'Şablon kataloğu yenilendi');
+                return true;
+            } catch (e) {
+                return false;
+            } finally {
+                this.catalogRefreshing = false;
+            }
+        },
+
+        rehydrateBlocksFromCatalog() {
+            this.regionNames.forEach((region) => {
+                (this.regions[region] || []).forEach((row) => {
+                    (row.columns || []).forEach((column) => {
+                        (column.blocks || []).forEach((block) => {
+                            this.applyTemplateToBlock(block);
+                        });
+                    });
+                });
+            });
+
+            // Ayarlar modalı açıksa draft da tazelensin — yeni alanlar anında görünür
+            if (this.settingsDraft) {
+                this.applyTemplateToBlock(this.settingsDraft);
+            }
+
+            this.queueSerializedRegionsSync();
+        },
+
+        applyTemplateToBlock(block) {
+            if (!block?.section_template_id) return;
+            const template = this.getTemplateById(block.section_template_id);
+            if (!template) return;
+
+            block.type          = template.type || block.type;
+            block.variation     = template.variation || block.variation;
+            block.render_mode   = template.render_mode || block.render_mode;
+            block.component_key = template.component_key ?? block.component_key;
+            block.template_name = template.name || block.template_name;
+            block.schema        = template.schema || {};
+            block.html_template = template.html_template || null;
+            block.content       = {
+                ...(template.default_content || {}),
+                ...(block.content || {}),
+            };
+        },
+
+        // Blok schema'sı katalogdaki güncel şablondan farklı mı?
+        // (modal açıkken başka tarayıcıdan şablon değiştirilmiş olabilir)
+        blockSchemaIsStale(block) {
+            if (!block?.section_template_id) return false;
+            const template = this.getTemplateById(block.section_template_id);
+            if (!template) return false;
+            return JSON.stringify(block.schema || {}) !== JSON.stringify(template.schema || {});
+        },
+
+        showTemplateSyncToast(message) {
+            this.templateSyncToast = message;
+            this.templateSyncToastVisible = true;
+            clearTimeout(this._templateSyncToastTimer);
+            this._templateSyncToastTimer = setTimeout(() => {
+                this.templateSyncToastVisible = false;
+            }, 4000);
         },
 
         getTemplateById(templateId) {
@@ -313,14 +492,17 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
             return {
                 _uid: block._uid || this.generateUid('block'),
                 id: block.id || `block_${block.type || 'item'}_${rowIndex + 1}_${columnIndex + 1}_${blockIndex + 1}`,
-                type: block.type || template?.type || '',
-                variation: block.variation || template?.variation || 'default',
-                render_mode: block.render_mode || template?.render_mode || 'html',
+                type: template?.type || block.type || '',
+                variation: template?.variation || block.variation || 'default',
+                render_mode: template?.render_mode || block.render_mode || 'html',
                 section_template_id: block.section_template_id || template?.id || null,
-                template_name: block.template_name || template?.name || '',
-                component_key: block.component_key || template?.component_key || null,
-                schema: hasSchema ? block.schema : (template?.schema || {}),
-                content: JSON.parse(JSON.stringify(block.content || template?.default_content || {})),
+                template_name: template?.name || block.template_name || '',
+                component_key: template?.component_key || block.component_key || null,
+                schema: template?.schema || (hasSchema ? block.schema : {}),
+                content: JSON.parse(JSON.stringify({
+                    ...(template?.default_content || {}),
+                    ...(block.content || {}),
+                })),
                 is_active: block.is_active !== false,
                 sort_order: block.sort_order || (blockIndex + 1),
                 wrapper_tag: block.wrapper_tag || '',
@@ -328,7 +510,7 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
                 element_id: block.element_id || '',
                 inline_style: block.inline_style || '',
                 custom_attributes: block.custom_attributes || '',
-                html_template: block.html_template || template?.html_template || null,
+                html_template: template?.html_template || block.html_template || null,
                 html_override: block.html_override || '',
             };
         },
@@ -887,6 +1069,129 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
             this.closeBlockSettings();
         },
 
+        // ── AI block-edit — streaming (FAZ 3.6) ─────────────────────────
+        //
+        // Streams SSE from admin.ai.stream.block-edit. Delta chunks build a
+        // live typewriter preview; the done event carries the fully-merged
+        // content object which replaces settingsDraft.content.
+        async applyAiTransform() {
+            if (!this.settingsDraft || this.aiLoading) return;
+
+            const action = this.aiAction;
+            const customPrompt = action === 'custom' ? (this.aiCustomPrompt || '').trim() : null;
+            if (action === 'custom' && !customPrompt) {
+                this.aiStatus = 'Özel komut için bir talimat yazın.';
+                this.aiStatusOk = false;
+                return;
+            }
+
+            this.aiLoading    = true;
+            this.aiStreaming  = true;
+            this.aiStreamText = '';
+            this.aiStatus     = '';
+            this.aiStatusOk   = false;
+            this.aiAbortController = new AbortController();
+
+            const url = @js(route('admin.ai.stream.block-edit', [], false));
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    signal: this.aiAbortController.signal,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'text/event-stream',
+                    },
+                    body: JSON.stringify({
+                        action,
+                        custom_prompt: customPrompt,
+                        content: this.settingsDraft.content || {},
+                        schema: Array.isArray(this.settingsDraft.schema_json)
+                                ? this.settingsDraft.schema_json
+                                : (this.settingsDraft.schema || null),
+                        section_template_id: this.settingsDraft.section_template_id
+                                             || this.settingsDraft.template_id || null,
+                    }),
+                });
+
+                if (!response.ok) {
+                    // Error before stream opened (e.g. 402 quota exceeded).
+                    const errText = await response.text().catch(() => '');
+                    // Try to parse SSE error event from body.
+                    const m = errText.match(/data:\s*(\{.*\})/);
+                    const errData = m ? JSON.parse(m[1]) : {};
+                    throw new Error(errData.message || `HTTP ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Process complete SSE messages (terminated by \n\n).
+                    const parts = buffer.split('\n\n');
+                    buffer = parts.pop(); // last incomplete chunk stays in buffer
+
+                    for (const part of parts) {
+                        let eventType = 'message';
+                        let dataLine  = '';
+
+                        for (const line of part.split('\n')) {
+                            if (line.startsWith('event:')) {
+                                eventType = line.slice(6).trim();
+                            } else if (line.startsWith('data:')) {
+                                dataLine = line.slice(5).trim();
+                            }
+                        }
+
+                        if (!dataLine) continue;
+
+                        let payload;
+                        try { payload = JSON.parse(dataLine); } catch { continue; }
+
+                        if (eventType === 'delta') {
+                            this.aiStreamText += payload.text || '';
+                        } else if (eventType === 'done') {
+                            if (payload.content) {
+                                this.settingsDraft.content = payload.content;
+                                this.aiStatus    = 'Blok içeriği AI ile güncellendi. Kaydetmeden önce gözden geçirin.';
+                                this.aiStatusOk  = true;
+                            } else {
+                                this.aiStatus   = payload.note || 'AI yanıt üretti ama içerik uygulanamadı.';
+                                this.aiStatusOk = false;
+                            }
+                        } else if (eventType === 'error') {
+                            throw new Error(payload.message || 'AI hatası.');
+                        }
+                    }
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    this.aiStatus   = 'İptal edildi.';
+                    this.aiStatusOk = false;
+                } else {
+                    this.aiStatus   = e.message || 'Ağ hatası.';
+                    this.aiStatusOk = false;
+                }
+            } finally {
+                this.aiLoading         = false;
+                this.aiStreaming        = false;
+                this.aiAbortController = null;
+            }
+        },
+
+        abortAiTransform() {
+            this.aiAbortController?.abort();
+        },
+
         get settingsBlock() {
             return this.settingsDraft;
         },
@@ -1140,6 +1445,8 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [] 
                     });
                 });
             });
+
+            this.queueSerializedRegionsSync();
         },
     };
 }

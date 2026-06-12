@@ -4,8 +4,8 @@
  * Resolution order:
  *   1. article-list → ArticleListSection (async data fetch)
  *   2. form         → FormSectionLoader  (async data fetch)
- *   3. component registry — exact "type/variation" or fallback "type"
- *   4. HTML template engine (render_mode === "html")
+ *   3. HTML template engine (render_mode === "html")
+ *   4. component registry — exact "type/variation" or fallback "type"
  *   5. Development placeholder
  */
 
@@ -41,16 +41,27 @@ export function SectionRenderer({
     return <FormSectionLoader section={section} />;
   }
 
-  // ── 2. Component registry ─────────────────────────────────────────────────
+  const props = buildElementProps({
+    className:        section.css_class,
+    id:               section.element_id,
+    inlineStyle:      section.inline_style,
+    customAttributes: section.custom_attributes,
+  });
+
+  // ── 2. HTML template engine ───────────────────────────────────────────────
+  if (section.render_mode === "html") {
+    const html = renderBasicHtmlSection(section, { site, settings, menus });
+
+    if (!section.wrapper_tag) {
+      return <HtmlSection html={html} />;
+    }
+
+    return createElement(section.wrapper_tag, props, <HtmlSection html={html} />);
+  }
+
+  // ── 3. Component registry ─────────────────────────────────────────────────
   const RegisteredComponent = sectionRegistry.resolve(section.type, section.variation);
   if (RegisteredComponent) {
-    const props = buildElementProps({
-      className:        section.css_class,
-      id:               section.element_id,
-      inlineStyle:      section.inline_style,
-      customAttributes: section.custom_attributes,
-    });
-
     // Wrap in element if wrapper_tag is set; otherwise render directly.
     if (section.wrapper_tag) {
       return createElement(
@@ -77,24 +88,6 @@ export function SectionRenderer({
         lang={lang}
       />
     );
-  }
-
-  // ── 3. HTML template engine ───────────────────────────────────────────────
-  const props = buildElementProps({
-    className:        section.css_class,
-    id:               section.element_id,
-    inlineStyle:      section.inline_style,
-    customAttributes: section.custom_attributes,
-  });
-
-  if (section.render_mode === "html") {
-    const html = renderBasicHtmlSection(section, { site, settings, menus });
-
-    if (!section.wrapper_tag) {
-      return <HtmlSection html={html} />;
-    }
-
-    return createElement(section.wrapper_tag, props, <HtmlSection html={html} />);
   }
 
   // ── 4. Development placeholder ────────────────────────────────────────────

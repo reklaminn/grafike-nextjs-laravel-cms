@@ -56,7 +56,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.articles.store') }}" enctype="multipart/form-data" id="translation-form">
+    <form method="POST" action="{{ route('admin.articles.store', [], false) }}" enctype="multipart/form-data" id="translation-form">
         @csrf
 
         {{-- Translation link fields --}}
@@ -163,7 +163,7 @@
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700">
                     <p class="font-semibold mb-1"><i class="fas fa-link mr-1"></i> Kaynak Yazı</p>
                     <p class="mb-2">{{ $article->title }}</p>
-                    <a href="{{ route('admin.articles.edit', $article) }}"
+                    <a href="{{ route('admin.articles.edit', $article->id, false) }}"
                        class="text-blue-600 underline">Kaynağı düzenle →</a>
                 </div>
 

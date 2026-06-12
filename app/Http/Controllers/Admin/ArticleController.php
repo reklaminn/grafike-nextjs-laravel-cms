@@ -96,12 +96,13 @@ class ArticleController extends Controller
         $this->saveSeo($article, $request);
 
         return redirect()
-            ->route('admin.articles.edit', $article)
+            ->route('admin.articles.edit', $article->id)
             ->with('success', 'Yazı başarıyla oluşturuldu.');
     }
 
-    public function edit(Article $article)
+    public function edit(int|string $article)
     {
+        $article = $this->findArticle($article);
         $article->load(['page', 'language', 'seo', 'media', 'form', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -112,8 +113,9 @@ class ArticleController extends Controller
         return view('admin.articles.edit', compact('article', 'languages', 'pages', 'forms', 'admins'));
     }
 
-    public function update(ArticleRequest $request, Article $article)
+    public function update(ArticleRequest $request, int|string $article)
     {
+        $article = $this->findArticle($article);
         $data = $request->validated();
 
         if (empty($data['slug'])) {
@@ -146,21 +148,23 @@ class ArticleController extends Controller
         $this->saveSeo($article, $request);
 
         return redirect()
-            ->route('admin.articles.edit', $article)
+            ->route('admin.articles.edit', $article->id)
             ->with('success', 'Yazı başarıyla güncellendi.');
     }
 
-    public function destroyCover(Article $article)
+    public function destroyCover(int|string $article)
     {
+        $article = $this->findArticle($article);
         $article->clearMediaCollection('cover');
 
         return redirect()
-            ->route('admin.articles.edit', $article)
+            ->route('admin.articles.edit', $article->id)
             ->with('success', 'Kapak görseli kaldırıldı.');
     }
 
-    public function destroy(Article $article)
+    public function destroy(int|string $article)
     {
+        $article = $this->findArticle($article);
         $article->delete();
 
         return redirect()
@@ -174,8 +178,9 @@ class ArticleController extends Controller
      * Show "create translation" form pre-filled with source article data.
      * GET /admin/articles/{article}/create-translation?lang={language_id}
      */
-    public function createTranslation(Article $article, Request $request)
+    public function createTranslation(int|string $article, Request $request)
     {
+        $article = $this->findArticle($article);
         $article->load(['page', 'language', 'seo', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -218,20 +223,27 @@ class ArticleController extends Controller
         return is_array($decoded) ? $decoded : null;
     }
 
+    protected function findArticle(int|string $article): Article
+    {
+        return Article::query()->findOrFail($article);
+    }
+
     protected function saveSeo(Article $article, Request $request): void
     {
-        if ($request->filled('seo_title') || $request->filled('seo_description')) {
-            $article->seo()->updateOrCreate(
-                ['seoable_id' => $article->id, 'seoable_type' => Article::class],
-                [
-                    'slug' => $article->slug,
-                    'language_id' => $article->language_id,
-                    'meta_title' => $request->input('seo_title'),
-                    'meta_description' => $request->input('seo_description'),
-                    'meta_keywords' => $request->input('seo_keywords'),
-                ]
-            );
-        }
+        // Koşulsuz updateOrCreate — her kayıtta SEO formu ile seo_entries senkronize olur.
+        $article->seo()->updateOrCreate(
+            ['seoable_id' => $article->id, 'seoable_type' => Article::class],
+            [
+                'slug'             => $article->slug,
+                'language_id'      => $article->language_id,
+                'meta_title'       => $request->input('seo_title')       ?: null,
+                'meta_description' => $request->input('seo_description') ?: null,
+                'meta_keywords'    => $request->input('seo_keywords')    ?: null,
+                'h1_override'      => $request->input('seo_h1')          ?: null,
+                'canonical_url'    => $request->input('seo_canonical')   ?: null,
+                'is_noindex'       => $request->boolean('seo_noindex'),
+            ]
+        );
     }
 
     protected function generateUniqueSlug(string $title, ?int $excludeId = null): string

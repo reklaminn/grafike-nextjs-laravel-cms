@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Page;
+use App\Services\FrontendRevalidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -40,7 +41,26 @@ class PageUnlockController extends Controller
             $unlocked[] = $page->id;
             session(['unlocked_pages' => array_unique($unlocked)]);
 
+            // Bust Next.js ISR cache so the now-unlocked page is re-fetched
+            try {
+                $locale = app()->getLocale();
+                app(FrontendRevalidator::class)->flush(
+                    ["/{$locale}/{$page->slug}"],
+                    ["page-{$page->slug}", 'pages'],
+                );
+            } catch (\Throwable) {
+                // Non-fatal — page will be served fresh on next ISR cycle
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true]);
+            }
+
             return back()->with('success', 'Sayfa kilidi açıldı.');
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Girdiğiniz şifre yanlış.'], 422);
         }
 
         return back()->with('error', 'Girdiğiniz şifre yanlış.');

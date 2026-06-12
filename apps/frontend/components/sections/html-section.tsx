@@ -1,119 +1,94 @@
-import { Fragment, createElement } from "react";
-import { parse } from "node-html-parser";
-import { parseInlineStyle } from "@/lib/sections/element-props";
+'use client';
+
+import { useEffect, useRef } from 'react';
 
 type HtmlSectionProps = {
   html: string;
 };
 
-const VOID_TAGS = new Set([
-  "area",
-  "base",
-  "br",
-  "col",
-  "embed",
-  "hr",
-  "img",
-  "input",
-  "link",
-  "meta",
-  "param",
-  "source",
-  "track",
-  "wbr",
-]);
+/**
+ * Execute every <script> element inside `container`.
+ *
+ * `innerHTML` / `dangerouslySetInnerHTML` do NOT run scripts — browsers
+ * intentionally ignore scripts injected that way.  The only reliable approach
+ * is to clone each <script> node into a freshly created element and append it
+ * to the document; the browser then fetches/executes it exactly once.
+ *
+ * We also patch `document.addEventListener` briefly so that any script using
+ * the `DOMContentLoaded` pattern still fires even though the event has long
+ * since passed (Next.js `afterInteractive` runs well after DOMContentLoaded).
+ */
+function executeScripts(container: HTMLElement) {
+  const scripts = Array.from(container.querySelectorAll<HTMLScriptElement>('script'));
+  if (!scripts.length) return;
 
-function normalizeAttributeName(name: string): string {
-  if (name === "class") {
-    return "className";
-  }
+  // Temporarily wrap addEventListener so DOMContentLoaded callbacks fire
+  // immediately when the event has already passed.
+  const originalAdd = document.addEventListener.bind(document);
+  const domReady = document.readyState !== 'loading';
 
-  if (name === "for") {
-    return "htmlFor";
-  }
-
-  if (name === "style") {
-    return "style";
-  }
-
-  if (name.startsWith("data-") || name.startsWith("aria-")) {
-    return name;
-  }
-
-  if (name === "xlink:href") {
-    return "xlinkHref";
-  }
-
-  if (name === "xmlns:xlink") {
-    return "xmlnsXlink";
-  }
-
-  if (name.includes(":")) {
-    return name.replace(/:([a-zA-Z])/g, (_match, char: string) => char.toUpperCase());
-  }
-
-  if (name.includes("-")) {
-    return name.replace(/-([a-zA-Z])/g, (_match, char: string) => char.toUpperCase());
-  }
-
-  return name;
-}
-
-function toReactNodes(html: string) {
-  const root = parse(html, {
-    comment: false,
-    lowerCaseTagName: false,
-    blockTextElements: {
-      script: true,
-      noscript: true,
-      style: true,
-      pre: true,
-    },
-  });
-
-  const renderNode = (node: any, key: string): React.ReactNode => {
-    if (!node) return null;
-
-    if (node.nodeType === 3) {
-      return node.rawText;
-    }
-
-    if (node.nodeType !== 1) {
-      return null;
-    }
-
-    const tag = String(node.rawTagName || node.tagName || "div");
-    const attrs = node.attributes || {};
-    const props: Record<string, unknown> = { key };
-
-    Object.entries(attrs).forEach(([name, value]) => {
-      if (name === "class") {
-        props.className = value;
-        return;
+  if (domReady) {
+    // @ts-ignore – deliberate short-lived monkey-patch
+    document.addEventListener = function patchedAdd(
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ) {
+      if (type === 'DOMContentLoaded') {
+        // event already fired — call immediately (next microtask)
+        Promise.resolve().then(() => {
+          if (typeof listener === 'function') listener(new Event('DOMContentLoaded'));
+          else listener.handleEvent(new Event('DOMContentLoaded'));
+        });
+      } else {
+        originalAdd(type, listener, options);
       }
+    };
+  }
 
-      if (name === "style") {
-        props.style = parseInlineStyle(String(value));
-        return;
-      }
+  scripts.forEach((oldScript) => {
+    const newScript = document.createElement('script');
 
-      props[normalizeAttributeName(name)] = value;
+    // Copy all attributes (src, type, async, defer, data-*, …)
+    Array.from(oldScript.attributes).forEach((attr) => {
+      newScript.setAttribute(attr.name, attr.value);
     });
 
-    if (VOID_TAGS.has(tag.toLowerCase())) {
-      return createElement(tag, props);
+    // For inline scripts copy the text content
+    if (!newScript.src) {
+      newScript.textContent = oldScript.textContent;
     }
 
-    const children = (node.childNodes || [])
-      .map((child: any, index: number) => renderNode(child, `${key}-${index}`))
-      .filter((child: React.ReactNode) => child !== null && child !== undefined);
+    // Replace in-place so relative position is preserved
+    oldScript.replaceWith(newScript);
+  });
 
-    return createElement(tag, props, ...children);
-  };
-
-  return (root.childNodes || []).map((node: any, index: number) => renderNode(node, `html-node-${index}`));
+  // Restore original addEventListener after all scripts are queued
+  if (domReady) {
+    // @ts-ignore
+    document.addEventListener = originalAdd;
+  }
 }
 
 export function HtmlSection({ html }: HtmlSectionProps) {
-  return <Fragment>{toReactNodes(html)}</Fragment>;
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      executeScripts(ref.current);
+    }
+  // Re-run only when the HTML string actually changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [html]);
+
+  return (
+    <div
+      ref={ref}
+      className="html-section"
+      // dangerouslySetInnerHTML preserves ALL original HTML attributes
+      // (autoplay, muted, playsinline, data-*, …) without any React
+      // camelCase translation that createElement would apply.
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }

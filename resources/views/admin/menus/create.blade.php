@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="max-w-2xl">
-        <form method="POST" action="{{ route('admin.menus.store') }}">
+        <form method="POST" action="{{ route('admin.menus.store', [], false) }}">
             @csrf
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
                 <div>
@@ -40,7 +40,7 @@
                     <button type="submit" class="px-6 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
                         <i class="fas fa-save mr-1"></i> Oluştur
                     </button>
-                    <a href="{{ route('admin.menus.index') }}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">İptal</a>
+                    <a href="{{ route('admin.menus.index', [], false) }}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">İptal</a>
                 </div>
             </div>
         </form>

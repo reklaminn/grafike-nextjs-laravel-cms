@@ -35,7 +35,7 @@
                 {{ $trans->language?->name ?? '—' }}
                 <span class="text-green-400 font-normal text-[10px] ml-1">{{ ucfirst($trans->status) }}</span>
             </span>
-            <a href="{{ route('admin.articles.edit', $trans) }}"
+            <a href="{{ route('admin.articles.edit', $trans->id, false) }}"
                class="text-green-600 hover:text-green-800 transition-colors" title="Düzenle">
                 <i class="fas fa-pen-to-square"></i>
             </a>
@@ -49,7 +49,7 @@
                 {{ $lang->name }}
                 <span class="uppercase tracking-wider text-[10px] text-gray-400 ml-1">{{ $lang->code }}</span>
             </span>
-            <a href="{{ route('admin.articles.create-translation', [$article, 'lang' => $lang->id]) }}"
+            <a href="{{ route('admin.articles.create-translation', [$article->id, 'lang' => $lang->id], false) }}"
                class="text-indigo-600 hover:text-indigo-800 transition-colors font-medium">
                 + Çevir
             </a>

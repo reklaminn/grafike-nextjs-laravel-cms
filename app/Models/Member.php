@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\MemberResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -24,6 +25,16 @@ class Member extends Authenticatable
             'is_active' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Send a branded password-reset notification.
+     * Overrides the default Laravel notification so the email carries
+     * the tenant's name, logo and primary colour from SiteSettings.
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new MemberResetPasswordNotification($token));
     }
 
     public function group()

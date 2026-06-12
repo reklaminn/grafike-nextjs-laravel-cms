@@ -20,6 +20,9 @@ export const mockSitePayload: SitePayload = {
   site: {
     name: "Grafike Furniture",
     domain: "grafike.local",
+    // Mock tenant runs core "kurumsal" only.  Override in a per-test fixture
+    // (e.g. ["tours"]) when wiring up Phase 4 frontend integration tests.
+    modules: [],
     theme: {
       slug: "porto-furniture",
       engine: "next"

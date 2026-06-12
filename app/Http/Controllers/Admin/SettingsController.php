@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Frontend\RobotsController;
 use App\Models\SiteSetting;
+use App\Notifications\MemberResetPasswordNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Notification;
 
 class SettingsController extends Controller
 {
@@ -135,5 +137,49 @@ class SettingsController extends Controller
         return redirect()
             ->route('admin.settings.crawl')
             ->with('success', 'Tarama ayarları güncellendi. robots.txt ve llms.txt önbelleği temizlendi.');
+    }
+
+    // ─── Mail preview / test ──────────────────────────────────────────────────
+
+    /**
+     * POST /admin/settings/test-mail
+     * Sends a sample password-reset email to the given address so the admin
+     * can verify the branded template before any real member triggers it.
+     */
+    public function sendTestMail(Request $request)
+    {
+        $request->validate([
+            'test_email' => 'required|email|max:255',
+        ]);
+
+        // Build a dummy notification using a fake token so the link is inert.
+        $notification = new MemberResetPasswordNotification('test-preview-token-0000');
+
+        // Use an anonymous notifiable so we don't need a real Member record.
+        $fakeNotifiable = new class($request->test_email) {
+            public function __construct(public string $email) {}
+
+            public function getEmailForPasswordReset(): string
+            {
+                return $this->email;
+            }
+
+            public function routeNotificationFor(string $driver, mixed $notification = null): mixed
+            {
+                return $this->email;
+            }
+        };
+
+        try {
+            Notification::sendNow($fakeNotifiable, $notification);
+
+            return redirect()
+                ->route('admin.settings.index')
+                ->with('success', "Test maili {$request->test_email} adresine gönderildi.");
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('admin.settings.index')
+                ->with('error', 'Mail gönderilemedi: ' . $e->getMessage());
+        }
     }
 }

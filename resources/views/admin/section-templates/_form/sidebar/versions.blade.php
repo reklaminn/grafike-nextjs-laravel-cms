@@ -13,7 +13,7 @@
 
     {{-- Save version button --}}
     <div class="border-b border-gray-100 px-4 py-3">
-        <form method="POST" action="{{ route('admin.section-templates.save-version', $sectionTemplate) }}"
+        <form method="POST" action="{{ route('admin.section-templates.save-version', $sectionTemplate, false) }}"
               class="flex items-center gap-2">
             @csrf
             <input type="text" name="label" placeholder="Opsiyonel etiket (örn: v2 hero)"

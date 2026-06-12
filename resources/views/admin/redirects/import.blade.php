@@ -10,7 +10,7 @@
             <p class="text-sm text-gray-500 mb-4">CSV dosyası formatı: <code class="bg-gray-100 px-2 py-0.5 rounded text-xs">kaynak_url,hedef_url,durum_kodu</code></p>
             <p class="text-xs text-gray-400 mb-4">Google Search Console export dosyasını doğrudan yükleyebilirsiniz. İlk satır başlık olarak kabul edilir.</p>
 
-            <form method="POST" action="{{ route('admin.redirects.process-import') }}" enctype="multipart/form-data">
+            <form method="POST" action="{{ route('admin.redirects.process-import', [], false) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="space-y-4">
                     <input type="file" name="csv_file" accept=".csv,.txt" required

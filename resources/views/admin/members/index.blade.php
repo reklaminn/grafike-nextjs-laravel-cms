@@ -74,7 +74,7 @@
                     <td class="px-4 py-3 text-gray-500 text-xs">{{ $member->created_at->format('d.m.Y') }}</td>
                     <td class="px-4 py-3 text-right space-x-2">
                         <a href="{{ route('admin.members.edit', $member) }}" class="text-indigo-600 hover:underline text-xs">Düzenle</a>
-                        <form method="POST" action="{{ route('admin.members.toggle-active', $member) }}" class="inline">
+                        <form method="POST" action="{{ route('admin.members.toggle-active', $member, false) }}" class="inline">
                             @csrf
                             <button type="submit" class="text-xs {{ $member->is_active ? 'text-yellow-600' : 'text-green-600' }} hover:underline">
                                 {{ $member->is_active ? 'Devre Dışı' : 'Aktif Et' }}

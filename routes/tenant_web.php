@@ -4,6 +4,7 @@ use App\Http\Controllers\Frontend\FormSubmissionController;
 use App\Http\Controllers\Frontend\FrontendController;
 use App\Http\Controllers\Frontend\LlmsController;
 use App\Http\Controllers\Frontend\MemberAuthController;
+use App\Http\Controllers\Frontend\MemberPasswordController;
 use App\Http\Controllers\Frontend\PageUnlockController;
 use App\Http\Controllers\Frontend\ReviewController;
 use App\Http\Controllers\Frontend\RobotsController;
@@ -48,24 +49,38 @@ Route::get('lang/{code}', function (string $code) {
     return redirect()->back();
 })->name('lang.switch');
 
-// Form submission
+// Form submission — spam koruması: IP başına dakikada 10 gönderim
 Route::post('forms/{form}/submit', [FormSubmissionController::class, 'store'])
+    ->middleware('throttle:10,1')
     ->name('forms.submit');
 
 // Review submission
 Route::post('reviews', [ReviewController::class, 'store'])
+    ->middleware('throttle:10,1')
     ->name('reviews.store');
 
-// Page unlock (password-protected pages)
+// Page unlock (password-protected pages) — brute-force koruması
 Route::post('pages/{page}/unlock', [PageUnlockController::class, 'unlock'])
+    ->middleware('throttle:10,1')
     ->name('pages.unlock');
 
 // Member Authentication
 Route::prefix('member')->name('member.')->group(function () {
     Route::get('login', [MemberAuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [MemberAuthController::class, 'login'])->name('login.submit');
+    // Brute-force koruması: IP başına dakikada 5 deneme
+    Route::post('login', [MemberAuthController::class, 'login'])
+        ->middleware('throttle:5,1')->name('login.submit');
     Route::get('register', [MemberAuthController::class, 'showRegister'])->name('register');
-    Route::post('register', [MemberAuthController::class, 'register'])->name('register.submit');
+    Route::post('register', [MemberAuthController::class, 'register'])
+        ->middleware('throttle:5,1')->name('register.submit');
+
+    // Password reset
+    Route::get('password/forgot',        [MemberPasswordController::class, 'showForgot'])->name('password.forgot');
+    Route::post('password/email',        [MemberPasswordController::class, 'sendResetLink'])
+        ->middleware('throttle:3,1')->name('password.email');
+    Route::get('password/reset/{token}', [MemberPasswordController::class, 'showReset'])->name('password.reset');
+    Route::post('password/reset',        [MemberPasswordController::class, 'reset'])
+        ->middleware('throttle:5,1')->name('password.update');
 
     Route::middleware('member.auth')->group(function () {
         Route::get('profile', [MemberAuthController::class, 'profile'])->name('profile');

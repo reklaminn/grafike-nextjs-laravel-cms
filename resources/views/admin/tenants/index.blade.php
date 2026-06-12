@@ -7,10 +7,12 @@
         <h1 class="text-2xl font-bold text-gray-800">Siteler</h1>
         <p class="text-sm text-gray-500 mt-1">Her site ayrı bir veritabanında izole çalışır (stancl/tenancy)</p>
     </div>
-    <a href="{{ route('admin.tenants.create') }}"
-       class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
-        <i class="fas fa-plus mr-1"></i> Yeni Site
-    </a>
+    @if($canManageTenants)
+        <a href="{{ route('admin.tenants.create') }}"
+           class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 font-medium">
+            <i class="fas fa-plus mr-1"></i> Yeni Site
+        </a>
+    @endif
 </div>
 
 @if(session('active_tenant'))
@@ -19,7 +21,7 @@
         <i class="fas fa-circle text-indigo-500 mr-1 text-xs"></i>
         Aktif site: <strong>{{ session('active_tenant') }}</strong>
     </span>
-    <form method="POST" action="{{ route('admin.tenants.clear-active') }}">
+    <form method="POST" action="{{ route('admin.tenants.clear-active', [], false) }}">
         @csrf
         <button type="submit" class="text-indigo-500 hover:text-indigo-700 underline text-xs">Temizle</button>
     </form>
@@ -33,10 +35,12 @@
     </div>
     <h3 class="text-gray-700 font-medium mb-2">Henüz site yok</h3>
     <p class="text-gray-500 text-sm mb-4">İlk müşteri sitenizi oluşturun</p>
-    <a href="{{ route('admin.tenants.create') }}"
-       class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
-        <i class="fas fa-plus mr-2"></i> Yeni Site Oluştur
-    </a>
+    @if($canManageTenants)
+        <a href="{{ route('admin.tenants.create') }}"
+           class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+            <i class="fas fa-plus mr-2"></i> Yeni Site Oluştur
+        </a>
+    @endif
 </div>
 @else
 <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -72,7 +76,11 @@
                 <td class="px-5 py-4">
                     <div class="flex flex-wrap gap-1">
                         @foreach($tenant->domains as $domain)
-                        <span class="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-mono">{{ $domain->domain }}</span>
+                        @php
+                            // stancl VirtualColumn: $domain bazen Eloquent model bazen array olabilir
+                            $domainStr = is_object($domain) ? $domain->domain : ($domain['domain'] ?? (string) $domain);
+                        @endphp
+                        <span class="inline-block px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-mono">{{ $domainStr }}</span>
                         @endforeach
                     </div>
                 </td>
@@ -90,7 +98,7 @@
                     <div class="flex items-center justify-end gap-2">
                         {{-- Switch to this tenant --}}
                         @if(session('active_tenant') !== $tenant->id)
-                        <form method="POST" action="{{ route('admin.tenants.switch', $tenant) }}">
+                        <form method="POST" action="{{ route('admin.tenants.switch', $tenant, false) }}">
                             @csrf
                             <button type="submit"
                                     class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs hover:bg-indigo-100 font-medium"

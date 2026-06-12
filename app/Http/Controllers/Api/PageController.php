@@ -22,15 +22,7 @@ class PageController extends Controller
         // No site_id filter needed — the DB connection is the isolation boundary.
 
         if ($slug === 'home') {
-            $homepageId = SiteSetting::get('cms.homepage_id', config('cms.homepage_id'));
-            $page = Page::query()
-                ->where(fn ($query) => $query
-                    ->where('legacy_id', $homepageId)
-                    ->orWhere('id', $homepageId)
-                )
-                ->published()
-                ->with(['seo', 'language', 'parent'])
-                ->first();
+            $page = $this->resolveHomepage();
 
             abort_if(! $page, 404);
 
@@ -77,5 +69,54 @@ class PageController extends Controller
             $lastModified,
             "page-{$page->id}",
         );
+    }
+
+    private function resolveHomepage(): ?Page
+    {
+        $homepageId = SiteSetting::get('cms.homepage_id', config('cms.homepage_id'));
+
+        if ($homepageId) {
+            $page = Page::query()
+                ->where(fn ($query) => $query
+                    ->where('legacy_id', $homepageId)
+                    ->orWhere('id', $homepageId)
+                )
+                ->published()
+                ->with(['seo', 'language', 'parent'])
+                ->first();
+
+            if ($page) {
+                return $page;
+            }
+        }
+
+        $page = Page::query()
+            ->where(fn ($query) => $query
+                ->where('system_key', 'home')
+                ->orWhere('slug', 'home')
+            )
+            ->published()
+            ->orderByDesc('system_key')
+            ->orderBy('sort_order')
+            ->with(['seo', 'language', 'parent'])
+            ->first();
+
+        if ($page) {
+            return $page;
+        }
+
+        // Existing tenant databases may predate the homepage/system page seed.
+        // In preview mode, prefer showing the first real published page over a hard 404.
+        return Page::query()
+            ->published()
+            ->where(fn ($query) => $query
+                ->whereNull('system_key')
+                ->orWhere('system_key', '')
+                ->orWhere('system_key', 'home')
+            )
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->with(['seo', 'language', 'parent'])
+            ->first();
     }
 }

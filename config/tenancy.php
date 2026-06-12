@@ -20,14 +20,16 @@ return [
     /**
      * The list of domains hosting your central app (admin panel + API).
      * Tenant middleware will NOT run for requests hitting these domains.
+     *
+     * CENTRAL_DOMAIN supports a comma-separated list so a domain migration
+     * can keep both old and new admin hosts live in parallel (e.g.
+     * `cms.grafcore.com,graficms.grafike.site`).  Whitespace is trimmed,
+     * empty entries are dropped, so trailing commas are safe.
      */
-    'central_domains' => array_filter([
-        env('CENTRAL_DOMAIN', ''),          // e.g. grafike.app (admin panel)
-        '127.0.0.1',
-        'localhost',
-        '127.0.0.1:8000',
-        'localhost:8000',
-    ]),
+    'central_domains' => array_values(array_filter(array_map('trim', array_merge(
+        explode(',', (string) env('CENTRAL_DOMAIN', '')),
+        ['127.0.0.1', 'localhost', '127.0.0.1:8000', 'localhost:8000'],
+    )))),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
@@ -40,6 +42,10 @@ return [
         Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
+        // Per-tenant mailer: routes every send through the active tenant's
+        // default SmtpProfile (falls back to global config/mail.php if none).
+        // MUST stay after DatabaseTenancyBootstrapper (needs the tenant DB).
+        App\Tenancy\MailTenancyBootstrapper::class,
         // Stancl\Tenancy\Bootstrappers\RedisTenancyBootstrapper::class, // Note: phpredis is needed
     ],
 
@@ -122,9 +128,11 @@ return [
          * See https://tenancyforlaravel.com/docs/v3/tenancy-bootstrappers/#filesystem-tenancy-boostrapper
          */
         'root_override' => [
-            // Disks whose roots should be overridden after storage_path() is suffixed.
-            'local' => '%storage_path%/app/',
-            'public' => '%storage_path%/app/public/',
+            // Keep tenant files under storage/app so the Docker volume persists
+            // uploads across rebuilds. Do not rely on suffixing storage_path()
+            // because the deployment mounts storage/app, not storage/tenant*.
+            'local' => '%storage_path%/app/tenant_%tenant%/private/',
+            'public' => '%storage_path%/app/public/tenant_%tenant%/',
         ],
 
         /**
@@ -136,7 +144,7 @@ return [
          * edge cases, it can cause issues (like using Passport with Vapor - see #196), so
          * you may want to disable this if you are experiencing these edge case issues.
          */
-        'suffix_storage_path' => true,
+        'suffix_storage_path' => false,
 
         /**
          * By default, asset() calls are made multi-tenant too. You can use global_asset() and mix()

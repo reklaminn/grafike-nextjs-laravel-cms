@@ -5,15 +5,27 @@
 
 @section('content')
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6"
+         x-data="aiPageWizard()">
         <div>
             <p class="text-sm text-gray-500">Tüm sayfaları yönetin, düzenleyin ve yeni sayfalar ekleyin.</p>
         </div>
-        <a href="{{ route('admin.pages.create') }}"
-           class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
-            <i class="fas fa-plus"></i>
-            Yeni Sayfa
-        </a>
+        <div class="flex items-center gap-2">
+            <button type="button" @click="open = true"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-colors shadow-sm">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                AI ile Sayfa Oluştur
+            </button>
+            <a href="{{ route('admin.pages.create') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                <i class="fas fa-plus"></i>
+                Yeni Sayfa
+            </a>
+        </div>
+
+        @include('admin.pages._ai-generate-modal', [
+            'languages' => $languages ?? collect(),
+        ])
     </div>
 
     <!-- Filters -->
@@ -30,6 +42,7 @@
                 <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                     <option value="">Tümü</option>
                     <option value="published" {{ request('status') === 'published' ? 'selected' : '' }}>Yayında</option>
+                    <option value="scheduled" {{ request('status') === 'scheduled' ? 'selected' : '' }}>Zamanlanmış</option>
                     <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Taslak</option>
                     <option value="archived" {{ request('status') === 'archived' ? 'selected' : '' }}>Arşivlenmiş</option>
                 </select>
@@ -91,6 +104,12 @@
                                             {{ $page->title }}
                                         </a>
                                         <p class="text-xs text-gray-400">/{{ $page->slug }}</p>
+                                        @if($page->isSystemPage())
+                                            <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                                <i class="fas fa-lock"></i>
+                                                {{ $page->system_key === 'home' ? 'Default Anasayfa' : 'Sistem Sayfası' }}
+                                            </span>
+                                        @endif
                                         @if($page->parent)
                                             <p class="text-xs text-gray-400">
                                                 <i class="fas fa-level-up-alt fa-rotate-90 mr-1"></i>{{ $page->parent->title }}
@@ -109,6 +128,13 @@
                                     @case('draft')
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                             <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Taslak
+                                        </span>
+                                        @break
+                                    @case('scheduled')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                              title="{{ $page->scheduled_at?->format('d.m.Y H:i') }}">
+                                            <i class="fas fa-clock text-[9px] text-blue-500"></i>
+                                            Zamanlanmış{{ $page->scheduled_at ? ' · ' . $page->scheduled_at->format('d.m H:i') : '' }}
                                         </span>
                                         @break
                                     @case('archived')
@@ -134,16 +160,22 @@
                                        title="Düzenle">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('admin.pages.destroy', $page) }}"
-                                          onsubmit="return confirm('Bu sayfayı silmek istediğinize emin misiniz?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                                                title="Sil">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
+                                    @if($page->isSystemPage())
+                                        <span class="p-2 text-gray-300" title="Sistem sayfası silinemez">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                    @else
+                                        <form method="POST" action="{{ route('admin.pages.destroy', $page) }}"
+                                              onsubmit="return confirm('Bu sayfayı silmek istediğinize emin misiniz?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                                    title="Sil">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

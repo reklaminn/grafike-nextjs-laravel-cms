@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ScopesCatalogToTenant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SectionTemplateRequest;
 use App\Models\Menu;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class SectionTemplateController extends Controller
 {
+    use ScopesCatalogToTenant;
+
     private const COMMON_TYPE_CATALOG = [
         'header' => 'Header',
         'footer' => 'Footer',
@@ -38,10 +41,13 @@ class SectionTemplateController extends Controller
 
     public function index(Request $request)
     {
+        $tenantId = $this->catalogTenantId();
+        $modules  = $this->catalogModuleFilter();
+
         $trashed = $request->boolean('trashed');
         $query = $trashed
-            ? SectionTemplate::onlyTrashed()->with('theme')
-            : SectionTemplate::query()->with('theme');
+            ? SectionTemplate::onlyTrashed()->visibleTo($tenantId)->visibleForModules($modules)->with('theme')
+            : SectionTemplate::query()->visibleTo($tenantId)->visibleForModules($modules)->with('theme');
 
         if ($request->filled('q')) {
             $search = trim((string) $request->string('q'));
@@ -79,12 +85,12 @@ class SectionTemplateController extends Controller
             ->paginate(18)
             ->withQueryString();
 
-        $themes = Theme::query()->orderBy('name')->get(['id', 'name', 'slug']);
+        $themes = Theme::query()->visibleTo($tenantId)->visibleForModules($modules)->orderBy('name')->get(['id', 'name', 'slug']);
         $typeOptions = $this->buildTypeOptions();
 
         $usageMap = $this->computeUsageMap();
         $usageCounts = collect($usageMap)->map(fn (array $pages) => count($pages))->all();
-        $trashedCount = SectionTemplate::onlyTrashed()->count();
+        $trashedCount = SectionTemplate::onlyTrashed()->visibleTo($tenantId)->visibleForModules($modules)->count();
 
         return view('admin.section-templates.index', compact('sectionTemplates', 'themes', 'typeOptions', 'usageCounts', 'usageMap', 'trashed', 'trashedCount'));
     }
@@ -101,6 +107,15 @@ class SectionTemplateController extends Controller
      */
     private function computeUsageMap(): array
     {
+        // `pages` is a TENANT table. Section templates are a central/global
+        // catalog that an agency admin can browse without selecting a site —
+        // in that state the default connection points at the central DB, which
+        // has no `pages` table (→ 500). Usage is per-tenant and meaningless
+        // without an active site, so return an empty map instead.
+        if (! tenancy()->initialized) {
+            return [];
+        }
+
         return DB::table('pages')
             ->whereNotNull('sections_json')
             ->get(['id', 'title', 'slug', 'sections_json'])
@@ -136,7 +151,10 @@ class SectionTemplateController extends Controller
 
     public function store(SectionTemplateRequest $request)
     {
-        $sectionTemplate = SectionTemplate::create($request->validated());
+        $data = $request->validated();
+        $data['tenant_id'] = $this->newCatalogOwnerId();
+
+        $sectionTemplate = SectionTemplate::create($data);
 
         if ($request->hasFile('preview_image')) {
             $sectionTemplate->addMediaFromRequest('preview_image')
@@ -150,11 +168,38 @@ class SectionTemplateController extends Controller
 
     public function edit(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         return view('admin.section-templates.edit', $this->buildFormViewData($sectionTemplate));
+    }
+
+    /**
+     * Sayfa editörünün canlı şablon senkronizasyonu için hafif JSON kataloğu.
+     * PageController'daki block picker ile aynı görünürlük kuralları
+     * (tenant + modül + tema + aktif filtresi).
+     */
+    public function catalogJson()
+    {
+        $tenantThemeId = tenancy()->tenant?->theme_id;
+
+        $templates = SectionTemplate::query()
+            ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
+            ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
+            ->active()
+            ->orderBy('name')
+            ->get()
+            ->values();
+
+        return response()->json([
+            'templates' => \App\Support\PageEditorData::for(null, $templates)->availableTemplatesPayload(),
+        ]);
     }
 
     public function update(SectionTemplateRequest $request, SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         // Snapshot before overwrite if html_template or schema changed
         $dirty = array_intersect(
             array_keys($request->validated()),
@@ -185,6 +230,8 @@ class SectionTemplateController extends Controller
 
     public function versions(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         $versions = $sectionTemplate->versions()->limit(50)->get();
 
         return response()->json($versions->map(fn (SectionTemplateVersion $v) => [
@@ -198,6 +245,8 @@ class SectionTemplateController extends Controller
 
     public function saveVersion(Request $request, SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $label = $request->input('label');
         $sectionTemplate->recordVersion('manual', $label ?: null);
 
@@ -206,6 +255,8 @@ class SectionTemplateController extends Controller
 
     public function restoreVersion(SectionTemplate $sectionTemplate, SectionTemplateVersion $version)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         // Snapshot current before restore
         $sectionTemplate->recordVersion('pre-restore');
 
@@ -222,6 +273,10 @@ class SectionTemplateController extends Controller
 
     public function duplicate(SectionTemplate $sectionTemplate)
     {
+        // A tenant may fork any block they can SEE (global or own); the copy
+        // becomes owned by the current tenant so they can customise it.
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         $baseVariation = $sectionTemplate->variation.'-copy';
         $variation = $baseVariation;
         $suffix = 2;
@@ -236,6 +291,7 @@ class SectionTemplateController extends Controller
         }
 
         $copy = $sectionTemplate->replicate();
+        $copy->tenant_id  = $this->newCatalogOwnerId();
         $copy->name       = $sectionTemplate->name . ' (kopya)';
         $copy->variation  = $variation;
         $copy->is_active  = false;
@@ -248,6 +304,8 @@ class SectionTemplateController extends Controller
 
     public function destroy(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $sectionTemplate->delete(); // soft delete
 
         return redirect()
@@ -257,6 +315,8 @@ class SectionTemplateController extends Controller
 
     public function restore(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $sectionTemplate->restore();
 
         return redirect()
@@ -266,6 +326,8 @@ class SectionTemplateController extends Controller
 
     public function forceDelete(SectionTemplate $sectionTemplate)
     {
+        $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
+
         $sectionTemplate->clearMediaCollection('preview_image');
         $sectionTemplate->forceDelete();
 
@@ -276,6 +338,8 @@ class SectionTemplateController extends Controller
 
     public function preview(Request $request, SectionTemplate $sectionTemplate): mixed
     {
+        $this->authorizeCatalogRead($sectionTemplate->tenant_id);
+
         $renderer = app(SectionTemplateRenderer::class);
 
         if ($request->isMethod('POST')) {
@@ -310,7 +374,7 @@ class SectionTemplateController extends Controller
 
     private function buildFormViewData(SectionTemplate $sectionTemplate): array
     {
-        $themes = Theme::query()->orderBy('name')->get();
+        $themes = Theme::query()->visibleTo($this->catalogTenantId())->visibleForModules($this->catalogModuleFilter())->orderBy('name')->get();
         $typeOptions = $this->buildTypeOptions();
         $variationOptions = $this->buildVariationOptions($themes, $sectionTemplate);
         $menuPlaceholders = $this->buildMenuPlaceholders();
@@ -363,6 +427,8 @@ class SectionTemplateController extends Controller
     private function buildTypeOptions(): array
     {
         $existingTypes = SectionTemplate::query()
+            ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
             ->distinct()
             ->orderBy('type')
             ->pluck('type')
@@ -380,6 +446,8 @@ class SectionTemplateController extends Controller
     private function buildVariationOptions($themes, SectionTemplate $sectionTemplate): array
     {
         $existing = SectionTemplate::query()
+            ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
             ->select(['theme_id', 'type', 'variation'])
             ->orderBy('variation')
             ->get()
@@ -434,6 +502,12 @@ class SectionTemplateController extends Controller
      */
     private function buildMenuPlaceholders(): array
     {
+        // Menus are tenant-scoped; skip the lookup when no site is active so
+        // the (central) section-template editor still loads for agency admins.
+        if (! tenancy()->initialized) {
+            return [];
+        }
+
         return Menu::query()
             ->where('is_active', true)
             ->orderBy('location')
@@ -475,6 +549,13 @@ class SectionTemplateController extends Controller
             ['label' => 'Logo URL', 'token' => '{{logo_url}}', 'source' => 'settings'],
             ['label' => 'Favicon URL', 'token' => '{{favicon_url}}', 'source' => 'settings'],
         ]);
+
+        // SiteSetting is tenant-scoped; without an active site, expose only the
+        // fixed system tokens so the editor never hits the central DB (no
+        // `site_settings` table there → 500).
+        if (! tenancy()->initialized) {
+            return $fixed->values()->all();
+        }
 
         $settings = SiteSetting::query()
             ->select(['key', 'group'])

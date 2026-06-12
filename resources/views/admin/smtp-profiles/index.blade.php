@@ -37,7 +37,7 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <form method="POST" action="{{ route('admin.smtp-profiles.test', $profile) }}" class="inline"
+                                    <form method="POST" action="{{ route('admin.smtp-profiles.test', $profile, false) }}" class="inline"
                                           x-data x-on:submit.prevent="
                                               let email = prompt('Test e-posta adresi girin:');
                                               if (email) { $el.querySelector('[name=test_email]').value = email; $el.submit(); }

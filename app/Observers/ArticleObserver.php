@@ -4,12 +4,38 @@ namespace App\Observers;
 
 use App\Models\Article;
 use App\Models\Language;
+use App\Models\SeoEntry;
 use App\Services\FrontendRevalidator;
 use App\Services\Seo\IndexNowNotifier;
 use Illuminate\Support\Facades\Cache;
 
 class ArticleObserver
 {
+    /**
+     * Yazı oluşturulduğunda otomatik SEO kaydı aç.
+     */
+    public function created(Article $article): void
+    {
+        if (! $article->seo()->exists()) {
+            SeoEntry::create([
+                'seoable_id'   => $article->id,
+                'seoable_type' => Article::class,
+                'slug'         => $article->slug,
+                'language_id'  => $article->language_id,
+            ]);
+        }
+    }
+
+    /**
+     * Slug değişince SEO kaydını da güncelle.
+     */
+    public function updated(Article $article): void
+    {
+        if ($article->wasChanged('slug')) {
+            $article->seo()->update(['slug' => $article->slug]);
+        }
+    }
+
     public function saved(Article $article): void
     {
         $this->clearArticleCache($article);
@@ -23,6 +49,9 @@ class ArticleObserver
 
     public function deleted(Article $article): void
     {
+        // SEO kaydını da sil — cascade etmiyor
+        $article->seo()->delete();
+
         $this->clearArticleCache($article);
         $this->revalidateFrontend($article);
     }
@@ -36,6 +65,8 @@ class ArticleObserver
         }
 
         Cache::forget('sitemap_xml');
+        Cache::forget('llms_txt');
+        Cache::forget('llms_full_txt');
         Cache::forget('dashboard.stats');
 
         if ($article->page_id) {

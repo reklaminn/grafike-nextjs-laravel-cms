@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ScopesCatalogToTenant;
 use App\Http\Controllers\Controller;
 use App\Models\DesignAsset;
 use App\Models\Theme;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class DesignController extends Controller
 {
+    use ScopesCatalogToTenant;
+
     public function index()
     {
         $globalCss = DesignAsset::firstOrCreate(
@@ -33,6 +37,8 @@ class DesignController extends Controller
         );
 
         $themes = Theme::query()
+            ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
             ->orderByDesc('is_active')
             ->orderBy('name')
             ->get()
@@ -60,7 +66,7 @@ class DesignController extends Controller
             'assets.*.id' => 'required_with:assets|exists:design_assets,id',
             'assets.*.content' => 'nullable|string|max:500000',
             'theme_assets' => 'nullable|array',
-            'theme_assets.*.id' => 'required_with:theme_assets|exists:themes,id',
+            'theme_assets.*.id' => ['required_with:theme_assets', Rule::exists('central.themes', 'id')],
             'theme_assets.*.css_paths' => 'nullable|string|max:500000',
             'theme_assets.*.js_paths' => 'nullable|string|max:500000',
         ]);
@@ -96,6 +102,13 @@ class DesignController extends Controller
                 $theme = Theme::find($themeAssetData['id']);
 
                 if (! $theme) {
+                    continue;
+                }
+
+                // A tenant admin may only edit asset paths on their OWN theme;
+                // global (shared) themes are managed by agency admins. Silently
+                // skip rows the current admin is not allowed to write.
+                if (! $this->canManageGlobalCatalog() && $theme->tenant_id !== $this->catalogTenantId()) {
                     continue;
                 }
 

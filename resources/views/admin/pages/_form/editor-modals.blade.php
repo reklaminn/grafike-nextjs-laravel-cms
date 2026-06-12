@@ -16,6 +16,12 @@
                     Sayfaya eklenecek block şablonunu seç
                 </p>
             </div>
+            <button type="button" @click="refreshTemplateCatalog()"
+                    :disabled="catalogRefreshing"
+                    title="Şablon listesini yenile (yeni eklenen şablonlar görünür)"
+                    class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 disabled:opacity-50">
+                <i class="fas fa-arrows-rotate text-sm" :class="catalogRefreshing && 'fa-spin'"></i>
+            </button>
             <button type="button" @click="closeBlockPicker()"
                     class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                 <i class="fas fa-xmark text-sm"></i>
@@ -119,15 +125,49 @@
                 <h4 class="text-base font-semibold text-gray-900">Block Ayarları</h4>
                 <p class="mt-1 text-xs text-gray-500" x-text="settingsBlock ? (settingsBlock.template_name || settingsBlock.type) : ''"></p>
             </div>
-            <button type="button"
-                    @click="closeBlockSettings()"
-                    class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <a x-show="settingsBlock"
+                   x-cloak
+                   :href="settingsBlock?.section_template_id
+                           ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit')
+                           : @js(route('admin.section-templates.index'))"
+                   :title="settingsBlock?.section_template_id ? 'Block şablonunu düzenle' : 'Block şablonları listesi'"
+                   target="_blank"
+                   class="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-pen-to-square text-[11px]"></i>
+                    <span>Şablonu Düzenle</span>
+                </a>
+                <button type="button" x-show="settingsBlock?.section_template_id" x-cloak
+                        @click="refreshTemplateCatalog()"
+                        :disabled="catalogRefreshing"
+                        title="Şablondan yenile — şablonda yapılan son değişiklikleri bu bloğa uygula"
+                        class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200 hover:text-indigo-600 disabled:opacity-50">
+                    <i class="fas fa-arrows-rotate" :class="catalogRefreshing && 'fa-spin'"></i>
+                </button>
+                <button type="button"
+                        @click="closeBlockSettings()"
+                        class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
 
         <template x-if="settingsBlock">
             <div class="mt-5 space-y-4">
+                {{-- Şablon güncellik uyarısı — blok schema'sı katalogdan farklıysa --}}
+                <div x-show="blockSchemaIsStale(settingsBlock)" x-cloak
+                     class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                    <div class="flex items-center gap-2 text-xs text-amber-800">
+                        <i class="fas fa-triangle-exclamation text-amber-500"></i>
+                        <span>Bu bloğun alan yapısı şablonun güncel haliyle eşleşmiyor.</span>
+                    </div>
+                    <button type="button"
+                            @click="applyTemplateToBlock(settingsDraft); queueSerializedRegionsSync()"
+                            class="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
+                        <i class="fas fa-arrows-rotate mr-1"></i> Şablondan Yenile
+                    </button>
+                </div>
+
                 {{-- Per-block validation error summary --}}
                 <template x-if="settingsBlock && fieldErrors[settingsBlock.id] && Object.keys(fieldErrors[settingsBlock.id]).length > 0">
                     <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -165,13 +205,114 @@
                         <input type="checkbox" x-model="settingsBlock.is_active" class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
                         Block aktif
                     </label>
-                    <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                    <label class="flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700"
+                           title="Sadece giriş yapmış üyeler bu bloğu görebilir">
+                        <input type="checkbox" x-model="settingsBlock.is_member_only" class="h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
+                        <i class="fas fa-lock text-xs text-indigo-400 mr-0.5"></i> Sadece üyeler
+                    </label>
+                    <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 sm:col-span-2">
                         <span class="font-medium text-gray-700">Özet:</span>
                         <span x-text="blockSummary(settingsBlock)"></span>
                     </div>
+
+                    {{-- Group restriction for block --}}
+                    @php $blockGroups = $memberGroups ?? collect(); @endphp
+                    @if($blockGroups->isNotEmpty())
+                    <div class="sm:col-span-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2.5">
+                        <p class="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
+                            <i class="fas fa-users text-purple-400"></i> Grup kısıtlaması
+                            <span class="font-normal text-purple-500">(boş = herkese açık)</span>
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            @foreach($blockGroups as $group)
+                            <label class="flex items-center gap-1.5 text-xs text-purple-800 cursor-pointer">
+                                <input type="checkbox"
+                                       :value="{{ $group->id }}"
+                                       x-model="settingsBlock.allowed_group_ids"
+                                       class="h-3.5 w-3.5 rounded border-purple-300 text-purple-600 focus:ring-purple-500">
+                                {{ $group->name }}
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
                 </div>
 
                 <div x-show="settingsTab === 'content'" class="grid gap-3">
+
+                    {{-- ─── AI yardımcısı (FAZ 4.2) ───────────────────── --}}
+                    <div class="rounded-xl border border-indigo-100 bg-gradient-to-r from-purple-50 to-indigo-50 p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-wand-magic-sparkles text-indigo-500"></i>
+                            <span class="text-xs font-semibold text-gray-700">AI Yardımcısı</span>
+                            <span class="text-[10px] text-gray-500 ml-auto">Bu blokun içeriğini AI ile dönüştür</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 items-stretch">
+                            <select x-model="aiAction"
+                                    :disabled="aiLoading"
+                                    class="flex-1 min-w-[180px] px-3 py-2 border border-indigo-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
+                                <option value="shorten">📏 Daha kısa yaz</option>
+                                <option value="lengthen">📜 Daha uzun yaz</option>
+                                <option value="professional">💼 Profesyonel ton</option>
+                                <option value="casual">😊 Samimi ton</option>
+                                <option value="seo_optimize">🔍 SEO odaklı yaz</option>
+                                <option value="rephrase">🔄 Yeniden yaz</option>
+                                <option value="fix_typos">✏️ Sadece yazım hatalarını düzelt</option>
+                                <option value="translate_en">🇬🇧 İngilizceye çevir</option>
+                                <option value="translate_tr">🇹🇷 Türkçeye çevir</option>
+                                <option value="translate_de">🇩🇪 Almancaya çevir</option>
+                                <option value="translate_ru">🇷🇺 Rusçaya çevir</option>
+                                <option value="translate_ar">🇸🇦 Arapçaya çevir</option>
+                                <option value="custom">⚡ Özel komut</option>
+                            </select>
+                            <template x-if="!aiStreaming">
+                                <button type="button"
+                                        @click="applyAiTransform()"
+                                        :disabled="aiLoading"
+                                        class="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 whitespace-nowrap">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>Uygula</span>
+                                </button>
+                            </template>
+                            <template x-if="aiStreaming">
+                                <button type="button"
+                                        @click="abortAiTransform()"
+                                        class="px-4 py-2 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 flex items-center gap-1.5 whitespace-nowrap">
+                                    <i class="fas fa-stop"></i>
+                                    <span>Durdur</span>
+                                </button>
+                            </template>
+                        </div>
+                        <div x-show="aiAction === 'custom'" x-cloak class="mt-2">
+                            <input type="text" x-model="aiCustomPrompt"
+                                   :disabled="aiLoading"
+                                   maxlength="500"
+                                   placeholder="Örn: Cümlelerin başına emoji ekle ama içeriği değiştirme"
+                                   class="w-full px-3 py-2 border border-indigo-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 disabled:opacity-50">
+                        </div>
+
+                        {{-- Typewriter preview — gösterim sırasında canlı chunk birikir --}}
+                        <div x-show="aiStreaming && aiStreamText" x-cloak class="mt-2">
+                            <div class="bg-white border border-indigo-200 rounded-lg p-2 text-xs text-gray-700 max-h-24 overflow-y-auto font-mono leading-relaxed whitespace-pre-wrap"
+                                 x-text="aiStreamText"></div>
+                            <p class="text-[10px] text-indigo-500 mt-0.5 flex items-center gap-1">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+                                AI yazıyor…
+                            </p>
+                        </div>
+
+                        <div x-show="aiStatus" x-cloak class="mt-2 text-xs rounded-md p-2"
+                             :class="aiStatusOk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                : 'bg-red-50 text-red-700 border border-red-200'">
+                            <i class="fas" :class="aiStatusOk ? 'fa-check-circle' : 'fa-exclamation-triangle'"></i>
+                            <span x-text="aiStatus"></span>
+                        </div>
+                        <p class="mt-2 text-[10px] text-gray-500">
+                            AI sadece metin alanlarını değiştirir; medya, link ve renk gibi alanlara dokunmaz.
+                            Yanıtı Kaydet'e basana kadar uygulanmaz — beğenmezseniz Vazgeç'e basın.
+                        </p>
+                    </div>
+
                     <template x-for="[fieldName, fieldSchema] in Object.entries(settingsBlock.schema || {})" :key="fieldName">
                         <div>
                             <template x-if="(fieldSchema.type || 'text') === 'repeater'">

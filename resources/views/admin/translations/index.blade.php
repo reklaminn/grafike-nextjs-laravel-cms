@@ -60,7 +60,7 @@
         <span class="text-sm text-indigo-700 font-medium">
             <span x-text="selectedIds.length"></span> öğe seçildi
         </span>
-        <form method="POST" action="{{ route('admin.translations.bulk') }}" id="bulk-form">
+        <form method="POST" action="{{ route('admin.translations.bulk', [], false) }}" id="bulk-form">
             @csrf
             <input type="hidden" name="type" value="{{ $type === 'articles' ? 'article' : 'page' }}">
             <template x-for="id in selectedIds" :key="id">

@@ -17,8 +17,29 @@ import {
 } from "@/lib/api/mock-data";
 
 const API_BASE_URL = process.env.CMS_API_URL;
+const FALLBACK_SITE_HOST = process.env.NEXT_PUBLIC_SITE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SITE_URL).host
+  : null;
+const INTERNAL_API_HOSTS = new Set([
+  // Multi-replica dev/staging setup
+  "app1",
+  "app2",
+  "app3",
+  "grafike_cms_app1",
+  "grafike_cms_app2",
+  "grafike_cms_app3",
+  // Single-container production setup (docker-compose.hostinger.yml)
+  "app",
+  "grafike_cms_app",
+  // Frontend container itself (avoid self-referential host headers)
+  "grafike_cms_frontend",
+  "frontend",
+]);
 
 type ResourceEnvelope<T> = { data: T };
+type PreviewOptions = {
+  tenantId?: string | null;
+};
 
 function unwrapResource<T>(payload: T | ResourceEnvelope<T>): T {
   if (payload && typeof payload === "object" && "data" in payload) {
@@ -29,7 +50,27 @@ function unwrapResource<T>(payload: T | ResourceEnvelope<T>): T {
 
 async function getSiteHostHeader(): Promise<string | null> {
   const requestHeaders = await headers();
-  return requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const normalizedHost = host?.split(",")[0]?.trim().split(":")[0]?.toLowerCase();
+
+  if (host && normalizedHost && !INTERNAL_API_HOSTS.has(normalizedHost)) {
+    return host;
+  }
+
+  return FALLBACK_SITE_HOST;
+}
+
+async function getTenantPreviewHeader(): Promise<string | null> {
+  const requestHeaders = await headers();
+  const tenant = requestHeaders.get("x-tenant-id")?.trim();
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
+}
+
+function normalizeTenantPreviewId(tenantId?: string | null): string | null {
+  const tenant = tenantId?.trim();
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
 }
 
 /**
@@ -42,18 +83,51 @@ async function fetchJson<T>(
   fallback: T,
   wrapped = true,
   tags?: string[],
+  options: PreviewOptions = {},
 ): Promise<T> {
   if (!API_BASE_URL) return fallback;
 
   try {
     const siteHost = await getSiteHostHeader();
+    const tenantId = normalizeTenantPreviewId(options.tenantId) ?? await getTenantPreviewHeader();
+    const requestHeaders: Record<string, string> = {};
+
+    // Forward the browser's Cookie header so Laravel session-based features
+    // (password-protected pages, member auth state) work in SSR context.
+    const incomingCookie = (await headers()).get("cookie");
+    if (incomingCookie) {
+      requestHeaders["Cookie"] = incomingCookie;
+    }
+
+    if (siteHost) {
+      requestHeaders["X-Site-Host"] = siteHost;
+      requestHeaders["X-Forwarded-Host"] = siteHost;
+    }
+
+    if (tenantId) {
+      requestHeaders["X-Tenant-ID"] = tenantId;
+    }
+
+    // Prefix every tag with the site host so a revalidation for
+    // tenant-A never busts tenant-B's cache on the same Next.js instance.
+    // e.g. "page-home" → "nuhcicek.com.tr:page-home"
+    // Preview requests are never cached (no-store), so no prefixing needed there.
+    const scopedTags = tags && siteHost
+      ? tags.map((t) => `${siteHost}:${t}`)
+      : tags;
+
+    const cacheOptions = tenantId
+      ? { cache: "no-store" as const }
+      : {
+          next: {
+            revalidate: 60,
+            ...(scopedTags && scopedTags.length > 0 ? { tags: scopedTags } : {}),
+          },
+        };
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: siteHost ? { "X-Site-Host": siteHost } : undefined,
-      next: {
-        revalidate: 60,
-        ...(tags && tags.length > 0 ? { tags } : {}),
-      },
+      headers: Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined,
+      ...cacheOptions,
     });
 
     if (!response.ok) return fallback;
@@ -67,42 +141,47 @@ async function fetchJson<T>(
 
 // ─── Site & Settings ──────────────────────────────────────────────────────────
 
-export async function getSitePayload(lang?: string): Promise<SitePayload> {
+export async function getSitePayload(lang?: string, options: PreviewOptions = {}): Promise<SitePayload> {
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return fetchJson<SitePayload>(`/api/v1/site${qs}`, mockSitePayload, true, [
     "site",
     "settings",
-  ]);
+  ], options);
 }
 
-export async function getSettingsPayload(): Promise<SettingsPayload> {
+export async function getSettingsPayload(options: PreviewOptions = {}): Promise<SettingsPayload> {
   return fetchJson<SettingsPayload>("/api/v1/settings", mockSettingsPayload, false, [
     "settings",
-  ]);
+  ], options);
 }
 
 // ─── Menus ────────────────────────────────────────────────────────────────────
 
-export async function getMenuPayload(location: string): Promise<MenuPayload> {
+export async function getMenuPayload(location: string, options: PreviewOptions = {}): Promise<MenuPayload> {
   return fetchJson<MenuPayload>(`/api/v1/menus/${location}`, mockHeaderMenuPayload, true, [
     "menus",
     `menu-${location}`,
-  ]);
+  ], options);
 }
 
-export async function getMenusPayload(): Promise<MenusPayload> {
-  return fetchJson<MenusPayload>("/api/v1/menus", [mockHeaderMenuPayload], true, ["menus"]);
+export async function getMenusPayload(options: PreviewOptions = {}): Promise<MenusPayload> {
+  return fetchJson<MenusPayload>("/api/v1/menus", [mockHeaderMenuPayload], true, ["menus"], options);
 }
 
 // ─── Pages ────────────────────────────────────────────────────────────────────
 
-export async function getPagePayload(slug: string, lang?: string): Promise<PagePayload | null> {
-  const fallback = mockPagePayload(slug);
+export async function getPagePayload(
+  slug: string,
+  lang?: string,
+  options: PreviewOptions = {},
+): Promise<PagePayload | null> {
+  const tenantId = normalizeTenantPreviewId(options.tenantId) ?? await getTenantPreviewHeader();
+  const fallback = tenantId ? null : mockPagePayload(slug);
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return fetchJson<PagePayload | null>(`/api/v1/pages/${slug}${qs}`, fallback, true, [
     "pages",
     `page-${slug}`,
-  ]);
+  ], { tenantId });
 }
 
 // ─── Articles ─────────────────────────────────────────────────────────────────
@@ -114,6 +193,7 @@ export type GetArticlesOptions = {
   featuredOnly?: boolean;
   limit?: number;
   page?: number;
+  tenantId?: string | null;
 };
 
 export async function getArticles(options: GetArticlesOptions = {}): Promise<ArticleListPayload> {
@@ -134,24 +214,30 @@ export async function getArticles(options: GetArticlesOptions = {}): Promise<Art
     false,
     // Tag includes page_id so article-list blocks on a specific page revalidate correctly
     ["articles", ...(options.pageId ? [`articles-page-${options.pageId}`] : [])],
+    { tenantId: options.tenantId },
   );
 }
 
-export async function getArticle(slug: string, lang?: string): Promise<ArticleDetailPayload | null> {
+export async function getArticle(
+  slug: string,
+  lang?: string,
+  options: PreviewOptions = {},
+): Promise<ArticleDetailPayload | null> {
   const qs = lang ? `?lang=${encodeURIComponent(lang)}` : "";
   return fetchJson<ArticleDetailPayload | null>(
     `/api/v1/articles/${slug}${qs}`,
     null,
     true,
     ["articles", `article-${slug}`],
+    options,
   );
 }
 
 // ─── Forms ────────────────────────────────────────────────────────────────────
 
-export async function getForm(formId: number | string): Promise<FormPayload | null> {
+export async function getForm(formId: number | string, options: PreviewOptions = {}): Promise<FormPayload | null> {
   return fetchJson<FormPayload | null>(`/api/v1/forms/${formId}`, null, true, [
     "forms",
     `form-${formId}`,
-  ]);
+  ], options);
 }

@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\AdminRole as Role;
+use App\Models\AdminTenantAccess;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Role;
+use Illuminate\Validation\ValidationException;
 
 class AdminUserController extends Controller
 {
@@ -31,19 +33,27 @@ class AdminUserController extends Controller
     public function create()
     {
         $roles = Role::where('guard_name', 'admin')->orderBy('name')->get();
+        $tenants = Tenant::orderBy('id')->get();
 
-        return view('admin.admin-users.create', compact('roles'));
+        return view('admin.admin-users.create', compact('roles', 'tenants'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:admins,username',
-            'email' => 'required|email|max:255|unique:admins,email',
+            'username' => ['required', 'string', 'max:255', Rule::unique('central.admins', 'username')],
+            'email' => ['required', 'email', 'max:255', Rule::unique('central.admins', 'email')],
             'password' => 'required|string|min:6|confirmed',
-            'role' => 'nullable|string|exists:roles,name',
+            'role' => ['nullable', 'string', Rule::exists('central.roles', 'name')->where('guard_name', 'admin')],
+            'tenant_ids' => 'nullable|array',
+            'tenant_ids.*' => ['string', Rule::exists('central.tenants', 'id')],
+            'tenant_access_role' => 'nullable|in:owner,manager,editor',
+            'default_tenant_id' => ['nullable', 'string', Rule::exists('central.tenants', 'id')],
         ]);
+
+        // Paket kotası: her hedef tenant için max_users aşılıyor mu?
+        $this->assertTenantQuota($data['tenant_ids'] ?? [], null);
 
         $admin = Admin::create([
             'name' => $data['name'],
@@ -56,6 +66,8 @@ class AdminUserController extends Controller
             $admin->assignRole($data['role']);
         }
 
+        $this->syncTenantAccess($admin, $data);
+
         return redirect()
             ->route('admin.admin-users.index')
             ->with('success', 'Yönetici başarıyla oluşturuldu.');
@@ -64,20 +76,28 @@ class AdminUserController extends Controller
     public function edit(Admin $admin_user)
     {
         $roles = Role::where('guard_name', 'admin')->orderBy('name')->get();
-        $admin_user->load('roles');
+        $tenants = Tenant::orderBy('id')->get();
+        $admin_user->load(['roles', 'tenantAccesses']);
 
-        return view('admin.admin-users.edit', compact('admin_user', 'roles'));
+        return view('admin.admin-users.edit', compact('admin_user', 'roles', 'tenants'));
     }
 
     public function update(Request $request, Admin $admin_user)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => ['required', 'string', 'max:255', Rule::unique('admins', 'username')->ignore($admin_user->id)],
-            'email' => ['required', 'email', 'max:255', Rule::unique('admins', 'email')->ignore($admin_user->id)],
+            'username' => ['required', 'string', 'max:255', Rule::unique('central.admins', 'username')->ignore($admin_user->id)],
+            'email' => ['required', 'email', 'max:255', Rule::unique('central.admins', 'email')->ignore($admin_user->id)],
             'password' => 'nullable|string|min:6|confirmed',
-            'role' => 'nullable|string|exists:roles,name',
+            'role' => ['nullable', 'string', Rule::exists('central.roles', 'name')->where('guard_name', 'admin')],
+            'tenant_ids' => 'nullable|array',
+            'tenant_ids.*' => ['string', Rule::exists('central.tenants', 'id')],
+            'tenant_access_role' => 'nullable|in:owner,manager,editor',
+            'default_tenant_id' => ['nullable', 'string', Rule::exists('central.tenants', 'id')],
         ]);
+
+        // Paket kotası: bu admin'in halihazırda eriştiği tenant'lar hariç sayılır.
+        $this->assertTenantQuota($data['tenant_ids'] ?? [], $admin_user->id);
 
         $admin_user->name = $data['name'];
         $admin_user->username = $data['username'];
@@ -91,6 +111,7 @@ class AdminUserController extends Controller
 
         // Sync role
         $admin_user->syncRoles($data['role'] ? [$data['role']] : []);
+        $this->syncTenantAccess($admin_user, $data);
 
         return redirect()
             ->route('admin.admin-users.index')
@@ -126,5 +147,66 @@ class AdminUserController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Pakete göre tenant başına yönetici kullanıcı kotasını doğrular.
+     * Aşılıyorsa ValidationException fırlatır (kayıt oluşturulmadan).
+     *
+     * @param  array<int,string>  $tenantIds
+     */
+    private function assertTenantQuota(array $tenantIds, ?int $excludeAdminId): void
+    {
+        foreach (collect($tenantIds)->filter()->unique() as $tenantId) {
+            $tenant = Tenant::find($tenantId);
+            if (! $tenant) {
+                continue;
+            }
+
+            $max = $tenant->maxAdminUsers();
+            if ($max === null) {
+                continue; // sınırsız paket
+            }
+
+            $query = AdminTenantAccess::where('tenant_id', $tenantId);
+            if ($excludeAdminId) {
+                $query->where('admin_id', '!=', $excludeAdminId);
+            }
+            $current = $query->distinct()->count('admin_id');
+
+            if ($current + 1 > $max) {
+                throw ValidationException::withMessages([
+                    'tenant_ids' => "«{$tenant->name}» paketi («{$tenant->package()}») en fazla {$max} yönetici kullanıcıya izin veriyor (şu an {$current}). Paketi yükseltin veya farklı bir site seçin.",
+                ]);
+            }
+        }
+    }
+
+    private function syncTenantAccess(Admin $admin, array $data): void
+    {
+        $tenantIds = collect($data['tenant_ids'] ?? [])
+            ->filter()
+            ->unique()
+            ->values();
+
+        AdminTenantAccess::where('admin_id', $admin->id)->delete();
+
+        if ($tenantIds->isEmpty()) {
+            return;
+        }
+
+        $defaultTenantId = $data['default_tenant_id'] ?? $tenantIds->first();
+        if (! $tenantIds->contains($defaultTenantId)) {
+            $defaultTenantId = $tenantIds->first();
+        }
+
+        foreach ($tenantIds as $tenantId) {
+            AdminTenantAccess::create([
+                'admin_id' => $admin->id,
+                'tenant_id' => $tenantId,
+                'role' => $data['tenant_access_role'] ?? 'manager',
+                'is_default' => $tenantId === $defaultTenantId,
+            ]);
+        }
     }
 }

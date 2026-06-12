@@ -4,7 +4,7 @@
 @section('page-title', 'Yeni Yönetici')
 
 @section('content')
-    <form method="POST" action="{{ route('admin.admin-users.store') }}">
+    <form method="POST" action="{{ route('admin.admin-users.store', [], false) }}">
         @csrf
         @include('admin.admin-users._form')
     </form>

@@ -5,23 +5,62 @@ namespace App\Observers;
 use App\Models\Language;
 use App\Models\Page;
 use App\Models\PageRevision;
+use App\Models\SeoEntry;
 use App\Services\FrontendRevalidator;
 use App\Services\Seo\IndexNowNotifier;
 use Illuminate\Support\Facades\Cache;
 
 class PageObserver
 {
+    /**
+     * Sayfa oluşturulduğunda otomatik SEO kaydı aç.
+     * slug dolu olacak, meta alanlar boş — editörden doldurulur.
+     */
+    public function created(Page $page): void
+    {
+        if (! $page->seo()->exists()) {
+            SeoEntry::create([
+                'seoable_id'   => $page->id,
+                'seoable_type' => Page::class,
+                'slug'         => $page->slug,
+                'language_id'  => $page->language_id,
+            ]);
+        }
+    }
+
+    /**
+     * Slug değişince SEO kaydını da güncelle.
+     * saveSeo() yalnızca meta alanlar doluysa çalışır; bu observer
+     * her durumda seo_entries.slug'ı pages.slug ile senkronize tutar.
+     */
+    public function updated(Page $page): void
+    {
+        if ($page->wasChanged('slug')) {
+            $page->seo()->update(['slug' => $page->slug]);
+        }
+    }
+
     public function updating(Page $page): void
     {
-        if ($page->isDirty('sections_json') || $page->isDirty('layout_json')) {
-            // Capture the state BEFORE the update is written.
+        // Revizyona giren alanlardan herhangi biri değiştiyse, update
+        // yazılmadan ÖNCEKİ durumun tam snapshot'ını al. changed_fields
+        // hangi alanların değiştiğini saklar — UI'da diff özeti gösterilir.
+        $changed = array_values(array_filter(
+            Page::REVISION_FIELDS,
+            fn (string $field) => $page->isDirty($field)
+        ));
+
+        if ($changed !== []) {
+            $snapshot = [];
+            foreach (Page::REVISION_FIELDS as $field) {
+                $snapshot[$field] = $page->getOriginal($field);
+            }
+            $snapshot['changed_fields'] = $changed;
+
             PageRevision::create([
                 'page_id'    => $page->id,
                 'admin_id'   => auth()->id(),
-                'snapshot'   => [
-                    'sections_json' => $page->getOriginal('sections_json'),
-                    'layout_json'   => $page->getOriginal('layout_json'),
-                ],
+                'snapshot'   => $snapshot,
                 'reason'     => 'pre-update',
                 'created_at' => now(),
             ]);
@@ -41,8 +80,17 @@ class PageObserver
 
     public function deleted(Page $page): void
     {
+        // SEO kaydını da sil — soft-delete cascade etmiyor
+        $page->seo()->delete();
+
         $this->clearPageCache($page);
         $this->revalidateFrontend($page);
+    }
+
+    public function forceDeleted(Page $page): void
+    {
+        $page->seo()->forceDelete();
+        $this->clearPageCache($page);
     }
 
     // ─── Cache invalidation ───────────────────────────────────────────────────
@@ -54,6 +102,8 @@ class PageObserver
         }
 
         Cache::forget('sitemap_xml');
+        Cache::forget('llms_txt');
+        Cache::forget('llms_full_txt');
         Cache::forget("layout_{$page->id}_0");
         Cache::forget("page_{$page->id}");
         Cache::forget('dashboard.stats');

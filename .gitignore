@@ -27,3 +27,10 @@ Thumbs.db
 **/caddy
 frankenphp
 frankenphp-worker.php
+
+# Claude Code worktrees & local agent state
+.claude/
+
+# SQLite tenant test databases (created by the test suite)
+/database/tenant_*
+file::memory:*

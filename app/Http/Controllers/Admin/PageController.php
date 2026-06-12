@@ -10,11 +10,17 @@ use App\Models\Page;
 use App\Models\PageRevision;
 use App\Models\SectionTemplate;
 use App\Models\SeoEntry;
+use App\Models\SiteSetting;
+use App\Services\Ai\AiPageGenerator;
+use App\Services\Ai\Exceptions\AiQuotaExceededException;
+use App\Services\Ai\SiteContextBuilder;
 use App\Support\FrontendSections;
 use App\Support\LegacyLayoutToSections;
 use App\Support\PageEditorData;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Throwable;
 
 class PageController extends Controller
 {
@@ -44,7 +50,11 @@ class PageController extends Controller
             $query->where('parent_id', $parentId ?: null);
         }
 
-        $pages = $query->orderBy('sort_order')->orderBy('title')->paginate(25);
+        // slug='' (Ana Sayfa / anasayfa) her zaman listenin başında olsun
+        $pages = $query->orderByRaw("CASE WHEN slug = '' THEN 0 ELSE 1 END")
+                       ->orderBy('sort_order')
+                       ->orderBy('title')
+                       ->paginate(25);
         $languages = Language::where('is_active', true)->get();
 
         return view('admin.pages.index', compact('pages', 'languages'));
@@ -56,7 +66,13 @@ class PageController extends Controller
         $parentPages = Page::whereNull('parent_id')
             ->orderBy('title')
             ->get(['id', 'title', 'language_id']);
+        // Block picker = global (shared) blocks + this tenant's own blocks,
+        // optionally narrowed to the tenant's active theme (matches edit()).
+        $tenantThemeId = tenancy()->tenant?->theme_id;
         $availableFrontendSectionTemplates = SectionTemplate::query()
+            ->visibleTo(session('active_tenant'))
+            ->visibleForModules(tenancy()->tenant?->enabledModules())
+            ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
             ->active()
             ->orderBy('name')
             ->get()
@@ -64,7 +80,10 @@ class PageController extends Controller
 
         $editorData = PageEditorData::for(null, $availableFrontendSectionTemplates);
 
-        return view('admin.pages.create', compact('languages', 'parentPages', 'editorData'));
+        $homepageId   = SiteSetting::get('cms.homepage_id');
+        $memberGroups = \App\Models\MemberGroup::where('is_active', true)->orderBy('name')->get();
+
+        return view('admin.pages.create', compact('languages', 'parentPages', 'editorData', 'homepageId', 'memberGroups'));
     }
 
     public function store(PageRequest $request)
@@ -76,6 +95,11 @@ class PageController extends Controller
             $data['slug'] = $this->generateUniqueSlug($data['title']);
         }
 
+        // Zamanlanmış değilse scheduled_at anlamsız — temizle
+        if (($data['status'] ?? '') !== 'scheduled') {
+            $data['scheduled_at'] = null;
+        }
+
         // Handle boolean fields
         $data['show_in_menu'] = $request->boolean('show_in_menu');
         $data['is_password_protected'] = $request->boolean('is_password_protected');
@@ -83,14 +107,22 @@ class PageController extends Controller
         $data['show_facebook_comments'] = $request->boolean('show_facebook_comments');
         $data['show_breadcrumb'] = $request->boolean('show_breadcrumb');
 
-        // Parse layout_json
+        // Parse layout_json — if empty, remove from data so existing value is preserved
         if (!empty($data['layout_json'])) {
             $data['layout_json'] = json_decode($data['layout_json'], true);
+        } else {
+            unset($data['layout_json']);
         }
 
+        // Parse sections_json — if empty/null (e.g. JS didn't run, redirect ate POST body),
+        // remove from data so existing DB value is NOT overwritten with null.
         if (!empty($data['sections_json'])) {
             $data['sections_json'] = json_decode($data['sections_json'], true);
+        } else {
+            unset($data['sections_json']);
         }
+
+        unset($data['sections_json_dirty']);
 
         $page = Page::create($data);
 
@@ -107,14 +139,17 @@ class PageController extends Controller
 
         // Handle SEO
         $this->saveSeo($page, $request);
+        $this->syncHomepageSetting($page, $request);
 
         return redirect()
             ->route('admin.pages.edit', $page)
             ->with('success', 'Sayfa başarıyla oluşturuldu.');
     }
 
-    public function edit(Page $page)
+    public function edit(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
         $page->load(['language', 'parent', 'seo', 'children', 'media', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -123,7 +158,13 @@ class PageController extends Controller
             ->orderBy('title')
             ->get(['id', 'title', 'language_id']);
 
-        $sectionTemplateIds = FrontendSections::collectTemplateIds($page->sections_json);
+        // Defensive: sections_json bazen DB'de string '[]' olarak kalabilir (çift encode bug).
+        // Cast array beklediği halde string gelirse null'a normalize et.
+        $sectionsData = $page->sections_json;
+        if (is_string($sectionsData)) {
+            $sectionsData = json_decode($sectionsData, true) ?? [];
+        }
+        $sectionTemplateIds = FrontendSections::collectTemplateIds($sectionsData);
 
         $frontendSectionTemplates = SectionTemplate::query()
             ->whereIn('id', $sectionTemplateIds)
@@ -135,6 +176,8 @@ class PageController extends Controller
         $tenantThemeId = tenancy()->tenant?->theme_id;
 
         $availableFrontendSectionTemplates = SectionTemplate::query()
+            ->visibleTo(session('active_tenant'))
+            ->visibleForModules(tenancy()->tenant?->enabledModules())
             ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
             ->active()
             ->orderBy('name')
@@ -146,7 +189,9 @@ class PageController extends Controller
 
         $frontendEditorSections = FrontendSections::flattenBlocks($page->sections_json);
         $frontendRegions = FrontendSections::normalize($page->sections_json);
-        $editorData = PageEditorData::for($page, $availableFrontendSectionTemplates);
+        $editorData   = PageEditorData::for($page, $availableFrontendSectionTemplates);
+        $homepageId   = SiteSetting::get('cms.homepage_id');
+        $memberGroups = \App\Models\MemberGroup::where('is_active', true)->orderBy('name')->get();
 
         return view('admin.pages.edit', compact(
             'page',
@@ -157,17 +202,25 @@ class PageController extends Controller
             'siteArticles',
             'frontendEditorSections',
             'frontendRegions',
-            'editorData'
+            'editorData',
+            'homepageId',
+            'memberGroups'
         ));
     }
 
-    public function update(PageRequest $request, Page $page)
+    public function update(PageRequest $request, string $page)
     {
+        $page = $this->resolveTenantPage($page);
         $data = $request->validated();
 
         // Generate slug if not provided
         if (empty($data['slug'])) {
             $data['slug'] = $this->generateUniqueSlug($data['title'], $page->id);
+        }
+
+        // Zamanlanmış değilse scheduled_at anlamsız — temizle
+        if (($data['status'] ?? '') !== 'scheduled') {
+            $data['scheduled_at'] = null;
         }
 
         // Handle boolean fields
@@ -177,14 +230,31 @@ class PageController extends Controller
         $data['show_facebook_comments'] = $request->boolean('show_facebook_comments');
         $data['show_breadcrumb'] = $request->boolean('show_breadcrumb');
 
-        // Parse layout_json
+        // Parse layout_json — if empty, remove from data so existing value is preserved
         if (!empty($data['layout_json'])) {
             $data['layout_json'] = json_decode($data['layout_json'], true);
+        } else {
+            unset($data['layout_json']);
         }
 
+        // Parse sections_json. If the editor reports "not dirty" but the submitted
+        // payload is empty while the DB has blocks, preserve the existing content.
+        // This protects pages from Alpine/form boundary glitches during plain saves.
         if (!empty($data['sections_json'])) {
-            $data['sections_json'] = json_decode($data['sections_json'], true);
+            $decodedSections = json_decode($data['sections_json'], true);
+            $incomingHasBlocks = count(FrontendSections::flattenBlocks($decodedSections)) > 0;
+            $existingHasBlocks = count(FrontendSections::flattenBlocks($page->sections_json)) > 0;
+
+            if (! $request->boolean('sections_json_dirty') && ! $incomingHasBlocks && $existingHasBlocks) {
+                unset($data['sections_json']);
+            } else {
+                $data['sections_json'] = $decodedSections;
+            }
+        } else {
+            unset($data['sections_json']);
         }
+
+        unset($data['sections_json_dirty']);
 
         $page->update($data);
 
@@ -197,6 +267,7 @@ class PageController extends Controller
 
         // Handle SEO
         $this->saveSeo($page, $request);
+        $this->syncHomepageSetting($page, $request);
 
         return redirect()
             ->route('admin.pages.edit', $page)
@@ -210,8 +281,10 @@ class PageController extends Controller
      * Show the "create translation" form pre-filled with source page data.
      * GET /admin/pages/{page}/create-translation?lang={language_id}
      */
-    public function createTranslation(Page $page, Request $request)
+    public function createTranslation(string $page, Request $request)
     {
+        $page = $this->resolveTenantPage($page);
+
         $page->load(['language', 'seo', 'translations.language']);
 
         $languages = Language::where('is_active', true)->get();
@@ -245,8 +318,14 @@ class PageController extends Controller
         ));
     }
 
-    public function destroy(Page $page)
+    public function destroy(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
+        if ($page->isSystemPage()) {
+            return back()->with('error', 'Bu sistem sayfası silinemez. Tasarımını ve içeriğini sayfa düzenleme ekranından güncelleyebilirsiniz.');
+        }
+
         // Soft delete - children will become orphaned, warn user
         if ($page->children()->count() > 0) {
             return back()->with('error', 'Bu sayfanın alt sayfaları var. Önce alt sayfaları silin veya taşıyın.');
@@ -259,8 +338,10 @@ class PageController extends Controller
             ->with('success', 'Sayfa başarıyla silindi.');
     }
 
-    public function migrateToSections(Page $page)
+    public function migrateToSections(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
         if (empty($page->layout_json) || ! is_array($page->layout_json)) {
             return back()->with('error', 'Bu sayfada dönüştürülecek legacy layout verisi bulunmuyor.');
         }
@@ -279,8 +360,10 @@ class PageController extends Controller
             ->with('preview_refresh', now()->timestamp);
     }
 
-    public function migratePreview(Page $page)
+    public function migratePreview(string $page)
     {
+        $page = $this->resolveTenantPage($page);
+
         if (empty($page->layout_json) || ! is_array($page->layout_json)) {
             return response()->json(['error' => 'Bu sayfada dönüştürülecek legacy layout verisi bulunmuyor.'], 422);
         }
@@ -291,16 +374,26 @@ class PageController extends Controller
         ]);
     }
 
-    public function restoreRevision(Page $page, PageRevision $revision)
+    public function restoreRevision(string $page, string $revision)
     {
+        $page = $this->resolveTenantPage($page);
+        $revision = PageRevision::findOrFail($revision);
+
         abort_unless($revision->page_id === $page->id, 404);
 
         Page::recordSnapshot($page, "restore-from-revision-{$revision->id}");
 
-        $page->forceFill([
-            'sections_json' => $revision->snapshot['sections_json'] ?? null,
-            'layout_json'   => $revision->snapshot['layout_json'] ?? null,
-        ])->saveQuietly();
+        // Snapshot'ta bulunan tüm revizyon alanlarını geri yükle.
+        // Eski (yalnızca sections/layout içeren) snapshot'larla geriye uyumlu:
+        // snapshot'ta olmayan alanlara dokunulmaz.
+        $restore = [];
+        foreach (Page::REVISION_FIELDS as $field) {
+            if (array_key_exists($field, $revision->snapshot ?? [])) {
+                $restore[$field] = $revision->snapshot[$field];
+            }
+        }
+
+        $page->forceFill($restore)->saveQuietly();
 
         return redirect()
             ->route('admin.pages.edit', $page)
@@ -330,22 +423,107 @@ class PageController extends Controller
      */
     protected function saveSeo(Page $page, Request $request): void
     {
-        if ($request->filled('seo_title') || $request->filled('seo_description') || $request->filled('seo_keywords')) {
-            $page->seo()->updateOrCreate(
-                ['seoable_id' => $page->id, 'seoable_type' => Page::class],
-                [
-                    'slug' => $page->slug,
-                    'language_id' => $page->language_id,
-                    'meta_title' => $request->input('seo_title'),
-                    'meta_description' => $request->input('seo_description'),
-                    'meta_keywords' => $request->input('seo_keywords'),
-                    'h1_override' => $request->input('seo_h1'),
-                    'canonical_url' => $request->input('seo_canonical'),
-                    'is_noindex' => $request->boolean('seo_noindex'),
-                ]
-            );
+        // Koşulsuz updateOrCreate — her kayıtta SEO formu ile seo_entries senkronize olur.
+        // Boş gelen alanlar null yazılır (temizleme de çalışır).
+        $page->seo()->updateOrCreate(
+            ['seoable_id' => $page->id, 'seoable_type' => Page::class],
+            [
+                'slug'             => $page->slug,
+                'language_id'      => $page->language_id,
+                'meta_title'       => $request->input('seo_title')       ?: null,
+                'meta_description' => $request->input('seo_description') ?: null,
+                'meta_keywords'    => $request->input('seo_keywords')    ?: null,
+                'h1_override'      => $request->input('seo_h1')          ?: null,
+                'canonical_url'    => $request->input('seo_canonical')   ?: null,
+                'is_noindex'       => $request->boolean('seo_noindex'),
+            ]
+        );
+    }
+
+    protected function syncHomepageSetting(Page $page, Request $request): void
+    {
+        if ($request->boolean('is_homepage')) {
+            SiteSetting::set('cms.homepage_id', (string) $page->id, 'cms');
         }
     }
+
+    protected function resolveTenantPage(string|int $page): Page
+    {
+        return Page::query()->findOrFail($page);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * POST /admin/pages/{page}/ai-generate-blocks
+     *
+     * Mevcut sayfanın içeriğini (sections_json) AI ile doldurur.
+     * Sadece sections_json güncellenir — başlık/slug/durum değişmez.
+     */
+    public function aiGenerateBlocks(
+        string $page,
+        Request $request,
+        AiPageGenerator $generator,
+        SiteContextBuilder $contextBuilder,
+    ): JsonResponse {
+        $pageModel = Page::findOrFail($page);
+        $tenant    = tenancy()->initialized ? tenant() : null;
+        $locale    = $request->input('locale', 'tr');
+
+        try {
+            $siteContext = $contextBuilder->build();
+        } catch (Throwable) {
+            $siteContext = [];
+        }
+
+        $purpose     = trim((string) $request->input('purpose', ''));
+        $imageBase64 = $request->input('image_base64') ?: null;
+        $imageMime   = $request->input('image_mime', 'image/jpeg');
+
+        $prompt = "\"{$pageModel->title}\" sayfası";
+        if ($purpose !== '') {
+            $prompt .= ". {$purpose}";
+        }
+        if ($imageBase64) {
+            $prompt .= ". Referans görsel eklendi — görsel tasarıma benzer layout üret.";
+        }
+        if (! empty($siteContext['company_name'])) {
+            $prompt .= ". Firma: {$siteContext['company_name']}";
+            if (! empty($siteContext['sector'])) {
+                $prompt .= " ({$siteContext['sector']})";
+            }
+        }
+
+        try {
+            $result = $generator->generate(
+                prompt:        $prompt,
+                tenant:        $tenant,
+                locale:        $locale,
+                siteContext:   $siteContext,
+                imageBase64:   $imageBase64,
+                imageMimeType: $imageMime,
+            );
+        } catch (AiQuotaExceededException $e) {
+            return response()->json([
+                'ok'         => false,
+                'error_code' => 'quota_exceeded',
+                'message'    => $e->getMessage(),
+            ], 402);
+        } catch (Throwable $e) {
+            report($e);
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+        }
+
+        $pageModel->update(['sections_json' => $result['sections_json']]);
+
+        return response()->json([
+            'ok'          => true,
+            'block_count' => count($result['picked_template_ids'] ?? []),
+            'message'     => count($result['picked_template_ids'] ?? []) . ' blok oluşturuldu.',
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     /**
      * Generate a unique slug with Turkish character support.

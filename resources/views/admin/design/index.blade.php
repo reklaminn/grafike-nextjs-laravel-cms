@@ -4,7 +4,7 @@
 @section('page-title', 'Tasarım Editörü')
 
 @section('content')
-<form method="POST" action="{{ route('admin.design.update') }}" x-data="{ activeTab: 'css' }">
+<form method="POST" action="{{ route('admin.design.update', [], false) }}" x-data="{ activeTab: 'css' }">
     @csrf
     @method('PUT')
 

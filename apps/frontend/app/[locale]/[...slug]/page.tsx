@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { RegionLayoutRenderer } from "@/components/sections/region-layout-renderer";
-import { SectionRenderer } from "@/components/sections/section-renderer";
+import { CmsPageContent } from "@/components/pages/cms-page-content";
+import { PasswordGate } from "@/components/pages/password-gate";
 import { ArticleBlockRenderer } from "@/components/articles/article-block-renderer";
 import {
   getArticle,
@@ -12,22 +12,30 @@ import {
   getSettingsPayload,
   getSitePayload,
 } from "@/lib/api/client";
-import { getRenderableSections } from "@/lib/sections/region-sections";
-import { buildMetadata, buildJsonLd, canonicalUrl } from "@/lib/seo";
+import { buildMetadata, canonicalUrl } from "@/lib/seo";
 
 type CatchAllPageProps = {
   params: Promise<{ locale: string; slug?: string[] }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function tenantFromSearchParams(searchParams?: Record<string, string | string[] | undefined>): string | null {
+  const value = searchParams?.tenant ?? searchParams?.tenant_id;
+  const tenant = Array.isArray(value) ? value[0] : value;
+
+  return tenant && /^[a-zA-Z0-9_-]+$/.test(tenant) ? tenant : null;
+}
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
-export async function generateMetadata({ params }: CatchAllPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: CatchAllPageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const locale   = resolvedParams.locale;
   const segments = resolvedParams.slug ?? [];
   const slug     = segments.join("/") || "home";
+  const tenantId = tenantFromSearchParams(await searchParams);
 
-  const sitePayload      = await getSitePayload(locale);
+  const sitePayload      = await getSitePayload(locale, { tenantId });
   const availableLocales = sitePayload.site.available_locales ?? [];
 
   // Hreflang: prefer DB-stored tags; fall back to URL-convention from available_locales
@@ -35,14 +43,14 @@ export async function generateMetadata({ params }: CatchAllPageProps): Promise<M
     availableLocales.map((l) => [l.locale, canonicalUrl(`/${l.code}/${slug}`)]),
   );
 
-  const [siteSettings] = await Promise.all([getSettingsPayload()]);
+  const [siteSettings] = await Promise.all([getSettingsPayload({ tenantId })]);
   const googleVerification = siteSettings.settings.services?.google_site_verification;
   const bingVerification   = siteSettings.settings.services?.bing_site_verification;
   const siteName           = siteSettings.settings.site_title || sitePayload.site.name;
   const ogLocale           = sitePayload.site.locale ?? `${locale}_${locale.toUpperCase()}`;
 
   // ── Try as Page ──────────────────────────────────────────────────────────
-  const payload = await getPagePayload(slug, locale);
+  const payload = await getPagePayload(slug, locale, { tenantId });
   if (payload?.seo) {
     const hreflang =
       payload.seo.hreflang_tags && Object.keys(payload.seo.hreflang_tags).length > 0
@@ -67,7 +75,7 @@ export async function generateMetadata({ params }: CatchAllPageProps): Promise<M
   // ── Try as Article ───────────────────────────────────────────────────────
   const lastSegment = segments[segments.length - 1];
   if (lastSegment) {
-    const detail = await getArticle(lastSegment, locale);
+    const detail = await getArticle(lastSegment, locale, { tenantId });
     if (detail) {
       const hreflang =
         detail.seo?.hreflang_tags && Object.keys(detail.seo.hreflang_tags).length > 0
@@ -99,104 +107,63 @@ export async function generateMetadata({ params }: CatchAllPageProps): Promise<M
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function CatchAllPage({ params }: CatchAllPageProps) {
+export default async function CatchAllPage({ params, searchParams }: CatchAllPageProps) {
   const resolvedParams = await params;
   const locale   = resolvedParams.locale;
   const segments = resolvedParams.slug ?? [];
   const slug     = segments.join("/") || "home";
+  const tenantId = tenantFromSearchParams(await searchParams);
 
   const [sitePayload, settingsPayload, menusPayload] = await Promise.all([
-    getSitePayload(locale),
-    getSettingsPayload(),
-    getMenusPayload(),
+    getSitePayload(locale, { tenantId }),
+    getSettingsPayload({ tenantId }),
+    getMenusPayload({ tenantId }),
   ]);
 
   // ── 1. Try as a Page ──────────────────────────────────────────────────
-  const payload = await getPagePayload(slug, locale);
+  const payload = await getPagePayload(slug, locale, { tenantId });
 
   if (payload?.page) {
-    const pageId     = payload.page.id;
-    const jsonLdData = payload.seo?.structured_data ?? null;
-
-    // BreadcrumbList — from breadcrumbs returned by API
-    const crumbs = payload.page.breadcrumbs ?? [];
-    const breadcrumbJsonLd =
-      crumbs.length > 1
-        ? {
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            itemListElement: crumbs.map((c, i) => ({
-              "@type": "ListItem",
-              position: i + 1,
-              name: c.title,
-              item: canonicalUrl(c.url),
-            })),
-          }
-        : null;
-
-    // WebSite + SearchAction — emitted only on the homepage
-    const isHomepage = slug === "home";
-    const websiteJsonLd = isHomepage
-      ? {
-          "@context": "https://schema.org",
-          "@type":    "WebSite",
-          name:       settingsPayload.settings.site_title || sitePayload.site.name,
-          url:        canonicalUrl("/"),
-          inLanguage: locale,
-          potentialAction: {
-            "@type":       "SearchAction",
-            target: {
-              "@type":      "EntryPoint",
-              urlTemplate:  canonicalUrl(`/${locale}/search?q={search_term_string}`),
-            },
-            "query-input": "required name=search_term_string",
-          },
-        }
-      : null;
-
-    const allJsonLd = [jsonLdData, breadcrumbJsonLd, websiteJsonLd].filter(Boolean) as object[];
-
-    if (payload.page.regions) {
+    // Password-protected page: show gate form instead of content
+    if (payload.page.is_locked) {
       return (
-        <>
-          {allJsonLd.length > 0 && (
-            <script type="application/ld+json" dangerouslySetInnerHTML={buildJsonLd(allJsonLd)} />
-          )}
-          <main className="page-stack">
-            <RegionLayoutRenderer
-              regions={payload.page.regions}
-              site={sitePayload.site}
-              settings={settingsPayload.settings}
-              menus={menusPayload}
-              pageId={pageId}
-              lang={locale}
-            />
-          </main>
-        </>
+        <PasswordGate
+          pageId={payload.page.id}
+          title={payload.page.title}
+        />
       );
     }
 
-    const sections = getRenderableSections(payload.page.sections, payload.page.regions);
+    // Group-restricted page: member is not in required group
+    if (payload.page.is_group_restricted) {
+      const groupNames = payload.page.required_group_names ?? [];
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", padding: "2rem 1rem" }}>
+          <div style={{ maxWidth: "480px", width: "100%", background: "var(--color-surface,#fff)", border: "1px solid var(--color-border,#e5e7eb)", borderRadius: "0.75rem", padding: "2rem", boxShadow: "0 4px 24px rgba(0,0,0,.06)", textAlign: "center" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>🔐</div>
+            <h1 style={{ fontSize: "1.15rem", fontWeight: 700, marginBottom: ".5rem", color: "var(--color-heading,#111827)" }}>
+              {payload.page.title}
+            </h1>
+            <p style={{ fontSize: ".875rem", color: "var(--color-text-soft,#6b7280)", marginBottom: "1.25rem" }}>
+              Bu sayfa{groupNames.length > 0 ? ` yalnızca ${groupNames.join(", ")} üyelerine` : " belirli üye gruplarına"} özeldir.
+            </p>
+            <a href={`/${locale}/member/login`} style={{ display: "inline-block", padding: ".6rem 1.5rem", background: "var(--color-primary,#6366f1)", color: "#fff", borderRadius: ".4rem", fontWeight: 600, fontSize: ".875rem", textDecoration: "none" }}>
+              Giriş Yap
+            </a>
+          </div>
+        </div>
+      );
+    }
 
     return (
-      <>
-        {allJsonLd.length > 0 && (
-          <script type="application/ld+json" dangerouslySetInnerHTML={buildJsonLd(allJsonLd)} />
-        )}
-        <main className="container page-stack">
-          {sections.map((section) => (
-            <SectionRenderer
-              key={section.id}
-              section={section}
-              site={sitePayload.site}
-              settings={settingsPayload.settings}
-              menus={menusPayload}
-              pageId={pageId}
-              lang={locale}
-            />
-          ))}
-        </main>
-      </>
+      <CmsPageContent
+        payload={payload}
+        sitePayload={sitePayload}
+        settingsPayload={settingsPayload}
+        menusPayload={menusPayload}
+        slug={slug}
+        locale={locale}
+      />
     );
   }
 
@@ -204,7 +171,7 @@ export default async function CatchAllPage({ params }: CatchAllPageProps) {
   const articleSlug = segments[segments.length - 1];
   if (!articleSlug) notFound();
 
-  const detail = await getArticle(articleSlug, locale);
+  const detail = await getArticle(articleSlug, locale, { tenantId });
   if (!detail) notFound();
 
   const { article, author, page: articlePage } = detail;

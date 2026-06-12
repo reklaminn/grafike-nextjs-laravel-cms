@@ -23,8 +23,16 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- Prod'da default (mariadb) ve central AYNI fiziksel DB'dir.
+             Testte de aynı olmaları için paylaşımlı sqlite memory kullan:
+             file::memory:?cache=shared → iki bağlantı tek DB'yi görür.
+             DB_DRIVER=sqlite central bağlantısını mariadb'den sqlite'a çevirir. -->
         <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_DATABASE" value="file::memory:?cache=shared"/>
+        <env name="DB_DRIVER" value="sqlite"/>
+        <env name="DB_HOST" value=""/>
+        <env name="DB_USERNAME" value=""/>
+        <env name="DB_PASSWORD" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

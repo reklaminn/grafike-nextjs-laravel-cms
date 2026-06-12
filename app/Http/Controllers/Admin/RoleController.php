@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\AdminPermission as Permission;
+use App\Models\AdminRole as Role;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
     protected function getPermissionGroups(): array
     {
         return [
+            'tenants' => ['label' => 'Siteler', 'actions' => ['view', 'create', 'edit', 'delete', 'switch', 'provision']],
             'pages' => ['label' => 'Sayfalar', 'actions' => ['view', 'create', 'edit', 'delete']],
             'articles' => ['label' => 'Yazılar', 'actions' => ['view', 'create', 'edit', 'delete']],
             'menus' => ['label' => 'Menüler', 'actions' => ['view', 'create', 'edit', 'delete']],
@@ -33,9 +37,20 @@ class RoleController extends Controller
     public function index()
     {
         $roles = Role::where('guard_name', 'admin')
-            ->withCount('users')
+            ->with('permissions')
             ->orderBy('name')
             ->get();
+
+        $adminCounts = DB::connection('central')
+            ->table(config('permission.table_names.model_has_roles'))
+            ->selectRaw('role_id, count(*) as total')
+            ->where('model_type', Admin::class)
+            ->groupBy('role_id')
+            ->pluck('total', 'role_id');
+
+        $roles->each(function (Role $role) use ($adminCounts) {
+            $role->users_count = (int) ($adminCounts[$role->id] ?? 0);
+        });
 
         return view('admin.roles.index', compact('roles'));
     }
@@ -55,9 +70,9 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name',
+            'name' => ['required', 'string', 'max:255', Rule::unique('central.roles', 'name')->where('guard_name', 'admin')],
             'permissions' => 'nullable|array',
-            'permissions.*' => 'string|exists:permissions,name',
+            'permissions.*' => ['string', Rule::exists('central.permissions', 'name')->where('guard_name', 'admin')],
         ]);
 
         $role = Role::create([
@@ -88,9 +103,9 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('roles', 'name')->ignore($role->id)],
+            'name' => ['required', 'string', 'max:255', Rule::unique('central.roles', 'name')->where('guard_name', 'admin')->ignore($role->id)],
             'permissions' => 'nullable|array',
-            'permissions.*' => 'string|exists:permissions,name',
+            'permissions.*' => ['string', Rule::exists('central.permissions', 'name')->where('guard_name', 'admin')],
         ]);
 
         $role->update(['name' => $data['name']]);
@@ -103,7 +118,13 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
-        if ($role->users()->count() > 0) {
+        $adminCount = DB::connection('central')
+            ->table(config('permission.table_names.model_has_roles'))
+            ->where('role_id', $role->id)
+            ->where('model_type', Admin::class)
+            ->count();
+
+        if ($adminCount > 0) {
             return back()->with('error', 'Bu role atanmış kullanıcılar var. Önce kullanıcıların rollerini değiştirin.');
         }
 

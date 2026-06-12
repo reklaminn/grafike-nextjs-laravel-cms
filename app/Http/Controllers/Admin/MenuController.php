@@ -9,6 +9,7 @@ use App\Models\MenuItem;
 use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class MenuController extends Controller
 {
@@ -33,24 +34,25 @@ class MenuController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:50',
-            'language_id' => 'required|exists:languages,id',
+            'language_id' => ['required', Rule::exists('central.languages', 'id')],
         ]);
 
         $menu = Menu::create([
             'name' => $request->name,
-            'slug' => Str::slug($request->name),
+            'slug' => $this->makeUniqueSlug($request->name),
             'location' => $request->location,
             'language_id' => $request->language_id,
             'is_active' => $request->boolean('is_active', true),
         ]);
 
         return redirect()
-            ->route('admin.menus.edit', $menu)
+            ->route('admin.menus.edit', $menu->id)
             ->with('success', 'Menü başarıyla oluşturuldu.');
     }
 
-    public function edit(Menu $menu)
+    public function edit(int|string $menu)
     {
+        $menu = $this->findMenu($menu);
         $menu->load(['items' => function ($q) {
             $q->whereNull('parent_id')->orderBy('sort_order')->with('children');
         }, 'language']);
@@ -61,12 +63,13 @@ class MenuController extends Controller
         return view('admin.menus.edit', compact('menu', 'languages', 'pages'));
     }
 
-    public function update(Request $request, Menu $menu)
+    public function update(Request $request, int|string $menu)
     {
+        $menu = $this->findMenu($menu);
         $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:50',
-            'language_id' => 'required|exists:languages,id',
+            'language_id' => ['required', Rule::exists('central.languages', 'id')],
         ]);
 
         $menu->update([
@@ -77,12 +80,13 @@ class MenuController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.menus.edit', $menu)
+            ->route('admin.menus.edit', $menu->id)
             ->with('success', 'Menü başarıyla güncellendi.');
     }
 
-    public function destroy(Menu $menu)
+    public function destroy(int|string $menu)
     {
+        $menu = $this->findMenu($menu);
         $menu->items()->delete();
         $menu->delete();
 
@@ -94,8 +98,9 @@ class MenuController extends Controller
     /**
      * Add a new menu item via AJAX.
      */
-    public function addItem(Request $request, Menu $menu)
+    public function addItem(Request $request, int|string $menu)
     {
+        $menu = $this->findMenu($menu);
         $request->validate([
             'title' => 'required|string|max:255',
             'url' => 'nullable|string|max:500',
@@ -122,11 +127,12 @@ class MenuController extends Controller
     /**
      * Update menu item order via AJAX (drag & drop).
      */
-    public function reorderItems(Request $request, Menu $menu)
+    public function reorderItems(Request $request, int|string $menu)
     {
+        $menu = $this->findMenu($menu);
         $request->validate(['items' => 'required|array']);
 
-        $this->updateItemOrder($request->items);
+        $this->updateItemOrder($menu, $request->items);
 
         return response()->json(['success' => true]);
     }
@@ -134,8 +140,11 @@ class MenuController extends Controller
     /**
      * Delete a menu item via AJAX.
      */
-    public function deleteItem(Menu $menu, MenuItem $item)
+    public function deleteItem(int|string $menu, int|string $item)
     {
+        $menu = $this->findMenu($menu);
+        $item = $menu->items()->findOrFail($item);
+
         // Reparent children to the item's parent
         $item->children()->update(['parent_id' => $item->parent_id]);
         $item->delete();
@@ -146,17 +155,36 @@ class MenuController extends Controller
     /**
      * Recursively update menu item order.
      */
-    protected function updateItemOrder(array $items, ?int $parentId = null): void
+    protected function updateItemOrder(Menu $menu, array $items, ?int $parentId = null): void
     {
         foreach ($items as $index => $item) {
-            MenuItem::where('id', $item['id'])->update([
+            $menu->items()->where('id', $item['id'])->update([
                 'sort_order' => $index,
                 'parent_id' => $parentId,
             ]);
 
             if (!empty($item['children'])) {
-                $this->updateItemOrder($item['children'], $item['id']);
+                $this->updateItemOrder($menu, $item['children'], $item['id']);
             }
         }
+    }
+
+    protected function findMenu(int|string $menu): Menu
+    {
+        return Menu::query()->findOrFail($menu);
+    }
+
+    protected function makeUniqueSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name) ?: 'menu';
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (Menu::where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 }

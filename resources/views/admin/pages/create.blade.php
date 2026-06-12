@@ -4,7 +4,8 @@
 @section('page-title', 'Yeni Sayfa Oluştur')
 
 @section('content')
-    <form method="POST" action="{{ route('admin.pages.store') }}" enctype="multipart/form-data">
+    {{-- Relative URL so form submits to the current origin (HTTPS) --}}
+    <form method="POST" action="{{ route('admin.pages.store', [], false) }}" enctype="multipart/form-data">
         @csrf
         @include('admin.pages._form')
     </form>

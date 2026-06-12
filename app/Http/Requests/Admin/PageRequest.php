@@ -18,24 +18,36 @@ class PageRequest extends FormRequest
 
     public function rules(): array
     {
-        $pageId = $this->route('page')?->id;
+        $routePage = $this->route('page');
+        $pageId = $routePage instanceof \App\Models\Page ? $routePage->id : $routePage;
 
         return [
             'title' => ['required', 'string', 'max:255'],
             'slug' => [
                 'nullable', 'string', 'max:255', 'regex:/^[a-z0-9\-]+$/',
-                Rule::unique('pages', 'slug')->ignore($pageId),
+                // DB unique index: (slug, language_id) composite.
+                // Soft-deleted kayıtlar dışlanır (deleted_at IS NULL) —
+                // yoksa eski silinmiş sayfa unique validation'ı bloke eder.
+                Rule::unique('pages', 'slug')
+                    ->ignore($pageId)
+                    ->where(fn ($q) => $q
+                        ->whereNull('deleted_at')
+                        ->where('language_id', $this->input('language_id'))
+                    ),
             ],
             'parent_id' => ['nullable', 'exists:pages,id'],
             'root_page_id' => ['nullable', 'exists:pages,id'],
-            'language_id' => ['required', 'exists:languages,id'],
-            'status' => ['required', Rule::in(['draft', 'published', 'archived'])],
+            'language_id' => ['required', Rule::exists('central.languages', 'id')],
+            'status' => ['required', Rule::in(['draft', 'scheduled', 'published', 'archived'])],
+            'scheduled_at' => ['nullable', 'date', 'required_if:status,scheduled', 'after:now'],
             'template' => ['nullable', 'string', 'max:100'],
             'page_template' => ['nullable', 'string', 'max:100'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'show_in_menu' => ['boolean'],
-            'is_password_protected' => ['boolean'],
-            'page_password' => ['nullable', 'string', 'max:255'],
+            'is_password_protected'  => ['boolean'],
+            'page_password'          => ['nullable', 'string', 'max:255'],
+            'allowed_group_ids'      => ['nullable', 'array'],
+            'allowed_group_ids.*'    => ['integer'],
             'show_social_share' => ['boolean'],
             'show_facebook_comments' => ['boolean'],
             'show_breadcrumb' => ['boolean'],
@@ -43,6 +55,7 @@ class PageRequest extends FormRequest
             'link_target' => ['nullable', Rule::in(['_self', '_blank'])],
             'layout_json' => ['nullable', 'json'],
             'sections_json' => ['nullable', 'json'],
+            'sections_json_dirty' => ['nullable', 'boolean'],
             'cover_image' => ['nullable', 'image', 'max:5120'],
 
             // SEO fields

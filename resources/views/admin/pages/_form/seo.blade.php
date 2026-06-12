@@ -1,11 +1,42 @@
 <!-- SEO -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6" x-data="{ open: {{ isset($page) && $page->seo ? 'true' : 'false' }} }">
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+     x-data="seoPanel({
+        open: {{ isset($page) && $page->seo ? 'true' : 'false' }},
+        url:  @js(isset($page) && $page->exists ? route('admin.pages.ai.seo-meta', $page, false) : null),
+        csrf: @js(csrf_token()),
+     })">
     <button type="button" @click="open = !open" class="flex items-center justify-between w-full">
         <h3 class="text-base font-semibold text-gray-800">SEO Ayarları</h3>
         <i :class="open ? 'fa-chevron-up' : 'fa-chevron-down'" class="fas text-gray-400"></i>
     </button>
 
     <div x-show="open" x-collapse class="mt-4 space-y-4">
+
+        @if(isset($page) && $page->exists)
+            {{-- AI generate row --}}
+            <div class="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 border border-indigo-100">
+                <i class="fas fa-magic text-indigo-500"></i>
+                <div class="flex-1">
+                    <p class="text-xs font-medium text-gray-700">SEO meta'yı AI ile üret</p>
+                    <p class="text-[11px] text-gray-500">Sayfa içeriğinden Title, Description ve Keywords önerir. Kaydetmeden önce gözden geçirin.</p>
+                </div>
+                <button type="button"
+                        @click="generate()"
+                        :disabled="loading || !url"
+                        class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
+                    <span x-text="loading ? 'Üretiliyor…' : 'AI ile Üret'"></span>
+                </button>
+            </div>
+
+            <div x-show="status" x-cloak class="text-xs rounded-lg p-2 -mt-2"
+                 :class="statusOk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-red-50 text-red-700 border border-red-200'">
+                <i class="fas" :class="statusOk ? 'fa-check-circle' : 'fa-exclamation-triangle'"></i>
+                <span x-text="status"></span>
+            </div>
+        @endif
+
         <div>
             <label for="seo_title" class="block text-sm font-medium text-gray-700 mb-1">Meta Başlık</label>
             <input type="text" id="seo_title" name="seo_title"
@@ -56,3 +87,61 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function seoPanel(cfg) {
+        return {
+            open:     cfg.open,
+            url:      cfg.url,
+            csrf:     cfg.csrf,
+            loading:  false,
+            status:   '',
+            statusOk: false,
+
+            async generate() {
+                if (!this.url || this.loading) return;
+                this.loading  = true;
+                this.status   = '';
+                this.statusOk = false;
+                try {
+                    const r = await fetch(this.url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrf,
+                            'Accept': 'application/json',
+                        },
+                    });
+                    const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
+
+                    if (!r.ok || !data.ok) {
+                        // Quota exceeded gets a friendlier sentence with upgrade hint
+                        let msg = data.message || 'AI cevap üretemedi.';
+                        if (data.error_code === 'quota_exceeded') {
+                            msg = `${data.message} (kalan ${data.limit - data.used}/${data.limit})`;
+                        }
+                        this.status   = msg;
+                        this.statusOk = false;
+                        return;
+                    }
+
+                    // Fill the form
+                    const meta = data.meta || {};
+                    if (meta.title       !== undefined) document.getElementById('seo_title').value       = meta.title;
+                    if (meta.description !== undefined) document.getElementById('seo_description').value = meta.description;
+                    if (meta.keywords    !== undefined) document.getElementById('seo_keywords').value    = meta.keywords;
+
+                    this.status   = 'SEO meta üretildi. Gözden geçirip Kaydet\'e tıklayın.';
+                    this.statusOk = true;
+                } catch (e) {
+                    this.status   = e.message || 'Ağ hatası.';
+                    this.statusOk = false;
+                } finally {
+                    this.loading = false;
+                }
+            },
+        };
+    }
+</script>
+@endpush
