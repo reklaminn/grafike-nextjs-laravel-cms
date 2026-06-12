@@ -128,6 +128,48 @@ class MediaController extends Controller
         return view('admin.media.show', ['media' => $medium]);
     }
 
+    /**
+     * Tek görsel için AI alt yazısı üret — sonucu JSON döner, UI input'u
+     * doldurur; admin gözden geçirip normal formdan kaydeder.
+     */
+    public function generateAlt(Media $medium, \App\Services\Ai\AiAltTextGenerator $generator)
+    {
+        $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
+
+        try {
+            $alt = $generator->generate($medium, $tenant);
+        } catch (\App\Services\Ai\Exceptions\AiQuotaExceededException $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 402);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['ok' => true, 'alt' => $alt]);
+    }
+
+    /**
+     * Alt yazısı eksik tüm görseller için kuyrukta toplu üretim başlat.
+     */
+    public function generateAltBulk()
+    {
+        $missing = Media::query()
+            ->where('mime_type', 'like', 'image/%')
+            ->where('mime_type', '!=', 'image/svg+xml')
+            ->get()
+            ->filter(fn (Media $media) => blank($media->getCustomProperty('alt_text')));
+
+        foreach ($missing as $media) {
+            \App\Jobs\Ai\GenerateAltTextJob::dispatch($media->id);
+        }
+
+        return back()->with(
+            'success',
+            $missing->isEmpty()
+                ? 'Tüm görsellerin alt yazısı zaten dolu.'
+                : "{$missing->count()} görsel için alt yazısı üretimi kuyruğa alındı — birkaç dakika içinde tamamlanır."
+        );
+    }
+
     public function update(Request $request, Media $medium)
     {
         $validated = $request->validate([

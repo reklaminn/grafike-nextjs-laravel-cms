@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\AdminTenantAccess;
 use App\Models\AiPlan;
 use App\Models\Package;
+use App\Models\QuotaExtension;
 use App\Models\SiteTemplate;
 use App\Models\Tenant;
 use App\Models\Theme;
@@ -470,6 +471,7 @@ class TenantController extends Controller
             'use_byok'           => 'nullable|boolean',
             'preferred_provider' => ['nullable', Rule::in($providers)],
             'plan'               => ['nullable', Rule::in($plans)],
+            'auto_seo_meta'      => 'nullable|boolean',
         ];
         foreach ($providers as $p) {
             $rules["api_keys.{$p}"]       = 'nullable|string|max:512';
@@ -483,6 +485,7 @@ class TenantController extends Controller
         $settings = $tenant->aiSettings();
         $settings['use_byok']           = (bool) ($validated['use_byok'] ?? false);
         $settings['preferred_provider'] = $validated['preferred_provider'] ?? null;
+        $settings['auto_seo_meta']      = (bool) ($validated['auto_seo_meta'] ?? false);
         if (! empty($validated['plan'])) {
             // Only agency admins should change plans; non-agency requests
             // would have been rejected by authorizeTenantAccess() anyway,
@@ -593,6 +596,58 @@ class TenantController extends Controller
             );
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Geçici kota yükseltmesi ekle (agency admin).
+     * Süre bitince extension tarih kontrolüyle kendiliğinden etkisizleşir.
+     */
+    public function storeQuotaExtension(Request $request, Tenant $tenant)
+    {
+        $this->authorizeAgencyAdmin();
+
+        $v = $request->validate([
+            'extra_requests_per_day' => 'required|integer|min:100|max:1000000',
+            'days'                   => 'required|integer|min:1|max:90',
+            'reason'                 => 'nullable|string|max:255',
+        ]);
+
+        $extension = $tenant->quotaExtensions()->create([
+            'extra_requests_per_day' => (int) $v['extra_requests_per_day'],
+            'starts_at'              => now(),
+            'ends_at'                => now()->addDays((int) $v['days'])->endOfDay(),
+            'reason'                 => $v['reason'] ?? null,
+            'created_by'             => Auth::guard('admin')->id(),
+        ]);
+
+        try {
+            activity('quota')
+                ->causedBy(Auth::guard('admin')->user())
+                ->withProperties([
+                    'tenant'  => $tenant->id,
+                    'extra'   => $extension->extra_requests_per_day,
+                    'ends_at' => $extension->ends_at->toDateTimeString(),
+                ])
+                ->log("Kota yükseltmesi eklendi: {$tenant->id} +{$extension->extra_requests_per_day}/gün");
+        } catch (\Throwable) {
+        }
+
+        return back()->with('success', sprintf(
+            'Geçici kota eklendi: +%s istek/gün, %s tarihine kadar.',
+            number_format($extension->extra_requests_per_day),
+            $extension->ends_at->format('d.m.Y H:i')
+        ));
+    }
+
+    public function destroyQuotaExtension(Tenant $tenant, QuotaExtension $extension)
+    {
+        $this->authorizeAgencyAdmin();
+
+        abort_unless($extension->tenant_id === $tenant->id, 404);
+
+        $extension->delete();
+
+        return back()->with('success', 'Kota yükseltmesi kaldırıldı.');
     }
 
     /**

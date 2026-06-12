@@ -80,6 +80,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // ── Tenant Vertical Modules (Tours, Commerce, …) ─────────────────────
         Route::put('tenants/{tenant}/modules', [TenantController::class, 'updateModules'])->name('tenants.modules.update');
         Route::put('tenants/{tenant}/mailcow-domain', [TenantController::class, 'updateMailcowDomain'])->name('tenants.mailcow-domain.update');
+        Route::post('tenants/{tenant}/quota-extensions', [TenantController::class, 'storeQuotaExtension'])->name('tenants.quota-extensions.store');
+        Route::delete('tenants/{tenant}/quota-extensions/{extension}', [TenantController::class, 'destroyQuotaExtension'])->name('tenants.quota-extensions.destroy');
 
         // ── Tenant Iyzico Settings (BYOK) ─────────────────────────────────────
         Route::put('tenants/{tenant}/iyzico-settings', [TenantController::class, 'updateIyzicoSettings'])->name('tenants.iyzico-settings.update');
@@ -168,6 +170,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('media/{medium}', [MediaController::class, 'update'])->name('media.update');
         Route::delete('media/{medium}', [MediaController::class, 'destroy'])->name('media.destroy');
         Route::post('media/bulk-destroy', [MediaController::class, 'bulkDestroy'])->name('media.bulk-destroy');
+        Route::post('media/generate-alt-bulk', [MediaController::class, 'generateAltBulk'])->name('media.generate-alt-bulk');
+        Route::post('media/{medium}/generate-alt', [MediaController::class, 'generateAlt'])->name('media.generate-alt');
 
         // Reviews Moderation
         Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');

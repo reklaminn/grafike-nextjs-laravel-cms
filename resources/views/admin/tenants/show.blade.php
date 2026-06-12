@@ -204,6 +204,9 @@
         {{-- ─── Kaynak Kullanımı (paket bazlı metering) ───────────────────── --}}
         @include('admin.tenants._resource-usage-panel', ['resourceUsage' => $resourceUsage ?? []])
 
+        {{-- ─── İstek Kotası (günlük limit + geçici yükseltmeler) ─────────── --}}
+        @include('admin.tenants._quota-panel', ['tenant' => $tenant, 'canManage' => $canManageTenants])
+
         {{-- ─── Iyzico Ayarları (BYOK) — sadece tours/commerce aktifse anlamlı ── --}}
         @if($tenant->hasModule('tours') || $tenant->hasModule('commerce'))
             @include('admin.tenants._iyzico-settings-panel', [

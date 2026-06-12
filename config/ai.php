@@ -72,6 +72,8 @@ return [
         'page.create'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.7],
         'page.translate'    => ['tier' => 'simple',  'max_tokens' => 2500, 'temperature' => 0.3],
         'misc.text'         => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7],
+        // Medya kütüphanesi: görsel için alt yazısı üretimi (vision, ucuz tier)
+        'media.alt'         => ['tier' => 'simple',  'max_tokens' =>  150, 'temperature' => 0.3],
         // Cruise kütüphanesi import'unda açıklamaları SEO için özgünleştir.
         // Ucuz tier (Haiku / 4o-mini) + batch → düşük maliyet.
         'library.rewrite'   => ['tier' => 'simple',  'max_tokens' => 3000, 'temperature' => 0.8],
