@@ -40,6 +40,8 @@ class MailboxController extends Controller
         $mailboxes = [];
         $aliases   = [];
         $error     = null;
+        $quota     = null;   // domain kota özeti (F1)
+        $dns       = null;   // DKIM/SPF/MX durumu (F2)
 
         if ($domain) {
             try {
@@ -52,6 +54,26 @@ class MailboxController extends Controller
                     // Sadece aktif mailbox'ları göster
                     $mailboxes = array_values(array_filter($all, fn ($mb) => (int) ($mb['active'] ?? 1) === 1));
                     $aliases   = $this->mailcow->getAliases($domain);
+
+                    // ── Kota özeti — Mailcow domain objesi alan adları
+                    //    sürüme göre değişebiliyor, savunmacı oku ──────────
+                    $info  = array_is_list($domainInfo) ? ($domainInfo[0] ?? []) : $domainInfo;
+                    $quota = [
+                        'mboxes_used'  => (int) ($info['mboxes_in_domain'] ?? count($mailboxes)),
+                        'mboxes_max'   => (int) ($info['max_num_mboxes_for_domain'] ?? 0),
+                        'aliases_used' => (int) ($info['aliases_in_domain'] ?? count($aliases)),
+                        'aliases_max'  => (int) ($info['max_num_aliases_for_domain'] ?? 0),
+                        'bytes_used'   => (int) ($info['bytes_total'] ?? 0),
+                        'bytes_max'    => (int) ($info['max_quota_for_domain'] ?? 0),
+                    ];
+
+                    // ── DKIM + DNS sağlığı (5 dk cache'li) ────────────────
+                    try {
+                        $dkim = $this->mailcow->getDkim($domain);
+                    } catch (Throwable) {
+                        $dkim = [];
+                    }
+                    $dns = app(\App\Services\Mailcow\DnsHealthChecker::class)->check($domain, $dkim);
                 }
             } catch (Throwable $e) {
                 $error = $e->getMessage();
@@ -78,6 +100,8 @@ class MailboxController extends Controller
             'isAgency'    => $isAgency,
             'tenantList'  => $tenantList,
             'selectedId'  => $selectedTenant?->id,
+            'quota'       => $quota,
+            'dns'         => $dns,
         ]);
     }
 
@@ -89,10 +113,11 @@ class MailboxController extends Controller
         $this->requireDomain($domain);
 
         $v = $request->validate([
-            'local_part' => 'required|string|max:64|regex:/^[a-zA-Z0-9._+-]+$/',
-            'name'       => 'required|string|max:255',
-            'password'   => 'required|string|min:8|confirmed',
-            'quota'      => 'required|integer|min:100|max:102400',
+            'local_part'          => 'required|string|max:64|regex:/^[a-zA-Z0-9._+-]+$/',
+            'name'                => 'required|string|max:255',
+            'password'            => 'required|string|min:8|confirmed',
+            'quota'               => 'required|integer|min:100|max:102400',
+            'create_smtp_profile' => 'nullable|boolean',
         ]);
 
         try {
@@ -114,7 +139,35 @@ class MailboxController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', "{$v['local_part']}@{$domain} başarıyla oluşturuldu.");
+        $address = "{$v['local_part']}@{$domain}";
+        $notice  = "{$address} başarıyla oluşturuldu.";
+
+        // ── SMTP profili otomatik oluştur (F3) ────────────────────────────
+        // Form bildirimleri/şifre sıfırlama mailleri bu hesaptan gitsin diye
+        // tenant DB'sine hazır bir SmtpProfile kaydı açılır.
+        if ($request->boolean('create_smtp_profile')) {
+            try {
+                $mailHost = parse_url((string) \App\Models\CentralSetting::get('mailcow.url'), PHP_URL_HOST) ?: '';
+
+                \App\Models\SmtpProfile::create([
+                    'name'       => "Mailcow — {$address}",
+                    'host'       => $mailHost,
+                    'port'       => 587,
+                    'encryption' => 'tls',
+                    'username'   => $address,
+                    'password'   => $v['password'],
+                    'from_email' => $address,
+                    'from_name'  => $v['name'],
+                    'is_default' => ! \App\Models\SmtpProfile::query()->exists(),
+                ]);
+
+                $notice .= ' SMTP profili de oluşturuldu.';
+            } catch (Throwable $e) {
+                $notice .= ' (SMTP profili oluşturulamadı: '.$e->getMessage().')';
+            }
+        }
+
+        return back()->with('success', $notice);
     }
 
     public function updateMailbox(Request $request): RedirectResponse
@@ -184,14 +237,20 @@ class MailboxController extends Controller
         [, $domain] = $this->resolveTenantAndDomain();
         $this->requireDomain($domain);
 
+        // Catch-all: adres "@domain" formatındadır (local part yok) —
+        // domain'e gelen, hiçbir mailbox/alias'a uymayan TÜM mailleri yakalar.
+        $isCatchAll = $request->boolean('catch_all');
+
         $v = $request->validate([
-            'address' => 'required|email',
+            'address' => $isCatchAll ? 'nullable' : 'required|email',
             'goto'    => 'required|string|max:1000',
         ]);
 
+        $address = $isCatchAll ? '@'.$domain : $v['address'];
+
         try {
             $result = $this->mailcow->createAlias([
-                'address' => $v['address'],
+                'address' => $address,
                 'goto'    => $v['goto'],
                 'active'  => 1,
             ]);
@@ -203,7 +262,9 @@ class MailboxController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', "Alias {$v['address']} → {$v['goto']} oluşturuldu.");
+        return back()->with('success', $isCatchAll
+            ? "Catch-all kuruldu: {$domain} adresine gelen eşleşmeyen tüm mailler → {$v['goto']}"
+            : "Alias {$address} → {$v['goto']} oluşturuldu.");
     }
 
     public function destroyAlias(Request $request): RedirectResponse
