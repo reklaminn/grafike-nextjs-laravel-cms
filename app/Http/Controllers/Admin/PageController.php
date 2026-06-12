@@ -95,6 +95,11 @@ class PageController extends Controller
             $data['slug'] = $this->generateUniqueSlug($data['title']);
         }
 
+        // Zamanlanmış değilse scheduled_at anlamsız — temizle
+        if (($data['status'] ?? '') !== 'scheduled') {
+            $data['scheduled_at'] = null;
+        }
+
         // Handle boolean fields
         $data['show_in_menu'] = $request->boolean('show_in_menu');
         $data['is_password_protected'] = $request->boolean('is_password_protected');
@@ -211,6 +216,11 @@ class PageController extends Controller
         // Generate slug if not provided
         if (empty($data['slug'])) {
             $data['slug'] = $this->generateUniqueSlug($data['title'], $page->id);
+        }
+
+        // Zamanlanmış değilse scheduled_at anlamsız — temizle
+        if (($data['status'] ?? '') !== 'scheduled') {
+            $data['scheduled_at'] = null;
         }
 
         // Handle boolean fields
@@ -373,10 +383,17 @@ class PageController extends Controller
 
         Page::recordSnapshot($page, "restore-from-revision-{$revision->id}");
 
-        $page->forceFill([
-            'sections_json' => $revision->snapshot['sections_json'] ?? null,
-            'layout_json'   => $revision->snapshot['layout_json'] ?? null,
-        ])->saveQuietly();
+        // Snapshot'ta bulunan tüm revizyon alanlarını geri yükle.
+        // Eski (yalnızca sections/layout içeren) snapshot'larla geriye uyumlu:
+        // snapshot'ta olmayan alanlara dokunulmaz.
+        $restore = [];
+        foreach (Page::REVISION_FIELDS as $field) {
+            if (array_key_exists($field, $revision->snapshot ?? [])) {
+                $restore[$field] = $revision->snapshot[$field];
+            }
+        }
+
+        $page->forceFill($restore)->saveQuietly();
 
         return redirect()
             ->route('admin.pages.edit', $page)

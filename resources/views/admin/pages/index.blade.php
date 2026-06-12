@@ -42,6 +42,7 @@
                 <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                     <option value="">Tümü</option>
                     <option value="published" {{ request('status') === 'published' ? 'selected' : '' }}>Yayında</option>
+                    <option value="scheduled" {{ request('status') === 'scheduled' ? 'selected' : '' }}>Zamanlanmış</option>
                     <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Taslak</option>
                     <option value="archived" {{ request('status') === 'archived' ? 'selected' : '' }}>Arşivlenmiş</option>
                 </select>
@@ -127,6 +128,13 @@
                                     @case('draft')
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                             <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Taslak
+                                        </span>
+                                        @break
+                                    @case('scheduled')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                              title="{{ $page->scheduled_at?->format('d.m.Y H:i') }}">
+                                            <i class="fas fa-clock text-[9px] text-blue-500"></i>
+                                            Zamanlanmış{{ $page->scheduled_at ? ' · ' . $page->scheduled_at->format('d.m H:i') : '' }}
                                         </span>
                                         @break
                                     @case('archived')

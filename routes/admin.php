@@ -98,6 +98,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('search', \App\Http\Controllers\Admin\GlobalSearchController::class)->name('search');
 
         // Pages CRUD
         Route::resource('pages', PageController::class);

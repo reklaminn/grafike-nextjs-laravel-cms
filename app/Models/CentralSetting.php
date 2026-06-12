@@ -63,6 +63,11 @@ class CentralSetting extends Model
             $storeValue = $value !== '' ? $value : null;
         }
 
+        // Audit trail: hangi ayar kimin tarafından değiştirildi.
+        // Şifreli/hassas değerlerin içeriği ASLA loglanmaz — sadece key.
+        $previous = static::query()->find($key);
+        $changed  = ! $previous || $previous->value !== $storeValue;
+
         static::query()->updateOrInsert(
             ['key' => $key],
             [
@@ -73,6 +78,21 @@ class CentralSetting extends Model
                 'created_at' => now(),
             ]
         );
+
+        if ($changed) {
+            try {
+                activity('settings')
+                    ->causedBy(auth('admin')->user())
+                    ->withProperties([
+                        'key'     => $key,
+                        'group'   => $group,
+                        'cleared' => $storeValue === null,
+                    ])
+                    ->log($previous ? "Sistem ayarı güncellendi: {$key}" : "Sistem ayarı eklendi: {$key}");
+            } catch (\Throwable) {
+                // log hatası ayar kaydını engellemesin
+            }
+        }
     }
 
     /**

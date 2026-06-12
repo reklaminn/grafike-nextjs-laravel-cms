@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ArticleController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\PageController;
@@ -16,6 +17,7 @@ Route::prefix('v1')->group(function () {
     Route::get('pages/{slug}', [PageController::class, 'show']);
     Route::get('articles', [ArticleController::class, 'index']);
     Route::get('articles/{slug}', [ArticleController::class, 'show']);
+    Route::get('search', SearchController::class)->middleware('throttle:30,1');
     Route::get('forms/{form}', [FormController::class, 'show']);
     // Spam/abuse koruması: IP başına dakikada 10 gönderim
     Route::post('forms/{form}/submit', [FormController::class, 'submit'])
