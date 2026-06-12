@@ -157,6 +157,31 @@ class MailcowClient
         ]);
     }
 
+    // ─── DKIM ─────────────────────────────────────────────────────────────
+
+    /**
+     * Domain'in DKIM kaydını getir.
+     * Dönen yapı: { pubkey, dkim_txt, dkim_selector, length, ... } veya boş.
+     */
+    public function getDkim(string $domain): array
+    {
+        $result = $this->get("api/v1/get/dkim/{$domain}")->json();
+
+        return is_array($result) ? $result : [];
+    }
+
+    /**
+     * Domain için DKIM anahtarı üret (yoksa).
+     */
+    public function generateDkim(string $domain, int $keySize = 2048): array
+    {
+        return $this->post('api/v1/add/dkim', [
+            'domains'  => $domain,
+            'dkim_selector' => 'dkim',
+            'key_size' => $keySize,
+        ])->json() ?? [];
+    }
+
     // ─── Alias ────────────────────────────────────────────────────────────
 
     /**
