@@ -54,10 +54,40 @@
                            class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500">
                 </div>
 
-                <div>
+                <div x-data="{ generating: false, error: '' }">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Alt Text (SEO)</label>
-                    <input type="text" name="custom_properties[alt_text]" value="{{ old('custom_properties.alt_text', $media->getCustomProperty('alt_text', '')) }}"
-                           class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500" placeholder="Resim açıklaması">
+                    <div class="flex gap-2">
+                        <input type="text" name="custom_properties[alt_text]" id="alt_text_input"
+                               value="{{ old('custom_properties.alt_text', $media->getCustomProperty('alt_text', '')) }}"
+                               class="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500" placeholder="Resim açıklaması">
+                        @if(str_starts_with((string) $media->mime_type, 'image/') && $media->mime_type !== 'image/svg+xml')
+                        <button type="button"
+                                :disabled="generating"
+                                @click="
+                                    generating = true; error = '';
+                                    fetch(@js(route('admin.media.generate-alt', $media, false)), {
+                                        method: 'POST',
+                                        credentials: 'same-origin',
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                                        },
+                                    })
+                                    .then(r => r.json())
+                                    .then(d => {
+                                        if (d.ok) document.getElementById('alt_text_input').value = d.alt;
+                                        else error = d.message || 'Üretilemedi.';
+                                    })
+                                    .catch(() => error = 'Ağ hatası.')
+                                    .finally(() => generating = false)"
+                                title="Görseli AI'a gösterip alt yazısı üretir — kaydetmeden önce düzenleyebilirsiniz"
+                                class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium hover:bg-indigo-100 disabled:opacity-50">
+                            <i class="fas" :class="generating ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i>
+                            <span x-text="generating ? 'Üretiliyor…' : 'AI ile Üret'"></span>
+                        </button>
+                        @endif
+                    </div>
+                    <p x-show="error" x-cloak class="mt-1 text-xs text-red-600" x-text="error"></p>
                 </div>
 
                 <div>

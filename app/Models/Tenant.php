@@ -91,6 +91,39 @@ class Tenant extends BaseTenant implements TenantWithDatabase
                      ->orWhereNull('data->status');
     }
 
+    // ─── Kota & askıya alma ───────────────────────────────────────────────────
+
+    public function quotaExtensions()
+    {
+        return $this->hasMany(QuotaExtension::class, 'tenant_id', 'id');
+    }
+
+    /** Şu an aktif extension'ların toplam günlük ek istek hakkı. */
+    public function activeQuotaBonus(): int
+    {
+        return (int) $this->quotaExtensions()->active()->sum('extra_requests_per_day');
+    }
+
+    /**
+     * Etkin günlük istek limiti: paket limiti + aktif extension'lar.
+     * Paket limiti tanımsızsa (null) sınırsızdır — extension da anlamsız.
+     */
+    public function effectiveDailyRequestLimit(): ?int
+    {
+        $base = $this->packageConfig()['max_requests_per_day'] ?? null;
+
+        if ($base === null) {
+            return null;
+        }
+
+        return (int) $base + $this->activeQuotaBonus();
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === 'suspended';
+    }
+
     // ─── AI settings (BYOK) ───────────────────────────────────────────────────
     //
     // AI configuration lives inside the tenant's `data` JSON column under the

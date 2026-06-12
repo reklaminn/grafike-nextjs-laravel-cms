@@ -76,6 +76,34 @@ class PageObserver
         if ($page->status === 'published') {
             $this->notifyIndexNow($page);
         }
+
+        // Otomatik SEO meta (opt-in): sayfa yayına geçtiyse, tenant
+        // ai_settings.auto_seo_meta açıksa ve meta alanları boşsa kuyrukta
+        // AI ile doldur. Hata/kota durumunda job sessizce vazgeçer.
+        $this->maybeQueueSeoMeta($page);
+    }
+
+    private function maybeQueueSeoMeta(Page $page): void
+    {
+        if ($page->status !== 'published' || ! $page->wasChanged('status')) {
+            return;
+        }
+
+        try {
+            $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
+            if (! $tenant || ! ($tenant->aiSettings()['auto_seo_meta'] ?? false)) {
+                return;
+            }
+
+            $seo = $page->seo()->first();
+            if ($seo && (filled($seo->meta_title) || filled($seo->meta_description))) {
+                return;
+            }
+
+            \App\Jobs\Ai\GenerateSeoMetaJob::dispatch($page->id);
+        } catch (\Throwable) {
+            // otomatik özellik — kayıt akışını asla bozma
+        }
     }
 
     public function deleted(Page $page): void

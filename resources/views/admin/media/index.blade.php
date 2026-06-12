@@ -72,6 +72,17 @@
         @endif
     </form>
 
+    {{-- AI alt-text toplu üretim --}}
+    <form method="POST" action="{{ route('admin.media.generate-alt-bulk') }}" class="mb-5"
+          onsubmit="return confirm('Alt yazısı eksik tüm görseller için AI üretimi başlatılsın mı?\n\n(Görsel başına küçük bir AI maliyeti oluşur; üretim arka planda yapılır.)')">
+        @csrf
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            Eksik Alt Yazılarını AI ile Üret
+        </button>
+    </form>
+
     {{-- Bulk action bar (appears when items selected) --}}
     <div x-show="selected.length > 0" x-transition
          class="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 mb-5">
