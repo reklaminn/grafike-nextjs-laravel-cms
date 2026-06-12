@@ -159,14 +159,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const inferDefaultValue = (key, type) => {
         if (type === 'boolean') return false;
         if (type === 'number') return 0;
-        if (type === 'image') return `https://placehold.co/1200x800?text=${encodeURIComponent(labelize(key))}`;
+        if (type === 'icon') return 'fas fa-star';
+        if (type === 'color') return '#4f46e5';
+        if (type === 'email') return 'ornek@domain.com';
+        if (type === 'url' || type === 'page_link') return '#';
+        if (type === 'image' || type === 'media_id') return `https://placehold.co/1200x800?text=${encodeURIComponent(labelize(key))}`;
         if (/_html$/i.test(key)) return /(items|cards|features|slides|logos|gallery|list)/i.test(key) ? '<div class="item-card">Tekrarlı alan örneği</div>' : '<p>İçerik buraya gelecek.</p>';
         if (/_url$/i.test(key)) return '#';
         if (/_alt$/i.test(key)) return 'Görsel açıklaması';
+        if (/(icon)/i.test(key)) return 'fas fa-star';
         if (/(title|heading|name)/i.test(key)) return 'Örnek Başlık';
         if (/(description|subtitle|excerpt|caption|text|body|content|message|summary)/i.test(key)) return 'Örnek içerik';
         return '';
     };
+
+    // Schema'dan tam örnek içerik üretir (canlı önizleme ve "Default Üret"
+    // tarafından paylaşılır). Repeater alanlar 2 örnek item alır.
+    const buildSchemaSampleContent = (schema) => {
+        const defaults = {};
+        Object.entries(schema || {}).forEach(([key, field]) => {
+            const type = field.type || 'text';
+            if (type === 'repeater') {
+                const itemDefaults = {};
+                Object.entries(field.fields || field.item_schema || {}).forEach(([k, f]) => {
+                    itemDefaults[k] = inferDefaultValue(k, f.type || 'text');
+                });
+                defaults[key] = [itemDefaults, { ...itemDefaults }];
+            } else if (type === 'enum' && Array.isArray(field.options) && field.options.length) {
+                const opt = field.options[0];
+                defaults[key] = (opt !== null && typeof opt === 'object') ? opt.value : opt;
+            } else {
+                defaults[key] = inferDefaultValue(key, type);
+            }
+        });
+        return defaults;
+    };
+    window.buildSchemaSampleContent = () => buildSchemaSampleContent(parseJsonObject(schemaInput?.value || ''));
 
     const openBraces = '{' + '{';
     const closeBraces = '}' + '}';
@@ -364,21 +392,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateDefaultsFromSchema = () => {
         const schema = parseJsonObject(schemaInput?.value || '');
         if (!schema || Object.keys(schema).length === 0) { window.alert('Önce schema alanları oluştur.'); return; }
-        const defaults = {};
-        Object.entries(schema).forEach(([key, field]) => {
-            const type = field.type || 'text';
-            if (type === 'repeater') {
-                const itemDefaults = {};
-                Object.entries(field.fields || {}).forEach(([k, f]) => { itemDefaults[k] = inferDefaultValue(k, f.type || 'text'); });
-                defaults[key] = [itemDefaults, { ...itemDefaults }];
-            } else {
-                defaults[key] = inferDefaultValue(key, type);
-            }
-        });
-        if (defaultContentInput) defaultContentInput.value = JSON.stringify(defaults, null, 2);
+        if (defaultContentInput) defaultContentInput.value = JSON.stringify(buildSchemaSampleContent(schema), null, 2);
+        window.dispatchEvent(new CustomEvent('section-template-editor-change'));
     };
 
     generateDefaultsBtns.forEach(btn => btn?.addEventListener('click', generateDefaultsFromSchema));
+
+    // Schema alanları değişince canlı önizlemeyi tetikle (debounce panelde).
+    // schemaInput hidden textarea'ya Alpine x-bind:value="serialized" yazar;
+    // MutationObserver bu değişimleri yakalar.
+    if (schemaInput) {
+        new MutationObserver(() => {
+            window.dispatchEvent(new CustomEvent('section-template-editor-change'));
+        }).observe(schemaInput, { attributes: true, childList: true, characterData: true, subtree: true });
+    }
+    // Default content elle düzenlenince de tetikle
+    defaultContentInput?.addEventListener('input', () => {
+        window.dispatchEvent(new CustomEvent('section-template-editor-change'));
+    });
 
     // ────────────────────────────────────────────────────
     // Repeat candidates
