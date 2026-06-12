@@ -366,6 +366,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // Schema builder (Alpine) için: HTML template'teki placeholder anahtarları.
+    // Alan-bazlı "HTML'de var/yok" göstergesi bunu okur.
+    window.getHtmlPlaceholders = () => extractPlaceholders(getHtmlValue());
+
     const updateSchemaDiff = () => {
         if (!diffPanel) return;
         const placeholders = extractPlaceholders(getHtmlValue());

@@ -2,11 +2,11 @@
 
 {{-- ── Block Picker Modal ──────────────────────────────────────────────── --}}
 <div x-show="pickerModalOpen" x-cloak
-     class="fixed inset-0 z-[80] flex items-start justify-center bg-black/60 px-4 pt-12 pb-8"
+     class="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-0 sm:items-start sm:px-4 sm:pt-12 sm:pb-8"
      @click.self="closeBlockPicker()"
      @keydown.escape.window="closeBlockPicker()">
-    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-         style="max-height: calc(100vh - 5rem)">
+    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+         style="max-height: 90vh">
 
         {{-- Header --}}
         <div class="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
@@ -117,9 +117,11 @@
 </div>
 
 <div x-show="settingsModalOpen" x-cloak
-     class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+     class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
      @click.self="closeBlockSettings()">
-    <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 max-h-[85vh] overflow-y-auto">
+    <div class="w-full max-w-3xl rounded-t-2xl bg-white shadow-2xl border border-gray-200 p-4 max-h-[92vh] overflow-y-auto sm:rounded-2xl sm:p-5 sm:max-h-[85vh]">
+        {{-- Mobil sürükleme tutamağı --}}
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 sm:hidden"></div>
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h4 class="text-base font-semibold text-gray-900">Block Ayarları</h4>
@@ -524,9 +526,10 @@
 </div>
 
 <div x-show="rowSettingsModalOpen" x-cloak
-     class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+     class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
      @click.self="closeRowSettings()">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 max-h-[85vh] overflow-y-auto">
+    <div class="w-full max-w-2xl rounded-t-2xl bg-white shadow-2xl border border-gray-200 p-4 max-h-[92vh] overflow-y-auto sm:rounded-2xl sm:p-5 sm:max-h-[85vh]">
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 sm:hidden"></div>
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h4 class="text-base font-semibold text-gray-900">Satır Ayarları</h4>
@@ -626,9 +629,10 @@
 </div>
 
 <div x-show="columnSettingsModalOpen" x-cloak
-     class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+     class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
      @click.self="closeColumnSettings()">
-    <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 max-h-[85vh] overflow-y-auto">
+    <div class="w-full max-w-3xl rounded-t-2xl bg-white shadow-2xl border border-gray-200 p-4 max-h-[92vh] overflow-y-auto sm:rounded-2xl sm:p-5 sm:max-h-[85vh]">
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 sm:hidden"></div>
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h4 class="text-base font-semibold text-gray-900">Kolon Ayarları</h4>
