@@ -313,6 +313,36 @@
                         </p>
                     </div>
 
+                    {{-- Boş schema yönlendirmesi — boş ekran yerine ne yapılacağını söyle --}}
+                    <div x-show="Object.keys(settingsBlock.schema || {}).length === 0" x-cloak
+                         class="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center">
+                        <i class="fas fa-list-check mb-3 text-2xl text-gray-300"></i>
+                        <p class="text-sm font-medium text-gray-600">Bu şablonda içerik alanı tanımlı değil</p>
+                        <p class="mx-auto mt-1 max-w-md text-xs text-gray-400">
+                            İçerik tabında düzenlenebilir alanlar görmek için şablonun
+                            <strong>Schema Alanları</strong> bölümüne alan eklenmeli
+                            (örn. başlık, metin, görsel). Şablonda <code class="rounded bg-gray-200 px-1">@{{placeholder}}</code>
+                            varsa "HTML'den Üret" butonu alanları otomatik çıkarır.
+                        </p>
+                        <div class="mt-4 flex items-center justify-center gap-2">
+                            <a :href="settingsBlock?.section_template_id
+                                       ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit#schema-builder')
+                                       : @js(route('admin.section-templates.index'))"
+                               target="_blank"
+                               class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700">
+                                <i class="fas fa-pen-to-square"></i> Şablona Alan Ekle
+                            </a>
+                            <button type="button" @click="settingsTab = 'code'"
+                                    x-show="settingsBlock?.render_mode === 'html'"
+                                    class="inline-flex items-center gap-1.5 rounded-lg bg-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-300">
+                                <i class="fas fa-code"></i> Kod tabında düzenle
+                            </button>
+                        </div>
+                        <p class="mt-3 text-[11px] text-gray-400">
+                            Alan ekledikten sonra buraya dönüp üstteki <i class="fas fa-arrows-rotate"></i> ile yenileyin.
+                        </p>
+                    </div>
+
                     <template x-for="[fieldName, fieldSchema] in Object.entries(settingsBlock.schema || {})" :key="fieldName">
                         <div>
                             <template x-if="(fieldSchema.type || 'text') === 'repeater'">

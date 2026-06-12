@@ -4,7 +4,7 @@
         : ($sectionTemplate->schema_json ?? []);
 @endphp
 
-<div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+<div id="schema-builder" class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
      x-data="schemaBuilder(@js($schemaArray))">
 
     <div class="flex items-center justify-between gap-3">
@@ -32,10 +32,19 @@
     {{-- GÖRSEL MOD --}}
     <div x-show="mode==='visual'" class="mt-4 space-y-2">
         <template x-for="(field, idx) in fields" :key="field._uid">
-            <div class="rounded-lg border border-gray-200 bg-gray-50">
+            <div class="rounded-lg border bg-gray-50 transition-all"
+                 :class="dragIndex === idx ? 'border-indigo-400 opacity-50' : (dragOverIndex === idx && dragIndex !== null ? 'border-indigo-400 border-dashed' : 'border-gray-200')"
+                 @dragover.prevent="dragOverIndex = idx"
+                 @dragleave="dragOverIndex === idx && (dragOverIndex = null)"
+                 @drop.prevent="dropField(idx)">
                 {{-- Field header row --}}
                 <div class="flex items-center gap-2 px-3 py-2">
-                    <button type="button" class="cursor-grab text-gray-300 hover:text-gray-500">
+                    <button type="button"
+                            draggable="true"
+                            @dragstart="dragIndex = idx; $event.dataTransfer.effectAllowed = 'move'"
+                            @dragend="dragIndex = null; dragOverIndex = null"
+                            title="Sürükleyerek sırala — alan sırası İçerik tabındaki form sırasıdır"
+                            class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-indigo-500">
                         <i class="fas fa-grip-vertical text-xs"></i>
                     </button>
 
@@ -172,6 +181,8 @@ document.addEventListener('alpine:init', () => {
         rawJson: '',
         rawError: '',
         _uid: 0,
+        dragIndex: null,
+        dragOverIndex: null,
 
         init() {
             this.loadFromObject(initialSchema || {});
@@ -228,6 +239,20 @@ document.addEventListener('alpine:init', () => {
 
         removeField(idx) {
             this.fields.splice(idx, 1);
+        },
+
+        // Sürükle-bırak: alanı dragIndex'ten hedef index'e taşı.
+        // Alan sırası = İçerik tabındaki form sırası (serialized obje
+        // ekleme sırasını korur).
+        dropField(targetIdx) {
+            const from = this.dragIndex;
+            this.dragIndex = null;
+            this.dragOverIndex = null;
+
+            if (from === null || from === targetIdx) return;
+
+            const [moved] = this.fields.splice(from, 1);
+            this.fields.splice(targetIdx, 0, moved);
         },
 
         normalizeKey(val) {
