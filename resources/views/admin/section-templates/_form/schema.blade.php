@@ -60,10 +60,12 @@
                         <option value="text">text</option>
                         <option value="textarea">textarea</option>
                         <option value="url">url</option>
+                        <option value="page_link">page_link (iç sayfa)</option>
                         <option value="email">email</option>
                         <option value="number">number</option>
                         <option value="boolean">boolean</option>
                         <option value="enum">enum</option>
+                        <option value="icon">icon (FA seçici)</option>
                         <option value="image">image</option>
                         <option value="media_id">media_id</option>
                         <option value="color">color</option>
