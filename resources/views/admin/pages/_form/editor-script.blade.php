@@ -40,6 +40,16 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         mediaSearch: '',
         mediaLoading: false,
 
+        // Icon picker state
+        iconPickerOpen: false,
+        iconSearch: '',
+
+        // Page link picker state
+        pagePickerOpen: false,
+        pageSearch: '',
+        pagesLoading: false,
+        pages: [],
+
         // Quill
         quillInstance: null,
 
@@ -91,6 +101,132 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         selectMedia(item) {
             this.parentRef[this.fieldKey] = item.url || item.original_url || '';
             this.closeMediaPicker();
+        },
+
+        // ── Icon picker (Font Awesome) ──────────────────────────────────────
+        // Curated set of common business/corporate FA solid icons.
+        get iconCatalog() {
+            return [
+                'fa-star','fa-heart','fa-check','fa-circle-check','fa-xmark','fa-plus','fa-minus',
+                'fa-phone','fa-mobile-screen','fa-envelope','fa-location-dot','fa-map','fa-globe','fa-clock',
+                'fa-calendar','fa-calendar-check','fa-user','fa-users','fa-user-doctor','fa-user-tie','fa-user-group',
+                'fa-house','fa-building','fa-hospital','fa-store','fa-briefcase','fa-handshake','fa-award','fa-trophy',
+                'fa-medal','fa-certificate','fa-shield','fa-shield-halved','fa-lock','fa-thumbs-up','fa-gem',
+                'fa-bolt','fa-fire','fa-lightbulb','fa-rocket','fa-gear','fa-gears','fa-wrench','fa-screwdriver-wrench',
+                'fa-chart-line','fa-chart-pie','fa-chart-column','fa-magnifying-glass','fa-eye','fa-bullseye','fa-flag',
+                'fa-graduation-cap','fa-book','fa-pen','fa-pen-nib','fa-camera','fa-image','fa-video','fa-music',
+                'fa-truck','fa-car','fa-plane','fa-ship','fa-box','fa-boxes-stacked','fa-cart-shopping','fa-bag-shopping',
+                'fa-tag','fa-tags','fa-percent','fa-gift','fa-credit-card','fa-wallet','fa-coins','fa-money-bill',
+                'fa-leaf','fa-seedling','fa-tree','fa-sun','fa-droplet','fa-recycle','fa-earth-europe',
+                'fa-heart-pulse','fa-stethoscope','fa-syringe','fa-pills','fa-tooth','fa-spa','fa-hand-holding-heart',
+                'fa-comments','fa-comment-dots','fa-headset','fa-paper-plane','fa-bell','fa-thumbtack',
+                'fa-list-check','fa-clipboard-check','fa-file-lines','fa-folder','fa-database','fa-server','fa-cloud',
+                'fa-wifi','fa-code','fa-laptop','fa-desktop','fa-palette','fa-wand-magic-sparkles','fa-puzzle-piece',
+                'fa-arrow-right','fa-arrow-up','fa-circle-arrow-right','fa-angles-right','fa-link','fa-share-nodes',
+                'fa-quote-left','fa-hashtag','fa-infinity','fa-crown','fa-key','fa-compass','fa-anchor','fa-cube',
+            ];
+        },
+
+        openIconPicker() {
+            this.iconPickerOpen = true;
+            this.iconSearch = '';
+        },
+
+        closeIconPicker() {
+            this.iconPickerOpen = false;
+        },
+
+        filteredIcons() {
+            const q = (this.iconSearch || '').toLowerCase().trim();
+            if (!q) return this.iconCatalog;
+            return this.iconCatalog.filter((ic) => ic.includes(q));
+        },
+
+        // Saklanan değerden render edilebilir tam class üretir.
+        // "fa-star" → "fas fa-star"; zaten "fas/far/fab ..." içeriyorsa dokunma.
+        iconClass(value) {
+            const v = (value || '').trim();
+            if (!v) return '';
+            if (/\b(fa-solid|fa-regular|fa-brands|fas|far|fab|fa-light|fa-thin|fa-duotone)\b/.test(v)) return v;
+            return 'fas ' + v;
+        },
+
+        iconValueMatches(ic) {
+            const v = (this.parentRef[this.fieldKey] || '').trim();
+            return v === ic || v === 'fas ' + ic;
+        },
+
+        selectIcon(ic) {
+            // TAM class sakla ("fas fa-star"). Next.js component path ikonu
+            // doğrudan <i className={icon}> ile basar → stil prefix'i şart.
+            // HTML "<i class='fas {{icon}}'>" kullansa bile çift "fas" zararsız.
+            this.parentRef[this.fieldKey] = ic ? this.iconClass(ic) : '';
+            this.closeIconPicker();
+        },
+
+        // ── Page link picker (iç sayfa) ─────────────────────────────────────
+        // Katalog tüm page_link alanlarınca paylaşılır: tek fetch, window cache.
+        async ensurePagesLoaded() {
+            if (window.__pageCatalog) {
+                this.pages = window.__pageCatalog;
+                return;
+            }
+            if (window.__pageCatalogPromise) {
+                this.pagesLoading = true;
+                this.pages = await window.__pageCatalogPromise;
+                this.pagesLoading = false;
+                return;
+            }
+
+            this.pagesLoading = true;
+            window.__pageCatalogPromise = (async () => {
+                try {
+                    const resp = await fetch(@js(route('admin.pages.catalog-json', [], false)), {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                    });
+                    if (!resp.ok) return [];
+                    const json = await resp.json();
+                    window.__pageCatalog = json.data || [];
+                    return window.__pageCatalog;
+                } catch (e) {
+                    console.error('[blockFieldInput] Page catalog load error:', e);
+                    return [];
+                }
+            })();
+
+            this.pages = await window.__pageCatalogPromise;
+            this.pagesLoading = false;
+        },
+
+        openPagePicker() {
+            this.pagePickerOpen = true;
+            this.pageSearch = '';
+            this.ensurePagesLoaded();
+        },
+
+        closePagePicker() {
+            this.pagePickerOpen = false;
+        },
+
+        filteredPages() {
+            const q = (this.pageSearch || '').toLowerCase().trim();
+            if (!q) return this.pages;
+            return this.pages.filter((p) =>
+                (p.title || '').toLowerCase().includes(q) ||
+                (p.path || '').toLowerCase().includes(q)
+            );
+        },
+
+        matchedPageTitle(value) {
+            const v = (value || '').trim();
+            if (!v) return '';
+            const match = (this.pages || []).find((p) => p.path === v);
+            return match ? match.title : '';
+        },
+
+        selectPage(pg) {
+            this.parentRef[this.fieldKey] = pg.path;
+            this.closePagePicker();
         },
 
         // ── Quill rich-text ─────────────────────────────────────────────────
@@ -220,6 +356,9 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 this.refreshTemplateCatalog(info?.name || null);
             });
 
+            // Klavye kısayolları: Cmd/Ctrl+S kaydet, Esc açık modalı kapat.
+            window.addEventListener('keydown', (event) => this.handleEditorKeydown(event));
+
             this.$nextTick(() => {
                 this.syncSerializedRegions();
 
@@ -242,6 +381,43 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                     this.syncSerializedRegions();
                 });
             });
+        },
+
+        // ── Klavye kısayolları ──────────────────────────────────────────────
+        anySettingsOpen() {
+            return this.settingsModalOpen || this.rowSettingsModalOpen
+                || this.columnSettingsModalOpen || this.pickerModalOpen;
+        },
+
+        closeTopmostModal() {
+            // En içteki/öncelikli modaldan dışa doğru kapat.
+            if (this.pickerModalOpen) { this.closeBlockPicker(); return true; }
+            if (this.settingsModalOpen) { this.closeBlockSettings(); return true; }
+            if (this.columnSettingsModalOpen) { this.closeColumnSettings(); return true; }
+            if (this.rowSettingsModalOpen) { this.closeRowSettings(); return true; }
+            return false;
+        },
+
+        handleEditorKeydown(event) {
+            // Cmd/Ctrl+S → kaydet (formu gönder)
+            if ((event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S')) {
+                event.preventDefault();
+                // Açık modal varsa önce ayarları uygula, sonra kaydet
+                if (this.settingsModalOpen) this.saveBlockSettings();
+                const form = this.$root.closest('form');
+                if (form) {
+                    this.suppressUnloadWarning = true;
+                    // requestSubmit → native doğrulama + submit event'i çalışır
+                    (form.requestSubmit ? form.requestSubmit() : form.submit());
+                }
+                return;
+            }
+
+            // Esc → açık modalı kapat. Alt picker'lar (medya/ikon/sayfa) kendi
+            // escape handler'larında stopPropagation yaptığı için buraya ulaşmaz.
+            if (event.key === 'Escape' && this.anySettingsOpen()) {
+                if (this.closeTopmostModal()) event.preventDefault();
+            }
         },
 
         get serializedRegions() {

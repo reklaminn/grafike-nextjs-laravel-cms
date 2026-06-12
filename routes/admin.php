@@ -103,6 +103,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('search', \App\Http\Controllers\Admin\GlobalSearchController::class)->name('search');
 
         // Pages CRUD
+        // catalog-json resource'tan ÖNCE — yoksa pages/{page} show ile çakışır
+        Route::get('pages/catalog-json', [PageController::class, 'catalogJson'])->name('pages.catalog-json');
         Route::resource('pages', PageController::class);
         Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
         Route::post('pages/{page}/migrate-to-sections', [PageController::class, 'migrateToSections'])->name('pages.migrate-to-sections');

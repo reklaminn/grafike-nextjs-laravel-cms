@@ -60,6 +60,41 @@ class PageController extends Controller
         return view('admin.pages.index', compact('pages', 'languages'));
     }
 
+    /**
+     * Editör "iç sayfa link seçici" için yayınlanmış sayfa kataloğu.
+     * Her sayfa için frontend yolunu (locale-prefix) hesaplar:
+     *   home / boş slug → /{locale}
+     *   diğerleri       → /{locale}/{slug}
+     */
+    public function catalogJson(): JsonResponse
+    {
+        $pages = Page::query()
+            ->with('language:id,locale,code,name')
+            ->where('status', 'published')
+            ->orderByRaw("CASE WHEN slug = '' OR slug = 'home' THEN 0 ELSE 1 END")
+            ->orderBy('title')
+            ->get(['id', 'title', 'slug', 'language_id', 'external_url'])
+            ->map(function (Page $page) {
+                $locale = $page->language?->locale ?: ($page->language?->code ?: 'tr');
+                $isHome = $page->slug === '' || $page->slug === 'home';
+                $path = $page->external_url
+                    ?: ($isHome ? "/{$locale}" : "/{$locale}/{$page->slug}");
+
+                return [
+                    'id' => $page->id,
+                    'title' => $page->title,
+                    'slug' => $page->slug,
+                    'locale' => $locale,
+                    'language' => $page->language?->name,
+                    'path' => $path,
+                    'is_external' => (bool) $page->external_url,
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $pages]);
+    }
+
     public function create()
     {
         $languages = Language::where('is_active', true)->get();
