@@ -162,6 +162,10 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         dragRow: null,
         dragRowOver: null,
 
+        // Repeater item aç/kapa durumu — content'e sızmasın diye _uid ile
+        // ayrı tutulur (serializeContent yalnızca _uid'i ayıklıyor).
+        expandedRepeaterItems: {},
+
         // AI block-edit state (FAZ 3.6 streaming)
         aiAction: 'shorten',
         aiCustomPrompt: '',
@@ -640,7 +644,9 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
         addRepeaterItem(block, fieldName, fieldSchema) {
             this.ensureRepeaterContent(block, fieldName);
-            block.content[fieldName].push(this.createRepeaterItem(fieldSchema));
+            const item = this.createRepeaterItem(fieldSchema);
+            block.content[fieldName].push(item);
+            this.expandedRepeaterItems[item._uid] = true;
         },
 
         removeRepeaterItem(block, fieldName, itemIndex) {
@@ -656,6 +662,7 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             const clone = JSON.parse(JSON.stringify(source));
             clone._uid = this.generateUid('item');
             block.content[fieldName].splice(itemIndex + 1, 0, clone);
+            this.expandedRepeaterItems[clone._uid] = true;
         },
 
         moveRepeaterItem(block, fieldName, itemIndex, direction) {
@@ -665,6 +672,39 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             if (targetIndex < 0 || targetIndex >= items.length) return;
 
             [items[itemIndex], items[targetIndex]] = [items[targetIndex], items[itemIndex]];
+        },
+
+        // ── Repeater item akıllı etiket + aç/kapa ───────────────────────
+        // İlk dolu metin alanından kısa özet üretir: "Item #1 — Hizmetlerimiz"
+        repeaterItemLabel(item, fieldSchema) {
+            const schema = this.repeaterFieldSchema(fieldSchema);
+            const names = Object.keys(schema);
+            const preferred = ['title', 'name', 'label', 'heading'].filter((n) => names.includes(n));
+            const ordered = [...preferred, ...names.filter((n) => !preferred.includes(n))];
+
+            for (const name of ordered) {
+                const type = schema[name]?.type || 'text';
+                if (!['text', 'textarea', 'rich-text', 'html'].includes(type)) continue;
+                const raw = item?.[name];
+                if (typeof raw !== 'string' || !raw.trim()) continue;
+                const text = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (!text) continue;
+                return text.length > 40 ? text.slice(0, 40) + '…' : text;
+            }
+
+            return '';
+        },
+
+        // 2'den fazla item varsa varsayılan kapalı; kullanıcı tercihi _uid ile saklanır
+        repeaterItemExpanded(item, itemCount) {
+            const state = this.expandedRepeaterItems[item?._uid];
+            if (state !== undefined) return state;
+            return itemCount <= 2;
+        },
+
+        toggleRepeaterItem(item, itemCount) {
+            if (!item?._uid) return;
+            this.expandedRepeaterItems[item._uid] = !this.repeaterItemExpanded(item, itemCount);
         },
 
         createColumn(region, rowIndex, columnIndex) {
