@@ -258,6 +258,8 @@ function aiPageWizard() {
             this.status = '';
             this.statusOk = false;
             try {
+                // Async mod: istek job'u kuyruğa atar, hemen döner;
+                // sonuç status endpoint'i poll'lanarak alınır → 504 riski yok.
                 const r = await fetch(@js(route('admin.ai.pages.generate', [], false)), {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -271,35 +273,84 @@ function aiPageWizard() {
                         language_id: this.languageId || null,
                         locale: this.locale || 'tr',
                         auto_save: autoSave,
+                        async: true,
                     }),
                 });
                 const data = await r.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
 
                 if (!r.ok || !data.ok) {
-                    let msg = data.message || 'AI cevap üretemedi.';
-                    if (data.error_code === 'quota_exceeded') {
-                        msg = `${data.message} (kalan ${data.limit - data.used}/${data.limit})`;
-                    }
-                    this.status = msg;
-                    this.statusOk = false;
+                    this.showError(data);
                     return;
                 }
 
-                if (autoSave && data.redirect_url) {
-                    this.status = 'Sayfa oluşturuldu, edit ekranına yönlendiriliyorsunuz…';
+                // Kuyruk modu: status_url'i poll'la
+                if (data.mode === 'queued' && data.status_url) {
+                    this.status = 'AI sayfanızı hazırlıyor… (kuyrukta)';
                     this.statusOk = true;
-                    window.location.href = data.redirect_url;
+                    const final = await this.pollStatus(data.status_url);
+
+                    if (!final || final.status === 'failed') {
+                        this.showError(final || { message: 'Üretim zaman aşımına uğradı.' });
+                        return;
+                    }
+                    this.applyResult(final, autoSave);
                     return;
                 }
 
-                this.preview = data.preview;
-                this.status = '';
+                // Sync yanıt (queue=sync ortamı) — eski davranış
+                this.applyResult(data, autoSave);
             } catch (e) {
                 this.status = e.message || 'Ağ hatası.';
                 this.statusOk = false;
             } finally {
                 this.loading = false;
             }
+        },
+
+        /** status endpoint'ini done/failed gelene dek poll'la (max ~4 dk). */
+        async pollStatus(url) {
+            const messages = [
+                'AI sayfanızı hazırlıyor…',
+                'Bloklar seçiliyor…',
+                'İçerik yazılıyor…',
+                'Son rötuşlar yapılıyor…',
+            ];
+            for (let i = 0; i < 120; i++) {
+                await new Promise(res => setTimeout(res, 2000));
+                this.status = messages[Math.min(Math.floor(i / 8), messages.length - 1)];
+                this.statusOk = true;
+
+                try {
+                    const r = await fetch(url, {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    const s = await r.json().catch(() => null);
+                    if (s && (s.status === 'done' || s.status === 'failed')) return s;
+                    if (r.status === 404) return null;
+                } catch (e) { /* geçici ağ hatası — poll devam */ }
+            }
+            return null;
+        },
+
+        applyResult(data, autoSave) {
+            if (autoSave && data.redirect_url) {
+                this.status = 'Sayfa oluşturuldu, edit ekranına yönlendiriliyorsunuz…';
+                this.statusOk = true;
+                window.location.href = data.redirect_url;
+                return;
+            }
+            this.preview = data.preview;
+            this.status = '';
+        },
+
+        showError(data) {
+            let msg = (data && data.message) || 'AI cevap üretemedi.';
+            if (data && data.error_code === 'quota_exceeded' && data.limit != null) {
+                msg = `${data.message} (kalan ${data.limit - data.used}/${data.limit})`;
+            }
+            this.status = msg;
+            this.statusOk = false;
         },
 
         /** Walk the region-based sections_json and yield blocks for the preview list. */
