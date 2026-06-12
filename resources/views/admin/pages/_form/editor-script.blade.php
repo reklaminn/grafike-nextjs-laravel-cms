@@ -158,8 +158,8 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
 
         selectIcon(ic) {
             // TAM class sakla ("fas fa-star"). Next.js component path ikonu
-            // doğrudan <i className={icon}> ile basar → stil prefix'i şart.
-            // HTML "<i class='fas {{icon}}'>" kullansa bile çift "fas" zararsız.
+            // dogrudan <i className=icon> ile basar -> stil prefix'i sart.
+            // HTML template prefix'li "fas ..." kullansa bile cift "fas" zararsiz.
             this.parentRef[this.fieldKey] = ic ? this.iconClass(ic) : '';
             this.closeIconPicker();
         },
