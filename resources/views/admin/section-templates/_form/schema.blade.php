@@ -72,6 +72,18 @@
                         <option value="repeater">repeater</option>
                     </select>
 
+                    {{-- HTML kullanım göstergesi --}}
+                    <span x-show="field.key && fieldUsedInHtml(field)"
+                          title="Bu alan HTML template'te kullanılıyor"
+                          class="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700">
+                        <i class="fas fa-check text-[9px]"></i> HTML
+                    </span>
+                    <span x-show="field.key && !fieldUsedInHtml(field)"
+                          title="Bu alan HTML template'te bulunamadı — placeholder eksik olabilir"
+                          class="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                        <i class="fas fa-triangle-exclamation text-[9px]"></i> HTML'de yok
+                    </span>
+
                     {{-- Label --}}
                     <input type="text" placeholder="Etiket"
                            x-model="field.label"
@@ -148,6 +160,13 @@
                     class="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-200">
                 <i class="fas fa-magic"></i> Default Content Üret
             </button>
+            <button type="button" @click="removeUnusedFields()"
+                    x-show="unusedFields().length > 0"
+                    x-cloak
+                    class="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100">
+                <i class="fas fa-broom"></i>
+                <span x-text="'HTML\'de olmayan ' + unusedFields().length + ' alanı temizle'"></span>
+            </button>
         </div>
 
         <template x-if="fields.length === 0">
@@ -192,10 +211,48 @@ document.addEventListener('alpine:init', () => {
         _uid: 0,
         dragIndex: null,
         dragOverIndex: null,
+        htmlPlaceholders: [],
 
         init() {
             this.loadFromObject(initialSchema || {});
             this.$watch('fields', () => { this.rawJson = this.serialized; }, { deep: true });
+
+            // HTML template'teki placeholder'ları takip et: alan-bazlı
+            // "HTML'de var/yok" göstergesi için. HTML editörü değişince
+            // 'section-template-editor-change' yayar (script.blade.php).
+            this.refreshHtmlPlaceholders();
+            window.addEventListener('section-template-editor-change', () => this.refreshHtmlPlaceholders());
+            // İlk yüklemede CodeMirror geç initialize olabilir — kısa gecikmeyle tekrar oku
+            setTimeout(() => this.refreshHtmlPlaceholders(), 600);
+        },
+
+        refreshHtmlPlaceholders() {
+            this.htmlPlaceholders = (window.getHtmlPlaceholders && window.getHtmlPlaceholders()) || [];
+        },
+
+        // Alanın anahtarı HTML template'te kullanılıyor mu?
+        // Doğrudan eşleşme, repeater (_html / _items_html) veya indeksli
+        // (key_1_xxx) kullanımları "kullanılıyor" sayar — yanlış "yok"
+        // uyarısı vermemek için geniş tutulur.
+        fieldUsedInHtml(field) {
+            const key = (field?.key || '').trim();
+            if (!key) return true; // boş anahtar henüz tamamlanmamış — uyarma
+            const ph = this.htmlPlaceholders;
+            if (!ph.length) return true; // HTML henüz okunamadı — uyarma
+            if (ph.includes(key)) return true;
+            if (ph.includes(key + '_html') || ph.includes(key + '_items_html')) return true;
+            return ph.some((p) => p.startsWith(key + '_'));
+        },
+
+        unusedFields() {
+            return this.fields.filter((f) => f.key && !this.fieldUsedInHtml(f));
+        },
+
+        removeUnusedFields() {
+            const unused = new Set(this.unusedFields().map((f) => f._uid));
+            if (!unused.size) return;
+            if (!window.confirm(unused.size + ' kullanılmayan alan silinecek. Devam edilsin mi?')) return;
+            this.fields = this.fields.filter((f) => !unused.has(f._uid));
         },
 
         get serialized() {
