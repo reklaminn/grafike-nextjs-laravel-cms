@@ -95,7 +95,23 @@ export function buildMetadata(meta: SeoMeta) {
     ...(Object.keys(verification).length > 0 ? { verification } : {}),
     alternates: {
       ...(canonical ? { canonical } : {}),
-      ...(hreflang && Object.keys(hreflang).length > 0 ? { languages: hreflang } : {}),
+      // x-default: dil eşleşmeyen ziyaretçiler için varsayılan locale URL'i
+      // (uluslararası SEO best practice). CMS zaten x-default göndermişse
+      // ona dokunma.
+      ...(hreflang && Object.keys(hreflang).length > 0
+        ? {
+            languages: {
+              ...hreflang,
+              ...(!("x-default" in hreflang)
+                ? {
+                    "x-default":
+                      hreflang[process.env.NEXT_PUBLIC_DEFAULT_LOCALE ?? "tr"]
+                      ?? Object.values(hreflang)[0],
+                  }
+                : {}),
+            },
+          }
+        : {}),
     },
     openGraph: {
       title,

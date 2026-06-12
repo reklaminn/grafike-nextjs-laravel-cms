@@ -13,6 +13,7 @@ import {
   getSitePayload,
 } from "@/lib/api/client";
 import { buildMetadata, canonicalUrl } from "@/lib/seo";
+import { uiStrings } from "@/lib/ui-strings";
 
 type CatchAllPageProps = {
   params: Promise<{ locale: string; slug?: string[] }>;
@@ -145,10 +146,10 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPag
               {payload.page.title}
             </h1>
             <p style={{ fontSize: ".875rem", color: "var(--color-text-soft,#6b7280)", marginBottom: "1.25rem" }}>
-              Bu sayfa{groupNames.length > 0 ? ` yalnızca ${groupNames.join(", ")} üyelerine` : " belirli üye gruplarına"} özeldir.
+              {uiStrings(locale).memberRestrictedBody(groupNames)}
             </p>
             <a href={`/${locale}/member/login`} style={{ display: "inline-block", padding: ".6rem 1.5rem", background: "var(--color-primary,#6366f1)", color: "#fff", borderRadius: ".4rem", fontWeight: 600, fontSize: ".875rem", textDecoration: "none" }}>
-              Giriş Yap
+              {uiStrings(locale).login}
             </a>
           </div>
         </div>
