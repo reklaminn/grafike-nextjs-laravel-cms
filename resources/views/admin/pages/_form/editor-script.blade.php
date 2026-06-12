@@ -155,6 +155,17 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         rowSettingsDraft: null,
         initialSerializedRegions: null,
 
+        // Sürükle-bırak state'i: dragBlock/dragRow kaynak konumu tutar,
+        // *Over anahtarları hedef vurgusu için kullanılır.
+        dragBlock: null,
+        dragBlockOver: null,
+        dragRow: null,
+        dragRowOver: null,
+
+        // Repeater item aç/kapa durumu — content'e sızmasın diye _uid ile
+        // ayrı tutulur (serializeContent yalnızca _uid'i ayıklıyor).
+        expandedRepeaterItems: {},
+
         // AI block-edit state (FAZ 3.6 streaming)
         aiAction: 'shorten',
         aiCustomPrompt: '',
@@ -169,6 +180,9 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         templateSyncToast: '',
         templateSyncToastVisible: false,
         catalogRefreshing: false,
+
+        // Form submit (kaydet) sırasında beforeunload uyarısını bastır
+        suppressUnloadWarning: false,
 
         init() {
             this.regions = this.normalizeRegions(initialRegions);
@@ -186,6 +200,14 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 this.regions = this.normalizeRegions(incoming);
                 this.normalizeSortOrder();
                 this.syncSerializedRegions();
+            });
+
+            // Kaydedilmemiş bölüm değişikliği varken sekme kapanır/sayfa
+            // değişirse tarayıcı onayı iste — kaydet ile ayrılırken sessiz.
+            window.addEventListener('beforeunload', (event) => {
+                if (this.suppressUnloadWarning || !this.sectionsJsonIsDirty()) return;
+                event.preventDefault();
+                event.returnValue = '';
             });
 
             // Başka bir sekmede şablon kaydedildiğinde (edit.blade.php
@@ -208,6 +230,7 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
                 form.dataset.frontendSectionsSyncBound = '1';
                 form.addEventListener('submit', () => {
+                    this.suppressUnloadWarning = true;
                     this.syncSerializedRegions();
                 }, { capture: true });
                 form.addEventListener('formdata', (event) => {
@@ -621,7 +644,9 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
         addRepeaterItem(block, fieldName, fieldSchema) {
             this.ensureRepeaterContent(block, fieldName);
-            block.content[fieldName].push(this.createRepeaterItem(fieldSchema));
+            const item = this.createRepeaterItem(fieldSchema);
+            block.content[fieldName].push(item);
+            this.expandedRepeaterItems[item._uid] = true;
         },
 
         removeRepeaterItem(block, fieldName, itemIndex) {
@@ -637,6 +662,7 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             const clone = JSON.parse(JSON.stringify(source));
             clone._uid = this.generateUid('item');
             block.content[fieldName].splice(itemIndex + 1, 0, clone);
+            this.expandedRepeaterItems[clone._uid] = true;
         },
 
         moveRepeaterItem(block, fieldName, itemIndex, direction) {
@@ -646,6 +672,39 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             if (targetIndex < 0 || targetIndex >= items.length) return;
 
             [items[itemIndex], items[targetIndex]] = [items[targetIndex], items[itemIndex]];
+        },
+
+        // ── Repeater item akıllı etiket + aç/kapa ───────────────────────
+        // İlk dolu metin alanından kısa özet üretir: "Item #1 — Hizmetlerimiz"
+        repeaterItemLabel(item, fieldSchema) {
+            const schema = this.repeaterFieldSchema(fieldSchema);
+            const names = Object.keys(schema);
+            const preferred = ['title', 'name', 'label', 'heading'].filter((n) => names.includes(n));
+            const ordered = [...preferred, ...names.filter((n) => !preferred.includes(n))];
+
+            for (const name of ordered) {
+                const type = schema[name]?.type || 'text';
+                if (!['text', 'textarea', 'rich-text', 'html'].includes(type)) continue;
+                const raw = item?.[name];
+                if (typeof raw !== 'string' || !raw.trim()) continue;
+                const text = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (!text) continue;
+                return text.length > 40 ? text.slice(0, 40) + '…' : text;
+            }
+
+            return '';
+        },
+
+        // 2'den fazla item varsa varsayılan kapalı; kullanıcı tercihi _uid ile saklanır
+        repeaterItemExpanded(item, itemCount) {
+            const state = this.expandedRepeaterItems[item?._uid];
+            if (state !== undefined) return state;
+            return itemCount <= 2;
+        },
+
+        toggleRepeaterItem(item, itemCount) {
+            if (!item?._uid) return;
+            this.expandedRepeaterItems[item._uid] = !this.repeaterItemExpanded(item, itemCount);
         },
 
         createColumn(region, rowIndex, columnIndex) {
@@ -860,6 +919,52 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             const targetIndex = rowIndex + direction;
             if (targetIndex < 0 || targetIndex >= this.regions[region].length) return;
             [this.regions[region][rowIndex], this.regions[region][targetIndex]] = [this.regions[region][targetIndex], this.regions[region][rowIndex]];
+            this.normalizeSortOrder();
+        },
+
+        // ── Satır sürükle-bırak ──────────────────────────────────────────
+        startRowDrag(event, region, rowIndex) {
+            this.dragRow = { region, rowIndex };
+            event.dataTransfer.effectAllowed = 'move';
+            // Firefox sürüklemeyi başlatmak için data ister
+            event.dataTransfer.setData('text/plain', 'row');
+            const card = event.target.closest('[data-row-card]');
+            if (card && event.dataTransfer.setDragImage) {
+                event.dataTransfer.setDragImage(card, 24, 24);
+            }
+        },
+
+        endRowDrag() {
+            this.dragRow = null;
+            this.dragRowOver = null;
+        },
+
+        rowDropKey(region, rowIndex) {
+            return region + ':' + (rowIndex === null ? 'end' : rowIndex);
+        },
+
+        rowDragOver(event, region, rowIndex) {
+            if (!this.dragRow) return;
+            event.preventDefault();
+            this.dragRowOver = this.rowDropKey(region, rowIndex);
+        },
+
+        dropRow(region, rowIndex = null) {
+            const src = this.dragRow;
+            this.endRowDrag();
+            if (!src) return;
+
+            const srcRows = this.regions[src.region];
+            if (!Array.isArray(srcRows)) return;
+            if (!Array.isArray(this.regions[region])) this.regions[region] = [];
+            const dstRows = this.regions[region];
+
+            let target = rowIndex === null ? dstRows.length : rowIndex;
+            if (srcRows === dstRows && target === src.rowIndex) return;
+
+            const [moved] = srcRows.splice(src.rowIndex, 1);
+            if (!moved) return;
+            dstRows.splice(Math.min(target, dstRows.length), 0, moved);
             this.normalizeSortOrder();
         },
 
@@ -1350,6 +1455,60 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             const targetIndex = blockIndex + direction;
             if (targetIndex < 0 || targetIndex >= blocks.length) return;
             [blocks[blockIndex], blocks[targetIndex]] = [blocks[targetIndex], blocks[blockIndex]];
+            this.normalizeSortOrder();
+        },
+
+        // ── Blok sürükle-bırak (kolon içi + kolonlar/bölgeler arası) ─────
+        startBlockDrag(event, region, rowIndex, columnIndex, blockIndex) {
+            this.dragBlock = { region, rowIndex, columnIndex, blockIndex };
+            event.dataTransfer.effectAllowed = 'move';
+            // Firefox sürüklemeyi başlatmak için data ister
+            event.dataTransfer.setData('text/plain', 'block');
+            const card = event.target.closest('[data-block-card]');
+            if (card && event.dataTransfer.setDragImage) {
+                event.dataTransfer.setDragImage(card, 16, 16);
+            }
+        },
+
+        endBlockDrag() {
+            this.dragBlock = null;
+            this.dragBlockOver = null;
+        },
+
+        blockDropKey(region, rowIndex, columnIndex, blockIndex) {
+            return [region, rowIndex, columnIndex, blockIndex === null ? 'end' : blockIndex].join(':');
+        },
+
+        blockDragOver(event, region, rowIndex, columnIndex, blockIndex = null) {
+            if (!this.dragBlock) return;
+            event.preventDefault();
+            this.dragBlockOver = this.blockDropKey(region, rowIndex, columnIndex, blockIndex);
+        },
+
+        blockIsDragSource(region, rowIndex, columnIndex, blockIndex) {
+            return this.dragBlock
+                && this.dragBlock.region === region
+                && this.dragBlock.rowIndex === rowIndex
+                && this.dragBlock.columnIndex === columnIndex
+                && this.dragBlock.blockIndex === blockIndex;
+        },
+
+        dropBlock(region, rowIndex, columnIndex, blockIndex = null) {
+            const src = this.dragBlock;
+            this.endBlockDrag();
+            if (!src) return;
+
+            const srcBlocks = this.regions[src.region]?.[src.rowIndex]?.columns?.[src.columnIndex]?.blocks;
+            const dstColumn = this.regions[region]?.[rowIndex]?.columns?.[columnIndex];
+            if (!Array.isArray(srcBlocks) || !dstColumn) return;
+            if (!Array.isArray(dstColumn.blocks)) dstColumn.blocks = [];
+
+            let target = blockIndex === null ? dstColumn.blocks.length : blockIndex;
+            if (srcBlocks === dstColumn.blocks && target === src.blockIndex) return;
+
+            const [moved] = srcBlocks.splice(src.blockIndex, 1);
+            if (!moved) return;
+            dstColumn.blocks.splice(Math.min(target, dstColumn.blocks.length), 0, moved);
             this.normalizeSortOrder();
         },
 

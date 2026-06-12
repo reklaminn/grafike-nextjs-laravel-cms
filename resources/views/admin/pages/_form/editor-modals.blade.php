@@ -365,11 +365,19 @@
                                     <div class="mt-3 space-y-3">
                                         <template x-for="(item, itemIndex) in settingsBlock.content[fieldName]" :key="item._uid || itemIndex">
                                             <div class="rounded-lg border border-amber-200 bg-white p-3">
-                                                <div class="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-2">
-                                                    <div class="text-xs font-semibold text-gray-700">
-                                                        Item #<span x-text="itemIndex + 1"></span>
-                                                    </div>
-                                                    <div class="flex items-center gap-1">
+                                                <div class="flex flex-wrap items-center justify-between gap-2"
+                                                     :class="repeaterItemExpanded(item, (settingsBlock.content[fieldName] || []).length) ? 'mb-3 border-b border-amber-100 pb-2' : ''">
+                                                    <button type="button"
+                                                            @click="toggleRepeaterItem(item, (settingsBlock.content[fieldName] || []).length)"
+                                                            class="flex min-w-0 flex-1 items-center gap-1.5 text-left text-xs font-semibold text-gray-700">
+                                                        <i class="fas text-[10px] text-gray-400 flex-shrink-0"
+                                                           :class="repeaterItemExpanded(item, (settingsBlock.content[fieldName] || []).length) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                                        <span class="flex-shrink-0">Item #<span x-text="itemIndex + 1"></span></span>
+                                                        <span x-show="repeaterItemLabel(item, fieldSchema)"
+                                                              class="truncate font-normal text-gray-400"
+                                                              x-text="'— ' + repeaterItemLabel(item, fieldSchema)"></span>
+                                                    </button>
+                                                    <div class="flex items-center gap-1 flex-shrink-0">
                                                         <button type="button"
                                                                 @click="moveRepeaterItem(settingsBlock, fieldName, itemIndex, -1)"
                                                                 :disabled="itemIndex === 0"
@@ -395,7 +403,8 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="grid gap-3 sm:grid-cols-2">
+                                                <div class="grid gap-3 sm:grid-cols-2"
+                                                     x-show="repeaterItemExpanded(item, (settingsBlock.content[fieldName] || []).length)">
                                                     <template x-for="[itemFieldName, itemFieldSchema] in Object.entries(repeaterFieldSchema(fieldSchema))" :key="itemFieldName">
                                                         <div :class="['textarea','rich-text','html'].includes(itemFieldSchema.type || 'text') ? 'sm:col-span-2' : ''">
                                                             <label class="mb-1 block text-xs font-medium text-gray-600"

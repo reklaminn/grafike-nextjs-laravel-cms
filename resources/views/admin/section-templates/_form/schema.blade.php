@@ -87,6 +87,13 @@
                         <i class="fas text-xs" :class="field._open ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                     </button>
 
+                    {{-- Duplicate --}}
+                    <button type="button" @click="duplicateField(idx)"
+                            title="Alanı çoğalt (repeater alt alanları dahil)"
+                            class="text-gray-400 hover:text-indigo-600">
+                        <i class="fas fa-copy text-xs"></i>
+                    </button>
+
                     {{-- Delete --}}
                     <button type="button" @click="removeField(idx)"
                             class="text-red-400 hover:text-red-600">
@@ -193,18 +200,22 @@ document.addEventListener('alpine:init', () => {
             const obj = {};
             this.fields.forEach(f => {
                 if (!f.key) return;
-                const entry = { type: f.type, label: f.label || f.key };
+                // _extra: görsel modun bilmediği anahtarlar (repeater "fields"
+                // alt şeması vb.) kaybolmasın diye aynen geri yazılır.
+                const entry = { ...(f._extra || {}), type: f.type, label: f.label || f.key };
                 if (f.required) entry.required = true;
                 if (f.max != null && f.max !== '') entry.max = Number(f.max);
                 if (f.min != null && f.min !== '') entry.min = Number(f.min);
                 if (f.type === 'enum' && f.options?.length) entry.options = f.options;
                 if (f.help) entry.help = f.help;
+                if (f.default !== '' && f.default !== null && f.default !== undefined) entry.default = f.default;
                 obj[f.key] = entry;
             });
             return JSON.stringify(obj, null, 2);
         },
 
         loadFromObject(schema) {
+            const known = ['type', 'label', 'required', 'max', 'min', 'options', 'help', 'default'];
             this.fields = Object.entries(schema || {}).map(([key, v]) => ({
                 _uid: ++this._uid,
                 _open: false,
@@ -217,6 +228,7 @@ document.addEventListener('alpine:init', () => {
                 options: Array.isArray(v.options) ? v.options : [],
                 help: v.help || '',
                 default: v.default ?? '',
+                _extra: Object.fromEntries(Object.entries(v || {}).filter(([k]) => !known.includes(k))),
             }));
             this.rawJson = this.serialized;
         },
@@ -239,6 +251,23 @@ document.addEventListener('alpine:init', () => {
 
         removeField(idx) {
             this.fields.splice(idx, 1);
+        },
+
+        // Alanı tüm ayarlarıyla (repeater alt alanları dahil) kopyalar;
+        // key çakışmasın diye _copy soneki alır.
+        duplicateField(idx) {
+            const source = this.fields[idx];
+            if (!source) return;
+
+            const clone = JSON.parse(JSON.stringify(source));
+            clone._uid = ++this._uid;
+            if (clone.key) {
+                const base = clone.key.replace(/_copy\d*$/, '') + '_copy';
+                let key = base, n = 2;
+                while (this.fields.some(f => f.key === key)) key = base + n++;
+                clone.key = key;
+            }
+            this.fields.splice(idx + 1, 0, clone);
         },
 
         // Sürükle-bırak: alanı dragIndex'ten hedef index'e taşı.
