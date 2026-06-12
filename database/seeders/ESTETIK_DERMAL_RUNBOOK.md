@@ -1,7 +1,8 @@
 # Estetik Dermal — Tenant Go-Live Runbook (v2, baştan)
 
 **Branch:** `deploy/estetik-dermal-golive` · **Tenant:** `estetik_dermal` · **Tenant DB:** `tenant_estetik_dermal`
-**Canlı sonuç:** kök URL = **Tema 2** (Clinical Luxury), `/klasik/...` = **Tema 1** (turuncu modern). İkisi yan yana.
+**Canlı sonuç (GÜNCEL):** kök URL = **Tema 1 (Klasik / turuncu modern)** — TEK canlı tema. v2 kaldırıldı (klasik kök slug'ları v2'yi ezer, v2-özel `marka-neogenesis` silinir). Sayfalar **alan-tabanlı** (İçerik sekmesinde düzenleme + grid'lerde repeater).
+> v2 seeder'ları repoda durur (arşiv); canlıda çalıştırılmaz. v2'ye dönmek istersen V2FieldChrome+V2TenantSeeder'ı çalıştırman yeterli.
 
 ---
 
@@ -62,11 +63,9 @@ Tüm seeder'lar **idempotent** (`updateOrCreate`) → tekrar çalıştırmak gü
 cd /opt/graficms
 git fetch && git checkout deploy/estetik-dermal-golive && git pull
 
-# ── 1) Tüm seeder dosyalarını app container'a kopyala (image baked → şart)
+# ── 1) Seeder dosyalarını app container'a kopyala (image baked → şart) — KLASIK (tek canlı tema)
 for f in EstetikDermalThemeSeeder EstetikDermalSectionTemplatesSeeder EstetikDermalChromeSeeder \
-         EstetikDermalV2ThemeSeeder EstetikDermalV2ChromeSeeder \
-         EstetikDermalV2FieldChromeSeeder EstetikDermalKlasikFieldChromeSeeder \
-         EstetikDermalV2TenantSeeder EstetikDermalKlasikTenantSeeder; do
+         EstetikDermalKlasikFieldChromeSeeder EstetikDermalKlasikTenantSeeder; do
   docker cp database/seeders/$f.php grafike_cms_app1:/var/www/html/database/seeders/
 done
 
@@ -74,14 +73,11 @@ done
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalThemeSeeder --force
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalSectionTemplatesSeeder --force
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalChromeSeeder --force
-docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2ThemeSeeder --force
-docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2ChromeSeeder --force
-# Alan-tabanlı bölüm şablonları (İçerik sekmesinde düzenleme + repeater) — TENANT'tan ÖNCE şart
-docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalV2FieldChromeSeeder --force
+# Klasik alan-tabanlı bölüm şablonları (İçerik düzenleme + repeater) — TENANT'tan ÖNCE şart
 docker exec grafike_cms_app1 php artisan db:seed --class=EstetikDermalKlasikFieldChromeSeeder --force
 
-# ── 3) TENANT seed (tenant context) — iki tema tek komutta
-docker exec grafike_cms_app1 php artisan tinker --execute="App\Models\Tenant::find('estetik_dermal')->run(function(){ Artisan::call('db:seed',['--class'=>'EstetikDermalV2TenantSeeder','--force'=>true]); Artisan::call('db:seed',['--class'=>'EstetikDermalKlasikTenantSeeder','--force'=>true]); echo PHP_EOL.'TENANT SEED OK'.PHP_EOL; });"
+# ── 3) TENANT seed (tenant context) — sadece KLASIK (v2 sayfalarını ezer + neogenesis siler)
+docker exec grafike_cms_app1 php artisan tinker --execute="App\Models\Tenant::find('estetik_dermal')->run(function(){ Artisan::call('db:seed',['--class'=>'EstetikDermalKlasikTenantSeeder','--force'=>true]); echo PHP_EOL.'TENANT SEED OK'.PHP_EOL; });"
 
 # ── 4) Frontend cache temizle
 docker restart grafike_cms_frontend
@@ -97,12 +93,12 @@ docker restart grafike_cms_frontend
 
 Tenant kök adresi (örn. `https://estetikdermal.com/tr` ya da `https://cms.grafcore.com/tr?tenant=estetik_dermal`). Her kontrolde **Ctrl+Shift+R** (hard refresh):
 
-- [ ] **Kök = Tema 2:** `/tr` → Clinical Luxury (Fraunces serif başlıklar, turuncu aksan, yeşil WhatsApp ikonu, header+footer var, layout düzgün).
-- [ ] **Tema 2 sayfaları:** `/tr/hakkimizda`, `/tr/urunler`, `/tr/markalar`, `/tr/etkinlikler`, `/tr/iletisim`, `/tr/marka-{skintech,seffiline,aespio,woorhi,mi-medical,neogenesis}` — her marka kendi paletinde.
-- [ ] **Klasik = Tema 1:** `/tr/klasik` → turuncu modern anasayfa (header+footer, hero, stat'lar).
-- [ ] **Tema 1 sayfaları:** `/tr/klasik-hakkimizda`, `/tr/klasik-urunler`, `/tr/klasik-markalar`, `/tr/klasik-marka-skintech` ...
+- [ ] **Kök = Klasik (Tema 1):** `/tr` → turuncu modern anasayfa (header+footer, hero, stat'lar, layout düzgün).
+- [ ] **Sayfalar:** `/tr/hakkimizda`, `/tr/urunler`, `/tr/markalar`, `/tr/etkinlikler`, `/tr/iletisim`, `/tr/marka-{skintech,seffiline,aespio,woorhi,mi-medical}` — her marka kendi paletinde.
+- [ ] **v2 KALMADI:** `/tr/marka-neogenesis` artık **404** olmalı (silindi); Clinical Luxury görünmemeli.
+- [ ] Admin'de her bölüm **adıyla** (HERO, PAGE HERO…) ve **İçerik sekmesinde alanlarla** düzenlenebiliyor; grid'lerde **repeater** (item ekle/çıkar).
 
-> **ÖNEMLİ — DÜZ SLUG:** Frontend route'u (`pages/{slug}`) slug'ta **slash kabul etmez** → `marka/seffiline` gibi nested slug **404** verir. Bu yüzden tüm marka/alt sayfalar **düz** slug kullanır: `marka-seffiline`, `klasik-marka-seffiline`. Seeder'lar çalışırken eski nested kayıtları (`marka/%`, `klasik/%`) otomatik siler.
+> **ÖNEMLİ — DÜZ SLUG:** Frontend route'u (`pages/{slug}`) slug'ta **slash kabul etmez** → `marka/seffiline` gibi nested slug **404** verir. Bu yüzden tüm marka sayfaları **düz** slug kullanır: `marka-seffiline`. KlasikTenantSeeder eski kayıtları (`klasik%`, `marka/%`, v2-özel `marka-neogenesis`) otomatik siler.
 - [ ] WhatsApp ikonu **küçük** (dev yeşil kare değil), header/footer **stilli** geliyor.
 - [ ] Konsolda kırık görsel/404 sadece henüz yüklenmemiş `assets/img/*.jpg` olmalı (krem fallback'li, kırık ikon yok).
 

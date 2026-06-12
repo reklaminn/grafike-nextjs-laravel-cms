@@ -16,7 +16,7 @@ class EstetikDermalKlasikFieldChromeSeeder extends Seeder
         if(! $theme){ $this->command?->warn('estetikdermal teması yok.'); return; }
         $tid=$theme->id;
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'HERO (split)',
              'html_template'=><<<'EDHTML'
@@ -66,12 +66,12 @@ EDHTML,
 {"hero_slide_items": {"type": "repeater", "label": "Hero Slide Items", "repeat_kind": "items", "item_template": "<article class=\"hero-slide\" id=\"hs1\">\n                <div style=\"background:#fff;border:1px solid var(--border-soft,#ece6df);border-radius:24px;box-shadow:var(--shadow-card,0 14px 44px rgba(200,87,22,.10));padding:26px;\">\n                  <!-- 🖼️ GÖRSEL: /assets/img/hero-rrs.jpg (oran 4:3) — RRS HA Long Lasting ürün çekimi (krem zemin, klinik premium) -->\n                  <div style=\"aspect-ratio:4/3;border-radius:16px;background:var(--color-secondary,#FBF4EE) url('assets/img/hero-rrs.jpg') center/cover no-repeat;\"></div>\n                  <div style=\"display:flex;align-items:center;justify-content:space-between;margin-top:18px;\">\n                    <div><div style=\"font-size:12px;color:var(--color-primary,#E8702A);font-weight:700;text-transform:uppercase;letter-spacing:1px;\">{{text}}</div><div style=\"font-weight:800;color:var(--text-main,#2a2a2a);\">{{text_2}}</div></div>\n                    <span style=\"background:var(--primary-soft,#FCE9DC);color:var(--primary-deep,#C85716);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;\">{{text_3}}</span>\n                  </div>\n                </div>\n              </article>", "fields": {"text": {"type": "textarea", "label": "Text"}, "text_2": {"type": "textarea", "label": "Text 2"}, "text_3": {"type": "textarea", "label": "Text 3"}}}, "group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_button_url_2": {"type": "text", "label": "Group 1 Button Url 2"}, "group_2_button_url_2": {"type": "text", "label": "Group 2 Button Url 2"}, "group_3_button_url": {"type": "text", "label": "Group 3 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_1_text_3": {"type": "textarea", "label": "Group 1 Text 3"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_1_text_4": {"type": "textarea", "label": "Group 1 Text 4"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"hero_slide_items": [{"text": "Skin Tech", "text_2": "RRS® HA Long Lasting", "text_3": "CE III"}, {"text": "Skin Tech", "text_2": "Melablock HSP SPF 50+", "text_3": "SPF 50+"}, {"text": "Skin Tech", "text_2": "Benebellum LUMINA VİT-C", "text_3": "VİT-C"}], "group_1_button_url": "/klasik-urunler", "group_2_button_url": "https://wa.me/905426205100", "group_1_button_url_2": "#hs1", "group_2_button_url_2": "#hs2", "group_3_button_url": "#hs3", "group_1_subtitle": "● 2004'ten beri Türkiye'nin güveni", "group_1_title": "Medikal estetikte", "group_1_text": "yenilikçi çözümler", "group_2_body_html": "Tek seansta uzun etkili sonuçlarla yüksek memnuniyet. Uluslararası markaların resmi temsilcisi olarak, doktorlara ürün ve uygulamalı eğitim sunuyoruz.", "group_1_button_text": "Ürünleri Keşfet →", "group_2_button_text": "WhatsApp Danışma", "group_1_text_2": "Sertifika", "group_2_text": "CE Class III", "group_1_text_3": "Kapsama", "group_2_text_2": "Türkiye Geneli", "group_1_text_4": "Destek", "group_2_text_3": "Uygulamalı Eğitim"}
+{"hero_slide_items": [{"text": "Skin Tech", "text_2": "RRS® HA Long Lasting", "text_3": "CE III"}, {"text": "Skin Tech", "text_2": "Melablock HSP SPF 50+", "text_3": "SPF 50+"}, {"text": "Skin Tech", "text_2": "Benebellum LUMINA VİT-C", "text_3": "VİT-C"}], "group_1_button_url": "/urunler", "group_2_button_url": "https://wa.me/905426205100", "group_1_button_url_2": "#hs1", "group_2_button_url_2": "#hs2", "group_3_button_url": "#hs3", "group_1_subtitle": "● 2004'ten beri Türkiye'nin güveni", "group_1_title": "Medikal estetikte", "group_1_text": "yenilikçi çözümler", "group_2_body_html": "Tek seansta uzun etkili sonuçlarla yüksek memnuniyet. Uluslararası markaların resmi temsilcisi olarak, doktorlara ürün ve uygulamalı eğitim sunuyoruz.", "group_1_button_text": "Ürünleri Keşfet →", "group_2_button_text": "WhatsApp Danışma", "group_1_text_2": "Sertifika", "group_2_text": "CE Class III", "group_1_text_3": "Kapsama", "group_2_text_2": "Türkiye Geneli", "group_1_text_4": "Destek", "group_2_text_3": "Uygulamalı Eğitim"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'TRUST STATS',
              'html_template'=><<<'EDHTML'
@@ -97,7 +97,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'BRAND SHOWCASE',
              'html_template'=><<<'EDHTML'
@@ -151,12 +151,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_button_url": {"type": "text", "label": "Group 3 Button Url"}, "group_4_button_url": {"type": "text", "label": "Group 4 Button Url"}, "group_5_button_url": {"type": "text", "label": "Group 5 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_title_2": {"type": "text", "label": "Group 1 Title 2"}, "group_1_subtitle_2": {"type": "textarea", "label": "Group 1 Subtitle 2"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_title": {"type": "text", "label": "Group 3 Title"}, "group_3_subtitle": {"type": "textarea", "label": "Group 3 Subtitle"}, "group_3_text_2": {"type": "textarea", "label": "Group 3 Text 2"}, "group_4_text": {"type": "textarea", "label": "Group 4 Text"}, "group_4_title": {"type": "text", "label": "Group 4 Title"}, "group_4_subtitle": {"type": "textarea", "label": "Group 4 Subtitle"}, "group_4_text_2": {"type": "textarea", "label": "Group 4 Text 2"}, "group_5_text": {"type": "textarea", "label": "Group 5 Text"}, "group_5_title": {"type": "text", "label": "Group 5 Title"}, "group_5_subtitle": {"type": "textarea", "label": "Group 5 Subtitle"}, "group_5_text_2": {"type": "textarea", "label": "Group 5 Text 2"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik-marka-skintech", "group_2_button_url": "/klasik-marka-seffiline", "group_3_button_url": "/klasik-marka-aespio", "group_4_button_url": "/klasik-marka-woorhi", "group_5_button_url": "/klasik-marka-mi-medical", "group_1_subtitle": "Temsil Ettiğimiz Markalar", "group_1_title": "Dünyanın önde gelen markaları, Türkiye'de tek adreste", "group_2_description": "Her biri kendi alanında uzman; mezoterapiden cihaza, peelingden ip askıya geniş bir portföy.", "group_1_text": "İspanya", "group_1_title_2": "Skin Tech Pharma", "group_1_subtitle_2": "Peeling, mezoterapi ve RRS skinbooster serisi.", "group_1_text_2": "Keşfet →", "group_2_text": "Cilt & Saç", "group_2_title": "Seffiline", "group_2_subtitle": "Cilt, saç, intim bakım ve dolgu çözümleri.", "group_2_text_2": "Keşfet →", "group_3_text": "K-Beauty", "group_3_title": "Grand Aespio", "group_3_subtitle": "Yüz maskeleri ve ip askı (thread) ürünleri.", "group_3_text_2": "Keşfet →", "group_4_text": "Güney Kore", "group_4_title": "Woorhi Mechatronics", "group_4_subtitle": "Kore mühendisliği medikal estetik cihazları.", "group_4_text_2": "Keşfet →", "group_5_text": "Premium", "group_5_title": "Mi Medical Innovation", "group_5_subtitle": "Premium mezoterapi ve enjeksiyon sistemleri.", "group_5_text_2": "Keşfet →"}
+{"group_1_button_url": "/marka-skintech", "group_2_button_url": "/marka-seffiline", "group_3_button_url": "/marka-aespio", "group_4_button_url": "/marka-woorhi", "group_5_button_url": "/marka-mi-medical", "group_1_subtitle": "Temsil Ettiğimiz Markalar", "group_1_title": "Dünyanın önde gelen markaları, Türkiye'de tek adreste", "group_2_description": "Her biri kendi alanında uzman; mezoterapiden cihaza, peelingden ip askıya geniş bir portföy.", "group_1_text": "İspanya", "group_1_title_2": "Skin Tech Pharma", "group_1_subtitle_2": "Peeling, mezoterapi ve RRS skinbooster serisi.", "group_1_text_2": "Keşfet →", "group_2_text": "Cilt & Saç", "group_2_title": "Seffiline", "group_2_subtitle": "Cilt, saç, intim bakım ve dolgu çözümleri.", "group_2_text_2": "Keşfet →", "group_3_text": "K-Beauty", "group_3_title": "Grand Aespio", "group_3_subtitle": "Yüz maskeleri ve ip askı (thread) ürünleri.", "group_3_text_2": "Keşfet →", "group_4_text": "Güney Kore", "group_4_title": "Woorhi Mechatronics", "group_4_subtitle": "Kore mühendisliği medikal estetik cihazları.", "group_4_text_2": "Keşfet →", "group_5_text": "Premium", "group_5_title": "Mi Medical Innovation", "group_5_subtitle": "Premium mezoterapi ve enjeksiyon sistemleri.", "group_5_text_2": "Keşfet →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'FEATURED PRODUCTS',
              'html_template'=><<<'EDHTML'
@@ -218,12 +218,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_1_button_url_2": {"type": "text", "label": "Group 1 Button Url 2"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_button_url": {"type": "text", "label": "Group 3 Button Url"}, "group_4_button_url": {"type": "text", "label": "Group 4 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_title_2": {"type": "text", "label": "Group 2 Title 2"}, "group_2_description_2": {"type": "textarea", "label": "Group 2 Description 2"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_2_title_3": {"type": "text", "label": "Group 2 Title 3"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_2_title_4": {"type": "text", "label": "Group 2 Title 4"}, "group_2_subtitle_2": {"type": "textarea", "label": "Group 2 Subtitle 2"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik-urunler", "group_1_button_url_2": "/klasik-urun-detay", "group_2_button_url": "/klasik-urun-detay", "group_3_button_url": "/klasik-urun-detay", "group_4_button_url": "/klasik-urun-detay", "group_1_subtitle": "Öne Çıkan Ürünler", "group_1_title": "Kliniğinizin en çok tercih ettikleri", "group_1_button_text": "Tüm ürünler →", "group_2_text": "Skin Tech · RRS", "group_2_title": "RRS® HA Long Lasting", "group_2_description": "Çapraz bağlı hyalüronik asit içeren CE Class III dermal implant.", "group_2_text_2": "Skin Tech · Krem", "group_2_title_2": "Melablock HSP SPF 50+", "group_2_description_2": "Cildi güneşin zararlı etkilerine karşı 360° koruyan yüksek faktör.", "group_2_text_3": "Skin Tech · Mezoterapi", "group_2_title_3": "Benebellum LUMINA VİT-C 18%", "group_2_subtitle": "Yüksek konsantrasyonlu C vitamini ile aydınlatıcı bakım.", "group_2_text_4": "Grand Aespio · Maske", "group_2_title_4": "Beta-Glukan Mask", "group_2_subtitle_2": "Yatıştırıcı ve onarıcı beta-glukan içeren yüz maskesi."}
+{"group_1_button_url": "/urunler", "group_1_button_url_2": "/urun-detay", "group_2_button_url": "/urun-detay", "group_3_button_url": "/urun-detay", "group_4_button_url": "/urun-detay", "group_1_subtitle": "Öne Çıkan Ürünler", "group_1_title": "Kliniğinizin en çok tercih ettikleri", "group_1_button_text": "Tüm ürünler →", "group_2_text": "Skin Tech · RRS", "group_2_title": "RRS® HA Long Lasting", "group_2_description": "Çapraz bağlı hyalüronik asit içeren CE Class III dermal implant.", "group_2_text_2": "Skin Tech · Krem", "group_2_title_2": "Melablock HSP SPF 50+", "group_2_description_2": "Cildi güneşin zararlı etkilerine karşı 360° koruyan yüksek faktör.", "group_2_text_3": "Skin Tech · Mezoterapi", "group_2_title_3": "Benebellum LUMINA VİT-C 18%", "group_2_subtitle": "Yüksek konsantrasyonlu C vitamini ile aydınlatıcı bakım.", "group_2_text_4": "Grand Aespio · Maske", "group_2_title_4": "Beta-Glukan Mask", "group_2_subtitle_2": "Yatıştırıcı ve onarıcı beta-glukan içeren yüz maskesi."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CATEGORY GRID',
              'html_template'=><<<'EDHTML'
@@ -246,12 +246,12 @@ EDHTML,
 {"cat_pill_items": {"type": "repeater", "label": "Cat Pill Items", "repeat_kind": "items", "item_template": "<a href=\"{{button_url}}\" class=\"cat-pill\" style=\"background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);\">{{button_text}}</a>", "fields": {"button_url": {"type": "text", "label": "Button Url"}, "button_text": {"type": "textarea", "label": "Button Text"}}}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"cat_pill_items": [{"button_url": "/klasik-urunler", "button_text": "İp"}, {"button_url": "/klasik-urunler", "button_text": "Kanül & İğne Ucu"}, {"button_url": "/klasik-urunler", "button_text": "Kimyasal Peeling"}, {"button_url": "/klasik-urunler", "button_text": "Kozmetik"}, {"button_url": "/klasik-urunler", "button_text": "Kremler"}, {"button_url": "/klasik-urunler", "button_text": "Mezoterapi"}, {"button_url": "/klasik-urunler", "button_text": "Mezoterapi Tabancası"}, {"button_url": "/klasik-urunler", "button_text": "Micro İğneleme"}, {"button_url": "/klasik-urunler", "button_text": "Otolog Rejeneratif Terapi"}, {"button_url": "/klasik-urunler", "button_text": "Peeling"}, {"button_url": "/klasik-urunler", "button_text": "Profesyonel Ürünler"}, {"button_url": "/klasik-urunler", "button_text": "RRS"}, {"button_url": "/klasik-urunler", "button_text": "Terapi"}, {"button_url": "/klasik-urunler", "button_text": "Yüz Maskesi"}], "group_1_subtitle": "Ürün Kategorileri", "group_1_title": "İhtiyacınız olan her şey, 14 kategoride"}
+{"cat_pill_items": [{"button_url": "/urunler", "button_text": "İp"}, {"button_url": "/urunler", "button_text": "Kanül & İğne Ucu"}, {"button_url": "/urunler", "button_text": "Kimyasal Peeling"}, {"button_url": "/urunler", "button_text": "Kozmetik"}, {"button_url": "/urunler", "button_text": "Kremler"}, {"button_url": "/urunler", "button_text": "Mezoterapi"}, {"button_url": "/urunler", "button_text": "Mezoterapi Tabancası"}, {"button_url": "/urunler", "button_text": "Micro İğneleme"}, {"button_url": "/urunler", "button_text": "Otolog Rejeneratif Terapi"}, {"button_url": "/urunler", "button_text": "Peeling"}, {"button_url": "/urunler", "button_text": "Profesyonel Ürünler"}, {"button_url": "/urunler", "button_text": "RRS"}, {"button_url": "/urunler", "button_text": "Terapi"}, {"button_url": "/urunler", "button_text": "Yüz Maskesi"}], "group_1_subtitle": "Ürün Kategorileri", "group_1_title": "İhtiyacınız olan her şey, 14 kategoride"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-5'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-5'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'ABOUT TEASER',
              'html_template'=><<<'EDHTML'
@@ -286,12 +286,12 @@ EDHTML,
 {"group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_item_text": {"type": "textarea", "label": "Group 1 Item Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_2_button_url": "/klasik-hakkimizda", "group_1_subtitle": "Biz Kimiz?", "group_2_title": "2004'ten beri medikal estetikte güvenin adresi", "group_2_body_html": "Estetik Dermal, medikal estetik dünyasının en yenilikçi ve yüksek teknolojiye sahip ürünlerini Türkiye geneline dağıtıyor. Uluslararası markaların resmi temsilcisi olarak, yalnızca ürün değil; doktorlara uygulamalı eğitim ve teknik destek de sunuyoruz.", "group_1_text": "✓", "group_1_item_text": "Uluslararası markaların resmi Türkiye temsilcisi", "group_2_text": "✓", "group_2_item_text": "CE Class III sertifikalı RRS serisi", "group_3_text": "✓", "group_3_item_text": "Doktorlara uygulamalı eğitim ve teknik destek", "group_2_button_text": "Hakkımızda →"}
+{"group_2_button_url": "/hakkimizda", "group_1_subtitle": "Biz Kimiz?", "group_2_title": "2004'ten beri medikal estetikte güvenin adresi", "group_2_body_html": "Estetik Dermal, medikal estetik dünyasının en yenilikçi ve yüksek teknolojiye sahip ürünlerini Türkiye geneline dağıtıyor. Uluslararası markaların resmi temsilcisi olarak, yalnızca ürün değil; doktorlara uygulamalı eğitim ve teknik destek de sunuyoruz.", "group_1_text": "✓", "group_1_item_text": "Uluslararası markaların resmi Türkiye temsilcisi", "group_2_text": "✓", "group_2_item_text": "CE Class III sertifikalı RRS serisi", "group_3_text": "✓", "group_3_item_text": "Doktorlara uygulamalı eğitim ve teknik destek", "group_2_button_text": "Hakkımızda →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-6'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-6'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'TRAINING / SUPPORT',
              'html_template'=><<<'EDHTML'
@@ -334,7 +334,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-7'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-home-7'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA',
              'html_template'=><<<'EDHTML'
@@ -367,7 +367,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-hakkimizda-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-hakkimizda-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PAGE HERO (compact başlık bandı)',
              'html_template'=><<<'EDHTML'
@@ -393,12 +393,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "title": {"type": "text", "label": "Title"}, "body_html": {"type": "textarea", "label": "Body"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik", "group_1_button_text": "Ana Sayfa", "group_2_item_text": "/", "group_3_item_text": "Hakkımızda", "title": "Hakkımızda", "body_html": "2004'ten bu yana medikal estetik dünyasının en yenilikçi ve yüksek teknolojiye sahip ürünlerini Türkiye geneline ulaştıran resmi distribütör."}
+{"group_1_button_url": "/", "group_1_button_text": "Ana Sayfa", "group_2_item_text": "/", "group_3_item_text": "Hakkımızda", "title": "Hakkımızda", "body_html": "2004'ten bu yana medikal estetik dünyasının en yenilikçi ve yüksek teknolojiye sahip ürünlerini Türkiye geneline ulaştıran resmi distribütör."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-hakkimizda-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-hakkimizda-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'ABOUT STORY (2 kolon split)',
              'html_template'=><<<'EDHTML'
@@ -438,7 +438,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-hakkimizda-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-hakkimizda-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'VİZYON & MİSYON (2 kart)',
              'html_template'=><<<'EDHTML'
@@ -472,7 +472,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-hakkimizda-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-hakkimizda-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'STATS BAR',
              'html_template'=><<<'EDHTML'
@@ -498,7 +498,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-hakkimizda-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-hakkimizda-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PORTFOLIO BRANDS',
              'html_template'=><<<'EDHTML'
@@ -562,12 +562,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_button_url": {"type": "text", "label": "Group 3 Button Url"}, "group_4_button_url": {"type": "text", "label": "Group 4 Button Url"}, "group_5_button_url": {"type": "text", "label": "Group 5 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_title_2": {"type": "text", "label": "Group 1 Title 2"}, "group_1_subtitle_2": {"type": "textarea", "label": "Group 1 Subtitle 2"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_2_title_2": {"type": "text", "label": "Group 2 Title 2"}, "group_2_subtitle_2": {"type": "textarea", "label": "Group 2 Subtitle 2"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_title": {"type": "text", "label": "Group 3 Title"}, "group_3_subtitle": {"type": "textarea", "label": "Group 3 Subtitle"}, "group_3_text_2": {"type": "textarea", "label": "Group 3 Text 2"}, "group_4_text": {"type": "textarea", "label": "Group 4 Text"}, "group_4_title": {"type": "text", "label": "Group 4 Title"}, "group_4_subtitle": {"type": "textarea", "label": "Group 4 Subtitle"}, "group_4_text_2": {"type": "textarea", "label": "Group 4 Text 2"}, "group_5_text": {"type": "textarea", "label": "Group 5 Text"}, "group_5_title": {"type": "text", "label": "Group 5 Title"}, "group_5_subtitle": {"type": "textarea", "label": "Group 5 Subtitle"}, "group_5_text_2": {"type": "textarea", "label": "Group 5 Text 2"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik-marka-skintech", "group_2_button_url": "/klasik-marka-mi-medical", "group_3_button_url": "/klasik-marka-seffiline", "group_4_button_url": "/klasik-marka-woorhi", "group_5_button_url": "/klasik-marka-aespio", "group_1_subtitle": "Portföyümüz", "group_1_title": "Temsil ettiğimiz uluslararası markalar", "group_2_description": "Her biri kendi alanında uzman; mezoterapiden cihaza, peelingden ip askıya geniş bir ürün yelpazesi.", "group_1_text": "İspanya", "group_1_title_2": "Skin Tech Pharma", "group_1_subtitle_2": "Peeling, mezoterapi ve RRS skinbooster serisi.", "group_1_text_2": "Keşfet →", "group_2_text": "Premium", "group_2_title": "Mi Medical Innovation", "group_2_subtitle": "Premium mezoterapi ve enjeksiyon sistemleri.", "group_2_text_2": "Keşfet →", "group_2_text_3": "Kök Hücre", "group_2_title_2": "Neogenesis", "group_2_subtitle_2": "Kök hücre teknolojili profesyonel cilt bakım serisi.", "group_2_text_4": "Portföyümüzde", "group_3_text": "Cilt & Saç", "group_3_title": "Seffiline", "group_3_subtitle": "Cilt, saç, intim bakım ve dolgu çözümleri.", "group_3_text_2": "Keşfet →", "group_4_text": "Güney Kore", "group_4_title": "Woorhi Mechatronics", "group_4_subtitle": "Kore mühendisliği medikal estetik cihazları.", "group_4_text_2": "Keşfet →", "group_5_text": "K-Beauty", "group_5_title": "Grand Aespio", "group_5_subtitle": "Yüz maskeleri ve ip askı (thread) ürünleri.", "group_5_text_2": "Keşfet →"}
+{"group_1_button_url": "/marka-skintech", "group_2_button_url": "/marka-mi-medical", "group_3_button_url": "/marka-seffiline", "group_4_button_url": "/marka-woorhi", "group_5_button_url": "/marka-aespio", "group_1_subtitle": "Portföyümüz", "group_1_title": "Temsil ettiğimiz uluslararası markalar", "group_2_description": "Her biri kendi alanında uzman; mezoterapiden cihaza, peelingden ip askıya geniş bir ürün yelpazesi.", "group_1_text": "İspanya", "group_1_title_2": "Skin Tech Pharma", "group_1_subtitle_2": "Peeling, mezoterapi ve RRS skinbooster serisi.", "group_1_text_2": "Keşfet →", "group_2_text": "Premium", "group_2_title": "Mi Medical Innovation", "group_2_subtitle": "Premium mezoterapi ve enjeksiyon sistemleri.", "group_2_text_2": "Keşfet →", "group_2_text_3": "Kök Hücre", "group_2_title_2": "Neogenesis", "group_2_subtitle_2": "Kök hücre teknolojili profesyonel cilt bakım serisi.", "group_2_text_4": "Portföyümüzde", "group_3_text": "Cilt & Saç", "group_3_title": "Seffiline", "group_3_subtitle": "Cilt, saç, intim bakım ve dolgu çözümleri.", "group_3_text_2": "Keşfet →", "group_4_text": "Güney Kore", "group_4_title": "Woorhi Mechatronics", "group_4_subtitle": "Kore mühendisliği medikal estetik cihazları.", "group_4_text_2": "Keşfet →", "group_5_text": "K-Beauty", "group_5_title": "Grand Aespio", "group_5_subtitle": "Yüz maskeleri ve ip askı (thread) ürünleri.", "group_5_text_2": "Keşfet →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-hakkimizda-5'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-hakkimizda-5'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'TRAINING / SUPPORT',
              'html_template'=><<<'EDHTML'
@@ -610,7 +610,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-hakkimizda-6'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-hakkimizda-6'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA',
              'html_template'=><<<'EDHTML'
@@ -643,7 +643,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urunler-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urunler-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PAGE HERO (compact)',
              'html_template'=><<<'EDHTML'
@@ -667,12 +667,12 @@ EDHTML,
 {"button_url": {"type": "text", "label": "Button Url"}, "button_text": {"type": "textarea", "label": "Button Text"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "title": {"type": "text", "label": "Title"}, "subtitle": {"type": "textarea", "label": "Subtitle"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"button_url": "/klasik", "button_text": "Ana Sayfa", "group_1_text": "/", "group_2_text": "Ürünler", "title": "Ürünler", "subtitle": "95+ profesyonel medikal estetik ürünü, 14 kategoride."}
+{"button_url": "/", "button_text": "Ana Sayfa", "group_1_text": "/", "group_2_text": "Ürünler", "title": "Ürünler", "subtitle": "95+ profesyonel medikal estetik ürünü, 14 kategoride."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urunler-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urunler-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'FILTER CHIPS (görsel, statik)',
              'html_template'=><<<'EDHTML'
@@ -695,12 +695,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_button_url": {"type": "text", "label": "Group 3 Button Url"}, "group_4_button_url": {"type": "text", "label": "Group 4 Button Url"}, "group_5_button_url": {"type": "text", "label": "Group 5 Button Url"}, "group_6_button_url": {"type": "text", "label": "Group 6 Button Url"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_3_button_text": {"type": "textarea", "label": "Group 3 Button Text"}, "group_4_button_text": {"type": "textarea", "label": "Group 4 Button Text"}, "group_5_button_text": {"type": "textarea", "label": "Group 5 Button Text"}, "group_6_button_text": {"type": "textarea", "label": "Group 6 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik-urunler", "group_2_button_url": "/klasik-urunler", "group_3_button_url": "/klasik-urunler", "group_4_button_url": "/klasik-urunler", "group_5_button_url": "/klasik-urunler", "group_6_button_url": "/klasik-urunler", "group_1_button_text": "Tümü", "group_2_button_text": "Skin Tech", "group_3_button_text": "Seffiline", "group_4_button_text": "Grand Aespio", "group_5_button_text": "Woorhi", "group_6_button_text": "Mi Medical"}
+{"group_1_button_url": "/urunler", "group_2_button_url": "/urunler", "group_3_button_url": "/urunler", "group_4_button_url": "/urunler", "group_5_button_url": "/urunler", "group_6_button_url": "/urunler", "group_1_button_text": "Tümü", "group_2_button_text": "Skin Tech", "group_3_button_text": "Seffiline", "group_4_button_text": "Grand Aespio", "group_5_button_text": "Woorhi", "group_6_button_text": "Mi Medical"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urunler-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urunler-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CATEGORY GRID (14 kategori)',
              'html_template'=><<<'EDHTML'
@@ -723,12 +723,12 @@ EDHTML,
 {"cat_pill_items": {"type": "repeater", "label": "Cat Pill Items", "repeat_kind": "items", "item_template": "<a href=\"{{button_url}}\" class=\"cat-pill\" style=\"background:#fff;border:1.5px solid var(--border-soft,#ece6df);border-radius:999px;padding:11px 22px;font-weight:600;font-size:15px;color:var(--text-main,#2a2a2a);\">{{button_text}}</a>", "fields": {"button_url": {"type": "text", "label": "Button Url"}, "button_text": {"type": "textarea", "label": "Button Text"}}}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"cat_pill_items": [{"button_url": "/klasik-urunler", "button_text": "İp"}, {"button_url": "/klasik-urunler", "button_text": "Kanül & İğne Ucu"}, {"button_url": "/klasik-urunler", "button_text": "Kimyasal Peeling"}, {"button_url": "/klasik-urunler", "button_text": "Kozmetik"}, {"button_url": "/klasik-urunler", "button_text": "Kremler"}, {"button_url": "/klasik-urunler", "button_text": "Mezoterapi"}, {"button_url": "/klasik-urunler", "button_text": "Mezoterapi Tabancası"}, {"button_url": "/klasik-urunler", "button_text": "Micro İğneleme"}, {"button_url": "/klasik-urunler", "button_text": "Otolog Rejeneratif Terapi"}, {"button_url": "/klasik-urunler", "button_text": "Peeling"}, {"button_url": "/klasik-urunler", "button_text": "Profesyonel Ürünler"}, {"button_url": "/klasik-urunler", "button_text": "RRS"}, {"button_url": "/klasik-urunler", "button_text": "Terapi"}, {"button_url": "/klasik-urunler", "button_text": "Yüz Maskesi"}], "group_1_subtitle": "Ürün Kategorileri", "group_1_title": "İhtiyacınız olan her şey, 14 kategoride"}
+{"cat_pill_items": [{"button_url": "/urunler", "button_text": "İp"}, {"button_url": "/urunler", "button_text": "Kanül & İğne Ucu"}, {"button_url": "/urunler", "button_text": "Kimyasal Peeling"}, {"button_url": "/urunler", "button_text": "Kozmetik"}, {"button_url": "/urunler", "button_text": "Kremler"}, {"button_url": "/urunler", "button_text": "Mezoterapi"}, {"button_url": "/urunler", "button_text": "Mezoterapi Tabancası"}, {"button_url": "/urunler", "button_text": "Micro İğneleme"}, {"button_url": "/urunler", "button_text": "Otolog Rejeneratif Terapi"}, {"button_url": "/urunler", "button_text": "Peeling"}, {"button_url": "/urunler", "button_text": "Profesyonel Ürünler"}, {"button_url": "/urunler", "button_text": "RRS"}, {"button_url": "/urunler", "button_text": "Terapi"}, {"button_url": "/urunler", "button_text": "Yüz Maskesi"}], "group_1_subtitle": "Ürün Kategorileri", "group_1_title": "İhtiyacınız olan her şey, 14 kategoride"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urunler-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urunler-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PRODUCT GRID',
              'html_template'=><<<'EDHTML'
@@ -949,12 +949,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_button_url": {"type": "text", "label": "Group 3 Button Url"}, "group_4_button_url": {"type": "text", "label": "Group 4 Button Url"}, "group_5_button_url": {"type": "text", "label": "Group 5 Button Url"}, "group_6_button_url": {"type": "text", "label": "Group 6 Button Url"}, "group_7_button_url": {"type": "text", "label": "Group 7 Button Url"}, "group_8_button_url": {"type": "text", "label": "Group 8 Button Url"}, "group_9_button_url": {"type": "text", "label": "Group 9 Button Url"}, "group_10_button_url": {"type": "text", "label": "Group 10 Button Url"}, "group_11_button_url": {"type": "text", "label": "Group 11 Button Url"}, "group_12_button_url": {"type": "text", "label": "Group 12 Button Url"}, "group_13_button_url": {"type": "text", "label": "Group 13 Button Url"}, "group_14_button_url": {"type": "text", "label": "Group 14 Button Url"}, "group_15_button_url": {"type": "text", "label": "Group 15 Button Url"}, "group_16_button_url": {"type": "text", "label": "Group 16 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_title_2": {"type": "text", "label": "Group 2 Title 2"}, "group_2_subtitle_2": {"type": "textarea", "label": "Group 2 Subtitle 2"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_2_title_3": {"type": "text", "label": "Group 2 Title 3"}, "group_2_subtitle_3": {"type": "textarea", "label": "Group 2 Subtitle 3"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_2_title_4": {"type": "text", "label": "Group 2 Title 4"}, "group_2_subtitle_4": {"type": "textarea", "label": "Group 2 Subtitle 4"}, "group_2_text_5": {"type": "textarea", "label": "Group 2 Text 5"}, "group_2_title_5": {"type": "text", "label": "Group 2 Title 5"}, "group_2_subtitle_5": {"type": "textarea", "label": "Group 2 Subtitle 5"}, "group_2_text_6": {"type": "textarea", "label": "Group 2 Text 6"}, "group_2_title_6": {"type": "text", "label": "Group 2 Title 6"}, "group_2_subtitle_6": {"type": "textarea", "label": "Group 2 Subtitle 6"}, "group_2_text_7": {"type": "textarea", "label": "Group 2 Text 7"}, "group_2_title_7": {"type": "text", "label": "Group 2 Title 7"}, "group_2_subtitle_7": {"type": "textarea", "label": "Group 2 Subtitle 7"}, "group_2_text_8": {"type": "textarea", "label": "Group 2 Text 8"}, "group_2_title_8": {"type": "text", "label": "Group 2 Title 8"}, "group_2_subtitle_8": {"type": "textarea", "label": "Group 2 Subtitle 8"}, "group_2_text_9": {"type": "textarea", "label": "Group 2 Text 9"}, "group_2_title_9": {"type": "text", "label": "Group 2 Title 9"}, "group_2_subtitle_9": {"type": "textarea", "label": "Group 2 Subtitle 9"}, "group_2_text_10": {"type": "textarea", "label": "Group 2 Text 10"}, "group_2_title_10": {"type": "text", "label": "Group 2 Title 10"}, "group_2_subtitle_10": {"type": "textarea", "label": "Group 2 Subtitle 10"}, "group_2_text_11": {"type": "textarea", "label": "Group 2 Text 11"}, "group_2_title_11": {"type": "text", "label": "Group 2 Title 11"}, "group_2_subtitle_11": {"type": "textarea", "label": "Group 2 Subtitle 11"}, "group_2_text_12": {"type": "textarea", "label": "Group 2 Text 12"}, "group_2_title_12": {"type": "text", "label": "Group 2 Title 12"}, "group_2_subtitle_12": {"type": "textarea", "label": "Group 2 Subtitle 12"}, "group_2_text_13": {"type": "textarea", "label": "Group 2 Text 13"}, "group_2_title_13": {"type": "text", "label": "Group 2 Title 13"}, "group_2_subtitle_13": {"type": "textarea", "label": "Group 2 Subtitle 13"}, "group_2_text_14": {"type": "textarea", "label": "Group 2 Text 14"}, "group_2_title_14": {"type": "text", "label": "Group 2 Title 14"}, "group_2_subtitle_14": {"type": "textarea", "label": "Group 2 Subtitle 14"}, "group_2_text_15": {"type": "textarea", "label": "Group 2 Text 15"}, "group_2_title_15": {"type": "text", "label": "Group 2 Title 15"}, "group_2_subtitle_15": {"type": "textarea", "label": "Group 2 Subtitle 15"}, "group_2_text_16": {"type": "textarea", "label": "Group 2 Text 16"}, "group_2_title_16": {"type": "text", "label": "Group 2 Title 16"}, "group_2_subtitle_16": {"type": "textarea", "label": "Group 2 Subtitle 16"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik-urun-detay", "group_2_button_url": "/klasik-urun-detay", "group_3_button_url": "/klasik-urun-detay", "group_4_button_url": "/klasik-urun-detay", "group_5_button_url": "/klasik-urun-detay", "group_6_button_url": "/klasik-urun-detay", "group_7_button_url": "/klasik-urun-detay", "group_8_button_url": "/klasik-urun-detay", "group_9_button_url": "/klasik-urun-detay", "group_10_button_url": "/klasik-urun-detay", "group_11_button_url": "/klasik-urun-detay", "group_12_button_url": "/klasik-urun-detay", "group_13_button_url": "/klasik-urun-detay", "group_14_button_url": "/klasik-urun-detay", "group_15_button_url": "/klasik-urun-detay", "group_16_button_url": "/klasik-urun-detay", "group_1_subtitle": "Tüm Ürünler", "group_1_title": "Profesyonel medikal estetik portföyü", "group_2_text": "Skin Tech · RRS", "group_2_title": "RRS® HA Long Lasting", "group_2_subtitle": "Çapraz bağlı HA içeren CE Class III dermal implant.", "group_2_text_2": "Skin Tech · Krem", "group_2_title_2": "Melablock HSP SPF 50+", "group_2_subtitle_2": "360° güneş koruması.", "group_2_text_3": "Skin Tech · Mezoterapi", "group_2_title_3": "Benebellum LUMINA VİT-C 18%", "group_2_subtitle_3": "Yüksek konsantrasyonlu C vitamini.", "group_2_text_4": "Skin Tech · Mezoterapi", "group_2_title_4": "Benebellum LUMINA VİT. A+E", "group_2_subtitle_4": "A ve E vitamini ile besleyici, antioksidan bakım.", "group_2_text_5": "Skin Tech · Mezoterapi", "group_2_title_5": "Benebellum TX SOLUTION", "group_2_subtitle_5": "Traneksamik asit içeren leke karşıtı aydınlatıcı solüsyon.", "group_2_text_6": "Skin Tech · Peeling", "group_2_title_6": "Aclaranse", "group_2_subtitle_6": "Lekeli ciltler için aydınlatıcı profesyonel peeling çözümü.", "group_2_text_7": "Skin Tech · İp", "group_2_title_7": "Actilift", "group_2_subtitle_7": "Yüz ve boyunda anlık toparlama için ip askı sistemi.", "group_2_text_8": "Skin Tech · Mezoterapi", "group_2_title_8": "Atrofillin", "group_2_subtitle_8": "Atrofik izler ve cilt onarımı için mezoterapi solüsyonu.", "group_2_text_9": "Grand Aespio · Yüz Maskesi", "group_2_title_9": "Beta-Glukan Mask", "group_2_subtitle_9": "Yatıştırıcı ve onarıcı beta-glukan içeren yüz maskesi.", "group_2_text_10": "Grand Aespio · Yüz Maskesi", "group_2_title_10": "Hyaluronic Acid Mask", "group_2_subtitle_10": "Yoğun nem ve dolgunluk veren hyalüronik asit maskesi.", "group_2_text_11": "Grand Aespio · İp", "group_2_title_11": "LFL Anchor", "group_2_subtitle_11": "Güçlü tutuş sağlayan çapalı askı (anchor) ip serisi.", "group_2_text_12": "Seffiline · Mezoterapi", "group_2_title_12": "SeffiHair", "group_2_subtitle_12": "Saç dökülmesine karşı saçlı deri mezoterapi solüsyonu.", "group_2_text_13": "Seffiline · Kozmetik", "group_2_title_13": "SeffiCare", "group_2_subtitle_13": "Günlük cilt bakımı için kozmetik onarım serisi.", "group_2_text_14": "Seffiline · Mezoterapi", "group_2_title_14": "Seffiller", "group_2_subtitle_14": "Hacim ve dolgunluk için hyalüronik asit bazlı dolgu serisi.", "group_2_text_15": "Woorhi · Mezoterapi Tabancası", "group_2_title_15": "Raffine", "group_2_subtitle_15": "Kore mühendisliği cihaz.", "group_2_text_16": "Mi Medical · Mezoterapi Tabancası", "group_2_title_16": "Pistor Eliance", "group_2_subtitle_16": "Premium enjeksiyon sistemi."}
+{"group_1_button_url": "/urun-detay", "group_2_button_url": "/urun-detay", "group_3_button_url": "/urun-detay", "group_4_button_url": "/urun-detay", "group_5_button_url": "/urun-detay", "group_6_button_url": "/urun-detay", "group_7_button_url": "/urun-detay", "group_8_button_url": "/urun-detay", "group_9_button_url": "/urun-detay", "group_10_button_url": "/urun-detay", "group_11_button_url": "/urun-detay", "group_12_button_url": "/urun-detay", "group_13_button_url": "/urun-detay", "group_14_button_url": "/urun-detay", "group_15_button_url": "/urun-detay", "group_16_button_url": "/urun-detay", "group_1_subtitle": "Tüm Ürünler", "group_1_title": "Profesyonel medikal estetik portföyü", "group_2_text": "Skin Tech · RRS", "group_2_title": "RRS® HA Long Lasting", "group_2_subtitle": "Çapraz bağlı HA içeren CE Class III dermal implant.", "group_2_text_2": "Skin Tech · Krem", "group_2_title_2": "Melablock HSP SPF 50+", "group_2_subtitle_2": "360° güneş koruması.", "group_2_text_3": "Skin Tech · Mezoterapi", "group_2_title_3": "Benebellum LUMINA VİT-C 18%", "group_2_subtitle_3": "Yüksek konsantrasyonlu C vitamini.", "group_2_text_4": "Skin Tech · Mezoterapi", "group_2_title_4": "Benebellum LUMINA VİT. A+E", "group_2_subtitle_4": "A ve E vitamini ile besleyici, antioksidan bakım.", "group_2_text_5": "Skin Tech · Mezoterapi", "group_2_title_5": "Benebellum TX SOLUTION", "group_2_subtitle_5": "Traneksamik asit içeren leke karşıtı aydınlatıcı solüsyon.", "group_2_text_6": "Skin Tech · Peeling", "group_2_title_6": "Aclaranse", "group_2_subtitle_6": "Lekeli ciltler için aydınlatıcı profesyonel peeling çözümü.", "group_2_text_7": "Skin Tech · İp", "group_2_title_7": "Actilift", "group_2_subtitle_7": "Yüz ve boyunda anlık toparlama için ip askı sistemi.", "group_2_text_8": "Skin Tech · Mezoterapi", "group_2_title_8": "Atrofillin", "group_2_subtitle_8": "Atrofik izler ve cilt onarımı için mezoterapi solüsyonu.", "group_2_text_9": "Grand Aespio · Yüz Maskesi", "group_2_title_9": "Beta-Glukan Mask", "group_2_subtitle_9": "Yatıştırıcı ve onarıcı beta-glukan içeren yüz maskesi.", "group_2_text_10": "Grand Aespio · Yüz Maskesi", "group_2_title_10": "Hyaluronic Acid Mask", "group_2_subtitle_10": "Yoğun nem ve dolgunluk veren hyalüronik asit maskesi.", "group_2_text_11": "Grand Aespio · İp", "group_2_title_11": "LFL Anchor", "group_2_subtitle_11": "Güçlü tutuş sağlayan çapalı askı (anchor) ip serisi.", "group_2_text_12": "Seffiline · Mezoterapi", "group_2_title_12": "SeffiHair", "group_2_subtitle_12": "Saç dökülmesine karşı saçlı deri mezoterapi solüsyonu.", "group_2_text_13": "Seffiline · Kozmetik", "group_2_title_13": "SeffiCare", "group_2_subtitle_13": "Günlük cilt bakımı için kozmetik onarım serisi.", "group_2_text_14": "Seffiline · Mezoterapi", "group_2_title_14": "Seffiller", "group_2_subtitle_14": "Hacim ve dolgunluk için hyalüronik asit bazlı dolgu serisi.", "group_2_text_15": "Woorhi · Mezoterapi Tabancası", "group_2_title_15": "Raffine", "group_2_subtitle_15": "Kore mühendisliği cihaz.", "group_2_text_16": "Mi Medical · Mezoterapi Tabancası", "group_2_title_16": "Pistor Eliance", "group_2_subtitle_16": "Premium enjeksiyon sistemi."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urunler-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urunler-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'BİLGİ ŞERİDİ',
              'html_template'=><<<'EDHTML'
@@ -983,7 +983,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urunler-5'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urunler-5'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA',
              'html_template'=><<<'EDHTML'
@@ -1016,7 +1016,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urun-detay-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urun-detay-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PAGE HERO (compact) + BREADCRUMB',
              'html_template'=><<<'EDHTML'
@@ -1040,12 +1040,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik", "group_2_button_url": "/klasik-urunler", "group_1_button_text": "Ana Sayfa", "group_1_text": "/", "group_2_button_text": "Ürünler", "group_2_text": "/", "group_3_text": "RRS® HA Long Lasting"}
+{"group_1_button_url": "/", "group_2_button_url": "/urunler", "group_1_button_text": "Ana Sayfa", "group_1_text": "/", "group_2_button_text": "Ürünler", "group_2_text": "/", "group_3_text": "RRS® HA Long Lasting"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urun-detay-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urun-detay-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PRODUCT DETAIL (2 kolon)',
              'html_template'=><<<'EDHTML'
@@ -1128,12 +1128,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_1_description": {"type": "textarea", "label": "Group 1 Description"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_item_text": {"type": "textarea", "label": "Group 1 Item Text"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "group_4_text": {"type": "textarea", "label": "Group 4 Text"}, "group_4_item_text": {"type": "textarea", "label": "Group 4 Item Text"}, "group_5_text": {"type": "textarea", "label": "Group 5 Text"}, "group_5_item_text": {"type": "textarea", "label": "Group 5 Item Text"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "https://wa.me/905426205100", "group_2_button_url": "/klasik-iletisim", "group_2_text": "SKIN TECH · RRS", "group_2_title": "RRS® HA Long Lasting", "group_1_description": "Çapraz bağlı, emilebilir Hyalüronik asit içeren dermal implant.", "group_1_text": "✓", "group_1_item_text": "CE Class III sertifikalı", "group_2_text_2": "✓", "group_2_item_text": "Steril tıbbi enjektör formu", "group_3_text": "✓", "group_3_item_text": "Amino asit içeren koruyucu tampon solüsyonu", "group_4_text": "✓", "group_4_item_text": "Uzun etkili (long lasting)", "group_5_text": "✓", "group_5_item_text": "Cilt gençleştirme & nemlendirme", "group_1_button_text": "WhatsApp ile Sipariş", "group_2_button_text": "Teklif İste", "group_2_subtitle": "Yalnızca hekim/klinik kullanımına yöneliktir."}
+{"group_1_button_url": "https://wa.me/905426205100", "group_2_button_url": "/iletisim", "group_2_text": "SKIN TECH · RRS", "group_2_title": "RRS® HA Long Lasting", "group_1_description": "Çapraz bağlı, emilebilir Hyalüronik asit içeren dermal implant.", "group_1_text": "✓", "group_1_item_text": "CE Class III sertifikalı", "group_2_text_2": "✓", "group_2_item_text": "Steril tıbbi enjektör formu", "group_3_text": "✓", "group_3_item_text": "Amino asit içeren koruyucu tampon solüsyonu", "group_4_text": "✓", "group_4_item_text": "Uzun etkili (long lasting)", "group_5_text": "✓", "group_5_item_text": "Cilt gençleştirme & nemlendirme", "group_1_button_text": "WhatsApp ile Sipariş", "group_2_button_text": "Teklif İste", "group_2_subtitle": "Yalnızca hekim/klinik kullanımına yöneliktir."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urun-detay-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urun-detay-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PRODUCT DESCRIPTION (rich-text)',
              'html_template'=><<<'EDHTML'
@@ -1183,7 +1183,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urun-detay-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urun-detay-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'RELATED PRODUCTS',
              'html_template'=><<<'EDHTML'
@@ -1203,7 +1203,7 @@ EDJSON, true),
              Aşağıdaki her kartın üstündeki gradyan+emoji kutusu bir görsel
              placeholder'dır. İsimlendirme: /assets/img/product-{slug}.jpg
              (örn. product-melablock-hsp-spf50.jpg, product-benebellum-lumina-vitc.jpg,
-              product-atrofillin.jpg) — /klasik-urunler ile aynı görseller tekrar kullanılır.
+              product-atrofillin.jpg) — /urunler ile aynı görseller tekrar kullanılır.
              PROMPT: "Professional studio product photography of a single medical
              aesthetic / dermatology product package — pharmaceutical box and glass vial
              or syringe — centered on a clean white-to-cream seamless background, soft
@@ -1250,12 +1250,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_1_button_url_2": {"type": "text", "label": "Group 1 Button Url 2"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_button_url": {"type": "text", "label": "Group 3 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_title_2": {"type": "text", "label": "Group 2 Title 2"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_2_title_3": {"type": "text", "label": "Group 2 Title 3"}, "group_2_description_2": {"type": "textarea", "label": "Group 2 Description 2"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik-urunler", "group_1_button_url_2": "/klasik-urun-detay", "group_2_button_url": "/klasik-urun-detay", "group_3_button_url": "/klasik-urun-detay", "group_1_subtitle": "Benzer Ürünler", "group_1_title": "İlginizi çekebilecek diğer ürünler", "group_1_button_text": "Tüm ürünler →", "group_2_text": "Skin Tech · Krem", "group_2_title": "Melablock HSP SPF 50+", "group_2_description": "Cildi güneşin zararlı etkilerine karşı 360° koruyan yüksek faktör.", "group_2_text_2": "Skin Tech · Mezoterapi", "group_2_title_2": "Benebellum LUMINA VİT-C 18%", "group_2_subtitle": "Yüksek konsantrasyonlu C vitamini ile aydınlatıcı bakım.", "group_2_text_3": "Skin Tech · RRS", "group_2_title_3": "Atrofillin", "group_2_description_2": "Atrofik ve yıpranmış cilt için yenileyici dermal enjeksiyon çözümü."}
+{"group_1_button_url": "/urunler", "group_1_button_url_2": "/urun-detay", "group_2_button_url": "/urun-detay", "group_3_button_url": "/urun-detay", "group_1_subtitle": "Benzer Ürünler", "group_1_title": "İlginizi çekebilecek diğer ürünler", "group_1_button_text": "Tüm ürünler →", "group_2_text": "Skin Tech · Krem", "group_2_title": "Melablock HSP SPF 50+", "group_2_description": "Cildi güneşin zararlı etkilerine karşı 360° koruyan yüksek faktör.", "group_2_text_2": "Skin Tech · Mezoterapi", "group_2_title_2": "Benebellum LUMINA VİT-C 18%", "group_2_subtitle": "Yüksek konsantrasyonlu C vitamini ile aydınlatıcı bakım.", "group_2_text_3": "Skin Tech · RRS", "group_2_title_3": "Atrofillin", "group_2_description_2": "Atrofik ve yıpranmış cilt için yenileyici dermal enjeksiyon çözümü."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-urun-detay-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-urun-detay-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA (full)',
              'html_template'=><<<'EDHTML'
@@ -1288,7 +1288,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-markalar-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-markalar-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PAGE HERO (compact)',
              'html_template'=><<<'EDHTML'
@@ -1314,12 +1314,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "title": {"type": "text", "label": "Title"}, "description": {"type": "textarea", "label": "Description"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "/klasik", "group_1_button_text": "Ana Sayfa", "group_2_item_text": "/", "group_3_item_text": "Markalar", "title": "Temsil Ettiğimiz Markalar", "description": "Her biri kendi alanında uzman, uluslararası 5 marka — Türkiye'de resmi temsilcisi Estetik Dermal."}
+{"group_1_button_url": "/", "group_1_button_text": "Ana Sayfa", "group_2_item_text": "/", "group_3_item_text": "Markalar", "title": "Temsil Ettiğimiz Markalar", "description": "Her biri kendi alanında uzman, uluslararası 5 marka — Türkiye'de resmi temsilcisi Estetik Dermal."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-markalar-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-markalar-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'BRAND CARDS',
              'html_template'=><<<'EDHTML'
@@ -1416,12 +1416,12 @@ EDHTML,
 {"group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_2_button_url_2": {"type": "text", "label": "Group 2 Button Url 2"}, "group_2_button_url_3": {"type": "text", "label": "Group 2 Button Url 3"}, "group_2_button_url_4": {"type": "text", "label": "Group 2 Button Url 4"}, "group_2_button_url_5": {"type": "text", "label": "Group 2 Button Url 5"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_title_2": {"type": "text", "label": "Group 2 Title 2"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_button_text_2": {"type": "textarea", "label": "Group 2 Button Text 2"}, "group_1_text_3": {"type": "textarea", "label": "Group 1 Text 3"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_2_title_3": {"type": "text", "label": "Group 2 Title 3"}, "group_2_description_2": {"type": "textarea", "label": "Group 2 Description 2"}, "group_2_button_text_3": {"type": "textarea", "label": "Group 2 Button Text 3"}, "group_1_text_4": {"type": "textarea", "label": "Group 1 Text 4"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_2_title_4": {"type": "text", "label": "Group 2 Title 4"}, "group_2_description_3": {"type": "textarea", "label": "Group 2 Description 3"}, "group_2_button_text_4": {"type": "textarea", "label": "Group 2 Button Text 4"}, "group_1_text_5": {"type": "textarea", "label": "Group 1 Text 5"}, "group_2_text_5": {"type": "textarea", "label": "Group 2 Text 5"}, "group_2_title_5": {"type": "text", "label": "Group 2 Title 5"}, "group_2_subtitle_2": {"type": "textarea", "label": "Group 2 Subtitle 2"}, "group_2_button_text_5": {"type": "textarea", "label": "Group 2 Button Text 5"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_2_button_url": "/klasik-marka-skintech", "group_2_button_url_2": "/klasik-marka-seffiline", "group_2_button_url_3": "/klasik-marka-aespio", "group_2_button_url_4": "/klasik-marka-woorhi", "group_2_button_url_5": "/klasik-marka-mi-medical", "group_1_text": "İspanya · Amiral Marka", "group_2_text": "84+ ürün", "group_2_title": "Skin Tech Pharma Group", "group_2_description": "Kimyasal peeling, mezoterapi ve RRS skinbooster serisinde dünya lideri.", "group_2_button_text": "Markayı Keşfet →", "group_1_text_2": "Bakım & Dolgu Serisi", "group_2_text_2": "4 ürün", "group_2_title_2": "Seffiline", "group_2_subtitle": "Cilt, saç, intim bakım ve dolgu çözümleri serisi.", "group_2_button_text_2": "Markayı Keşfet →", "group_1_text_3": "K-Beauty · Thread Lift", "group_2_text_3": "5 ürün", "group_2_title_3": "Grand Aespio", "group_2_description_2": "Yüz maskeleri ve ip askı (thread lift) ürünleri. Modern K-beauty yaklaşımı.", "group_2_button_text_3": "Markayı Keşfet →", "group_1_text_4": "Güney Kore · Mekatronik", "group_2_text_4": "Cihaz", "group_2_title_4": "Woorhi Mechatronics Co. Ltd.", "group_2_description_3": "Güney Kore · Medikal estetik cihaz ve mekatronik mühendisliği.", "group_2_button_text_4": "Markayı Keşfet →", "group_1_text_5": "Enjeksiyon Sistemleri", "group_2_text_5": "Premium", "group_2_title_5": "Mi Medical Innovation", "group_2_subtitle_2": "Premium mezoterapi ve enjeksiyon sistemleri.", "group_2_button_text_5": "Markayı Keşfet →"}
+{"group_2_button_url": "/marka-skintech", "group_2_button_url_2": "/marka-seffiline", "group_2_button_url_3": "/marka-aespio", "group_2_button_url_4": "/marka-woorhi", "group_2_button_url_5": "/marka-mi-medical", "group_1_text": "İspanya · Amiral Marka", "group_2_text": "84+ ürün", "group_2_title": "Skin Tech Pharma Group", "group_2_description": "Kimyasal peeling, mezoterapi ve RRS skinbooster serisinde dünya lideri.", "group_2_button_text": "Markayı Keşfet →", "group_1_text_2": "Bakım & Dolgu Serisi", "group_2_text_2": "4 ürün", "group_2_title_2": "Seffiline", "group_2_subtitle": "Cilt, saç, intim bakım ve dolgu çözümleri serisi.", "group_2_button_text_2": "Markayı Keşfet →", "group_1_text_3": "K-Beauty · Thread Lift", "group_2_text_3": "5 ürün", "group_2_title_3": "Grand Aespio", "group_2_description_2": "Yüz maskeleri ve ip askı (thread lift) ürünleri. Modern K-beauty yaklaşımı.", "group_2_button_text_3": "Markayı Keşfet →", "group_1_text_4": "Güney Kore · Mekatronik", "group_2_text_4": "Cihaz", "group_2_title_4": "Woorhi Mechatronics Co. Ltd.", "group_2_description_3": "Güney Kore · Medikal estetik cihaz ve mekatronik mühendisliği.", "group_2_button_text_4": "Markayı Keşfet →", "group_1_text_5": "Enjeksiyon Sistemleri", "group_2_text_5": "Premium", "group_2_title_5": "Mi Medical Innovation", "group_2_subtitle_2": "Premium mezoterapi ve enjeksiyon sistemleri.", "group_2_button_text_5": "Markayı Keşfet →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-markalar-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-markalar-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'KISA BANT',
              'html_template'=><<<'EDHTML'
@@ -1447,7 +1447,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-markalar-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-markalar-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA',
              'html_template'=><<<'EDHTML'
@@ -1480,7 +1480,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-etkinlikler-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-etkinlikler-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PAGE HERO (compact)',
              'html_template'=><<<'EDHTML'
@@ -1505,12 +1505,12 @@ EDHTML,
 {"button_url": {"type": "text", "label": "Button Url"}, "button_text": {"type": "textarea", "label": "Button Text"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "title": {"type": "text", "label": "Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"button_url": "/klasik", "button_text": "Ana Sayfa", "group_1_text": "/", "group_2_text": "Etkinlikler", "group_1_subtitle": "Kongre & Etkinlikler", "title": "Kongre & Etkinlikler", "group_2_description": "Estetik Dermal olarak yer aldığımız ulusal ve uluslararası kongreler, fuarlar ve eğitim etkinlikleri."}
+{"button_url": "/", "button_text": "Ana Sayfa", "group_1_text": "/", "group_2_text": "Etkinlikler", "group_1_subtitle": "Kongre & Etkinlikler", "title": "Kongre & Etkinlikler", "group_2_description": "Estetik Dermal olarak yer aldığımız ulusal ve uluslararası kongreler, fuarlar ve eğitim etkinlikleri."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-etkinlikler-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-etkinlikler-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'EVENT GRID',
              'html_template'=><<<'EDHTML'
@@ -1653,7 +1653,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-etkinlikler-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-etkinlikler-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'INFO BLOCK',
              'html_template'=><<<'EDHTML'
@@ -1680,12 +1680,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_1_body_html": {"type": "textarea", "label": "Group 1 Body"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "https://wa.me/905426205100", "group_2_button_url": "/klasik-iletisim", "group_1_title": "Etkinlik takvimi ve katılım için bizimle iletişime geçin", "group_1_body_html": "Yaklaşan kongreler, fuar standlarımız ve uygulamalı eğitim atölyelerimize katılım hakkında güncel bilgi almak için ekibimize ulaşın.", "group_1_button_text": "WhatsApp ile Yaz", "group_2_button_text": "İletişim →"}
+{"group_1_button_url": "https://wa.me/905426205100", "group_2_button_url": "/iletisim", "group_1_title": "Etkinlik takvimi ve katılım için bizimle iletişime geçin", "group_1_body_html": "Yaklaşan kongreler, fuar standlarımız ve uygulamalı eğitim atölyelerimize katılım hakkında güncel bilgi almak için ekibimize ulaşın.", "group_1_button_text": "WhatsApp ile Yaz", "group_2_button_text": "İletişim →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-etkinlikler-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-etkinlikler-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA (full)',
              'html_template'=><<<'EDHTML'
@@ -1718,7 +1718,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-iletisim-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-iletisim-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'PAGE HERO (compact)',
              'html_template'=><<<'EDHTML'
@@ -1742,12 +1742,12 @@ EDHTML,
 {"button_url": {"type": "text", "label": "Button Url"}, "button_text": {"type": "textarea", "label": "Button Text"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "title": {"type": "text", "label": "Title"}, "subtitle": {"type": "textarea", "label": "Subtitle"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"button_url": "/klasik", "button_text": "Ana Sayfa", "group_1_text": "/", "group_2_text": "İletişim", "title": "İletişim", "subtitle": "Ürün, fiyat ve eğitim talepleriniz için bize ulaşın."}
+{"button_url": "/", "button_text": "Ana Sayfa", "group_1_text": "/", "group_2_text": "İletişim", "title": "İletişim", "subtitle": "Ürün, fiyat ve eğitim talepleriniz için bize ulaşın."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-iletisim-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-iletisim-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CONTACT SPLIT',
              'html_template'=><<<'EDHTML'
@@ -1830,7 +1830,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-iletisim-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-iletisim-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CONTACT FORM (KVKK\'lı)',
              'html_template'=><<<'EDHTML'
@@ -1908,7 +1908,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-skintech-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-skintech-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'HERO (split)',
              'html_template'=><<<'EDHTML'
@@ -1979,12 +1979,12 @@ EDHTML,
 {"group_1_link_url": {"type": "text", "label": "Group 1 Link Url"}, "group_2_link_url": {"type": "text", "label": "Group 2 Link Url"}, "group_3_link_url": {"type": "text", "label": "Group 3 Link Url"}, "group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_1_text_3": {"type": "textarea", "label": "Group 1 Text 3"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_1_text_4": {"type": "textarea", "label": "Group 1 Text 4"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_1_text_5": {"type": "textarea", "label": "Group 1 Text 5"}, "group_1_text_6": {"type": "textarea", "label": "Group 1 Text 6"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_2_text_5": {"type": "textarea", "label": "Group 2 Text 5"}, "group_1_text_7": {"type": "textarea", "label": "Group 1 Text 7"}, "group_2_text_6": {"type": "textarea", "label": "Group 2 Text 6"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_link_url": "https://fonts.googleapis.com", "group_2_link_url": "https://fonts.gstatic.com", "group_3_link_url": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap", "group_1_button_url": "/klasik-urunler", "group_2_button_url": "https://wa.me/905426205100", "group_1_subtitle": "İSPANYA · KLİNİK DERMOKOZMETİK", "group_1_title": "Klinik kanıtlı", "group_1_text": "cilt bilimi", "group_2_body_html": "Skin Tech Pharma Group; kimyasal peeling, mezoterapi ve RRS® skinbooster serisinde dünya çapında öncü. Laboratuvar disiplini, dermatolojik kanıt ve CE Class III standartlarıyla geliştirilen profesyonel çözümler.", "group_1_button_text": "Ürünleri Gör →", "group_2_button_text": "WhatsApp Danışma", "group_1_text_2": "Sertifikasyon", "group_2_text": "CE Class III", "group_1_text_3": "Menşei", "group_2_text_2": "İspanya", "group_1_text_4": "Portföy", "group_2_text_3": "84+ Ürün", "group_1_text_5": "RRS® Skinbooster", "group_1_text_6": "Skin Tech · RRS", "group_2_text_4": "RRS® HA Long Lasting", "group_2_text_5": "CE III", "group_1_text_7": "Dermatolojik", "group_2_text_6": "Klinik Test Edildi"}
+{"group_1_link_url": "https://fonts.googleapis.com", "group_2_link_url": "https://fonts.gstatic.com", "group_3_link_url": "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap", "group_1_button_url": "/urunler", "group_2_button_url": "https://wa.me/905426205100", "group_1_subtitle": "İSPANYA · KLİNİK DERMOKOZMETİK", "group_1_title": "Klinik kanıtlı", "group_1_text": "cilt bilimi", "group_2_body_html": "Skin Tech Pharma Group; kimyasal peeling, mezoterapi ve RRS® skinbooster serisinde dünya çapında öncü. Laboratuvar disiplini, dermatolojik kanıt ve CE Class III standartlarıyla geliştirilen profesyonel çözümler.", "group_1_button_text": "Ürünleri Gör →", "group_2_button_text": "WhatsApp Danışma", "group_1_text_2": "Sertifikasyon", "group_2_text": "CE Class III", "group_1_text_3": "Menşei", "group_2_text_2": "İspanya", "group_1_text_4": "Portföy", "group_2_text_3": "84+ Ürün", "group_1_text_5": "RRS® Skinbooster", "group_1_text_6": "Skin Tech · RRS", "group_2_text_4": "RRS® HA Long Lasting", "group_2_text_5": "CE III", "group_1_text_7": "Dermatolojik", "group_2_text_6": "Klinik Test Edildi"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-skintech-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-skintech-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'GÜVEN / KREDİBİLİTE ŞERİDİ',
              'html_template'=><<<'EDHTML'
@@ -2026,7 +2026,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-skintech-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-skintech-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'ÜRÜN AİLELERİ',
              'html_template'=><<<'EDHTML'
@@ -2109,12 +2109,12 @@ EDHTML,
 {"st_card_items": {"type": "repeater", "label": "St Card Items", "repeat_kind": "items", "item_template": "<a href=\"{{button_url}}\" class=\"st-card\" style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 14px;border-radius:12px;border:1px solid transparent;background:var(--color-secondary,#EAF6F4);margin-top:10px;\">\n                <span><span style=\"display:block;font-weight:800;color:var(--primary-deep,#0B2E34);font-size:15px;\">{{text}}</span><span style=\"display:block;color:#5A7B82;font-size:13px;margin-top:2px;\">{{text_2}}</span></span>\n                <span style=\"color:var(--color-primary,#0C6E72);font-weight:800;flex-shrink:0;\">{{text_3}}</span>\n              </a>", "fields": {"button_url": {"type": "text", "label": "Button Url"}, "text": {"type": "textarea", "label": "Text"}, "text_2": {"type": "textarea", "label": "Text 2"}, "text_3": {"type": "textarea", "label": "Text 3"}}}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "item_1_button_url": {"type": "text", "label": "Item 1 Button Url"}, "item_2_button_url": {"type": "text", "label": "Item 2 Button Url"}, "group_2_button_url_2": {"type": "text", "label": "Group 2 Button Url 2"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_title_2": {"type": "text", "label": "Group 1 Title 2"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_1_text_3": {"type": "textarea", "label": "Group 1 Text 3"}, "group_1_title_3": {"type": "text", "label": "Group 1 Title 3"}, "group_1_text_4": {"type": "textarea", "label": "Group 1 Text 4"}, "group_1_title_4": {"type": "text", "label": "Group 1 Title 4"}, "group_1_text_5": {"type": "textarea", "label": "Group 1 Text 5"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_1_text_6": {"type": "textarea", "label": "Group 1 Text 6"}, "group_2_text_5": {"type": "textarea", "label": "Group 2 Text 5"}, "group_2_text_6": {"type": "textarea", "label": "Group 2 Text 6"}, "group_1_text_7": {"type": "textarea", "label": "Group 1 Text 7"}, "group_1_title_5": {"type": "text", "label": "Group 1 Title 5"}, "group_1_text_8": {"type": "textarea", "label": "Group 1 Text 8"}, "group_2_text_7": {"type": "textarea", "label": "Group 2 Text 7"}, "group_2_text_8": {"type": "textarea", "label": "Group 2 Text 8"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"st_card_items": [{"button_url": "/klasik-urun-detay", "text": "LUMINA VİT-C 18%", "text_2": "Aydınlatıcı C vitamini", "text_3": "→"}, {"button_url": "/klasik-urun-detay", "text": "VİT A + E", "text_2": "Antioksidan onarım", "text_3": "→"}, {"button_url": "/klasik-urun-detay", "text": "TX SOLUTION", "text_2": "Leke karşıtı çözüm", "text_3": "→"}], "group_2_button_url": "/klasik-urun-detay", "item_1_button_url": "/klasik-urun-detay", "item_2_button_url": "/klasik-urun-detay", "group_2_button_url_2": "/klasik-urun-detay", "group_1_subtitle": "Ürün Aileleri", "group_1_title": "Bilim temelli dört temel seri", "group_2_body_html": "Skinbooster'dan mezoterapiye, kimyasal peelingden güneş korumaya — her seri dermatolojik kanıt ve klinik standartla geliştirildi.", "group_1_text": "Skinbooster", "group_1_title_2": "RRS® Skinbooster", "group_1_text_2": "RRS® HA Long Lasting", "group_2_text": "Çapraz bağlı HA · CE Class III", "group_2_text_2": "→", "group_1_text_3": "Mezoterapi", "group_1_title_3": "Benebellum", "group_1_text_4": "Peeling", "group_1_title_4": "Kimyasal Peeling", "group_1_text_5": "Aclaranse", "group_2_text_3": "Depigmentasyon peelingi", "group_2_text_4": "→", "group_1_text_6": "Easy Phytic", "group_2_text_5": "Nötralizasyonsuz fitik asit", "group_2_text_6": "→", "group_1_text_7": "SPF", "group_1_title_5": "Güneş Koruma", "group_1_text_8": "Melablock HSP SPF 50+", "group_2_text_7": "Yüksek faktör · leke koruması", "group_2_text_8": "→"}
+{"st_card_items": [{"button_url": "/urun-detay", "text": "LUMINA VİT-C 18%", "text_2": "Aydınlatıcı C vitamini", "text_3": "→"}, {"button_url": "/urun-detay", "text": "VİT A + E", "text_2": "Antioksidan onarım", "text_3": "→"}, {"button_url": "/urun-detay", "text": "TX SOLUTION", "text_2": "Leke karşıtı çözüm", "text_3": "→"}], "group_2_button_url": "/urun-detay", "item_1_button_url": "/urun-detay", "item_2_button_url": "/urun-detay", "group_2_button_url_2": "/urun-detay", "group_1_subtitle": "Ürün Aileleri", "group_1_title": "Bilim temelli dört temel seri", "group_2_body_html": "Skinbooster'dan mezoterapiye, kimyasal peelingden güneş korumaya — her seri dermatolojik kanıt ve klinik standartla geliştirildi.", "group_1_text": "Skinbooster", "group_1_title_2": "RRS® Skinbooster", "group_1_text_2": "RRS® HA Long Lasting", "group_2_text": "Çapraz bağlı HA · CE Class III", "group_2_text_2": "→", "group_1_text_3": "Mezoterapi", "group_1_title_3": "Benebellum", "group_1_text_4": "Peeling", "group_1_title_4": "Kimyasal Peeling", "group_1_text_5": "Aclaranse", "group_2_text_3": "Depigmentasyon peelingi", "group_2_text_4": "→", "group_1_text_6": "Easy Phytic", "group_2_text_5": "Nötralizasyonsuz fitik asit", "group_2_text_6": "→", "group_1_text_7": "SPF", "group_1_title_5": "Güneş Koruma", "group_1_text_8": "Melablock HSP SPF 50+", "group_2_text_7": "Yüksek faktör · leke koruması", "group_2_text_8": "→"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-skintech-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-skintech-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'RRS SPOTLIGHT',
              'html_template'=><<<'EDHTML'
@@ -2158,12 +2158,12 @@ EDHTML,
 {"group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_item_text": {"type": "textarea", "label": "Group 1 Item Text"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_2_button_url": "/klasik-urun-detay", "group_2_text": "Çapraz Bağlı HA", "group_1_subtitle": "★ Öne Çıkan Ürün", "group_2_title": "RRS® HA Long Lasting", "group_2_subtitle": "Çapraz bağlı hyalüronik asit içeren", "group_2_text_2": "CE Class III dermal implant", "group_2_body_html": ". Cildin derin nem rezervlerini destekleyerek uzun süreli sıkılık, elastikiyet ve canlılık sağlar. Skinbooster protokollerinde profesyonel kullanım için geliştirilmiştir.", "group_1_text": "✓", "group_1_item_text": "CE Class III tıbbi cihaz sınıflandırması", "group_2_text_3": "✓", "group_2_item_text": "Çapraz bağlı HA ile uzun etkili sonuç", "group_3_text": "✓", "group_3_item_text": "Skinbooster protokolleri için optimize", "group_2_button_text": "Ürün Detayı →"}
+{"group_2_button_url": "/urun-detay", "group_2_text": "Çapraz Bağlı HA", "group_1_subtitle": "★ Öne Çıkan Ürün", "group_2_title": "RRS® HA Long Lasting", "group_2_subtitle": "Çapraz bağlı hyalüronik asit içeren", "group_2_text_2": "CE Class III dermal implant", "group_2_body_html": ". Cildin derin nem rezervlerini destekleyerek uzun süreli sıkılık, elastikiyet ve canlılık sağlar. Skinbooster protokollerinde profesyonel kullanım için geliştirilmiştir.", "group_1_text": "✓", "group_1_item_text": "CE Class III tıbbi cihaz sınıflandırması", "group_2_text_3": "✓", "group_2_item_text": "Çapraz bağlı HA ile uzun etkili sonuç", "group_3_text": "✓", "group_3_item_text": "Skinbooster protokolleri için optimize", "group_2_button_text": "Ürün Detayı →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-skintech-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-skintech-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'EĞİTİM & DESTEK NOTU',
              'html_template'=><<<'EDHTML'
@@ -2193,7 +2193,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-skintech-5'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-skintech-5'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA BANDI',
              'html_template'=><<<'EDHTML'
@@ -2226,7 +2226,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-seffiline-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-seffiline-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'1. HERO',
              'html_template'=><<<'EDHTML'
@@ -2302,7 +2302,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-seffiline-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-seffiline-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'2. MARKA FELSEFESİ',
              'html_template'=><<<'EDHTML'
@@ -2332,7 +2332,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-seffiline-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-seffiline-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'3. 4 ÜRÜN AİLESİ',
              'html_template'=><<<'EDHTML'
@@ -2366,12 +2366,12 @@ EDHTML,
 {"sf_card_items": {"type": "repeater", "label": "Sf Card Items", "repeat_kind": "items", "item_template": "<a href=\"{{button_url}}\" class=\"sf-card\" style=\"display:block;background:#fff;border:1px solid var(--border-soft,#EBD9D6);border-radius:28px;padding:36px 30px;transition:transform .25s,box-shadow .25s;\">\n            <div style=\"width:66px;height:66px;border-radius:50%;background:linear-gradient(150deg,#FBE7E6,#F4D4CE);margin-bottom:24px;\"></div>\n            <h3 class=\"sf-serif\" style=\"font-size:25px;font-weight:600;color:var(--text-main,#4A2E35);margin:0 0 4px;\">{{title}}</h3>\n            <p style=\"font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--color-primary,#C98A6D);font-weight:700;margin:0 0 14px;\">{{subtitle}}</p>\n            <p style=\"color:var(--text-soft,#8A6A70);font-size:14.5px;line-height:1.75;margin:0 0 22px;\">{{description}}</p>\n            <span style=\"color:var(--color-primary,#C98A6D);font-weight:600;font-size:14px;letter-spacing:.3px;\">{{text}}</span>\n          </a>", "fields": {"button_url": {"type": "text", "label": "Button Url"}, "title": {"type": "text", "label": "Title"}, "subtitle": {"type": "textarea", "label": "Subtitle"}, "description": {"type": "textarea", "label": "Description"}, "text": {"type": "textarea", "label": "Text"}}}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"sf_card_items": [{"button_url": "/klasik-urun-detay", "title": "SeffiCare", "subtitle": "Cilt Bakımı", "description": "Cildi besleyen, nemlendiren ve canlandıran zarif cilt bakım serisi.", "text": "İncele →"}, {"button_url": "/klasik-urun-detay", "title": "SeffiGyn", "subtitle": "İntim Bakım", "description": "Hassas bölgelerin sağlığı için pH dengeli, nazik ve güvenilir intim bakım.", "text": "İncele →"}, {"button_url": "/klasik-urun-detay", "title": "SeffiHair", "subtitle": "Saç Bakımı & Mezoterapi", "subtitle_2": "Saç kökünü güçlendiren mezoterapi ve yoğun bakım çözümleri.", "text": "İncele →"}, {"button_url": "/klasik-urun-detay", "title": "Seffiller", "subtitle": "Dolgu Serisi", "description": "Hyalüronik asit bazlı, doğal ve zarif sonuçlar veren dolgu çözümleri.", "text": "İncele →"}], "group_1_subtitle": "Koleksiyon", "group_1_title": "Dört ince ürün ailesi", "group_2_description": "Baştan ayağa bütüncül bir bakım ritüeli; her ihtiyaca uygun, zarif ve profesyonel."}
+{"sf_card_items": [{"button_url": "/urun-detay", "title": "SeffiCare", "subtitle": "Cilt Bakımı", "description": "Cildi besleyen, nemlendiren ve canlandıran zarif cilt bakım serisi.", "text": "İncele →"}, {"button_url": "/urun-detay", "title": "SeffiGyn", "subtitle": "İntim Bakım", "description": "Hassas bölgelerin sağlığı için pH dengeli, nazik ve güvenilir intim bakım.", "text": "İncele →"}, {"button_url": "/urun-detay", "title": "SeffiHair", "subtitle": "Saç Bakımı & Mezoterapi", "subtitle_2": "Saç kökünü güçlendiren mezoterapi ve yoğun bakım çözümleri.", "text": "İncele →"}, {"button_url": "/urun-detay", "title": "Seffiller", "subtitle": "Dolgu Serisi", "description": "Hyalüronik asit bazlı, doğal ve zarif sonuçlar veren dolgu çözümleri.", "text": "İncele →"}], "group_1_subtitle": "Koleksiyon", "group_1_title": "Dört ince ürün ailesi", "group_2_description": "Baştan ayağa bütüncül bir bakım ritüeli; her ihtiyaca uygun, zarif ve profesyonel."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-seffiline-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-seffiline-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'4. ÖNE ÇIKAN: SeffiHair (editoryal split)',
              'html_template'=><<<'EDHTML'
@@ -2411,12 +2411,12 @@ EDHTML,
 {"group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_item_text": {"type": "textarea", "label": "Group 1 Item Text"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_2_button_url": "/klasik-urun-detay", "group_1_subtitle": "Öne Çıkan", "group_2_title": "SeffiHair ile", "group_2_text": "kökten güçlü saçlar", "group_2_body_html": "Saç dökülmesiyle mücadelede mezoterapi temelli bir yaklaşım. SeffiHair serisi, saç köküne ihtiyaç duyduğu vitamin ve mineralleri ileterek folikülleri besler; daha sağlıklı, dolgun ve canlı bir görünüm için zarif bir bakım ritüeli sunar.", "group_1_text": "❀", "group_1_item_text": "Saç köküne yoğun besin desteği", "group_2_text_2": "❀", "group_2_item_text": "Mezoterapi ile uyumlu profesyonel formül", "group_3_text": "❀", "group_3_item_text": "Dolgun ve canlı bir saç görünümü", "group_2_button_text": "SeffiHair'i İncele →"}
+{"group_2_button_url": "/urun-detay", "group_1_subtitle": "Öne Çıkan", "group_2_title": "SeffiHair ile", "group_2_text": "kökten güçlü saçlar", "group_2_body_html": "Saç dökülmesiyle mücadelede mezoterapi temelli bir yaklaşım. SeffiHair serisi, saç köküne ihtiyaç duyduğu vitamin ve mineralleri ileterek folikülleri besler; daha sağlıklı, dolgun ve canlı bir görünüm için zarif bir bakım ritüeli sunar.", "group_1_text": "❀", "group_1_item_text": "Saç köküne yoğun besin desteği", "group_2_text_2": "❀", "group_2_item_text": "Mezoterapi ile uyumlu profesyonel formül", "group_3_text": "❀", "group_3_item_text": "Dolgun ve canlı bir saç görünümü", "group_2_button_text": "SeffiHair'i İncele →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-seffiline-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-seffiline-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'5. GÜVEN / KALİTE NOTU',
              'html_template'=><<<'EDHTML'
@@ -2441,7 +2441,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-seffiline-5'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-seffiline-5'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'6. CTA BANDI',
              'html_template'=><<<'EDHTML'
@@ -2471,7 +2471,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-aespio-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-aespio-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'HERO',
              'html_template'=><<<'EDHTML'
@@ -2551,7 +2551,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-aespio-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-aespio-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'STAT / ÖZELLİK ŞERİDİ',
              'html_template'=><<<'EDHTML'
@@ -2573,7 +2573,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-aespio-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-aespio-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'ÜRÜN SHOWCASE',
              'html_template'=><<<'EDHTML'
@@ -2603,12 +2603,12 @@ EDHTML,
 {"aespio_card_items": {"type": "repeater", "label": "Aespio Card Items", "repeat_kind": "items", "item_template": "<a href=\"{{button_url}}\" class=\"aespio-card\" style=\"display:block;background:#fff;border-radius:24px;overflow:hidden;\">\n            <div style=\"aspect-ratio:4/3;background:linear-gradient(135deg,#C6BBF7,#8E7DF0) url('/assets/img/aespio-product-beta-glukan-mask.jpg') center/cover no-repeat;\"></div>\n            <div style=\"padding:24px;\">\n              <span style=\"font-size:11.5px;font-weight:800;color:var(--color-primary,#6C5CE0);text-transform:uppercase;letter-spacing:.8px;\">{{text}}</span>\n              <h3 style=\"font-size:19px;font-weight:900;color:var(--text-main,#221A40);margin:7px 0 9px;\">{{title}}</h3>\n              <p style=\"color:var(--text-soft,#6B6088);font-size:14px;line-height:1.6;margin:0 0 14px;font-weight:500;\">{{description}}</p>\n              <span style=\"color:var(--color-accent,#21D4B4);font-weight:800;font-size:14px;\">{{text_2}}</span>\n            </div>\n          </a>", "fields": {"button_url": {"type": "text", "label": "Button Url"}, "text": {"type": "textarea", "label": "Text"}, "title": {"type": "text", "label": "Title"}, "description": {"type": "textarea", "label": "Description"}, "text_2": {"type": "textarea", "label": "Text 2"}}}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_2_description": {"type": "textarea", "label": "Group 2 Description"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"aespio_card_items": [{"button_url": "/klasik-urun-detay", "text": "Yatıştırıcı Maske", "title": "Beta-Glukan Mask", "description": "Beta-glukan ile hassas cildi yatıştıran, onarıcı yeni nesil yüz maskesi.", "text_2": "İncele →"}, {"button_url": "/klasik-urun-detay", "text": "Nemlendirici Maske", "title": "Hyaluronic Acid Mask", "description": "Hyalüronik asit ile yoğun nem desteği; dolgun, ışıltılı bir cilt hissi.", "text_2": "İncele →"}, {"button_url": "/klasik-urun-detay", "text": "İp Askı", "title": "FeelSoft", "description": "Yumuşak doku desteği için tasarlanmış konforlu ip askı çözümü.", "text_2": "İncele →"}, {"button_url": "/klasik-urun-detay", "text": "İp Askı", "title": "FMC", "description": "Hassas uygulamalar için ince işçilikli, çok yönlü ip askı ürünü.", "text_2": "İncele →"}, {"button_url": "/klasik-urun-detay", "text": "Thread Lift", "title": "LFL Anchor", "description": "Güçlü tutuş için çapalı (anchor) tasarımlı ip askı / thread lift sistemi.", "text_2": "İncele →"}], "group_1_subtitle": "Ürün Serisi", "group_1_title": "Maskeden ip askıya, eksiksiz bir seri", "group_2_description": "Yatıştırıcı maskeler, nemlendirici bakım ve thread lift çözümleri — hepsi tek bir cesur marka altında."}
+{"aespio_card_items": [{"button_url": "/urun-detay", "text": "Yatıştırıcı Maske", "title": "Beta-Glukan Mask", "description": "Beta-glukan ile hassas cildi yatıştıran, onarıcı yeni nesil yüz maskesi.", "text_2": "İncele →"}, {"button_url": "/urun-detay", "text": "Nemlendirici Maske", "title": "Hyaluronic Acid Mask", "description": "Hyalüronik asit ile yoğun nem desteği; dolgun, ışıltılı bir cilt hissi.", "text_2": "İncele →"}, {"button_url": "/urun-detay", "text": "İp Askı", "title": "FeelSoft", "description": "Yumuşak doku desteği için tasarlanmış konforlu ip askı çözümü.", "text_2": "İncele →"}, {"button_url": "/urun-detay", "text": "İp Askı", "title": "FMC", "description": "Hassas uygulamalar için ince işçilikli, çok yönlü ip askı ürünü.", "text_2": "İncele →"}, {"button_url": "/urun-detay", "text": "Thread Lift", "title": "LFL Anchor", "description": "Güçlü tutuş için çapalı (anchor) tasarımlı ip askı / thread lift sistemi.", "text_2": "İncele →"}], "group_1_subtitle": "Ürün Serisi", "group_1_title": "Maskeden ip askıya, eksiksiz bir seri", "group_2_description": "Yatıştırıcı maskeler, nemlendirici bakım ve thread lift çözümleri — hepsi tek bir cesur marka altında."}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-aespio-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-aespio-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'ÖNE ÇIKAN SPLIT',
              'html_template'=><<<'EDHTML'
@@ -2647,12 +2647,12 @@ EDHTML,
 {"group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_title_2": {"type": "text", "label": "Group 2 Title 2"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_item_text": {"type": "textarea", "label": "Group 1 Item Text"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_2_button_url": "/klasik-urun-detay", "group_1_subtitle": "Öne Çıkan · LFL Anchor", "group_2_title": "Thread lift'te", "group_2_text": "çapalı tutuş", "group_2_title_2": "gücü", "group_2_body_html": "LFL Anchor, çapa (anchor) tasarımıyla dokuda güçlü ve dengeli bir tutuş sağlayacak şekilde geliştirildi. Grand Aespio'nun ip askı serisi — FeelSoft, FMC ve LFL Anchor — farklı endikasyonlar için modern, çok yönlü bir araç seti sunar.", "group_1_text": "✓", "group_1_item_text": "Çapalı (anchor) tasarımla güçlü tutuş", "group_2_text_2": "✓", "group_2_item_text": "Maske + thread tamamlayıcı protokoller", "group_3_text": "✓", "group_3_item_text": "Yeni nesil K-beauty üretim kalitesi", "group_2_button_text": "LFL Anchor'ı İncele →"}
+{"group_2_button_url": "/urun-detay", "group_1_subtitle": "Öne Çıkan · LFL Anchor", "group_2_title": "Thread lift'te", "group_2_text": "çapalı tutuş", "group_2_title_2": "gücü", "group_2_body_html": "LFL Anchor, çapa (anchor) tasarımıyla dokuda güçlü ve dengeli bir tutuş sağlayacak şekilde geliştirildi. Grand Aespio'nun ip askı serisi — FeelSoft, FMC ve LFL Anchor — farklı endikasyonlar için modern, çok yönlü bir araç seti sunar.", "group_1_text": "✓", "group_1_item_text": "Çapalı (anchor) tasarımla güçlü tutuş", "group_2_text_2": "✓", "group_2_item_text": "Maske + thread tamamlayıcı protokoller", "group_3_text": "✓", "group_3_item_text": "Yeni nesil K-beauty üretim kalitesi", "group_2_button_text": "LFL Anchor'ı İncele →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-aespio-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-aespio-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'GÜVEN NOTU',
              'html_template'=><<<'EDHTML'
@@ -2678,7 +2678,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-aespio-5'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-aespio-5'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'CTA BANDI',
              'html_template'=><<<'EDHTML'
@@ -2708,7 +2708,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-woorhi-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-woorhi-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'1 · BESPOKE KOYU HERO',
              'html_template'=><<<'EDHTML'
@@ -2781,12 +2781,12 @@ EDHTML,
 {"group_1_link_url": {"type": "text", "label": "Group 1 Link Url"}, "group_2_link_url": {"type": "text", "label": "Group 2 Link Url"}, "group_3_link_url": {"type": "text", "label": "Group 3 Link Url"}, "group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_body_html": {"type": "textarea", "label": "Group 1 Body"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_1_text_3": {"type": "textarea", "label": "Group 1 Text 3"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_1_text_4": {"type": "textarea", "label": "Group 1 Text 4"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_1_text_5": {"type": "textarea", "label": "Group 1 Text 5"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_1_text_6": {"type": "textarea", "label": "Group 1 Text 6"}, "group_2_text_5": {"type": "textarea", "label": "Group 2 Text 5"}, "group_1_text_7": {"type": "textarea", "label": "Group 1 Text 7"}, "group_2_text_6": {"type": "textarea", "label": "Group 2 Text 6"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_text_2": {"type": "textarea", "label": "Group 3 Text 2"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_link_url": "https://fonts.googleapis.com", "group_2_link_url": "https://fonts.gstatic.com", "group_3_link_url": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap", "group_1_button_url": "/klasik-urun-detay", "group_2_button_url": "https://wa.me/905426205100", "group_1_subtitle": "Güney Kore · Medikal Mekatronik", "group_1_title": "Mühendislik hassasiyetinde", "group_1_text": "estetik teknolojisi", "group_1_body_html": "Woorhi Mechatronics Co. Ltd., Kore mühendisliğiyle geliştirilen medikal estetik cihazları üretir. Hassas kontrol, klinik dayanıklılık ve tekrarlanabilir sonuçlar — kliniğinizin teknolojik altyapısı için tasarlandı.", "group_1_button_text": "Cihazı İncele →", "group_2_button_text": "WhatsApp Danışma", "group_1_text_2": "ORIGIN", "group_2_text": "Seoul · KR", "group_1_text_3": "CLASS", "group_2_text_2": "Klinik Cihaz", "group_1_text_4": "DIST · TR", "group_2_text_3": "Estetik Dermal", "group_1_text_5": "WOORHI · UNIT-01", "group_2_text_4": "ONLINE", "group_1_text_6": "PRECISION", "group_2_text_5": "± hassas kontrol", "group_1_text_7": "BUILD", "group_2_text_6": "KR Engineering", "group_3_text": "RAFFINE", "group_3_text_2": "Ana Cihaz Serisi"}
+{"group_1_link_url": "https://fonts.googleapis.com", "group_2_link_url": "https://fonts.gstatic.com", "group_3_link_url": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap", "group_1_button_url": "/urun-detay", "group_2_button_url": "https://wa.me/905426205100", "group_1_subtitle": "Güney Kore · Medikal Mekatronik", "group_1_title": "Mühendislik hassasiyetinde", "group_1_text": "estetik teknolojisi", "group_1_body_html": "Woorhi Mechatronics Co. Ltd., Kore mühendisliğiyle geliştirilen medikal estetik cihazları üretir. Hassas kontrol, klinik dayanıklılık ve tekrarlanabilir sonuçlar — kliniğinizin teknolojik altyapısı için tasarlandı.", "group_1_button_text": "Cihazı İncele →", "group_2_button_text": "WhatsApp Danışma", "group_1_text_2": "ORIGIN", "group_2_text": "Seoul · KR", "group_1_text_3": "CLASS", "group_2_text_2": "Klinik Cihaz", "group_1_text_4": "DIST · TR", "group_2_text_3": "Estetik Dermal", "group_1_text_5": "WOORHI · UNIT-01", "group_2_text_4": "ONLINE", "group_1_text_6": "PRECISION", "group_2_text_5": "± hassas kontrol", "group_1_text_7": "BUILD", "group_2_text_6": "KR Engineering", "group_3_text": "RAFFINE", "group_3_text_2": "Ana Cihaz Serisi"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-woorhi-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-woorhi-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'2 · TEKNOLOJİ / MÜHENDİSLİK ŞERİDİ',
              'html_template'=><<<'EDHTML'
@@ -2824,7 +2824,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-woorhi-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-woorhi-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'3 · RAFFINE CİHAZ SPOTLIGHT',
              'html_template'=><<<'EDHTML'
@@ -2871,12 +2871,12 @@ EDHTML,
 {"group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_subtitle": {"type": "textarea", "label": "Group 2 Subtitle"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}, "group_1_text_2": {"type": "textarea", "label": "Group 1 Text 2"}, "group_2_text_3": {"type": "textarea", "label": "Group 2 Text 3"}, "group_1_text_3": {"type": "textarea", "label": "Group 1 Text 3"}, "group_2_text_4": {"type": "textarea", "label": "Group 2 Text 4"}, "group_1_text_4": {"type": "textarea", "label": "Group 1 Text 4"}, "group_2_text_5": {"type": "textarea", "label": "Group 2 Text 5"}, "group_1_text_5": {"type": "textarea", "label": "Group 1 Text 5"}, "group_2_text_6": {"type": "textarea", "label": "Group 2 Text 6"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_2_button_url": "/klasik-urun-detay", "group_2_text": "RAFFINE · DEVICE", "group_2_subtitle": "// Ana Ürün", "group_2_title": "Raffine", "group_2_body_html": "Woorhi'nin amiral gemisi medikal estetik cihazı. Mekatronik kontrol mimarisi, kararlı güç yönetimi ve uygulama tekrarlanabilirliği üzerine kurulu; klinik kullanım için dayanıklı bir gövde ve sezgisel arayüzle tasarlandı.", "group_1_text": "[ TİP ]", "group_2_text_2": "Medikal estetik mekatronik cihaz", "group_1_text_2": "[ UYGULAMA ]", "group_2_text_3": "Yüz & vücut profesyonel bakım", "group_1_text_3": "[ KONTROL ]", "group_2_text_4": "Hassas dijital parametre yönetimi", "group_1_text_4": "[ MENŞE ]", "group_2_text_5": "Güney Kore mühendisliği", "group_1_text_5": "[ KULLANIM ]", "group_2_text_6": "Klinik / profesyonel", "group_2_button_text": "Raffine Detayları →"}
+{"group_2_button_url": "/urun-detay", "group_2_text": "RAFFINE · DEVICE", "group_2_subtitle": "// Ana Ürün", "group_2_title": "Raffine", "group_2_body_html": "Woorhi'nin amiral gemisi medikal estetik cihazı. Mekatronik kontrol mimarisi, kararlı güç yönetimi ve uygulama tekrarlanabilirliği üzerine kurulu; klinik kullanım için dayanıklı bir gövde ve sezgisel arayüzle tasarlandı.", "group_1_text": "[ TİP ]", "group_2_text_2": "Medikal estetik mekatronik cihaz", "group_1_text_2": "[ UYGULAMA ]", "group_2_text_3": "Yüz & vücut profesyonel bakım", "group_1_text_3": "[ KONTROL ]", "group_2_text_4": "Hassas dijital parametre yönetimi", "group_1_text_4": "[ MENŞE ]", "group_2_text_5": "Güney Kore mühendisliği", "group_1_text_5": "[ KULLANIM ]", "group_2_text_6": "Klinik / profesyonel", "group_2_button_text": "Raffine Detayları →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-woorhi-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-woorhi-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'4 · NEDEN WOORHI',
              'html_template'=><<<'EDHTML'
@@ -2923,7 +2923,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-woorhi-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-woorhi-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'5 · CTA BANDI (neon gradient koyu)',
              'html_template'=><<<'EDHTML'
@@ -2951,12 +2951,12 @@ EDHTML,
 {"group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_subtitle": {"type": "textarea", "label": "Group 3 Subtitle"}, "group_3_title": {"type": "text", "label": "Group 3 Title"}, "group_3_body_html": {"type": "textarea", "label": "Group 3 Body"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_button_url": "https://wa.me/905426205100", "group_2_button_url": "/klasik-urun-detay", "group_3_subtitle": "// Demo & Teklif", "group_3_title": "Woorhi cihazları için demo / teklif alın", "group_3_body_html": "Raffine ve Woorhi cihaz serisi hakkında detaylı bilgi, demo planlaması ve fiyat teklifi için Estetik Dermal ekibine ulaşın.", "group_1_button_text": "WhatsApp ile Yaz", "group_2_button_text": "Cihazı İncele"}
+{"group_1_button_url": "https://wa.me/905426205100", "group_2_button_url": "/urun-detay", "group_3_subtitle": "// Demo & Teklif", "group_3_title": "Woorhi cihazları için demo / teklif alın", "group_3_body_html": "Raffine ve Woorhi cihaz serisi hakkında detaylı bilgi, demo planlaması ve fiyat teklifi için Estetik Dermal ekibine ulaşın.", "group_1_button_text": "WhatsApp ile Yaz", "group_2_button_text": "Cihazı İncele"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-mi-medical-0'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-mi-medical-0'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'1 · BESPOKE PREMIUM HERO',
              'html_template'=><<<'EDHTML'
@@ -3026,12 +3026,12 @@ EDHTML,
 {"group_1_link_url": {"type": "text", "label": "Group 1 Link Url"}, "group_2_link_url": {"type": "text", "label": "Group 2 Link Url"}, "group_3_link_url": {"type": "text", "label": "Group 3 Link Url"}, "group_1_button_url": {"type": "text", "label": "Group 1 Button Url"}, "group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_1_title": {"type": "text", "label": "Group 1 Title"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_title_2": {"type": "text", "label": "Group 1 Title 2"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_button_text": {"type": "textarea", "label": "Group 1 Button Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_text_2": {"type": "textarea", "label": "Group 2 Text 2"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_1_link_url": "https://fonts.googleapis.com", "group_2_link_url": "https://fonts.gstatic.com", "group_3_link_url": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@500;600;700&display=swap", "group_1_button_url": "/klasik-urun-detay", "group_2_button_url": "https://wa.me/905426205100", "group_1_subtitle": "Premium Enjeksiyon Sistemleri", "group_1_title": "Hassasiyetin ve", "group_1_text": "zarafetin", "group_1_title_2": "buluşması", "group_2_body_html": "Mi Medical Innovation; premium mezoterapi ve enjeksiyon sistemlerinde inovasyonu zarafetle buluşturur. Her ayrıntısı, hekimin elinde kusursuz kontrol ve hastada üst düzey konfor için tasarlanmıştır.", "group_1_button_text": "Pistor Eliance'ı Keşfet →", "group_2_button_text": "Ayrıcalıklı Danışmanlık", "group_2_text": "Pistor Eliance", "group_2_text_2": "Mi Medical Innovation"}
+{"group_1_link_url": "https://fonts.googleapis.com", "group_2_link_url": "https://fonts.gstatic.com", "group_3_link_url": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@500;600;700&display=swap", "group_1_button_url": "/urun-detay", "group_2_button_url": "https://wa.me/905426205100", "group_1_subtitle": "Premium Enjeksiyon Sistemleri", "group_1_title": "Hassasiyetin ve", "group_1_text": "zarafetin", "group_1_title_2": "buluşması", "group_2_body_html": "Mi Medical Innovation; premium mezoterapi ve enjeksiyon sistemlerinde inovasyonu zarafetle buluşturur. Her ayrıntısı, hekimin elinde kusursuz kontrol ve hastada üst düzey konfor için tasarlanmıştır.", "group_1_button_text": "Pistor Eliance'ı Keşfet →", "group_2_button_text": "Ayrıcalıklı Danışmanlık", "group_2_text": "Pistor Eliance", "group_2_text_2": "Mi Medical Innovation"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-mi-medical-1'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-mi-medical-1'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'2 · İNCE ALTIN AYRAÇLI DEĞER ŞERİDİ',
              'html_template'=><<<'EDHTML'
@@ -3074,7 +3074,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-mi-medical-2'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-mi-medical-2'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'3 · PISTOR ELIANCE SPOTLIGHT (fildişi)',
              'html_template'=><<<'EDHTML'
@@ -3121,12 +3121,12 @@ EDHTML,
 {"group_2_button_url": {"type": "text", "label": "Group 2 Button Url"}, "group_3_text": {"type": "textarea", "label": "Group 3 Text"}, "group_3_text_2": {"type": "textarea", "label": "Group 3 Text 2"}, "group_1_subtitle": {"type": "textarea", "label": "Group 1 Subtitle"}, "group_2_title": {"type": "text", "label": "Group 2 Title"}, "group_2_body_html": {"type": "textarea", "label": "Group 2 Body"}, "group_1_text": {"type": "textarea", "label": "Group 1 Text"}, "group_1_item_text": {"type": "textarea", "label": "Group 1 Item Text"}, "group_2_text": {"type": "textarea", "label": "Group 2 Text"}, "group_2_item_text": {"type": "textarea", "label": "Group 2 Item Text"}, "group_3_text_3": {"type": "textarea", "label": "Group 3 Text 3"}, "group_3_item_text": {"type": "textarea", "label": "Group 3 Item Text"}, "group_4_text": {"type": "textarea", "label": "Group 4 Text"}, "group_4_item_text": {"type": "textarea", "label": "Group 4 Item Text"}, "group_2_button_text": {"type": "textarea", "label": "Group 2 Button Text"}}
 EDJSON, true),
              'default_content_json'=>json_decode(<<<'EDJSON'
-{"group_2_button_url": "/klasik-urun-detay", "group_3_text": "Pistor Eliance", "group_3_text_2": "Premium Enjeksiyon Sistemi", "group_1_subtitle": "Öne Çıkan Sistem", "group_2_title": "Pistor Eliance", "group_2_body_html": "Premium mezoterapi tabancası ve enjeksiyon sistemi; hassas dozaj kontrolü, sessiz mekanizması ve ergonomik dengesiyle hekime kusursuz hâkimiyet, hastaya ise belirgin biçimde daha konforlu bir uygulama deneyimi sunar.", "group_1_text": "✓", "group_1_item_text": "Ayarlanabilir, mikro hassasiyetli dozaj kontrolü", "group_2_text": "✓", "group_2_item_text": "Dengeli, ergonomik tutuş ve düşük titreşim", "group_3_text_3": "✓", "group_3_item_text": "Hasta konforunu artıran konforlu, hızlı uygulama", "group_4_text": "✓", "group_4_item_text": "Premium malzeme ve uzun ömürlü cihaz kalitesi", "group_2_button_text": "Ürün Detayını Gör →"}
+{"group_2_button_url": "/urun-detay", "group_3_text": "Pistor Eliance", "group_3_text_2": "Premium Enjeksiyon Sistemi", "group_1_subtitle": "Öne Çıkan Sistem", "group_2_title": "Pistor Eliance", "group_2_body_html": "Premium mezoterapi tabancası ve enjeksiyon sistemi; hassas dozaj kontrolü, sessiz mekanizması ve ergonomik dengesiyle hekime kusursuz hâkimiyet, hastaya ise belirgin biçimde daha konforlu bir uygulama deneyimi sunar.", "group_1_text": "✓", "group_1_item_text": "Ayarlanabilir, mikro hassasiyetli dozaj kontrolü", "group_2_text": "✓", "group_2_item_text": "Dengeli, ergonomik tutuş ve düşük titreşim", "group_3_text_3": "✓", "group_3_item_text": "Hasta konforunu artıran konforlu, hızlı uygulama", "group_4_text": "✓", "group_4_item_text": "Premium malzeme ve uzun ömürlü cihaz kalitesi", "group_2_button_text": "Ürün Detayını Gör →"}
 EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-mi-medical-3'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-mi-medical-3'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'4 · MARKA VAADİ (fildişi, zarif)',
              'html_template'=><<<'EDHTML'
@@ -3153,7 +3153,7 @@ EDJSON, true),
              'is_active'=>true]
         );
         SectionTemplate::updateOrCreate(
-            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-klasik-marka-mi-medical-4'],
+            ['theme_id'=>$tid,'type'=>'content-block','variation'=>'klasik-s-marka-mi-medical-4'],
             ['tenant_id'=>self::TENANT_ID,'module'=>null,'render_mode'=>'html',
              'name'=>'5 · CTA BANDI (siyah + altın)',
              'html_template'=><<<'EDHTML'
