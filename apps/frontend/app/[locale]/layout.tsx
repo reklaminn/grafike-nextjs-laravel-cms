@@ -16,6 +16,7 @@ import { ThemeScripts } from "@/components/layout/theme-scripts";
 import { getSitePayload, getSettingsPayload } from "@/lib/api/client";
 import { buildTokenStyle } from "@/lib/theme/tokens";
 import { buildFaviconMetadata, buildJsonLd, canonicalUrl } from "@/lib/seo";
+import { uiStrings } from "@/lib/ui-strings";
 
 type LocaleLayoutProps = {
   children: React.ReactNode;
@@ -217,6 +218,26 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         type="application/ld+json"
         dangerouslySetInnerHTML={buildJsonLd(globalJsonLd)}
       />
+
+      {/* Önizleme modu banner'ı — editör draft içeriğe baktığını bilsin */}
+      {previewTenantId && (
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 9999,
+            background: "#4f46e5",
+            color: "#fff",
+            textAlign: "center",
+            fontSize: ".8rem",
+            fontWeight: 600,
+            padding: ".45rem 1rem",
+            letterSpacing: ".01em",
+          }}
+        >
+          👁 {uiStrings(locale).previewBanner(previewTenantId)}
+        </div>
+      )}
 
       <SiteShell availableLocales={site.available_locales ?? []}>{children}</SiteShell>
 
