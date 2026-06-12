@@ -139,15 +139,29 @@
                 </template>
 
                 {{-- Rows --}}
-                <div class="px-3 pb-3 space-y-2">
+                <div class="px-3 pb-3 space-y-2"
+                     @dragover="rowDragOver($event, region, null)"
+                     @drop.prevent="dropRow(region, null)">
                     <template x-for="(row, rowIndex) in (regions[region] || [])" :key="row._uid">
                         <div class="rounded-xl border bg-white overflow-hidden"
-                             :class="[rowShellClass(region), row.is_active ? '' : 'opacity-60']">
+                             data-row-card
+                             :class="[rowShellClass(region), row.is_active ? '' : 'opacity-60',
+                                      dragRow && dragRow.region === region && dragRow.rowIndex === rowIndex ? 'opacity-40' : '',
+                                      dragRowOver === rowDropKey(region, rowIndex) ? 'ring-2 ring-indigo-400' : '']"
+                             @dragover.stop="rowDragOver($event, region, rowIndex)"
+                             @drop.prevent.stop="dropRow(region, rowIndex)">
 
                             {{-- Row header — single line --}}
                             <div class="flex items-center justify-between gap-2 px-3 py-2">
                                 <div class="flex items-center gap-2 min-w-0">
-                                    <i class="fas fa-grip-vertical text-gray-300 flex-shrink-0 text-[11px]"></i>
+                                    <button type="button"
+                                            draggable="true"
+                                            @dragstart="startRowDrag($event, region, rowIndex)"
+                                            @dragend="endRowDrag()"
+                                            title="Sürükleyerek taşı"
+                                            class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0 text-[11px]">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </button>
                                     <span class="text-xs font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0"
                                           :class="regionBadgeClass(region)"
                                           x-text="regionLabel(region)"></span>
@@ -274,17 +288,32 @@
                                         </div>
 
                                         {{-- Blocks --}}
-                                        <div class="p-2 space-y-2">
+                                        <div class="p-2 space-y-2"
+                                             :class="dragBlock && dragBlockOver === blockDropKey(region, rowIndex, columnIndex, null) ? 'rounded-lg ring-2 ring-indigo-200 bg-indigo-50/50' : ''"
+                                             @dragover.stop="blockDragOver($event, region, rowIndex, columnIndex, null)"
+                                             @drop.prevent.stop="dropBlock(region, rowIndex, columnIndex, null)">
                                             <template x-for="(block, blockIndex) in (column.blocks || [])" :key="block._uid">
                                                 <div class="rounded-lg border bg-white px-3 py-2"
+                                                     data-block-card
                                                      :id="'builder-block-' + block.id"
-                                                     :class="fieldErrors[block.id] && Object.keys(fieldErrors[block.id]).length
+                                                     :class="[fieldErrors[block.id] && Object.keys(fieldErrors[block.id]).length
                                                          ? 'border-red-300 ring-1 ring-red-200'
-                                                         : (block.is_active === false ? 'border-gray-200 opacity-60' : 'border-indigo-200')">
+                                                         : (block.is_active === false ? 'border-gray-200 opacity-60' : 'border-indigo-200'),
+                                                         blockIsDragSource(region, rowIndex, columnIndex, blockIndex) ? 'opacity-40' : '',
+                                                         dragBlock && dragBlockOver === blockDropKey(region, rowIndex, columnIndex, blockIndex) ? 'ring-2 ring-indigo-300' : '']"
+                                                     @dragover.stop="blockDragOver($event, region, rowIndex, columnIndex, blockIndex)"
+                                                     @drop.prevent.stop="dropBlock(region, rowIndex, columnIndex, blockIndex)">
 
                                                     {{-- Block: single-line header --}}
                                                     <div class="flex items-center gap-2">
-                                                        <i class="fas fa-grip-vertical text-gray-300 text-[10px] flex-shrink-0"></i>
+                                                        <button type="button"
+                                                                draggable="true"
+                                                                @dragstart="startBlockDrag($event, region, rowIndex, columnIndex, blockIndex)"
+                                                                @dragend="endBlockDrag()"
+                                                                title="Sürükleyerek taşı"
+                                                                class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 text-[10px] flex-shrink-0">
+                                                            <i class="fas fa-grip-vertical"></i>
+                                                        </button>
                                                         <span class="text-xs font-semibold text-gray-800 truncate flex-1 min-w-0"
                                                               x-text="block.template_name || block.type || 'Block'"></span>
                                                         <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 flex-shrink-0"
