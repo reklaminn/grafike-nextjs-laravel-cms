@@ -53,6 +53,8 @@ class AuthController extends Controller
                 'last_login_at' => now(),
             ]);
 
+            $this->auditLog('Giriş yapıldı', $admin, $request);
+
             if (! $admin->isAgencyAdmin()) {
                 $defaultTenantId = $admin->defaultTenantId();
 
@@ -64,15 +66,43 @@ class AuthController extends Controller
             return redirect()->intended(route('admin.dashboard'));
         }
 
+        $this->auditLog('Başarısız giriş denemesi', $admin, $request);
+
         return back()->withErrors(['username' => 'Gecersiz kullanici adi veya sifre.'])->withInput();
     }
 
     public function logout(Request $request)
     {
+        $admin = Auth::guard('admin')->user();
+
         Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        if ($admin) {
+            $this->auditLog('Çıkış yapıldı', $admin, $request);
+        }
+
         return redirect()->route('admin.login');
+    }
+
+    /**
+     * Auth olaylarını activity log'a yaz (audit trail).
+     * Log hatası girişi engellememeli — sessizce geç.
+     */
+    private function auditLog(string $description, Admin $admin, Request $request): void
+    {
+        try {
+            activity('auth')
+                ->causedBy($admin)
+                ->withProperties([
+                    'ip'         => $request->ip(),
+                    'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                    'username'   => $admin->username,
+                ])
+                ->log($description);
+        } catch (\Throwable) {
+            // activity_log tablosu yoksa / DB hatasında auth akışını bozma
+        }
     }
 }

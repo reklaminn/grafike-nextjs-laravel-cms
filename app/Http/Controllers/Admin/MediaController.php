@@ -90,6 +90,11 @@ class MediaController extends Controller
             return response()->json(['error' => 'Bu dosya uzantısına izin verilmiyor.'], 422);
         }
 
+        // SVG → gömülü script/onload XSS riski; içeriği sanitize et
+        if (! \App\Services\Media\SvgGuard::sanitizeIfSvg($file)) {
+            return response()->json(['error' => 'SVG dosyası güvenli değil veya bozuk.'], 422);
+        }
+
         // Pakete göre depolama kotası — aktif tenant kotasını aşacaksa reddet.
         $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
         if ($tenant) {

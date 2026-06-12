@@ -49,7 +49,10 @@ use Illuminate\Support\Facades\Route;
 // Admin Auth Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.submit');
+    // Brute-force koruması: IP başına dakikada 5 deneme
+    Route::post('login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login.submit');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Protected Admin Routes
@@ -67,6 +70,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // ── Tenant Backups ────────────────────────────────────────────────────
         Route::post  ('tenants/{tenant}/backups',                    [TenantBackupController::class, 'store'])   ->name('tenants.backups.store');
         Route::get   ('tenants/{tenant}/backups/{filename}/download',[TenantBackupController::class, 'download'])->name('tenants.backups.download');
+        Route::post  ('tenants/{tenant}/backups/{filename}/restore', [TenantBackupController::class, 'restore']) ->name('tenants.backups.restore');
         Route::delete('tenants/{tenant}/backups/{filename}',         [TenantBackupController::class, 'destroy']) ->name('tenants.backups.destroy');
 
         // ── Tenant AI Settings (BYOK) ─────────────────────────────────────────
@@ -94,6 +98,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('search', \App\Http\Controllers\Admin\GlobalSearchController::class)->name('search');
 
         // Pages CRUD
         Route::resource('pages', PageController::class);
@@ -108,6 +113,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('pages/{page}/ai/seo-meta',       AiSeoMetaController::class)->name('pages.ai.seo-meta');
         Route::post('ai/block-edit',                  AiBlockEditController::class)->name('ai.block-edit');
         Route::post('ai/pages/generate',              AiPageGenerateController::class)->name('ai.pages.generate');
+        Route::get('ai/pages/generate/status/{jobId}', [AiPageGenerateController::class, 'status'])->name('ai.generate-page.status');
         Route::post('ai/section-templates/generate',  AiSectionTemplateGenerateController::class)->name('ai.section-templates.generate');
 
         // Prompt boost — ham tarifi ayrıntılı prompt'a dönüştürür (sayfa sihirbazı).
@@ -190,6 +196,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
         Route::resource('themes', ThemeController::class)->except('show');
         Route::get('section-templates/menu-placeholders', [SectionTemplateController::class, 'menuPlaceholders'])->name('section-templates.menu-placeholders');
+        Route::get('section-templates/catalog-json', [SectionTemplateController::class, 'catalogJson'])->name('section-templates.catalog-json');
         Route::match(['GET', 'POST'], 'section-templates/{section_template}/preview', [SectionTemplateController::class, 'preview'])->name('section-templates.preview');
         Route::post('section-templates/{section_template}/restore', [SectionTemplateController::class, 'restore'])->name('section-templates.restore')->withTrashed();
         Route::delete('section-templates/{section_template}/force-delete', [SectionTemplateController::class, 'forceDelete'])->name('section-templates.force-delete')->withTrashed();

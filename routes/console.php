@@ -18,6 +18,13 @@ Schedule::command('cms:backup-tenant --all')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/backup.log'));
 
+// Zamanlanmış sayfa yayınlama — vakti gelen status='scheduled' sayfaları
+// 'published' yapar (tüm tenant'lar). PageObserver cache + revalidation'ı
+// otomatik tetikler.
+Schedule::command('cms:publish-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 // Defensive Traefik dynamic-config sync.  The DomainObserver already
 // regenerates the file on every domain CRUD, so this hourly tick is purely
 // a drift-detection safety net for scenarios where the observer doesn't

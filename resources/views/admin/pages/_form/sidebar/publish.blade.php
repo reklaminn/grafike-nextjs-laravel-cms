@@ -117,14 +117,30 @@
     <h3 class="text-base font-semibold text-gray-800 mb-4">Yayın</h3>
 
     <div class="space-y-4">
-        <div>
+        <div x-data="{ pageStatus: @js(old('status', $page->status ?? 'draft')) }">
             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Durum *</label>
-            <select id="status" name="status" required
+            <select id="status" name="status" required x-model="pageStatus"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                 <option value="draft" {{ old('status', $page->status ?? 'draft') === 'draft' ? 'selected' : '' }}>Taslak</option>
+                <option value="scheduled" {{ old('status', $page->status ?? '') === 'scheduled' ? 'selected' : '' }}>Zamanlanmış</option>
                 <option value="published" {{ old('status', $page->status ?? '') === 'published' ? 'selected' : '' }}>Yayında</option>
                 <option value="archived" {{ old('status', $page->status ?? '') === 'archived' ? 'selected' : '' }}>Arşivlenmiş</option>
             </select>
+
+            {{-- Zamanlanmış yayın tarihi --}}
+            <div x-show="pageStatus === 'scheduled'" x-cloak class="mt-3">
+                <label for="scheduled_at" class="block text-sm font-medium text-gray-700 mb-1">
+                    <i class="fas fa-clock text-blue-500 mr-1"></i>Yayın Tarihi *
+                </label>
+                <input type="datetime-local" id="scheduled_at" name="scheduled_at"
+                       value="{{ old('scheduled_at', isset($page) && $page->scheduled_at ? $page->scheduled_at->format('Y-m-d\TH:i') : '') }}"
+                       min="{{ now()->format('Y-m-d\TH:i') }}"
+                       class="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-blue-50/50">
+                <p class="mt-1 text-xs text-gray-500">Sayfa bu tarihte otomatik yayınlanır.</p>
+                @error('scheduled_at')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
         </div>
 
         <div>

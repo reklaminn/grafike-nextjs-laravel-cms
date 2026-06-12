@@ -16,6 +16,12 @@
                     Sayfaya eklenecek block şablonunu seç
                 </p>
             </div>
+            <button type="button" @click="refreshTemplateCatalog()"
+                    :disabled="catalogRefreshing"
+                    title="Şablon listesini yenile (yeni eklenen şablonlar görünür)"
+                    class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 disabled:opacity-50">
+                <i class="fas fa-arrows-rotate text-sm" :class="catalogRefreshing && 'fa-spin'"></i>
+            </button>
             <button type="button" @click="closeBlockPicker()"
                     class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                 <i class="fas fa-xmark text-sm"></i>
@@ -120,15 +126,24 @@
                 <p class="mt-1 text-xs text-gray-500" x-text="settingsBlock ? (settingsBlock.template_name || settingsBlock.type) : ''"></p>
             </div>
             <div class="flex items-center gap-2">
-                <template x-if="settingsBlock && settingsBlock.section_template_id">
-                    <a :href="@js(rtrim(route('admin.section-templates.edit', '_id_'), '_id_')) + settingsBlock.section_template_id"
-                       target="_blank"
-                       title="Block şablonunu düzenle"
-                       class="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">
-                        <i class="fas fa-pen-to-square text-[11px]"></i>
-                        <span>Şablonu Düzenle</span>
-                    </a>
-                </template>
+                <a x-show="settingsBlock"
+                   x-cloak
+                   :href="settingsBlock?.section_template_id
+                           ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit')
+                           : @js(route('admin.section-templates.index'))"
+                   :title="settingsBlock?.section_template_id ? 'Block şablonunu düzenle' : 'Block şablonları listesi'"
+                   target="_blank"
+                   class="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-pen-to-square text-[11px]"></i>
+                    <span>Şablonu Düzenle</span>
+                </a>
+                <button type="button" x-show="settingsBlock?.section_template_id" x-cloak
+                        @click="refreshTemplateCatalog()"
+                        :disabled="catalogRefreshing"
+                        title="Şablondan yenile — şablonda yapılan son değişiklikleri bu bloğa uygula"
+                        class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200 hover:text-indigo-600 disabled:opacity-50">
+                    <i class="fas fa-arrows-rotate" :class="catalogRefreshing && 'fa-spin'"></i>
+                </button>
                 <button type="button"
                         @click="closeBlockSettings()"
                         class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200">
@@ -139,6 +154,20 @@
 
         <template x-if="settingsBlock">
             <div class="mt-5 space-y-4">
+                {{-- Şablon güncellik uyarısı — blok schema'sı katalogdan farklıysa --}}
+                <div x-show="blockSchemaIsStale(settingsBlock)" x-cloak
+                     class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                    <div class="flex items-center gap-2 text-xs text-amber-800">
+                        <i class="fas fa-triangle-exclamation text-amber-500"></i>
+                        <span>Bu bloğun alan yapısı şablonun güncel haliyle eşleşmiyor.</span>
+                    </div>
+                    <button type="button"
+                            @click="applyTemplateToBlock(settingsDraft); queueSerializedRegionsSync()"
+                            class="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
+                        <i class="fas fa-arrows-rotate mr-1"></i> Şablondan Yenile
+                    </button>
+                </div>
+
                 {{-- Per-block validation error summary --}}
                 <template x-if="settingsBlock && fieldErrors[settingsBlock.id] && Object.keys(fieldErrors[settingsBlock.id]).length > 0">
                     <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3">

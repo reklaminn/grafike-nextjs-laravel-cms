@@ -8,6 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Test ortamında tenant + central migration'lar tek DB'de koşar;
+        // tenant/0008 media'yı zaten oluşturduysa atla (prod'da ayrı DB'ler
+        // olduğundan bu guard hiç tetiklenmez).
+        if (Schema::hasTable('media')) {
+            return;
+        }
+
         Schema::create('media', function (Blueprint $table) {
             $table->id();
 

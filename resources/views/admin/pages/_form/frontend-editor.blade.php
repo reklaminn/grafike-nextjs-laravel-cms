@@ -33,6 +33,23 @@
      x-data="frontendSectionEditor({{ \Illuminate\Support\Js::from($frontendEditorPayload) }})"
      x-on:frontend-block-focus.window="focusBlock($event.detail.blockId)">
 
+    {{-- Şablon senkronizasyon toast'u (başka sekmede şablon kaydedilince) --}}
+    <div x-show="templateSyncToastVisible" x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed bottom-6 right-6 z-[90] flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 shadow-lg">
+        <i class="fas fa-arrows-rotate text-emerald-500"></i>
+        <span x-text="templateSyncToast"></span>
+        <button type="button" @click="templateSyncToastVisible = false"
+                class="ml-1 text-emerald-400 hover:text-emerald-600">
+            <i class="fas fa-times text-xs"></i>
+        </button>
+    </div>
+
     {{-- Editor header --}}
     <div class="flex items-center justify-between gap-4 mb-5">
         <div class="flex items-center gap-3">
@@ -300,7 +317,7 @@
                                                                 <i class="fas fa-cog"></i>
                                                             </button>
                                                             <template x-if="block.section_template_id">
-                                                                <a :href="@js(rtrim(route('admin.section-templates.edit', '_id_'), '_id_')) + block.section_template_id"
+                                                                <a :href="@js(url('admin/section-templates')) + '/' + block.section_template_id + '/edit'"
                                                                    target="_blank"
                                                                    title="Block şablonunu düzenle"
                                                                    class="rounded px-1 py-0.5 text-[11px] text-purple-400 hover:bg-purple-50">

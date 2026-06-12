@@ -5,6 +5,7 @@ namespace App\Enums;
 enum PageStatus: string
 {
     case Draft = 'draft';
+    case Scheduled = 'scheduled';
     case Published = 'published';
     case Archived = 'archived';
 
@@ -12,6 +13,7 @@ enum PageStatus: string
     {
         return match ($this) {
             self::Draft => 'Taslak',
+            self::Scheduled => 'Zamanlanmış',
             self::Published => 'Yayında',
             self::Archived => 'Arşivlenmiş',
         };
@@ -21,6 +23,7 @@ enum PageStatus: string
     {
         return match ($this) {
             self::Draft => 'yellow',
+            self::Scheduled => 'blue',
             self::Published => 'green',
             self::Archived => 'gray',
         };

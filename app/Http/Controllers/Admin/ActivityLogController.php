@@ -21,13 +21,35 @@ class ActivityLogController extends Controller
             $query->where('subject_type', $subjectType);
         }
 
-        $activities = $query->paginate(50);
+        if ($logName = $request->input('log_name')) {
+            $query->where('log_name', $logName);
+        }
+
+        if ($causerId = $request->input('causer_id')) {
+            $query->where('causer_id', $causerId);
+        }
+
+        if ($dateFrom = $request->input('date_from')) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+
+        if ($dateTo = $request->input('date_to')) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $activities = $query->paginate(50)->withQueryString();
 
         $subjectTypes = Activity::distinct()
             ->whereNotNull('subject_type')
             ->pluck('subject_type')
             ->map(fn($type) => class_basename($type));
 
-        return view('admin.activity-log.index', compact('activities', 'subjectTypes'));
+        $logNames = Activity::distinct()
+            ->whereNotNull('log_name')
+            ->pluck('log_name');
+
+        $admins = \App\Models\Admin::orderBy('name')->get(['id', 'name']);
+
+        return view('admin.activity-log.index', compact('activities', 'subjectTypes', 'logNames', 'admins'));
     }
 }

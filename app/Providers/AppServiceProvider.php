@@ -56,6 +56,17 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Test ortamı: prod'da tenant tabloları (pages, articles, forms…)
+        // ayrı tenant DB'lerinde yaşar; testte tenancy başlatılmadığından
+        // modeller default sqlite bağlantısına gider. Tenant migration'larını
+        // migrator'a kaydet ki RefreshDatabase'in migrate:fresh'i bu
+        // tabloları da test DB'sine kursun. (Subclass'lardaki RefreshDatabase
+        // trait'i TestCase override'larını gölgelediği için hook yerine
+        // burada loadMigrationsFrom kullanıyoruz.)
+        if ($this->app->runningUnitTests()) {
+            $this->loadMigrationsFrom(database_path('migrations/tenant'));
+        }
+
         // Register model observers for cache invalidation
         Page::observe(PageObserver::class);
         Article::observe(ArticleObserver::class);

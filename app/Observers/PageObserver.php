@@ -42,15 +42,25 @@ class PageObserver
 
     public function updating(Page $page): void
     {
-        if ($page->isDirty('sections_json') || $page->isDirty('layout_json')) {
-            // Capture the state BEFORE the update is written.
+        // Revizyona giren alanlardan herhangi biri değiştiyse, update
+        // yazılmadan ÖNCEKİ durumun tam snapshot'ını al. changed_fields
+        // hangi alanların değiştiğini saklar — UI'da diff özeti gösterilir.
+        $changed = array_values(array_filter(
+            Page::REVISION_FIELDS,
+            fn (string $field) => $page->isDirty($field)
+        ));
+
+        if ($changed !== []) {
+            $snapshot = [];
+            foreach (Page::REVISION_FIELDS as $field) {
+                $snapshot[$field] = $page->getOriginal($field);
+            }
+            $snapshot['changed_fields'] = $changed;
+
             PageRevision::create([
                 'page_id'    => $page->id,
                 'admin_id'   => auth()->id(),
-                'snapshot'   => [
-                    'sections_json' => $page->getOriginal('sections_json'),
-                    'layout_json'   => $page->getOriginal('layout_json'),
-                ],
+                'snapshot'   => $snapshot,
                 'reason'     => 'pre-update',
                 'created_at' => now(),
             ]);

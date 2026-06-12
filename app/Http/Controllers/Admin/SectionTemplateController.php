@@ -173,6 +173,29 @@ class SectionTemplateController extends Controller
         return view('admin.section-templates.edit', $this->buildFormViewData($sectionTemplate));
     }
 
+    /**
+     * Sayfa editörünün canlı şablon senkronizasyonu için hafif JSON kataloğu.
+     * PageController'daki block picker ile aynı görünürlük kuralları
+     * (tenant + modül + tema + aktif filtresi).
+     */
+    public function catalogJson()
+    {
+        $tenantThemeId = tenancy()->tenant?->theme_id;
+
+        $templates = SectionTemplate::query()
+            ->visibleTo($this->catalogTenantId())
+            ->visibleForModules($this->catalogModuleFilter())
+            ->when($tenantThemeId, fn ($query, $themeId) => $query->where('theme_id', $themeId))
+            ->active()
+            ->orderBy('name')
+            ->get()
+            ->values();
+
+        return response()->json([
+            'templates' => \App\Support\PageEditorData::for(null, $templates)->availableTemplatesPayload(),
+        ]);
+    }
+
     public function update(SectionTemplateRequest $request, SectionTemplate $sectionTemplate)
     {
         $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
