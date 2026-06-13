@@ -53,6 +53,34 @@
     ])
 </div>
 
+{{-- ─── Önbellek (FAZ 3.5) ────────────────────────────────── --}}
+@if (! empty($cacheStats['hits']))
+    <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div class="flex items-center gap-2 text-emerald-800">
+                <i class="fas fa-bolt"></i>
+                <span class="text-sm font-semibold">Yanıt Önbelleği</span>
+            </div>
+            <div>
+                <div class="text-xs text-emerald-700">İsabet oranı</div>
+                <div class="text-lg font-bold text-emerald-900">{{ $cacheStats['hit_rate'] }}%</div>
+            </div>
+            <div>
+                <div class="text-xs text-emerald-700">Önbellekten dönen</div>
+                <div class="text-lg font-bold text-emerald-900">{{ number_format($cacheStats['hits']) }} istek</div>
+            </div>
+            <div>
+                <div class="text-xs text-emerald-700">Kazanılan token</div>
+                <div class="text-lg font-bold text-emerald-900">{{ number_format($cacheStats['saved_tokens']) }}</div>
+            </div>
+            <div>
+                <div class="text-xs text-emerald-700">Tasarruf</div>
+                <div class="text-lg font-bold text-emerald-900">${{ number_format($cacheStats['saved_cost_usd'], 4) }}</div>
+            </div>
+        </div>
+    </div>
+@endif
+
 {{-- ─── Chart row ─────────────────────────────────────────── --}}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
     <div class="bg-white rounded-xl shadow-sm border p-5 lg:col-span-2">

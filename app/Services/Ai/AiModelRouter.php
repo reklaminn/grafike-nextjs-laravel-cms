@@ -41,6 +41,7 @@ class AiModelRouter
         private readonly AiManager $manager,
         private readonly TenantAiResolver $tenantResolver,
         private readonly AiQuotaService $quota,
+        private readonly AiPromptCache $promptCache,
         private readonly array $config,
     ) {
     }
@@ -167,6 +168,15 @@ class AiModelRouter
     }
 
     /**
+     * Per-feature response-cache TTL in minutes (0 = caching disabled for
+     * this feature). FAZ 3.5.
+     */
+    private function featureCacheTtl(string $feature): int
+    {
+        return (int) ($this->config['features'][$feature]['cache_ttl'] ?? 0);
+    }
+
+    /**
      * Run the request against the primary provider; on transient failure
      * walk down the fallback chain; in either case record exactly one
      * AiUsage row for billing/dashboard purposes.
@@ -178,6 +188,47 @@ class AiModelRouter
      * by design (only transient primary failures trigger it).
      */
     private function dispatchAndRecord(
+        string $feature,
+        array $cfg,
+        AiRequest $request,
+        ?Tenant $tenant,
+    ): AiResponse {
+        $ttl = $this->featureCacheTtl($feature);
+
+        // FAZ 3.5 — yanıt önbelleği. Cache açık ve bu feature için TTL>0 ise
+        // önce önbelleğe bak; isabette API çağrısı YOK, ücretsiz satır yaz.
+        // Miss/disabled durumunda gerçek dispatch çalışır (kendi satırını yazar).
+        if ($this->promptCache->enabled() && $ttl > 0) {
+            $result = $this->promptCache->remember(
+                provider:   $cfg['provider'],
+                request:    $request,
+                tenant:     $tenant,
+                ttlMinutes: $ttl,
+                generate:   fn () => $this->dispatch($feature, $cfg, $request, $tenant),
+            );
+
+            if ($result['hit']) {
+                $this->quota->recordCacheHit(
+                    tenant:        $tenant,
+                    feature:       $feature,
+                    response:      $result['response'],
+                    byok:          (bool) $cfg['byok'],
+                    extraMetadata: ['tier' => $cfg['tier'], 'requested_provider' => $cfg['provider']],
+                );
+            }
+
+            return $result['response'];
+        }
+
+        return $this->dispatch($feature, $cfg, $request, $tenant);
+    }
+
+    /**
+     * Run the request against the primary provider with fallback chain and
+     * record exactly one AiUsage row. Extracted from dispatchAndRecord so the
+     * response cache (FAZ 3.5) can wrap it as the cache-miss producer.
+     */
+    private function dispatch(
         string $feature,
         array $cfg,
         AiRequest $request,

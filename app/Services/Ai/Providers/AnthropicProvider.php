@@ -46,7 +46,7 @@ class AnthropicProvider implements AiProvider
         ];
 
         if ($request->system) {
-            $payload['system'] = $request->system;
+            $payload['system'] = $this->buildSystem($request->system);
         }
 
         $response = Http::withHeaders([
@@ -102,7 +102,7 @@ class AnthropicProvider implements AiProvider
             'stream'      => true,
         ];
         if ($request->system) {
-            $payload['system'] = $request->system;
+            $payload['system'] = $this->buildSystem($request->system);
         }
 
         // Laravel Http facade supports Guzzle stream option; the PSR-7
@@ -160,6 +160,34 @@ class AnthropicProvider implements AiProvider
             stopReason: $state['stop_reason'],
             raw:        ['streamed' => true],
         );
+    }
+
+    /**
+     * Build the `system` field. For long, stable system prompts we attach
+     * Anthropic's native prompt caching (`cache_control: ephemeral`) so the
+     * shared prefix is billed at ~10% on repeat calls within the 5-minute
+     * TTL. This is SEPARATE from our Redis response cache (FAZ 3.5): the two
+     * compose — native caching cuts input cost, the response cache skips the
+     * call entirely. Short prompts stay a plain string (below the model's
+     * minimum cacheable prefix, cache_control would be silently ignored).
+     *
+     * @return string|array<int, array<string,mixed>>
+     */
+    private function buildSystem(string $system): string|array
+    {
+        $promptCache = (array) config('ai.cache.prompt_cache', []);
+        $enabled     = (bool) ($promptCache['enabled'] ?? false);
+        $minChars    = (int) ($promptCache['min_system_chars'] ?? 12000);
+
+        if (! $enabled || mb_strlen($system) < $minChars) {
+            return $system;
+        }
+
+        return [[
+            'type'          => 'text',
+            'text'          => $system,
+            'cache_control' => ['type' => 'ephemeral'],
+        ]];
     }
 
     /**

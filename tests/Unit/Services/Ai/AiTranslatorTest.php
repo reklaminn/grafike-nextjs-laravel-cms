@@ -42,7 +42,7 @@ class AiTranslatorTest extends TestCase
             public function recordSuccess(?\App\Models\Tenant $tenant, string $feature, AiResponse $response, bool $byok = false, bool $fallbackUsed = false, array $extraMetadata = []): \App\Models\AiUsage { return new \App\Models\AiUsage(); }
             public function recordFailure(?\App\Models\Tenant $tenant, string $feature, string $provider, string $model, \Throwable $error, bool $byok = false, array $extraMetadata = []): \App\Models\AiUsage { return new \App\Models\AiUsage(); }
         };
-        $router = new AiModelRouter($manager, new TenantAiResolver($manager), $quota, $config);
+        $router = new AiModelRouter($manager, new TenantAiResolver($manager), $quota, new \App\Services\Ai\AiPromptCache($config['cache'] ?? []), $config);
 
         return new AiTranslator($router);
     }

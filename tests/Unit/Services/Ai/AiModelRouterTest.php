@@ -4,6 +4,7 @@ namespace Tests\Unit\Services\Ai;
 
 use App\Services\Ai\AiManager;
 use App\Services\Ai\AiModelRouter;
+use App\Services\Ai\AiPromptCache;
 use App\Services\Ai\AiQuotaService;
 use App\Services\Ai\Dtos\AiResponse;
 use App\Services\Ai\Dtos\AiUsage as AiUsageDto;
@@ -62,8 +63,11 @@ class AiModelRouterTest extends TestCase
         $manager  = new AiManager($config);
         $tenantR  = new TenantAiResolver($manager);
         $quota    = $this->stubQuota();
+        // Cache disabled by default ('enabled' missing → false): existing
+        // routing/fallback tests must see no caching behavior.
+        $cache    = new AiPromptCache($config['cache'] ?? []);
 
-        return new AiModelRouter($manager, $tenantR, $quota, $config);
+        return new AiModelRouter($manager, $tenantR, $quota, $cache, $config);
     }
 
     /**
@@ -102,6 +106,16 @@ class AiModelRouterTest extends TestCase
                 string $provider,
                 string $model,
                 \Throwable $error,
+                bool $byok = false,
+                array $extraMetadata = [],
+            ): \App\Models\AiUsage {
+                return new \App\Models\AiUsage();
+            }
+
+            public function recordCacheHit(
+                ?\App\Models\Tenant $tenant,
+                string $feature,
+                AiResponse $response,
                 bool $byok = false,
                 array $extraMetadata = [],
             ): \App\Models\AiUsage {
@@ -369,6 +383,105 @@ class AiModelRouterTest extends TestCase
             'BYOK key must NOT be propagated to fallback providers — tenant should not be charged for an unfamiliar vendor.'
         );
         $this->assertTrue($captured->metadata['fallback_used']);
+    }
+
+    public function test_response_cache_serves_second_identical_call_without_api(): void
+    {
+        // seo.meta gets a 60-min TTL; cache enabled.
+        $router = $this->router([
+            'cache'    => ['enabled' => true, 'prefix' => 'rt_ai', 'lock_wait' => 1],
+            'features' => ['seo.meta' => ['tier' => 'simple', 'max_tokens' => 300, 'temperature' => 0.3, 'cache_ttl' => 60]],
+        ]);
+
+        \Illuminate\Support\Facades\Cache::store()->flush();
+
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'model'   => 'a-haiku',
+                'content' => [['type' => 'text', 'text' => 'cached meta']],
+                'usage'   => ['input_tokens' => 10, 'output_tokens' => 8],
+            ], 200),
+        ]);
+
+        $first  = $router->generate(feature: 'seo.meta', prompt: 'aynı içerik', system: 'TR SEO');
+        $second = $router->generate(feature: 'seo.meta', prompt: 'aynı içerik', system: 'TR SEO');
+
+        $this->assertSame('cached meta', $first->content);
+        $this->assertSame('cached meta', $second->content);
+        $this->assertTrue($second->raw['_cache_hit'] ?? false, 'second call must be served from cache');
+
+        Http::assertSentCount(1, 'identical second request must NOT hit the provider');
+    }
+
+    public function test_zero_ttl_feature_is_not_cached(): void
+    {
+        // page.create has cache_ttl 0 → every call hits the API.
+        $router = $this->router([
+            'cache'    => ['enabled' => true, 'prefix' => 'rt_ai', 'lock_wait' => 1],
+            'features' => ['page.create' => ['tier' => 'complex', 'max_tokens' => 2000, 'temperature' => 0.6, 'cache_ttl' => 0]],
+        ]);
+
+        \Illuminate\Support\Facades\Cache::store()->flush();
+
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'model'   => 'a-sonnet',
+                'content' => [['type' => 'text', 'text' => 'fresh page']],
+                'usage'   => ['input_tokens' => 5, 'output_tokens' => 5],
+            ], 200),
+        ]);
+
+        $router->generate(feature: 'page.create', prompt: 'same', system: 'sys');
+        $router->generate(feature: 'page.create', prompt: 'same', system: 'sys');
+
+        Http::assertSentCount(2, 'creative feature (ttl=0) must never be cached');
+    }
+
+    public function test_long_system_prompt_gets_native_cache_control(): void
+    {
+        // AnthropicProvider::buildSystem reads the GLOBAL config helper.
+        config()->set('ai.cache.prompt_cache', ['enabled' => true, 'min_system_chars' => 100]);
+
+        $router = $this->router(['cache' => ['enabled' => false]]); // response cache off — isolate native caching
+
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'model'   => 'a-haiku',
+                'content' => [['type' => 'text', 'text' => 'ok']],
+                'usage'   => ['input_tokens' => 1, 'output_tokens' => 1],
+            ], 200),
+        ]);
+
+        $longSystem = str_repeat('Bu uzun ve stabil bir system prompt. ', 20); // > 100 chars
+        $router->generate(feature: 'seo.meta', prompt: 'hi', system: $longSystem);
+
+        Http::assertSent(function ($req) {
+            $body = $req->data();
+            $system = $body['system'] ?? null;
+
+            return is_array($system)
+                && ($system[0]['cache_control']['type'] ?? null) === 'ephemeral'
+                && ($system[0]['text'] ?? null) !== null;
+        });
+    }
+
+    public function test_short_system_prompt_stays_plain_string(): void
+    {
+        config()->set('ai.cache.prompt_cache', ['enabled' => true, 'min_system_chars' => 100000]);
+
+        $router = $this->router(['cache' => ['enabled' => false]]);
+
+        Http::fake([
+            'api.anthropic.com/*' => Http::response([
+                'model'   => 'a-haiku',
+                'content' => [['type' => 'text', 'text' => 'ok']],
+                'usage'   => ['input_tokens' => 1, 'output_tokens' => 1],
+            ], 200),
+        ]);
+
+        $router->generate(feature: 'seo.meta', prompt: 'hi', system: 'kısa');
+
+        Http::assertSent(fn ($req) => is_string($req->data()['system'] ?? null));
     }
 
     public function test_chain_remembers_primary_first_even_if_chain_starts_elsewhere(): void
