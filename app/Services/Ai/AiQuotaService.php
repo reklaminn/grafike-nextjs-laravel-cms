@@ -202,6 +202,49 @@ class AiQuotaService
     }
 
     /**
+     * Persist a usage row for a CACHE HIT (FAZ 3.5). No API call was made,
+     * so cost and billable tokens are 0 — the response came straight from
+     * the response cache. We still write a row (success=true) so the
+     * dashboard counts the request and surfaces `cache_hit` + the savings
+     * we avoided paying (`saved_tokens` / `saved_cost_usd` in metadata).
+     */
+    public function recordCacheHit(
+        ?Tenant $tenant,
+        string $feature,
+        AiResponse $response,
+        bool $byok = false,
+        array $extraMetadata = [],
+    ): AiUsage {
+        $savedCost = $this->calculateCost(
+            $response->provider,
+            $response->model,
+            $response->usage->inputTokens,
+            $response->usage->outputTokens,
+        );
+
+        return AiUsage::create([
+            'tenant_id'     => $tenant?->getKey() ? (string) $tenant->getKey() : null,
+            'feature'       => $feature,
+            'provider'      => $response->provider,
+            'model'         => $response->model,
+            'tier'          => $extraMetadata['tier'] ?? null,
+            'input_tokens'  => 0,
+            'output_tokens' => 0,
+            'total_tokens'  => 0,
+            'cost_usd'      => 0,
+            'byok'          => $byok,
+            'fallback_used' => false,
+            'success'       => true,
+            'metadata'      => array_merge($extraMetadata, [
+                'cache_hit'      => true,
+                'saved_tokens'   => $response->usage->totalTokens(),
+                'saved_cost_usd' => $savedCost,
+            ]),
+            'created_at'    => now(),
+        ]);
+    }
+
+    /**
      * Persist one usage row for a failed call. Token counters are zero
      * since the API didn't return; cost is 0 too. We still record the
      * row so the dashboard can show error rates and rate-limit incidents.

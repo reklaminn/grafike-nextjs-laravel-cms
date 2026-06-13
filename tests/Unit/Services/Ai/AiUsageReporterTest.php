@@ -225,4 +225,38 @@ class AiUsageReporterTest extends TestCase
         $this->assertSame(1, $totals['requests']);
         $this->assertEqualsWithDelta(0.10, $totals['cost_usd'], 0.0001);
     }
+
+    public function test_cache_stats_reports_hit_rate_and_savings(): void
+    {
+        // 2 real API calls + 3 cache hits.
+        $this->seedRow(['cost_usd' => 0.001]);
+        $this->seedRow(['cost_usd' => 0.001]);
+        for ($i = 0; $i < 3; $i++) {
+            $this->seedRow([
+                'input_tokens'  => 0,
+                'output_tokens' => 0,
+                'total_tokens'  => 0,
+                'cost_usd'      => 0,
+                'metadata'      => ['cache_hit' => true, 'saved_tokens' => 150, 'saved_cost_usd' => 0.001],
+            ]);
+        }
+
+        $stats = (new AiUsageReporter())->cacheStats();
+
+        $this->assertSame(3, $stats['hits']);
+        $this->assertSame(5, $stats['requests']);
+        $this->assertEqualsWithDelta(60.0, $stats['hit_rate'], 0.01);   // 3/5
+        $this->assertSame(450, $stats['saved_tokens']);                 // 3 × 150
+        $this->assertEqualsWithDelta(0.003, $stats['saved_cost_usd'], 0.0001);
+    }
+
+    public function test_cache_stats_zero_when_no_hits(): void
+    {
+        $this->seedRow(['cost_usd' => 0.001]);
+
+        $stats = (new AiUsageReporter())->cacheStats();
+        $this->assertSame(0, $stats['hits']);
+        $this->assertEqualsWithDelta(0.0, $stats['hit_rate'], 0.01);
+        $this->assertEqualsWithDelta(0.0, $stats['saved_cost_usd'], 0.0001);
+    }
 }

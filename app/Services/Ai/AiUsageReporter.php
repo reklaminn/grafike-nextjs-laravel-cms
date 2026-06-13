@@ -247,6 +247,44 @@ class AiUsageReporter
             ])->all();
     }
 
+    /**
+     * Response-cache effectiveness (FAZ 3.5). Cache hits are recorded as
+     * success rows with cost_usd=0 and metadata.cache_hit=true; the savings
+     * we avoided paying live in metadata.saved_cost_usd / saved_tokens.
+     *
+     * Implemented DB-agnostically (no JSON-path SQL): zero-cost successful
+     * rows are a small set (cache hits + unpriced models), so we filter them
+     * in PHP. Keeps the query identical on SQLite (tests) and MariaDB (prod).
+     *
+     * @return array{hits:int, requests:int, hit_rate:float, saved_cost_usd:float, saved_tokens:int}
+     */
+    public function cacheStats(?Tenant $tenant = null, int $monthsAgo = 0): array
+    {
+        [$start, $end] = $this->monthBounds($monthsAgo);
+
+        $okQ = $this->scoped(AiUsage::query(), $tenant)
+            ->where('success', true)
+            ->betweenDates($start, $end);
+
+        $totalRequests = (clone $okQ)->count();
+
+        $hits = (clone $okQ)
+            ->where('cost_usd', 0)
+            ->get(['metadata'])
+            ->filter(fn (AiUsage $r) => (bool) ($r->metadata['cache_hit'] ?? false));
+
+        $savedCost   = $hits->sum(fn (AiUsage $r) => (float) ($r->metadata['saved_cost_usd'] ?? 0));
+        $savedTokens = $hits->sum(fn (AiUsage $r) => (int) ($r->metadata['saved_tokens'] ?? 0));
+
+        return [
+            'hits'           => $hits->count(),
+            'requests'       => $totalRequests,
+            'hit_rate'       => $totalRequests > 0 ? round(($hits->count() / $totalRequests) * 100, 1) : 0.0,
+            'saved_cost_usd' => round((float) $savedCost, 6),
+            'saved_tokens'   => (int) $savedTokens,
+        ];
+    }
+
     // ────────────────────────────────────────────────────────────────────
 
     /**
