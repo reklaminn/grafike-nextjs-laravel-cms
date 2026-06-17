@@ -25,22 +25,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let cmEditor = null;
 
     if (rawTextarea && typeof CodeMirror !== 'undefined') {
-        cmEditor = CodeMirror.fromTextArea(rawTextarea, {
-            mode: 'htmlmixed',
-            theme: 'dracula',
-            lineNumbers: true,
-            lineWrapping: false,
-            matchBrackets: true,
-            autoCloseTags: true,
-            tabSize: 2,
-            indentWithTabs: false,
-            extraKeys: { 'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment' },
-        });
-        cmEditor.on('change', () => {
-            rawTextarea.value = cmEditor.getValue();
-            updateSchemaDiff();
-            window.dispatchEvent(new CustomEvent('section-template-editor-change'));
-        });
+        // CodeMirror init'i (veya eksik/blokeli bir CDN addon'u) hata fırlatırsa
+        // TÜM DOMContentLoaded geri çağrısı patlar ve hiçbir buton bağlanmazdı.
+        // try/catch ile izole et: başarısızlıkta düz textarea'ya düş.
+        try {
+            cmEditor = CodeMirror.fromTextArea(rawTextarea, {
+                mode: 'htmlmixed',
+                theme: 'dracula',
+                lineNumbers: true,
+                lineWrapping: false,
+                matchBrackets: true,
+                autoCloseTags: true,
+                tabSize: 2,
+                indentWithTabs: false,
+                extraKeys: { 'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment' },
+            });
+            cmEditor.on('change', () => {
+                rawTextarea.value = cmEditor.getValue();
+                updateSchemaDiff();
+                window.dispatchEvent(new CustomEvent('section-template-editor-change'));
+            });
+        } catch (e) {
+            console.error('[section-template] CodeMirror init failed, falling back to plain textarea:', e);
+            cmEditor = null;
+        }
     }
 
     // Proxy: make insertAtCursor work with CodeMirror
@@ -285,7 +293,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCurrentRecord = initialVariation && String(initialVariation) === variation;
         const exists = existing.includes(variation) && !isCurrentRecord;
         variationStatus.classList.remove('hidden');
-        variationStatus.classList.add(exists ? 'border border-red-200 bg-red-50 text-red-800' : 'border border-green-200 bg-green-50 text-green-800');
+        // classList.add() boşluklu çok-sınıflı string KABUL ETMEZ (InvalidCharacterError);
+        // her sınıf ayrı argüman olmalı → split + spread. Bu satır variation'ı olan
+        // şablonların DÜZENLEME sayfasında load anında çalışır; hata tüm DOMContentLoaded'ı
+        // (ve dolayısıyla tüm buton bağlamalarını) durduruyordu.
+        variationStatus.classList.add(...(exists
+            ? 'border border-red-200 bg-red-50 text-red-800'
+            : 'border border-green-200 bg-green-50 text-green-800').split(' '));
         variationStatus.textContent = exists ? 'Bu tema + type altında bu variation zaten var.' : (existing.includes(variation) ? 'Mevcut kayıt düzenleniyor.' : 'Bu variation yeni oluşturulabilir.');
     };
 
