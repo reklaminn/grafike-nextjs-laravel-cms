@@ -138,7 +138,13 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
 
                 this.parentRef[this.fieldKey] = json.url;
                 // Yeni yükleneni listeye de ekle (tekrar açılırsa görünür).
-                this.mediaItems.unshift({ id: 'up_' + Date.now(), url: json.url, file_name: json.name });
+                this.mediaItems.unshift({
+                    id: json.id ?? ('up_' + Date.now()),
+                    url: json.url,
+                    thumbnail_url: json.url,
+                    file_name: json.file_name || json.name,
+                    mime_type: json.mime,
+                });
                 this.closeMediaPicker();
             } catch (e) {
                 console.error('[blockFieldInput] Media upload error:', e);

@@ -108,16 +108,25 @@ class MediaController extends Controller
             }
         }
 
-        // Store as orphan media (not associated with a model yet)
-        $path = $file->store('uploads/' . date('Y/m'), 'public');
+        // Proper Spatie Media record on a standalone MediaAsset owner.
+        // (Eski hali orphan dosya kaydedip asset('storage/..') döndürüyordu →
+        //  grid'de görünmüyor + tenant'ta /tenancy/assets/storage/.. 500.)
+        // addMedia, çalışan kapak/önizleme akışıyla aynı disk + getUrl() üretir.
+        $asset = \App\Models\MediaAsset::create([
+            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+        ]);
+        $media = $asset->addMedia($file)->toMediaCollection('library');
 
         return response()->json([
-            'success' => true,
-            'path' => $path,
-            'url' => asset('storage/' . $path),
-            'name' => $file->getClientOriginalName(),
-            'size' => $file->getSize(),
-            'mime' => $file->getMimeType(),
+            'success'   => true,
+            'id'        => $media->id,
+            'url'       => $media->getUrl(),
+            'name'      => $media->name,
+            'file_name' => $media->file_name,
+            'size'      => $media->size,
+            'mime'      => $media->mime_type,
+            'disk'      => $media->disk,
+            'path'      => $media->getPathRelativeToRoot(),
         ]);
     }
 
