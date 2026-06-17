@@ -301,12 +301,25 @@
                                    placeholder="Dosya adı ara…"
                                    class="w-52 rounded-lg border border-gray-300 py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
+                        {{-- Yükle: yeni görsel seç + doğrudan alana ata --}}
+                        <label class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                               :class="mediaUploading ? 'pointer-events-none opacity-60' : ''">
+                            <i class="fas" :class="mediaUploading ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+                            <span x-text="mediaUploading ? 'Yükleniyor…' : 'Yükle'"></span>
+                            <input type="file" class="hidden" accept="image/*" @@change="uploadMedia($event)">
+                        </label>
                         <button type="button"
                                 @@click="closeMediaPicker()"
                                 class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                             <i class="fas fa-xmark"></i>
                         </button>
                     </div>
+
+                    {{-- Yükleme hatası --}}
+                    <template x-if="mediaUploadError">
+                        <div class="border-b border-red-100 bg-red-50 px-5 py-2 text-xs text-red-700"
+                             x-text="mediaUploadError"></div>
+                    </template>
 
                     {{-- Grid --}}
                     <div class="flex-1 overflow-y-auto p-4">
