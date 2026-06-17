@@ -39,6 +39,8 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         mediaItems: [],
         mediaSearch: '',
         mediaLoading: false,
+        mediaUploading: false,
+        mediaUploadError: '',
 
         // Icon picker state
         iconPickerOpen: false,
@@ -61,6 +63,7 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         openMediaPicker() {
             this.mediaPickerOpen = true;
             this.mediaSearch = '';
+            this.mediaUploadError = '';
             if (!this.mediaItems.length) {
                 this.loadMedia();
             }
@@ -101,6 +104,48 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         selectMedia(item) {
             this.parentRef[this.fieldKey] = item.url || item.original_url || '';
             this.closeMediaPicker();
+        },
+
+        // Medya seçiciden doğrudan yükleme: dosyayı media/upload'a gönderir,
+        // dönen URL'yi alana atar ve seçiciyi kapatır (logo vb. eklemek için).
+        async uploadMedia(event) {
+            const file = event.target.files?.[0];
+            event.target.value = ''; // aynı dosya tekrar seçilebilsin
+            if (!file) return;
+
+            this.mediaUploadError = '';
+            this.mediaUploading = true;
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+                const fd = new FormData();
+                fd.append('file', file);
+
+                const resp = await fetch('/admin/media/upload', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: fd,
+                });
+                const json = await resp.json().catch(() => ({}));
+
+                if (!resp.ok || !json.success) {
+                    this.mediaUploadError = json.error || `Yükleme başarısız (HTTP ${resp.status}).`;
+                    return;
+                }
+
+                this.parentRef[this.fieldKey] = json.url;
+                // Yeni yükleneni listeye de ekle (tekrar açılırsa görünür).
+                this.mediaItems.unshift({ id: 'up_' + Date.now(), url: json.url, file_name: json.name });
+                this.closeMediaPicker();
+            } catch (e) {
+                console.error('[blockFieldInput] Media upload error:', e);
+                this.mediaUploadError = 'Yükleme sırasında bir hata oluştu.';
+            } finally {
+                this.mediaUploading = false;
+            }
         },
 
         // ── Icon picker (Font Awesome) ──────────────────────────────────────
