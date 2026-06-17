@@ -153,10 +153,14 @@ class SecurityTest extends TestCase
 
         $response->assertOk();
 
+        // Upload artık Spatie Media kaydı yapıyor; sanitize edilmiş içerik
+        // medyanın kendi diskinde saklanır. Diske bağımlı kalmadan oku.
         $path = $response->json('path');
+        $disk = $response->json('disk');
         $this->assertNotNull($path);
+        $this->assertNotNull($disk);
 
-        $stored = \Illuminate\Support\Facades\Storage::disk('public')->get($path);
+        $stored = \Illuminate\Support\Facades\Storage::disk($disk)->get($path);
         $this->assertStringNotContainsString('<script', $stored);
         $this->assertStringNotContainsString('onload', $stored);
         $this->assertStringContainsString('<circle', $stored);
