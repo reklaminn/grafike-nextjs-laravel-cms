@@ -30,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
         // storage/logs/fatal.log'a yaz. Laravel'in kendi handler'ı OOM'da bunu
         // yapamaz (bellek kalmaz). Oku: `bash scripts/diag.sh fatal`.
         \App\Support\FatalLogger::register(storage_path('logs/fatal.log'));
+
+        // Tenant medya URL'leri /tenant-assets/{path}?tenant={id} üzerinden
+        // servis edilir (public disk tenant'a göre suffix'li; /storage/{path}
+        // 404 verir). Spatie getUrl()'ü TenantMediaUrlGenerator'a yönlendir.
+        config(['media-library.url_generator' => \App\Support\TenantMediaUrlGenerator::class]);
     }
 
     /**
