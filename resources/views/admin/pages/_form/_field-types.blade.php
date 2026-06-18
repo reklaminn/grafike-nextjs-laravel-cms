@@ -280,9 +280,15 @@
                  class="h-20 w-full rounded-lg border border-gray-200 object-cover object-center"
                  @@error="$el.style.display = 'none'">
         </template>
+    </div>
+</template>
 
-        {{-- Media Picker Modal (teleported to body to escape stacking-context issues) --}}
-        <template x-teleport="body">
+{{-- Media Picker Modal — ÜST SEVİYE teleport (image x-if'in DIŞINDA olmalı).
+     Alpine v3'te x-if içine yuvalanmış x-teleport içeriğindeki @change/@click
+     event'leri güvenilir bağlanmıyor → dosya "Yükle" tıklaması/seçimi hiç istek
+     atmıyordu. Bileşen kökünde durup x-show="mediaPickerOpen" + openMediaPicker()
+     ile kontrol edilir; image olmayan alanlarda asla açılmaz (zararsız gizli). --}}
+<template x-teleport="body">
             <div x-show="mediaPickerOpen"
                  x-cloak
                  class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
@@ -489,8 +495,6 @@
                 </div>
             </div>
         </template>
-    </div>
-</template>
 
 {{-- rich-text / html (Quill WYSIWYG) --}}
 <template x-if="['rich-text', 'html'].includes(type)">
