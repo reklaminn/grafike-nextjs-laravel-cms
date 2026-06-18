@@ -151,6 +151,22 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/_html$/i, '').replace(/_url$/i, ' url').replace(/_alt$/i, ' alt')
         .replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
+    // Sistem/menü placeholder'ları SCHEMA ALANI DEĞİLDİR — render anında
+    // SectionTemplateRenderer tarafından site ayarları + menülerden çözülür.
+    // Bunları schema'ya yakalamak ({{logo_url}}, {{{menu_header_html}}} gibi)
+    // sistem değerini içerik default'uyla geçersiz kılar/kirletir. Dışla.
+    const SYSTEM_TOKENS = new Set([
+        'site_name', 'site_domain', 'theme_slug', 'logo_url', 'favicon_url',
+        'phone', 'email', 'address', 'whatsapp_number', 'working_hours',
+        'tax_id', 'footer_text',
+    ]);
+    const isSystemPlaceholder = (key) => {
+        const k = String(key || '');
+        if (SYSTEM_TOKENS.has(k)) return true;
+        // menü tokenları: menu_{key}_html, menu_{key}_items_html, menu_{key}_name
+        return /^menu_[a-z0-9_]+_(items_html|html|name)$/.test(k);
+    };
+
     const escapeText = (value) => String(value ?? '')
         .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
@@ -389,7 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const placeholders = extractPlaceholders(getHtmlValue());
         const schema = parseJsonObject(schemaInput?.value || '');
         const keys = schemaKeys(schema);
-        const missingSchema = placeholders.filter(k => !schemaHasPlaceholder(schema, k));
+        // Sistem/menü placeholder'ları schema'da OLMAMALI (render'da çözülür) —
+        // "schema'da yok" uyarısından hariç tut.
+        const missingSchema = placeholders.filter(k => !isSystemPlaceholder(k) && !schemaHasPlaceholder(schema, k));
         const unusedSchema = keys.filter(k => !placeholders.includes(k) && !(schema?.[k]?.type === 'repeater' && placeholders.includes(`${k}_html`)));
         diffPanel.classList.toggle('hidden', placeholders.length === 0 && keys.length === 0);
         diffOkBadge?.classList.toggle('hidden', missingSchema.length > 0 || unusedSchema.length > 0 || (placeholders.length === 0 && keys.length === 0));
@@ -707,7 +725,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hasPlaceholders(template)) {
             const { schema, defaults } = (() => {
                 const s = {}, d = {};
-                extractPlaceholders(template).forEach(key => { const t = inferType(key); s[key] = { type: t, label: labelize(key) }; d[key] = inferDefaultValue(key, t); });
+                extractPlaceholders(template)
+                    .filter(key => !isSystemPlaceholder(key))
+                    .forEach(key => { const t = inferType(key); s[key] = { type: t, label: labelize(key) }; d[key] = inferDefaultValue(key, t); });
                 return { schema: s, defaults: d };
             })();
             applyGeneratedData(schema, defaults);
