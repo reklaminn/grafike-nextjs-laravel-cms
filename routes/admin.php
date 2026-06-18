@@ -278,6 +278,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('settings/crawl', [SettingsController::class, 'crawl'])->name('settings.crawl');
         Route::put('settings/crawl', [SettingsController::class, 'updateCrawl'])->name('settings.crawl.update');
 
+        // Media upload / compression defaults
+        Route::get('settings/media', [SettingsController::class, 'media'])->name('settings.media');
+        Route::put('settings/media', [SettingsController::class, 'updateMedia'])->name('settings.media.update');
+
         // Sistem geneli AI Anahtarları — sadece agency admin (superadmin) erişebilir
         Route::get('settings/ai-keys',  [SystemSettingsController::class, 'aiKeys'])->name('settings.ai-keys');
         Route::post('settings/ai-keys', [SystemSettingsController::class, 'updateAiKeys'])->name('settings.ai-keys.update');

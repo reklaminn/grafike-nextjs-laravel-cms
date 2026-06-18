@@ -95,8 +95,11 @@ class MediaController extends Controller
 
     public function upload(Request $request)
     {
+        // Maks dosya boyutu site ayarından (yoksa config varsayılanı, KB).
+        $maxSizeKb = (int) \App\Models\SiteSetting::get('media.max_size_kb', config('cms.media.max_upload_size', 10240));
+
         $request->validate([
-            'file' => 'required|file|max:' . config('cms.media.max_upload_size', 10240),
+            'file' => 'required|file|max:' . $maxSizeKb,
         ]);
 
         $file = $request->file('file');
@@ -111,11 +114,27 @@ class MediaController extends Controller
             return response()->json(['error' => 'SVG dosyası güvenli değil veya bozuk.'], 422);
         }
 
+        // Site ayarlarına göre yeniden boyutlandır + sıkıştır (raster görseller).
+        // İşlenirse depoya işlenmiş geçici dosya gider; aksi halde orijinal.
+        $processed = app(\App\Services\Media\MediaImageProcessor::class)->process($file, [
+            'enabled'    => \App\Models\SiteSetting::get('media.compress_enabled', '1') === '1',
+            'max_width'  => (int) \App\Models\SiteSetting::get('media.max_width', 2560),
+            'max_height' => (int) \App\Models\SiteSetting::get('media.max_height', 0),
+            'quality'    => (int) \App\Models\SiteSetting::get('media.quality', 82),
+            'to_webp'    => \App\Models\SiteSetting::get('media.to_webp', '0') === '1',
+        ]);
+
+        // Depoya gidecek gerçek boyut (işlenmişse o, değilse orijinal).
+        $effectiveSize = $processed ? (int) @filesize($processed['path']) : (int) $file->getSize();
+
         // Pakete göre depolama kotası — aktif tenant kotasını aşacaksa reddet.
         $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
         if ($tenant) {
             $meter = app(\App\Services\Tenancy\TenantUsageMeter::class);
-            if ($meter->wouldExceedStorage($tenant, (int) $file->getSize())) {
+            if ($meter->wouldExceedStorage($tenant, $effectiveSize)) {
+                if ($processed) {
+                    @unlink($processed['path']); // geçici dosyayı temizle
+                }
                 $quota = $tenant->packageConfig()['max_storage_mb'] ?? null;
 
                 return response()->json([
@@ -128,10 +147,19 @@ class MediaController extends Controller
         // (Eski hali orphan dosya kaydedip asset('storage/..') döndürüyordu →
         //  grid'de görünmüyor + tenant'ta /tenancy/assets/storage/.. 500.)
         // addMedia, çalışan kapak/önizleme akışıyla aynı disk + getUrl() üretir.
-        $asset = \App\Models\MediaAsset::create([
-            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-        ]);
-        $media = $asset->addMedia($file)->toMediaCollection('library');
+        $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $asset = \App\Models\MediaAsset::create(['name' => $baseName]);
+
+        if ($processed) {
+            // İşlenmiş geçici dosyadan ekle; orijinal adı koru, uzantı değişebilir
+            // (örn. .webp'ye çevrildiyse). addMedia geçici dosyayı taşır.
+            $media = $asset->addMedia($processed['path'])
+                ->usingName($baseName)
+                ->usingFileName($baseName . '.' . $processed['extension'])
+                ->toMediaCollection('library');
+        } else {
+            $media = $asset->addMedia($file)->toMediaCollection('library');
+        }
 
         return response()->json([
             'success'   => true,
