@@ -506,8 +506,19 @@
 
                     {{-- Üretilen HTML Kodu — uzun, salt-okunur → katlanabilir, en altta --}}
                     <details class="rounded-lg border border-gray-200">
-                        <summary class="cursor-pointer select-none px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50">
-                            <i class="fas fa-code mr-1 text-gray-400"></i> Üretilen HTML Kodu (göster)
+                        <summary class="flex items-center justify-between gap-2 cursor-pointer select-none px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                            <span><i class="fas fa-code mr-1 text-gray-400"></i> Üretilen HTML Kodu (göster)</span>
+                            <button type="button"
+                                    @click.prevent.stop="cloneGeneratedToOverride()"
+                                    title="Üretilen kodu yukarıdaki HTML Override alanına kopyalar (düzenlenebilir hale getirir)"
+                                    class="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-100">
+                                <template x-if="! htmlOverrideCloned">
+                                    <span><i class="fas fa-arrow-up mr-0.5"></i> HTML Override'a kopyala</span>
+                                </template>
+                                <template x-if="htmlOverrideCloned">
+                                    <span class="text-green-700"><i class="fas fa-check mr-0.5"></i> Kopyalandı</span>
+                                </template>
+                            </button>
                         </summary>
                         <div class="max-h-64 overflow-auto border-t border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 font-mono whitespace-pre-wrap break-words"
                              x-text="blockCodePreview(settingsBlock)"></div>

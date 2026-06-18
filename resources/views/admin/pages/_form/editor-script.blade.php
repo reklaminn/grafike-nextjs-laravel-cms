@@ -375,6 +375,7 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         // tek instance; blok/tab değişince değer senkronlanır.
         htmlOverrideCM: null,
         htmlOverrideSyncing: false,
+        htmlOverrideCloned: false, // "kopyalandı" geçici buton geri bildirimi
 
         // AI block-edit state (FAZ 3.6 streaming)
         aiAction: 'shorten',
@@ -1478,6 +1479,25 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 this.htmlOverrideSyncing = false;
             }
             this.$nextTick(() => cm.refresh());
+        },
+
+        // Üretilen HTML kodunu (placeholder'lar çözülmüş çıktı) HTML Override
+        // alanına klonlar; render_mode'u html'e çevirir ki override görünür/etkin
+        // olsun. Override doluysa üzerine yazmadan önce onay ister.
+        cloneGeneratedToOverride() {
+            if (! this.settingsDraft) return;
+            const generated = (this.blockCodePreview(this.settingsDraft) || '').trim();
+            if (! generated) return;
+            const current = (this.settingsDraft.html_override || '').trim();
+            if (current && current !== generated &&
+                ! window.confirm('HTML Override alanında içerik var. Üretilen kodla değiştirilsin mi?')) {
+                return;
+            }
+            this.settingsDraft.render_mode = 'html';
+            this.settingsDraft.html_override = generated;
+            this.$nextTick(() => this.syncHtmlOverrideEditor());
+            this.htmlOverrideCloned = true;
+            setTimeout(() => { this.htmlOverrideCloned = false; }, 2000);
         },
 
         // ── AI block-edit — streaming (FAZ 3.6) ─────────────────────────
