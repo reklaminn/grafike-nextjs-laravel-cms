@@ -56,9 +56,23 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         mediaPickerOpen: false,
         mediaItems: [],
         mediaSearch: '',
-        mediaLoading: false,
+        mediaSearchTimer: null,
+        mediaCollection: '',
+        mediaCollections: [],
+        mediaLoading: false,        // ilk yükleme
+        mediaLoadingMore: false,    // sonsuz kaydırma
+        mediaPage: 1,
+        mediaLastPage: 1,
+        mediaTotal: 0,
         mediaUploading: false,
         mediaUploadError: '',
+        mediaActive: null,          // sağ panelde gösterilen aktif öğe
+        mediaDragOver: false,
+        mediaAltDraft: '',
+        mediaNameDraft: '',
+        mediaSavingMeta: false,
+        mediaGenAltLoading: false,
+        mediaChosen: [],            // çoklu seçim: seçilen url'ler
 
         // Icon picker state
         iconPickerOpen: false,
@@ -78,97 +92,343 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         },
 
         // ── Media picker ────────────────────────────────────────────────────
+        get mediaMultiple() {
+            return this.fieldSchema?.multiple === true;
+        },
+
+        get mediaHasMore() {
+            return this.mediaPage < this.mediaLastPage;
+        },
+
+        _csrf() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        },
+
         openMediaPicker() {
             this.mediaPickerOpen = true;
             this.mediaSearch = '';
+            this.mediaCollection = '';
             this.mediaUploadError = '';
-            if (!this.mediaItems.length) {
-                this.loadMedia();
-            }
+            this.mediaActive = null;
+            this.mediaDragOver = false;
+            // Çoklu modda mevcut değer(ler)i ön-seç.
+            this.mediaChosen = this.mediaMultiple && Array.isArray(this.parentRef[this.fieldKey])
+                ? [...this.parentRef[this.fieldKey]]
+                : [];
+            this.loadMedia({ reset: true });
         },
 
         closeMediaPicker() {
             this.mediaPickerOpen = false;
         },
 
-        async loadMedia() {
-            this.mediaLoading = true;
+        // Arama + collection + sayfa parametreleriyle medya listesini çeker.
+        // reset=true → ilk sayfa (listeyi sıfırla); false → sonraki sayfayı ekle.
+        async loadMedia({ reset = true } = {}) {
+            if (reset) {
+                this.mediaPage = 1;
+                this.mediaLoading = true;
+            } else {
+                if (this.mediaLoadingMore || !this.mediaHasMore) return;
+                this.mediaLoadingMore = true;
+                this.mediaPage += 1;
+            }
+
             try {
-                const resp = await fetch('/admin/media?type=image&per_page=96', {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    },
+                const params = new URLSearchParams({
+                    type: 'image',
+                    per_page: '40',
+                    page: String(this.mediaPage),
+                });
+                if (this.mediaSearch) params.set('q', this.mediaSearch);
+                if (this.mediaCollection) params.set('collection', this.mediaCollection);
+
+                const resp = await fetch('/admin/media?' + params.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                 });
                 if (resp.ok) {
                     const json = await resp.json();
-                    this.mediaItems = json.data || [];
+                    const items = json.data || [];
+                    this.mediaItems = reset ? items : this.mediaItems.concat(items);
+                    this.mediaLastPage = json.meta?.last_page ?? 1;
+                    this.mediaTotal = json.meta?.total ?? this.mediaItems.length;
+                    if (reset && Array.isArray(json.meta?.collections)) {
+                        this.mediaCollections = json.meta.collections;
+                    }
+                    if (reset && !this.mediaActive && this.mediaItems.length) {
+                        this.focusMedia(this.mediaItems[0]);
+                    }
                 }
             } catch (e) {
                 console.error('[blockFieldInput] Media load error:', e);
             } finally {
                 this.mediaLoading = false;
+                this.mediaLoadingMore = false;
             }
         },
 
-        filteredMedia() {
-            if (!this.mediaSearch) return this.mediaItems;
-            const q = this.mediaSearch.toLowerCase();
-            return this.mediaItems.filter((m) =>
-                (m.file_name || m.name || '').toLowerCase().includes(q)
-            );
+        // Debounce'lu server-side arama (yazarken 350ms bekler).
+        onMediaSearchInput() {
+            clearTimeout(this.mediaSearchTimer);
+            this.mediaSearchTimer = setTimeout(() => this.loadMedia({ reset: true }), 350);
         },
 
-        selectMedia(item) {
+        setMediaCollection(name) {
+            this.mediaCollection = name;
+            this.loadMedia({ reset: true });
+        },
+
+        // Grid altına yaklaşınca sonraki sayfayı yükle (sonsuz kaydırma).
+        onMediaScroll(e) {
+            const el = e.target;
+            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 240) {
+                this.loadMedia({ reset: false });
+            }
+        },
+
+        // Sağ panelde göster + alt/ad taslaklarını hazırla.
+        focusMedia(item) {
+            this.mediaActive = item;
+            this.mediaAltDraft = item.alt_text || '';
+            this.mediaNameDraft = item.name || item.file_name || '';
+        },
+
+        isChosen(item) {
+            return this.mediaChosen.includes(item.url);
+        },
+
+        toggleChosen(item) {
+            const i = this.mediaChosen.indexOf(item.url);
+            if (i === -1) this.mediaChosen.push(item.url);
+            else this.mediaChosen.splice(i, 1);
+        },
+
+        // Grid'de bir öğeye tıklama: çoklu modda seçimi değiştirir,
+        // tekli modda sağ panele odaklar.
+        onItemClick(item) {
+            if (this.mediaMultiple) this.toggleChosen(item);
+            else this.focusMedia(item);
+        },
+
+        // Çift tık / "Kullan": tekli modda alana ata + kapat.
+        useMedia(item) {
             this.parentRef[this.fieldKey] = item.url || item.original_url || '';
             this.closeMediaPicker();
         },
 
-        // Medya seçiciden doğrudan yükleme: dosyayı media/upload'a gönderir,
-        // dönen URL'yi alana atar ve seçiciyi kapatır (logo vb. eklemek için).
-        async uploadMedia(event) {
-            const file = event.target.files?.[0];
+        // Onay butonu — modaa göre tekli/çoklu.
+        confirmSelection() {
+            if (this.mediaMultiple) {
+                this.parentRef[this.fieldKey] = [...this.mediaChosen];
+            } else if (this.mediaActive) {
+                this.parentRef[this.fieldKey] = this.mediaActive.url || '';
+            }
+            this.closeMediaPicker();
+        },
+
+        // Klavye navigasyonu: ok tuşları aktifi gezer, Enter kullanır.
+        onMediaKey(e) {
+            if (!this.mediaItems.length) return;
+            const idx = this.mediaActive ? this.mediaItems.findIndex((m) => m.url === this.mediaActive.url) : -1;
+            if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+                e.preventDefault();
+                const step = (e.key === 'ArrowRight') ? 1 : (e.key === 'ArrowLeft') ? -1 : (e.key === 'ArrowDown') ? 5 : -5;
+                const next = Math.min(Math.max(idx + step, 0), this.mediaItems.length - 1);
+                this.focusMedia(this.mediaItems[next]);
+                // yakına kayan görseli görünür kıl
+                this.$nextTick(() => document.getElementById('media-cell-' + this.mediaItems[next].id)?.scrollIntoView({ block: 'nearest' }));
+            } else if (e.key === 'Enter' && this.mediaActive) {
+                e.preventDefault();
+                this.mediaMultiple ? this.confirmSelection() : this.useMedia(this.mediaActive);
+            }
+        },
+
+        // Görsel yüklenince doğal ölçüyü öğeye yaz (detay panelinde gösterilir).
+        captureDims(item, el) {
+            if (el && el.naturalWidth) {
+                item.width = el.naturalWidth;
+                item.height = el.naturalHeight;
+            }
+        },
+
+        formatSize(bytes) {
+            if (!bytes) return '';
+            const kb = bytes / 1024;
+            return kb < 1024 ? Math.round(kb) + ' KB' : (kb / 1024).toFixed(1) + ' MB';
+        },
+
+        // ── Yükleme (dosya seç / sürükle-bırak / panodan yapıştır) ──────────
+        onMediaDrop(e) {
+            this.mediaDragOver = false;
+            const files = e.dataTransfer?.files;
+            if (files && files.length) this.uploadFiles(files);
+        },
+
+        onMediaPaste(e) {
+            const items = e.clipboardData?.items || [];
+            const files = [];
+            for (const it of items) {
+                if (it.kind === 'file' && it.type.startsWith('image/')) {
+                    const f = it.getAsFile();
+                    if (f) files.push(f);
+                }
+            }
+            if (files.length) {
+                e.preventDefault();
+                this.uploadFiles(files);
+            }
+        },
+
+        onMediaFileInput(event) {
+            const files = event.target.files;
             event.target.value = ''; // aynı dosya tekrar seçilebilsin
-            if (!file) return;
+            if (files && files.length) this.uploadFiles(files);
+        },
+
+        // Tek veya çok dosyayı sırayla yükler; yenileri listeye ekler,
+        // sonuncusunu aktif yapar + tekli modda alana atar.
+        async uploadFiles(fileList) {
+            const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
+            if (!files.length) {
+                this.mediaUploadError = 'Yalnızca görsel dosyaları yüklenebilir.';
+                return;
+            }
 
             this.mediaUploadError = '';
             this.mediaUploading = true;
-            try {
-                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-                const fd = new FormData();
-                fd.append('file', file);
+            let last = null;
 
-                const resp = await fetch('/admin/media/upload', {
+            for (const file of files) {
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const resp = await fetch('/admin/media/upload', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': this._csrf(),
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: fd,
+                    });
+                    const json = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !json.success) {
+                        this.mediaUploadError = json.error || `Yükleme başarısız (HTTP ${resp.status}).`;
+                        continue;
+                    }
+                    const item = {
+                        id: json.id ?? ('up_' + Date.now()),
+                        url: json.url,
+                        thumbnail_url: json.url,
+                        name: json.name,
+                        file_name: json.file_name || json.name,
+                        mime_type: json.mime,
+                        size: json.size,
+                        alt_text: '',
+                        is_image: true,
+                    };
+                    this.mediaItems.unshift(item);
+                    last = item;
+                } catch (e) {
+                    console.error('[blockFieldInput] Media upload error:', e);
+                    this.mediaUploadError = 'Yükleme sırasında bir hata oluştu.';
+                }
+            }
+
+            if (last) {
+                this.focusMedia(last);
+                if (this.mediaMultiple) {
+                    if (!this.mediaChosen.includes(last.url)) this.mediaChosen.push(last.url);
+                } else {
+                    this.parentRef[this.fieldKey] = last.url; // hemen alana ata (modal açık kalır)
+                }
+            }
+            this.mediaUploading = false;
+        },
+
+        // ── Aktif öğe işlemleri (ad/alt kaydet, AI alt, sil) ────────────────
+        async saveMediaMeta() {
+            if (!this.mediaActive || String(this.mediaActive.id).startsWith('up_')) return;
+            this.mediaSavingMeta = true;
+            try {
+                const resp = await fetch('/admin/media/' + this.mediaActive.id, {
                     method: 'POST',
                     headers: {
-                        'X-CSRF-TOKEN': token,
+                        'X-CSRF-TOKEN': this._csrf(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        _method: 'PUT',
+                        name: this.mediaNameDraft,
+                        custom_properties: { alt_text: this.mediaAltDraft },
+                    }),
+                });
+                const json = await resp.json().catch(() => ({}));
+                if (resp.ok && json.success) {
+                    this.mediaActive.name = json.name;
+                    this.mediaActive.alt_text = json.alt_text;
+                }
+            } catch (e) {
+                console.error('[blockFieldInput] Media meta save error:', e);
+            } finally {
+                this.mediaSavingMeta = false;
+            }
+        },
+
+        async generateActiveAlt() {
+            if (!this.mediaActive || String(this.mediaActive.id).startsWith('up_')) return;
+            this.mediaGenAltLoading = true;
+            try {
+                const resp = await fetch('/admin/media/' + this.mediaActive.id + '/generate-alt', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this._csrf(),
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
-                    body: fd,
                 });
                 const json = await resp.json().catch(() => ({}));
-
-                if (!resp.ok || !json.success) {
-                    this.mediaUploadError = json.error || `Yükleme başarısız (HTTP ${resp.status}).`;
-                    return;
+                if (resp.ok && json.ok) {
+                    this.mediaAltDraft = json.alt || '';
+                } else {
+                    this.mediaUploadError = json.message || 'AI alt metni üretilemedi.';
                 }
-
-                this.parentRef[this.fieldKey] = json.url;
-                // Yeni yükleneni listeye de ekle (tekrar açılırsa görünür).
-                this.mediaItems.unshift({
-                    id: json.id ?? ('up_' + Date.now()),
-                    url: json.url,
-                    thumbnail_url: json.url,
-                    file_name: json.file_name || json.name,
-                    mime_type: json.mime,
-                });
-                this.closeMediaPicker();
             } catch (e) {
-                console.error('[blockFieldInput] Media upload error:', e);
-                this.mediaUploadError = 'Yükleme sırasında bir hata oluştu.';
+                console.error('[blockFieldInput] Alt generate error:', e);
             } finally {
-                this.mediaUploading = false;
+                this.mediaGenAltLoading = false;
+            }
+        },
+
+        async deleteMedia(item) {
+            if (!confirm('Bu görseli kütüphaneden kalıcı olarak silmek istiyor musunuz?')) return;
+            if (String(item.id).startsWith('up_')) {
+                this.mediaItems = this.mediaItems.filter((m) => m.url !== item.url);
+                return;
+            }
+            try {
+                const resp = await fetch('/admin/media/' + item.id, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this._csrf(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ _method: 'DELETE' }),
+                });
+                const json = await resp.json().catch(() => ({}));
+                if (resp.ok && json.success) {
+                    this.mediaItems = this.mediaItems.filter((m) => m.id !== item.id);
+                    if (this.mediaActive && this.mediaActive.id === item.id) {
+                        this.mediaActive = this.mediaItems[0] || null;
+                        if (this.mediaActive) this.focusMedia(this.mediaActive);
+                    }
+                }
+            } catch (e) {
+                console.error('[blockFieldInput] Media delete error:', e);
             }
         },
 

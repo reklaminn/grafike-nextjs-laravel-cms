@@ -10,9 +10,12 @@ class MediaController extends Controller
 {
     public function index(Request $request)
     {
+        // `search` (medya kütüphanesi sayfası) + `q` (picker) ikisini de kabul et.
+        $search = $request->input('search', $request->input('q'));
+
         $query = Media::latest();
 
-        if ($search = $request->input('search')) {
+        if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('file_name', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%");
@@ -37,10 +40,12 @@ class MediaController extends Controller
             $query->where('collection_name', $collection);
         }
 
-        $media = $query->paginate(48)->withQueryString();
-
-        // JSON response for picker / AJAX calls
+        // JSON response for picker / AJAX calls — per_page'i (sınırlı) onurlandır,
+        // zengin metadata + filtre için collection listesini de döndür.
         if ($request->expectsJson()) {
+            $perPage = min(max((int) $request->input('per_page', 40), 1), 100);
+            $media   = $query->paginate($perPage)->withQueryString();
+
             return response()->json([
                 'data' => $media->getCollection()->map(fn ($m) => [
                     'id'            => $m->id,
@@ -49,13 +54,24 @@ class MediaController extends Controller
                     'mime_type'     => $m->mime_type,
                     'size'          => $m->size,
                     'url'           => $m->getUrl(),
-                    'thumbnail_url' => str_starts_with($m->mime_type, 'image/') ? $m->getUrl() : null,
+                    'thumbnail_url' => str_starts_with((string) $m->mime_type, 'image/') ? $m->getUrl() : null,
+                    'is_image'      => str_starts_with((string) $m->mime_type, 'image/'),
+                    'collection'    => $m->collection_name,
+                    'alt_text'      => (string) ($m->getCustomProperty('alt_text') ?? ''),
+                    'created_at'    => optional($m->created_at)->format('d.m.Y'),
                 ]),
                 'meta' => [
                     'total'        => $media->total(),
                     'per_page'     => $media->perPage(),
                     'current_page' => $media->currentPage(),
                     'last_page'    => $media->lastPage(),
+                    'collections'  => Media::query()
+                        ->select('collection_name')
+                        ->distinct()
+                        ->orderBy('collection_name')
+                        ->pluck('collection_name')
+                        ->filter()
+                        ->values(),
                 ],
             ]);
         }
@@ -197,12 +213,26 @@ class MediaController extends Controller
 
         $medium->save();
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success'  => true,
+                'id'       => $medium->id,
+                'name'     => $medium->name,
+                'alt_text' => (string) ($medium->getCustomProperty('alt_text') ?? ''),
+            ]);
+        }
+
         return back()->with('success', 'Medya bilgileri güncellendi.');
     }
 
-    public function destroy(Media $medium)
+    public function destroy(Request $request, Media $medium)
     {
+        $id = $medium->id;
         $medium->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'id' => $id]);
+        }
 
         return back()->with('success', 'Medya dosyası silindi.');
     }
