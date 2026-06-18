@@ -42,6 +42,25 @@ class TenantAssetController extends Controller
             }
         }
 
+        // Son çare: Spatie media yolu "{id}/{file_name}" biçimindedir. Path'in
+        // başındaki id'den Media kaydını bul ve onun KENDİ diski/yolundan servis
+        // et — disk 'public' dışında (veya tenant root_override farklı) olsa bile
+        // doğru dosyayı verir. Tenant DB'sine erişim için tenancy initialized
+        // olmalı (route ?tenant ile sağlıyor).
+        if (preg_match('#^(\d+)/#', $path, $m)) {
+            try {
+                $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::find((int) $m[1]);
+                if ($media) {
+                    $absolute = $media->getPath();
+                    if (is_file($absolute)) {
+                        return $absolute;
+                    }
+                }
+            } catch (\Throwable) {
+                // tenant DB yoksa / media tablosu erişilemezse sessiz geç
+            }
+        }
+
         return null;
     }
 
@@ -52,9 +71,16 @@ class TenantAssetController extends Controller
     {
         $paths = [];
 
+        // Tenant key: initialized tenancy'den, yoksa ?tenant query'sinden
+        // (central admin domain'inde <img> isteği tenancy init etmemiş olabilir).
+        $tenantKey = null;
         if (tenancy()->initialized && tenant()) {
             $tenantKey = (string) tenant()->getTenantKey();
+        } elseif (is_string($q = request()->query('tenant')) && preg_match('/^[a-zA-Z0-9_-]+$/', $q)) {
+            $tenantKey = $q;
+        }
 
+        if ($tenantKey) {
             $paths[] = base_path("storage/app/public/tenant_{$tenantKey}/{$path}");
             $paths[] = base_path("storage/app/public/tenant{$tenantKey}/{$path}");
 
