@@ -1,6 +1,7 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldgutter.min.css">
 <style>
     /* Quill overrides inside the block settings modal */
     .ql-toolbar { border: none !important; border-bottom: 1px solid #e5e7eb !important; background: #f9fafb; padding: 6px 8px !important; }
@@ -10,6 +11,9 @@
     /* HTML Override CodeMirror */
     .html-override-cm .CodeMirror { height: 220px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; border: 1px solid #d1d5db; border-radius: 0.5rem; }
     .html-override-cm .CodeMirror-focused { border-color: transparent; box-shadow: 0 0 0 2px #f59e0b; }
+    /* Katlama (fold) göstergeleri */
+    .html-override-cm .CodeMirror-foldgutter { width: 14px; }
+    .html-override-cm .CodeMirror-foldmarker { color: #b45309; background: #fef3c7; border-radius: 3px; padding: 0 4px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; text-shadow: none; cursor: pointer; }
 </style>
 @endpush
 
@@ -20,6 +24,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/css/css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/javascript/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/xml-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/comment-fold.min.js"></script>
 @endpush
 
 @push('scripts')
@@ -1443,6 +1452,10 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 lineNumbers: true,
                 lineWrapping: true,
                 tabSize: 2,
+                // Katlama: <style>/<script>/tag ve {} blokları gutter okuyla aç-kapa
+                foldGutter: true,
+                gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+                extraKeys: { 'Ctrl-Q': c => c.foldCode(c.getCursor()), 'Cmd-Q': c => c.foldCode(c.getCursor()) },
             });
             cm.on('change', () => {
                 if (this.htmlOverrideSyncing) return;
