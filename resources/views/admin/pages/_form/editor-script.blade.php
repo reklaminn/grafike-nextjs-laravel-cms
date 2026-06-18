@@ -1,16 +1,25 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css">
 <style>
     /* Quill overrides inside the block settings modal */
     .ql-toolbar { border: none !important; border-bottom: 1px solid #e5e7eb !important; background: #f9fafb; padding: 6px 8px !important; }
     .ql-container { border: none !important; font-family: inherit; font-size: 0.875rem; }
     .ql-editor { min-height: 110px; padding: 10px 12px; }
     .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
+    /* HTML Override CodeMirror */
+    .html-override-cm .CodeMirror { height: 220px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; border: 1px solid #d1d5db; border-radius: 0.5rem; }
+    .html-override-cm .CodeMirror-focused { border-color: transparent; box-shadow: 0 0 0 2px #f59e0b; }
 </style>
 @endpush
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/htmlmixed/htmlmixed.min.js"></script>
 @endpush
 
 @push('scripts')
@@ -353,6 +362,11 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         // ayrı tutulur (serializeContent yalnızca _uid'i ayıklıyor).
         expandedRepeaterItems: {},
 
+        // HTML Override CodeMirror (Kod tabı). Modal yeniden kullanıldığı için
+        // tek instance; blok/tab değişince değer senkronlanır.
+        htmlOverrideCM: null,
+        htmlOverrideSyncing: false,
+
         // AI block-edit state (FAZ 3.6 streaming)
         aiAction: 'shorten',
         aiCustomPrompt: '',
@@ -409,6 +423,20 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
             // Klavye kısayolları: Cmd/Ctrl+S kaydet, Esc açık modalı kapat.
             window.addEventListener('keydown', (event) => this.handleEditorKeydown(event));
+
+            // HTML Override CodeMirror: Kod tabı açılınca veya blok değişince
+            // editörü kur/tazele ve değeri senkronla (modal gizliyken init
+            // edilen CM'in refresh edilmesi şart).
+            this.$watch('settingsTab', (tab) => {
+                if (tab === 'code') {
+                    this.$nextTick(() => this.syncHtmlOverrideEditor());
+                }
+            });
+            this.$watch('settingsDraft', () => {
+                if (this.settingsTab === 'code') {
+                    this.$nextTick(() => this.syncHtmlOverrideEditor());
+                }
+            });
 
             this.$nextTick(() => {
                 this.syncSerializedRegions();
@@ -1392,6 +1420,10 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
         saveBlockSettings() {
             if (!this.settingsTarget || !this.settingsDraft) return;
+            // CM düzenlemesi henüz settingsDraft'a yansımadıysa son değeri al.
+            if (this.htmlOverrideCM && this.settingsDraft.render_mode === 'html') {
+                this.settingsDraft.html_override = this.htmlOverrideCM.getValue();
+            }
             const { region, rowIndex, columnIndex, blockIndex } = this.settingsTarget;
             this.regions[region][rowIndex].columns[columnIndex].blocks[blockIndex] = {
                 ...this.regions[region][rowIndex].columns[columnIndex].blocks[blockIndex],
@@ -1399,6 +1431,40 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             };
             this.normalizeSortOrder();
             this.closeBlockSettings();
+        },
+
+        // ── HTML Override CodeMirror (Kod tabı) ─────────────────────────
+        // Modal yeniden kullanıldığı için tek CM instance; blok/tab değişince
+        // değer senkronlanır. Modal gizliyken init edilirse refresh şart.
+        mountHtmlOverrideEditor(textarea) {
+            if (this.htmlOverrideCM || typeof CodeMirror === 'undefined' || !textarea) return;
+            const cm = CodeMirror.fromTextArea(textarea, {
+                mode: 'htmlmixed',
+                lineNumbers: true,
+                lineWrapping: true,
+                tabSize: 2,
+            });
+            cm.on('change', () => {
+                if (this.htmlOverrideSyncing) return;
+                if (this.settingsDraft) this.settingsDraft.html_override = cm.getValue();
+            });
+            this.htmlOverrideCM = cm;
+        },
+
+        syncHtmlOverrideEditor() {
+            if (! this.htmlOverrideCM) {
+                this.mountHtmlOverrideEditor(this.$refs.htmlOverrideTextarea);
+                if (! this.htmlOverrideCM) return; // CodeMirror henüz yüklenmemiş
+            }
+            const cm = this.htmlOverrideCM;
+            if (! this.settingsDraft) return;
+            const val = this.settingsDraft.html_override || '';
+            if (cm.getValue() !== val) {
+                this.htmlOverrideSyncing = true;
+                cm.setValue(val);
+                this.htmlOverrideSyncing = false;
+            }
+            this.$nextTick(() => cm.refresh());
         },
 
         // ── AI block-edit — streaming (FAZ 3.6) ─────────────────────────

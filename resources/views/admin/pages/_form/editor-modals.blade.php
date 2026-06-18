@@ -491,21 +491,27 @@
                                  x-html="blockRenderedHtml(settingsBlock)"></div>
                         </div>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-gray-600">Üretilen HTML Kodu</label>
-                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 font-mono overflow-x-auto"
-                             x-text="blockCodePreview(settingsBlock)"></div>
-                    </div>
-                    <div x-show="settingsBlock.render_mode === 'html'">
+                    {{-- HTML Override (CodeMirror) — düzenleme alanı üstte --}}
+                    <div x-show="settingsBlock.render_mode === 'html'" class="html-override-cm">
                         <label class="mb-1 block text-xs font-medium text-gray-600">HTML Override</label>
-                        <textarea x-model="settingsBlock.html_override"
-                                  rows="8"
+                        <textarea x-ref="htmlOverrideTextarea"
+                                  x-model="settingsBlock.html_override"
+                                  rows="10"
                                   placeholder="Boş bırakırsan şablonun varsayılan HTML'i kullanılır."
                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"></textarea>
                     </div>
                     <div x-show="settingsBlock.render_mode !== 'html'" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
                         Component mode için ham HTML override yerine props ve stil alanları kullanılmalı.
                     </div>
+
+                    {{-- Üretilen HTML Kodu — uzun, salt-okunur → katlanabilir, en altta --}}
+                    <details class="rounded-lg border border-gray-200">
+                        <summary class="cursor-pointer select-none px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                            <i class="fas fa-code mr-1 text-gray-400"></i> Üretilen HTML Kodu (göster)
+                        </summary>
+                        <div class="max-h-64 overflow-auto border-t border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 font-mono"
+                             x-text="blockCodePreview(settingsBlock)"></div>
+                    </details>
                 </div>
 
                 <div class="flex items-center justify-end gap-3 border-t border-gray-200 pt-4">
