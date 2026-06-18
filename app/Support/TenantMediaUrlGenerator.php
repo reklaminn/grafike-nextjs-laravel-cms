@@ -27,10 +27,13 @@ class TenantMediaUrlGenerator extends DefaultUrlGenerator
     {
         if (function_exists('tenancy') && tenancy()->initialized && tenant()) {
             $path = ltrim($this->getPathRelativeToRoot(), '/');
-            $url = url('tenant-assets/'.$path);
-            $url .= (str_contains($url, '?') ? '&' : '?').'tenant='.urlencode((string) tenant()->getTenantKey());
 
-            return $url;
+            // GÖRECELİ URL (domain'siz): görsel hangi domain'de render edilirse
+            // o domain'den yüklenir → public sitede cms.grafcore.com GÖRÜNMEZ,
+            // tenant kendi domain'inden servis eder (tenancy domain'den çözülür).
+            // Admin (central domain) içinse ?tenant şart (orada domain-tenant yok),
+            // tenant domain'de redundant ama zararsız.
+            return '/tenant-assets/'.$path.'?tenant='.urlencode((string) tenant()->getTenantKey());
         }
 
         // Central / no-tenant context → default behaviour (/storage/{path}).
