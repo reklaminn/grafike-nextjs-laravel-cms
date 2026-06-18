@@ -37,7 +37,7 @@
                         <template x-if="logoUrl">
                             <img :src="logoUrl" alt="Logo önizleme"
                                  class="mt-2 h-12 max-w-[220px] rounded border border-gray-200 bg-gray-50 object-contain p-1"
-                                 @error="$el.style.display='none'">
+                                 x-on:error="$el.style.display='none'">
                         </template>
                     </div>
                     {{-- Favicon --}}
@@ -57,7 +57,7 @@
                         <template x-if="faviconUrl">
                             <img :src="faviconUrl" alt="Favicon önizleme"
                                  class="mt-2 h-10 w-10 rounded border border-gray-200 bg-gray-50 object-contain p-1"
-                                 @error="$el.style.display='none'">
+                                 x-on:error="$el.style.display='none'">
                         </template>
                     </div>
                 </div>
