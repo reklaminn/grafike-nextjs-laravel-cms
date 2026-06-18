@@ -296,7 +296,10 @@
 <input type="file" data-media-upload class="hidden" accept="image/*" multiple
        @@change="onMediaFileInput($event)">
 
-<template x-teleport="body">
+{{-- Modal artık TELEPORT EDİLMİYOR (inline). Teleport, file-input'un @change'ini
+     bozuyordu (4 deneme). Üst zincirde transform/filter YOK → position:fixed
+     viewport'a göre konumlanır ve overflow-hidden onu KIRPMAZ → inline güvenli;
+     böylece @click VE @change normal DOM'da güvenilir çalışır. --}}
             <div x-show="mediaPickerOpen"
                  x-cloak
                  class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
@@ -503,7 +506,6 @@
                     </template>
                 </div>
             </div>
-        </template>
 
 {{-- rich-text / html (Quill WYSIWYG) --}}
 <template x-if="['rich-text', 'html'].includes(type)">
