@@ -151,10 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/_html$/i, '').replace(/_url$/i, ' url').replace(/_alt$/i, ' alt')
         .replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-    // Sistem/menü placeholder'ları SCHEMA ALANI DEĞİLDİR — render anında
-    // SectionTemplateRenderer tarafından site ayarları + menülerden çözülür.
-    // Bunları schema'ya yakalamak ({{logo_url}}, {{{menu_header_html}}} gibi)
-    // sistem değerini içerik default'uyla geçersiz kılar/kirletir. Dışla.
+    // Sistem/menü placeholder'lari SCHEMA ALANI DEGILDIR — render aninda
+    // SectionTemplateRenderer tarafindan site ayarlari + menulerden cozulur.
+    // Bunlari schema'ya yakalamak (logo_url, menu_header_html gibi) sistem
+    // degerini icerik default'uyla gecersiz kilar/kirletir. Disla.
     const SYSTEM_TOKENS = new Set([
         'site_name', 'site_domain', 'theme_slug', 'logo_url', 'favicon_url',
         'phone', 'email', 'address', 'whatsapp_number', 'working_hours',
