@@ -290,10 +290,10 @@
      ile kontrol edilir; image olmayan alanlarda asla açılmaz (zararsız gizli). --}}
 
 {{-- Dosya input'u teleport DIŞINDA (normal DOM) — file input'un @change'i
-     teleport edilmiş içerikte ateşlenmiyordu. Burada güvenilir bağlanır; modal
-     içindeki "Yükle" tetikleyicileri bunu mediaUploadInput DOM ref'i ile açar. --}}
-<input type="file" class="hidden" accept="image/*" multiple
-       x-init="mediaUploadInput = $el"
+     teleport edilmiş içerikte ATEŞLENMİYOR (@click ateşlenmesine rağmen).
+     Burada güvenilir bağlanır; modaldaki tetikleyiciler triggerMediaUpload()
+     ile $root içinden [data-media-upload]'ı bulup tıklar. --}}
+<input type="file" data-media-upload class="hidden" accept="image/*" multiple
        @@change="onMediaFileInput($event)">
 
 <template x-teleport="body">
@@ -334,7 +334,7 @@
                         </template>
 
                         <button type="button"
-                                @@click="mediaUploadInput && mediaUploadInput.click()"
+                                @@click="triggerMediaUpload()"
                                 class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
                                 :class="mediaUploading ? 'pointer-events-none opacity-60' : ''">
                             <i class="fas" :class="mediaUploading ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
@@ -379,7 +379,7 @@
 
                             {{-- Boş durum + yükleme CTA --}}
                             <template x-if="!mediaLoading && mediaItems.length === 0">
-                                <div @@click="mediaUploadInput && mediaUploadInput.click()"
+                                <div @@click="triggerMediaUpload()"
                                      class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-16 text-center text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500">
                                     <i class="fas fa-cloud-arrow-up text-3xl text-gray-300"></i>
                                     <span x-text="mediaSearch ? 'Aramayla eşleşen görsel yok.' : 'Henüz görsel yok — yüklemek için tıklayın veya sürükleyin.'"></span>

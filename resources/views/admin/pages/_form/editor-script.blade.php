@@ -54,7 +54,6 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
 
         // Media picker state
         mediaPickerOpen: false,
-        mediaUploadInput: null,     // teleport DIŞINDAKİ gizli file input'un DOM ref'i
         mediaItems: [],
         mediaSearch: '',
         mediaSearchTimer: null,
@@ -278,6 +277,15 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
                 e.preventDefault();
                 this.uploadFiles(files);
             }
+        },
+
+        // Modaldaki "Yükle" tetikleyicisi. Gizli file input bu bileşenin
+        // kökünde (teleport DIŞINDA) duruyor; $root üzerinden bulup tıklarız.
+        // mediaUploadInput state'i x-init ile teleport bağlamında set
+        // edilemiyordu; $root.querySelector buna bağlı değil → güvenilir.
+        triggerMediaUpload() {
+            const input = this.$root?.querySelector('input[data-media-upload]');
+            if (input) input.click();
         },
 
         onMediaFileInput(event) {
