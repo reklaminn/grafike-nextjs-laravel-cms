@@ -288,6 +288,14 @@
      event'leri güvenilir bağlanmıyor → dosya "Yükle" tıklaması/seçimi hiç istek
      atmıyordu. Bileşen kökünde durup x-show="mediaPickerOpen" + openMediaPicker()
      ile kontrol edilir; image olmayan alanlarda asla açılmaz (zararsız gizli). --}}
+
+{{-- Dosya input'u teleport DIŞINDA (normal DOM) — file input'un @change'i
+     teleport edilmiş içerikte ateşlenmiyordu. Burada güvenilir bağlanır; modal
+     içindeki "Yükle" tetikleyicileri bunu mediaUploadInput DOM ref'i ile açar. --}}
+<input type="file" class="hidden" accept="image/*" multiple
+       x-init="mediaUploadInput = $el"
+       @@change="onMediaFileInput($event)">
+
 <template x-teleport="body">
             <div x-show="mediaPickerOpen"
                  x-cloak
@@ -325,12 +333,13 @@
                             </select>
                         </template>
 
-                        <label class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
-                               :class="mediaUploading ? 'pointer-events-none opacity-60' : ''">
+                        <button type="button"
+                                @@click="mediaUploadInput && mediaUploadInput.click()"
+                                class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
+                                :class="mediaUploading ? 'pointer-events-none opacity-60' : ''">
                             <i class="fas" :class="mediaUploading ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
                             <span x-text="mediaUploading ? 'Yükleniyor…' : 'Yükle'"></span>
-                            <input type="file" class="hidden" accept="image/*" multiple @@change="onMediaFileInput($event)">
-                        </label>
+                        </button>
                         <button type="button"
                                 @@click="closeMediaPicker()"
                                 class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
@@ -370,11 +379,11 @@
 
                             {{-- Boş durum + yükleme CTA --}}
                             <template x-if="!mediaLoading && mediaItems.length === 0">
-                                <label class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-16 text-center text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500">
+                                <div @@click="mediaUploadInput && mediaUploadInput.click()"
+                                     class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-16 text-center text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-500">
                                     <i class="fas fa-cloud-arrow-up text-3xl text-gray-300"></i>
                                     <span x-text="mediaSearch ? 'Aramayla eşleşen görsel yok.' : 'Henüz görsel yok — yüklemek için tıklayın veya sürükleyin.'"></span>
-                                    <input type="file" class="hidden" accept="image/*" multiple @@change="onMediaFileInput($event)">
-                                </label>
+                                </div>
                             </template>
 
                             <template x-if="!mediaLoading && mediaItems.length > 0">
