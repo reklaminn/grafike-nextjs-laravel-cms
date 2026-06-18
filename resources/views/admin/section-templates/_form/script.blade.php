@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mode: 'htmlmixed',
                 theme: 'dracula',
                 lineNumbers: true,
-                lineWrapping: false,
+                lineWrapping: true,
                 matchBrackets: true,
                 autoCloseTags: true,
                 tabSize: 2,

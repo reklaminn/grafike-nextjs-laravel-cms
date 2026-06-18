@@ -509,7 +509,7 @@
                         <summary class="cursor-pointer select-none px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50">
                             <i class="fas fa-code mr-1 text-gray-400"></i> Üretilen HTML Kodu (göster)
                         </summary>
-                        <div class="max-h-64 overflow-auto border-t border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 font-mono"
+                        <div class="max-h-64 overflow-auto border-t border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 font-mono whitespace-pre-wrap break-words"
                              x-text="blockCodePreview(settingsBlock)"></div>
                     </details>
                 </div>
