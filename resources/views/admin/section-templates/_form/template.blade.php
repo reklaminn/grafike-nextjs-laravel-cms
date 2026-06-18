@@ -50,6 +50,10 @@
                         class="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100">
                     <i class="fas fa-layer-group"></i> Repeat Alan Bul
                 </button>
+                <button type="button" id="find_asset_fields"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100">
+                    <i class="fas fa-image"></i> Eksik Görsel Alanı Bul
+                </button>
                 <select id="generate_mode_select" class="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
                     <option value="merge">Schema ile birleştir</option>
                     <option value="replace">Schema'yı yenile</option>
@@ -148,6 +152,21 @@
                     </button>
                 </div>
             </div>
+        </div>
+
+        {{-- Eksik görsel alanı paneli — sabit görselleri düzenlenebilir alana çevirir --}}
+        <div id="asset_field_panel" class="mt-3 hidden rounded-lg border border-sky-200 bg-sky-50 px-3 py-3 text-xs text-sky-900">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="font-semibold text-sky-900">
+                    <i class="fas fa-image mr-1"></i> Şemaya bağlı olmayan sabit görseller
+                </div>
+                <button type="button" id="apply_all_asset_fields"
+                        class="hidden inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700">
+                    <i class="fas fa-check-double"></i> Tümünü Alan Yap
+                </button>
+            </div>
+            <p id="asset_field_help" class="mt-2 text-sky-800"></p>
+            <div id="asset_field_list" class="mt-2 space-y-2"></div>
         </div>
 
         {{-- Placeholder kuralı --}}

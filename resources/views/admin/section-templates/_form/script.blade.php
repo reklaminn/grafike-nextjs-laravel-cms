@@ -111,6 +111,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const diffMissingSchema = document.getElementById('diff_missing_schema');
     const diffUnusedSchemaWrapper = document.getElementById('diff_unused_schema_wrapper');
     const diffUnusedSchema = document.getElementById('diff_unused_schema');
+    const findAssetFieldsButton = document.getElementById('find_asset_fields');
+    const assetFieldPanel = document.getElementById('asset_field_panel');
+    const assetFieldList = document.getElementById('asset_field_list');
+    const assetFieldHelp = document.getElementById('asset_field_help');
+    const applyAllAssetFieldsButton = document.getElementById('apply_all_asset_fields');
     const generateDefaultsBtns = [
         document.getElementById('generate_defaults_btn'),
         document.getElementById('generate_defaults_btn2'),
@@ -662,6 +667,220 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!built) { window.alert('Manuel repeat item dönüştürülemedi.'); return; }
         insertAtHtmlCursor(createPlaceholderToken(`${fieldKey}_html`, true));
         applyGeneratedData({ [fieldKey]: { type: 'repeater', label: labelize(fieldKey), repeat_kind: manualRepeatTypeSelect?.value || 'items', item_template: built.itemTemplate, fields: built.itemSchema } }, { [fieldKey]: [built.itemDefaults] });
+    });
+
+    // ────────────────────────────────────────────────────
+    // Eksik görsel/asset alanı analizörü
+    // Ana şablonu VE her repeater item_template'ini tarar; placeholder OLMAYAN
+    // sabit görsel referanslarını (inline style url() — background kısayolu
+    // dahil, img/source [src], video [poster], [data-src]) bulup tek tıkla
+    // düzenlenebilir "image" alanına çevirir (token + şema alanı + default).
+    // ────────────────────────────────────────────────────
+
+    let assetCandidates = [];
+
+    const IMG_EXT_RE = /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico)(\?|#|$)/i;
+
+    const containsPlaceholder = (v) => { placeholderRegex.lastIndex = 0; return placeholderRegex.test(String(v ?? '')); };
+
+    // bir değer düzenlemeye değer bir varlık mı? (zaten placeholder / data: / css
+    // değişkeni olanları dışla; uzantı veya bilinen asset yolu/URL ara)
+    const looksLikeAsset = (v) => {
+        const s = String(v ?? '').trim();
+        if (!s || containsPlaceholder(s)) return false;
+        if (/^data:/i.test(s) || /^var\(/i.test(s) || /^#/.test(s)) return false;
+        return IMG_EXT_RE.test(s) || /^(https?:)?\/\//i.test(s)
+            || /^\/?assets\//i.test(s) || /^\/?(img|images|uploads|media|storage)\//i.test(s);
+    };
+
+    // CSS metnindeki url(...) referanslarını çıkar
+    const extractCssUrls = (cssText) => {
+        const out = [], re = /url\(\s*(['"]?)([^'")]+)\1\s*\)/gi;
+        let m;
+        while ((m = re.exec(cssText)) !== null) out.push({ match: m[0], inner: m[2].trim() });
+        return out;
+    };
+
+    // Bir DOM kökünü tarar; placeholder olmayan sabit görselleri döndürür.
+    const scanDomForAssets = (root, scopeInfo) => {
+        const found = [];
+        root.querySelectorAll('*').forEach(el => {
+            if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+            const path = getElementPath(el, root);
+            if (path.length === 0) return;
+            ['src', 'poster', 'data-src'].forEach(attr => {
+                if (!el.hasAttribute(attr)) return;
+                const v = el.getAttribute(attr);
+                if (looksLikeAsset(v)) {
+                    found.push({ ...scopeInfo, kind: 'attr', attr, prop: `${el.tagName.toLowerCase()} [${attr}]`, currentValue: v, path });
+                }
+            });
+            const style = el.getAttribute('style') || '';
+            if (style) extractCssUrls(style).forEach(u => {
+                if (looksLikeAsset(u.inner)) {
+                    found.push({ ...scopeInfo, kind: 'style-url', prop: 'style url()', currentValue: u.inner, path });
+                }
+            });
+        });
+        return found;
+    };
+
+    const findAssetCandidates = () => {
+        const out = [];
+        const { root } = parseTemplateRoot();
+        if (root) scanDomForAssets(root, { scope: 'main', scopeLabel: 'Ana şablon', repeaterKey: null }).forEach(c => out.push(c));
+        const schema = parseJsonObject(schemaInput?.value || '');
+        Object.entries(schema).forEach(([key, field]) => {
+            if (!field || field.type !== 'repeater' || !field.item_template) return;
+            const doc = new DOMParser().parseFromString(`<div id="ri">${field.item_template}</div>`, 'text/html');
+            const riRoot = doc.getElementById('ri');
+            if (riRoot) scanDomForAssets(riRoot, { scope: 'repeater', scopeLabel: `Repeater: ${key}`, repeaterKey: key }).forEach(c => out.push(c));
+        });
+        return out;
+    };
+
+    const suggestAssetKey = (cand, targetSchema) => {
+        let base = 'image';
+        if (cand.kind === 'attr' && cand.attr === 'poster') base = 'poster';
+        else if (cand.kind === 'style-url') base = cand.scope === 'repeater' ? 'image' : 'background_image';
+        return nextUniqueKey(normalizeKey(base, 'image'), targetSchema || {});
+    };
+
+    const withSuggested = (cand) => {
+        const schema = parseJsonObject(schemaInput?.value || '');
+        const target = cand.scope === 'repeater' ? (schema[cand.repeaterKey]?.fields || {}) : schema;
+        return { ...cand, suggestedKey: suggestAssetKey(cand, target) };
+    };
+
+    // Bulunan değeri elemanda token ile değiştir (attr veya style url içi).
+    const applyTokenToElement = (el, cand, token) => {
+        if (cand.kind === 'attr') {
+            if (el.getAttribute(cand.attr) == null) return false;
+            el.setAttribute(cand.attr, token);
+            return true;
+        }
+        const style = el.getAttribute('style') || '';
+        if (style.includes(cand.currentValue)) {
+            el.setAttribute('style', style.replace(cand.currentValue, token));
+            return true;
+        }
+        return false;
+    };
+
+    const syncAlpineSchema = () => {
+        if (!window.Alpine) return;
+        const alpineEl = document.querySelector('[x-data^="schemaBuilder"]');
+        if (alpineEl?._x_dataStack?.[0]) alpineEl._x_dataStack[0].loadFromObject(parseJsonObject(schemaInput?.value || ''));
+    };
+
+    // Tek adayı uygula: token yerleştir + image alanı + default değer.
+    // Repeater ise alanı repeater.fields'e ekler ve TÜM default item'lara değeri
+    // koyar (mevcut görünümü korur; sonra her slayt ayrı düzenlenebilir).
+    const applyAssetField = (cand, rawKey) => {
+        const schema = parseJsonObject(schemaInput?.value || '');
+        const defaults = parseJsonObject(defaultContentInput?.value || '');
+
+        if (cand.scope === 'main') {
+            const { root } = parseTemplateRoot();
+            const el = root ? resolveElementPath(root, cand.path) : null;
+            if (!root || !el) { window.alert('Görsel elemanı şablonda bulunamadı (HTML değişmiş olabilir). Tekrar tara.'); return false; }
+            const key = nextUniqueKey(normalizeKey(rawKey, 'image'), schema);
+            if (!applyTokenToElement(el, cand, createPlaceholderToken(key, false))) { window.alert('Görsel değeri elemanda bulunamadı. Tekrar tara.'); return false; }
+            schema[key] = { type: 'image', label: labelize(key) };
+            defaults[key] = cand.currentValue;
+            if (schemaInput) schemaInput.value = JSON.stringify(schema, null, 2);
+            if (defaultContentInput) defaultContentInput.value = JSON.stringify(defaults, null, 2);
+            setHtmlValue(root.innerHTML.trim());
+        } else {
+            const field = schema[cand.repeaterKey];
+            if (!field || field.type !== 'repeater' || !field.item_template) { window.alert('Repeater bulunamadı. Tekrar tara.'); return false; }
+            const doc = new DOMParser().parseFromString(`<div id="ri">${field.item_template}</div>`, 'text/html');
+            const riRoot = doc.getElementById('ri');
+            const el = riRoot ? resolveElementPath(riRoot, cand.path) : null;
+            if (!riRoot || !el) { window.alert('Görsel elemanı item_template içinde bulunamadı. Tekrar tara.'); return false; }
+            field.fields = field.fields || {};
+            const key = nextUniqueKey(normalizeKey(rawKey, 'image'), field.fields);
+            if (!applyTokenToElement(el, cand, createPlaceholderToken(key, false))) { window.alert('Görsel değeri item_template içinde bulunamadı. Tekrar tara.'); return false; }
+            field.fields[key] = { type: 'image', label: labelize(key) };
+            field.item_template = riRoot.innerHTML.trim();
+            if (Array.isArray(defaults[cand.repeaterKey])) {
+                defaults[cand.repeaterKey] = defaults[cand.repeaterKey].map(it => {
+                    const item = (it && typeof it === 'object' && !Array.isArray(it)) ? { ...it } : {};
+                    if (item[key] === undefined) item[key] = cand.currentValue;
+                    return item;
+                });
+            }
+            if (schemaInput) schemaInput.value = JSON.stringify(schema, null, 2);
+            if (defaultContentInput) defaultContentInput.value = JSON.stringify(defaults, null, 2);
+        }
+
+        updateSchemaDiff();
+        syncAlpineSchema();
+        window.dispatchEvent(new CustomEvent('section-template-editor-change'));
+        return true;
+    };
+
+    const renderAssetCandidates = () => {
+        if (!assetFieldPanel || !assetFieldList) return;
+        assetFieldPanel.classList.remove('hidden');
+        assetFieldList.innerHTML = '';
+        if (assetCandidates.length === 0) {
+            if (assetFieldHelp) assetFieldHelp.textContent = 'Şemaya bağlı olmayan sabit görsel bulunamadı — tüm görseller zaten alan/placeholder.';
+            applyAllAssetFieldsButton?.classList.add('hidden');
+            return;
+        }
+        if (assetFieldHelp) assetFieldHelp.textContent = `${assetCandidates.length} sabit görsel bulundu. Anahtarı kontrol edip "Alan Yap" de — token + image şeması + default eklenir.`;
+        applyAllAssetFieldsButton?.classList.remove('hidden');
+        assetCandidates.forEach((cand, i) => {
+            const row = document.createElement('div');
+            row.className = 'asset-field-row rounded-lg border border-sky-200 bg-white px-3 py-2';
+            const shown = cand.currentValue.length > 64 ? cand.currentValue.slice(0, 61) + '…' : cand.currentValue;
+            row.innerHTML = `
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-sky-100 px-2 py-0.5 font-semibold text-sky-800">${escapeText(cand.scopeLabel)}</span>
+                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">${escapeText(cand.prop)}</span>
+                    <code class="text-gray-600">${escapeText(shown)}</code>
+                </div>
+                <div class="mt-2 flex flex-wrap items-end gap-2">
+                    <div>
+                        <label class="mb-1 block font-medium">Alan anahtarı</label>
+                        <input type="text" class="asset-field-key w-44 rounded-lg border border-sky-300 bg-white px-2 py-1.5 text-xs focus:ring-2 focus:ring-sky-500" value="${escapeText(cand.suggestedKey)}">
+                    </div>
+                    <button type="button" class="asset-field-apply inline-flex items-center gap-1.5 rounded-lg bg-sky-100 px-3 py-2 text-xs font-medium text-sky-800 hover:bg-sky-200" data-idx="${i}">
+                        <i class="fas fa-plus"></i> Alan Yap
+                    </button>
+                </div>`;
+            assetFieldList.appendChild(row);
+        });
+        assetFieldList.querySelectorAll('.asset-field-apply').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const cand = assetCandidates[Number(btn.dataset.idx)];
+                if (!cand) return;
+                const keyName = btn.closest('.asset-field-row')?.querySelector('.asset-field-key')?.value || cand.suggestedKey;
+                if (applyAssetField(cand, keyName)) {
+                    assetCandidates = findAssetCandidates().map(withSuggested);
+                    renderAssetCandidates();
+                }
+            });
+        });
+    };
+
+    if (findAssetFieldsButton) findAssetFieldsButton.addEventListener('click', () => {
+        assetCandidates = findAssetCandidates().map(withSuggested);
+        renderAssetCandidates();
+    });
+
+    if (applyAllAssetFieldsButton) applyAllAssetFieldsButton.addEventListener('click', () => {
+        if (assetCandidates.length === 0) return;
+        const keyByIdx = {};
+        assetFieldList?.querySelectorAll('.asset-field-apply').forEach(btn => {
+            keyByIdx[Number(btn.dataset.idx)] = btn.closest('.asset-field-row')?.querySelector('.asset-field-key')?.value;
+        });
+        let applied = 0;
+        assetCandidates.slice().forEach((cand, i) => { if (applyAssetField(cand, keyByIdx[i] || cand.suggestedKey)) applied++; });
+        assetCandidates = findAssetCandidates().map(withSuggested);
+        renderAssetCandidates();
+        if (applied > 0) window.alert(`${applied} görsel alanı eklendi.`);
     });
 
     // ────────────────────────────────────────────────────
