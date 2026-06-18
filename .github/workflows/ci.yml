@@ -38,6 +38,20 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      - name: Blade brace-trap guard
+        # .blade.php içindeki JS yorum/string'inde literal {{word}} (bareword,
+        # $var/helper değil) Blade tarafından `<?php echo e(word); ?>`'a derlenir
+        # → runtime'da "Undefined constant" 500. Compile + node-check bunu
+        # YAKALAMAZ. View'ları derle, derlenmiş çıktıda bareword echo'su ara.
+        run: |
+          php artisan view:cache
+          if grep -rEn "echo e\([a-z_][a-z0-9_]*\)" storage/framework/views/ \
+             | grep -vE "echo e\((true|false|null)\)"; then
+            echo "::error::Blade view'inde bare {{word}} echo'su var (Undefined-constant 500 riski). @{{word}} kullan veya süslü parantezleri kaldır."
+            exit 1
+          fi
+          php artisan view:clear
+
       - name: Run tests
         # CI suite: bilinen eski hatalı dosyalar hariç (bkz. phpunit.xml CI testsuite).
         # Tam suite ~30 dk sürüp 98 eski hatayla kırmızı kalıyordu.
