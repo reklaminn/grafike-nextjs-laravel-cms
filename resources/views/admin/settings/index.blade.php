@@ -9,6 +9,61 @@
         @method('PUT')
 
         <div class="space-y-6">
+            <!-- Marka: Logo & Favicon -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
+                 x-data="brandFields(@js($settings['logo_url'] ?? ''), @js($settings['favicon_url'] ?? ''))">
+                <h3 class="text-base font-semibold text-gray-800 mb-1">
+                    <i class="fas fa-star mr-2 text-indigo-500"></i>Marka
+                </h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Logo şablonlardaki <code>@{{logo_url}}</code>, favicon
+                    <code>@{{favicon_url}}</code> placeholder'ında kullanılır.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {{-- Logo --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+                        <div class="flex gap-2">
+                            <input type="text" name="settings[logo_url]" x-model="logoUrl"
+                                   placeholder="/tenant-assets/… veya https://"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <label class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                                   :class="uploadingLogo ? 'pointer-events-none opacity-60' : ''">
+                                <i class="fas" :class="uploadingLogo ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+                                <span x-text="uploadingLogo ? 'Yükleniyor…' : 'Yükle'"></span>
+                                <input type="file" class="hidden" accept="image/*" @change="upload($event, 'logo')">
+                            </label>
+                        </div>
+                        <template x-if="logoUrl">
+                            <img :src="logoUrl" alt="Logo önizleme"
+                                 class="mt-2 h-12 max-w-[220px] rounded border border-gray-200 bg-gray-50 object-contain p-1"
+                                 @error="$el.style.display='none'">
+                        </template>
+                    </div>
+                    {{-- Favicon --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Favicon</label>
+                        <div class="flex gap-2">
+                            <input type="text" name="settings[favicon_url]" x-model="faviconUrl"
+                                   placeholder="/tenant-assets/… veya https://"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <label class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-700"
+                                   :class="uploadingFavicon ? 'pointer-events-none opacity-60' : ''">
+                                <i class="fas" :class="uploadingFavicon ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+                                <span x-text="uploadingFavicon ? 'Yükleniyor…' : 'Yükle'"></span>
+                                <input type="file" class="hidden" accept="image/*" @change="upload($event, 'favicon')">
+                            </label>
+                        </div>
+                        <template x-if="faviconUrl">
+                            <img :src="faviconUrl" alt="Favicon önizleme"
+                                 class="mt-2 h-10 w-10 rounded border border-gray-200 bg-gray-50 object-contain p-1"
+                                 @error="$el.style.display='none'">
+                        </template>
+                    </div>
+                </div>
+                <p x-show="uploadError" x-cloak x-text="uploadError" class="mt-2 text-xs text-red-600"></p>
+            </div>
+
             <!-- General Settings -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 class="text-base font-semibold text-gray-800 mb-4">
@@ -173,3 +228,50 @@
         </form>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+function brandFields(logo, favicon) {
+    return {
+        logoUrl: logo || '',
+        faviconUrl: favicon || '',
+        uploadingLogo: false,
+        uploadingFavicon: false,
+        uploadError: '',
+
+        async upload(event, which) {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (!file) return;
+
+            this.uploadError = '';
+            const flag = which === 'logo' ? 'uploadingLogo' : 'uploadingFavicon';
+            this[flag] = true;
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+                const fd = new FormData();
+                fd.append('file', file);
+
+                const resp = await fetch('{{ route('admin.media.upload', [], false) }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: fd,
+                });
+                const json = await resp.json().catch(() => ({}));
+
+                if (!resp.ok || !json.success) {
+                    this.uploadError = json.error || ('Yükleme başarısız (HTTP ' + resp.status + ').');
+                    return;
+                }
+                if (which === 'logo') this.logoUrl = json.url;
+                else this.faviconUrl = json.url;
+            } catch (e) {
+                this.uploadError = 'Yükleme sırasında bir hata oluştu.';
+            } finally {
+                this[flag] = false;
+            }
+        },
+    };
+}
+</script>
+@endpush
