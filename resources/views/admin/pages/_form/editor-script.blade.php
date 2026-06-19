@@ -280,9 +280,12 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         },
 
         onMediaFileInput(event) {
-            const files = event.target.files;
+            // event.target.files CANLI bir FileList; value='' onu boşaltır.
+            // Bu yüzden value'yu temizlemeden ÖNCE sabit bir diziye kopyala,
+            // yoksa aşağıdaki length kontrolü 0 görür ve yükleme hiç başlamaz.
+            const files = Array.from(event.target.files || []);
             event.target.value = ''; // aynı dosya tekrar seçilebilsin
-            if (files && files.length) this.uploadFiles(files);
+            if (files.length) this.uploadFiles(files);
         },
 
         // Tek veya çok dosyayı sırayla yükler; yenileri listeye ekler,
