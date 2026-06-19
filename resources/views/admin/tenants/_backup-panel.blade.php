@@ -34,9 +34,9 @@
         @endif
     </p>
     @else
-    <div class="overflow-x-auto">
+    <div class="max-h-96 overflow-x-auto overflow-y-auto">
         <table class="w-full text-sm">
-            <thead>
+            <thead class="sticky top-0 z-10 bg-white">
                 <tr class="text-left text-xs text-gray-500 border-b">
                     <th class="pb-2 font-medium">Tarih</th>
                     <th class="pb-2 font-medium">Boyut</th>
