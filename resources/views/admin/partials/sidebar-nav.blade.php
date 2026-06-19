@@ -79,9 +79,11 @@
         ]);
     }
 
-    // Ekip — yalnızca aktif tenant'ın OWNER'ı (müşteri sahibi) görür; agency
-    // admin bunun yerine 'Yöneticiler'i (Platform) kullanır.
-    if ($activeTenantId && ! $isAgencyAdmin && (auth('admin')->user()?->ownsTenant($activeTenantId) ?? false)) {
+    // Ekip — aktif site seçiliyken görünür: site sahibi (owner) kendi ekibini
+    // yönetir; agency admin de (üstteki site seçicisinden bir site seçtiğinde) o
+    // sitenin ekibini buradan yönetebilir. Manager/editor görmez. Controller'daki
+    // activeOwnedTenant() ile aynı yetki (agency admin || owner).
+    if ($activeTenantId && ($isAgencyAdmin || (auth('admin')->user()?->ownsTenant($activeTenantId) ?? false))) {
         $systemItems[] = ['route' => 'admin.team.index', 'icon' => 'fa-user-group', 'label' => 'Ekip', 'match' => 'admin.team'];
     }
 
