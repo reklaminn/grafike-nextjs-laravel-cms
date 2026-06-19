@@ -64,6 +64,14 @@ class PageObserver
                 'reason'     => 'pre-update',
                 'created_at' => now(),
             ]);
+
+            // 30 en yeni dışındakileri buda — her kayıt yeni 'pre-update'
+            // revizyonu üretiyor; budama olmazsa sınırsız birikir (DB şişer).
+            // SectionTemplateController ile aynı politika (30).
+            if ($page->revisions()->count() > 30) {
+                $keepIds = $page->revisions()->limit(30)->pluck('id');
+                $page->revisions()->whereNotIn('id', $keepIds)->delete();
+            }
         }
     }
 

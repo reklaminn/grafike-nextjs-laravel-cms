@@ -16,7 +16,7 @@
         ];
     @endphp
 
-    <div class="space-y-2">
+    <div class="max-h-80 space-y-2 overflow-y-auto -mr-2 pr-2">
         @foreach($revisions as $revision)
             @php
                 $snapshot      = $revision->snapshot ?? [];
