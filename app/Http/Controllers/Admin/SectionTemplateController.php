@@ -385,7 +385,12 @@ class SectionTemplateController extends Controller
             ? array_values($this->computeUsageMap()[$sectionTemplate->id] ?? [])
             : [];
 
-        return compact('sectionTemplate', 'themes', 'typeOptions', 'variationOptions', 'menuPlaceholders', 'systemPlaceholders', 'legacyModuleOptions', 'componentKeyOptions', 'usagePages');
+        // Sistem alanları dropdown'unu role göre ayır: müşteri (tenant admin)
+        // yalnızca 'all' alanları görür; superadmin 'admin' (gelişmiş/türetilen)
+        // alanları da görür.
+        $isSuperAdmin = auth('admin')->user()?->isAgencyAdmin() ?? false;
+
+        return compact('sectionTemplate', 'themes', 'typeOptions', 'variationOptions', 'menuPlaceholders', 'systemPlaceholders', 'legacyModuleOptions', 'componentKeyOptions', 'usagePages', 'isSuperAdmin');
     }
 
     /**
@@ -535,19 +540,22 @@ class SectionTemplateController extends Controller
      */
     private function buildSystemPlaceholders(): array
     {
+        // audience: 'all' = müşteri (tenant admin) + superadmin görür — temel
+        // içerik/iletişim tokenları. 'admin' = sadece superadmin — teknik veya
+        // otomatik türetilen gelişmiş alanlar (dropdown'u müşteride sadeleştirir).
         $fixed = collect([
-            ['label' => 'Site adı', 'token' => '{{site_name}}', 'source' => 'system'],
-            ['label' => 'Tema slug', 'token' => '{{theme_slug}}', 'source' => 'system'],
-            ['label' => 'Site domain', 'token' => '{{site_domain}}', 'source' => 'system'],
-            ['label' => 'Telefon', 'token' => '{{phone}}', 'source' => 'settings'],
-            ['label' => 'E-posta', 'token' => '{{email}}', 'source' => 'settings'],
-            ['label' => 'Adres', 'token' => '{{address}}', 'source' => 'settings'],
-            ['label' => 'WhatsApp', 'token' => '{{whatsapp_number}}', 'source' => 'settings'],
-            ['label' => 'Çalışma saatleri', 'token' => '{{working_hours}}', 'source' => 'settings'],
-            ['label' => 'Vergi no', 'token' => '{{tax_id}}', 'source' => 'settings'],
-            ['label' => 'Footer metni', 'token' => '{{footer_text}}', 'source' => 'settings'],
-            ['label' => 'Logo URL', 'token' => '{{logo_url}}', 'source' => 'settings'],
-            ['label' => 'Favicon URL', 'token' => '{{favicon_url}}', 'source' => 'settings'],
+            ['label' => 'Site adı', 'token' => '{{site_name}}', 'source' => 'system', 'audience' => 'all'],
+            ['label' => 'Tema slug', 'token' => '{{theme_slug}}', 'source' => 'system', 'audience' => 'admin'],
+            ['label' => 'Site domain', 'token' => '{{site_domain}}', 'source' => 'system', 'audience' => 'all'],
+            ['label' => 'Telefon', 'token' => '{{phone}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'E-posta', 'token' => '{{email}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'Adres', 'token' => '{{address}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'WhatsApp', 'token' => '{{whatsapp_number}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'Çalışma saatleri', 'token' => '{{working_hours}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'Vergi no', 'token' => '{{tax_id}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'Footer metni', 'token' => '{{footer_text}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'Logo URL', 'token' => '{{logo_url}}', 'source' => 'settings', 'audience' => 'all'],
+            ['label' => 'Favicon URL', 'token' => '{{favicon_url}}', 'source' => 'settings', 'audience' => 'all'],
         ]);
 
         // SiteSetting is tenant-scoped; without an active site, expose only the
@@ -569,6 +577,7 @@ class SectionTemplateController extends Controller
                     'label' => $setting->key,
                     'token' => '{{'.$key.'}}',
                     'source' => $setting->group ?: 'settings',
+                    'audience' => 'admin', // otomatik türetilen tüm SiteSetting'ler → sadece superadmin
                 ];
             });
 
