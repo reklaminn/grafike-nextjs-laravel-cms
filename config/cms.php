@@ -15,6 +15,10 @@ return [
 
     'frontend_url'      => env('CMS_FRONTEND_URL', 'http://127.0.0.1:3000'),
     'revalidate_secret' => env('CMS_REVALIDATE_SECRET', ''),
+    // Frontend SSR (Next.js renderer) bu token'ı X-Internal-Token header'ıyla
+    // gönderir; MeterTenantUsage bu istekleri günlük public limitten muaf tutar
+    // (renderer'ın kendi çağrıları ziyaretçi/abuse kotasına sayılmamalı).
+    'internal_api_token' => env('CMS_INTERNAL_API_TOKEN', ''),
     'version' => '2.0.0',
     'default_language' => env('CMS_DEFAULT_LANGUAGE', 'tr'),
     'default_language_id' => env('CMS_DEFAULT_LANGUAGE_ID', 1),
