@@ -11,6 +11,11 @@
         <h3 class="text-base font-semibold text-gray-900">Schema Alanları</h3>
         <div class="flex items-center gap-2">
             <span class="text-xs text-gray-400" x-text="fields.length + ' alan'"></span>
+            <button type="button" @click="sortFields()" x-show="fields.length > 1"
+                    title="Alanları ada göre sırala (group_1, group_2… bir arada, sayısal sıralı)"
+                    class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-arrow-down-a-z"></i> Sırala
+            </button>
             <div class="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
                 <button type="button" @click="mode='visual'"
                         :class="mode==='visual' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'"
@@ -341,6 +346,17 @@ document.addEventListener('alpine:init', () => {
 
             const [moved] = this.fields.splice(from, 1);
             this.fields.splice(targetIdx, 0, moved);
+        },
+
+        // Alanları doğal alfanumerik sıraya dizer (anahtar bazlı): group_1_*
+        // bir arada, group_2_* sonra; sayısal ekler doğru sırada (text_2<text_10).
+        // "Şablona Dönüştür" doküman sırasında üretip group_1/group_2 iç içe
+        // geçince karışık görünüyordu — bu tek tıkla düzenler. Sürükle-bırak ile
+        // elle sıralama yine mümkün.
+        sortFields() {
+            this.fields.sort((a, b) =>
+                String(a.key || '').localeCompare(String(b.key || ''), undefined, { numeric: true, sensitivity: 'base' })
+            );
         },
 
         normalizeKey(val) {
