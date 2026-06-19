@@ -1,4 +1,4 @@
-<div class="flex gap-3">
+<div class="sticky bottom-4 z-20 flex gap-3 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
     <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">
         <i class="fas fa-save"></i> Kaydet
     </button>

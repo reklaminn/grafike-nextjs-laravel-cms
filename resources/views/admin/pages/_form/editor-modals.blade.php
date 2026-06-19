@@ -119,7 +119,9 @@
 <div x-show="settingsModalOpen" x-cloak
      class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
      @click.self="closeBlockSettings()">
-    <div class="w-full max-w-3xl rounded-t-2xl bg-white shadow-2xl border border-gray-200 p-4 max-h-[92vh] overflow-y-auto sm:rounded-2xl sm:p-5 sm:max-h-[85vh]">
+    <div class="flex w-full max-w-3xl max-h-[92vh] flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-2xl sm:max-h-[85vh] sm:rounded-2xl">
+        {{-- Sabit başlık (üstte kalır, scroll etmez) --}}
+        <div class="shrink-0 border-b border-gray-100 px-4 pt-4 pb-3 sm:px-5 sm:pt-5">
         {{-- Mobil sürükleme tutamağı --}}
         <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 sm:hidden"></div>
         <div class="flex items-center justify-between gap-3">
@@ -153,9 +155,11 @@
                 </button>
             </div>
         </div>
+        </div>
 
         <template x-if="settingsBlock">
-            <div class="mt-5 space-y-4">
+            <div class="flex min-h-0 flex-1 flex-col">
+                <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
                 {{-- Şablon güncellik uyarısı — blok schema'sı katalogdan farklıysa --}}
                 <div x-show="blockSchemaIsStale(settingsBlock)" x-cloak
                      class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
@@ -524,8 +528,9 @@
                              x-text="blockCodePreview(settingsBlock)"></div>
                     </details>
                 </div>
+                </div>
 
-                <div class="flex items-center justify-end gap-3 border-t border-gray-200 pt-4">
+                <div class="flex shrink-0 items-center justify-end gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:px-5">
                     <button type="button"
                             @click="closeBlockSettings()"
                             class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">
