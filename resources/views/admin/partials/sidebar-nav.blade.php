@@ -79,6 +79,12 @@
         ]);
     }
 
+    // Ekip — yalnızca aktif tenant'ın OWNER'ı (müşteri sahibi) görür; agency
+    // admin bunun yerine 'Yöneticiler'i (Platform) kullanır.
+    if ($activeTenantId && ! $isAgencyAdmin && (auth('admin')->user()?->ownsTenant($activeTenantId) ?? false)) {
+        $systemItems[] = ['route' => 'admin.team.index', 'icon' => 'fa-user-group', 'label' => 'Ekip', 'match' => 'admin.team'];
+    }
+
     // PLATFORM YÖNETİMİ — SADECE superadmin (ajans/platform araçları).
     $platformItems = $isAgencyAdmin ? [
         ['route' => 'admin.packages.index',    'icon' => 'fa-box-open',           'label' => 'Paketler',          'match' => 'admin.packages'],
