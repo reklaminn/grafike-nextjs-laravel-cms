@@ -112,7 +112,7 @@
 
     <p class="text-xs text-gray-400 mt-3">
         <i class="fas fa-info-circle mr-0.5"></i>
-        Son 30 yedek saklanır, eskiler otomatik silinir.
+        Katmanlı saklama: son 7 gün (tümü) + son ~4 hafta (haftalık) + son ~6 ay (aylık) tutulur, gerisi otomatik silinir.
     </p>
     @endif
 </div>
