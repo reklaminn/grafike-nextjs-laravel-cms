@@ -29,14 +29,26 @@
 
                 <span class="text-gray-200">|</span>
 
-                {{-- Sistem placeholder --}}
+                {{-- Sistem placeholder — role göre iki grup: "Genel" herkese,
+                     "Gelişmiş" yalnızca superadmin'e (müşteride listeyi sadeleştirir) --}}
+                @php
+                    $sysAll   = collect($systemPlaceholders ?? [])->filter(fn ($p) => ($p['audience'] ?? 'all') === 'all');
+                    $sysAdmin = collect($systemPlaceholders ?? [])->filter(fn ($p) => ($p['audience'] ?? 'all') === 'admin');
+                @endphp
                 <select id="system_placeholder_select" class="min-w-40 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
                     <option value="">Sistem alanı seç</option>
-                    @foreach($systemPlaceholders as $ph)
-                        <option value="{{ $ph['token'] }}" data-source="{{ $ph['source'] }}">
-                            {{ $ph['label'] }}
-                        </option>
-                    @endforeach
+                    <optgroup label="Genel (içerik & iletişim)">
+                        @foreach($sysAll as $ph)
+                            <option value="{{ $ph['token'] }}" data-source="{{ $ph['source'] }}">{{ $ph['label'] }}</option>
+                        @endforeach
+                    </optgroup>
+                    @if(($isSuperAdmin ?? false) && $sysAdmin->isNotEmpty())
+                        <optgroup label="Gelişmiş / Sistem (sadece yönetici)">
+                            @foreach($sysAdmin as $ph)
+                                <option value="{{ $ph['token'] }}" data-source="{{ $ph['source'] }}">{{ $ph['label'] }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
                 </select>
                 <button type="button" id="insert_system_placeholder"
                         class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100">
