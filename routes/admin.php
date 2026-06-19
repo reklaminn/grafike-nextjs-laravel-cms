@@ -37,6 +37,7 @@ use App\Http\Controllers\Admin\AiPlanController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\TenantBackupController;
 use App\Http\Controllers\Admin\TenantController;
+use App\Http\Controllers\Admin\TenantTeamController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CurrencyController;
@@ -186,6 +187,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Members Management
         Route::resource('members', MemberController::class)->except('show');
         Route::post('members/{member}/toggle-active', [MemberController::class, 'toggleActive'])->name('members.toggle-active');
+
+        // Tenant Team — site owner manages own site's managers/editors (agency.admin DEĞİL;
+        // controller içinde "aktif tenant owner" kontrolü var)
+        Route::get   ('team',          [TenantTeamController::class, 'index'])  ->name('team.index');
+        Route::post  ('team',          [TenantTeamController::class, 'store'])  ->name('team.store');
+        Route::put   ('team/{admin}',  [TenantTeamController::class, 'update']) ->name('team.update');
+        Route::delete('team/{admin}',  [TenantTeamController::class, 'destroy'])->name('team.destroy');
 
         // Languages Management
         Route::resource('languages', LanguageController::class)->except('show');
