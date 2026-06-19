@@ -59,6 +59,7 @@
         ['route' => 'admin.currencies.index', 'icon' => 'fa-money-bill-wave', 'label' => 'Döviz Kurları', 'match' => 'admin.currencies'],
     ];
 
+    // SİSTEM — hem superadmin HEM müşteri (tenant admin) görür: site/ayar yönetimi.
     $systemItems = [
         ['route' => 'admin.tenants.index',    'icon' => 'fa-building',    'label' => 'Siteler',           'match' => 'admin.tenants'],
         ['route' => 'admin.settings.index',   'icon' => 'fa-cog',         'label' => 'Ayarlar',           'match' => 'admin.settings.index'],
@@ -67,25 +68,29 @@
         ['route' => 'admin.settings.media',   'icon' => 'fa-image',       'label' => 'Medya & Sıkıştırma','match' => 'admin.settings.media'],
     ];
 
+    // AI Kullanım — ikisi de görür; route role'e göre (agency: global, tenant: kendi).
     if ($isAgencyAdmin) {
         array_splice($systemItems, 1, 0, [
-            ['route' => 'admin.packages.index',    'icon' => 'fa-box-open',    'label' => 'Paketler',          'match' => 'admin.packages'],
-            ['route' => 'admin.ai-plans.index',   'icon' => 'fa-robot',       'label' => 'AI Planları',        'match' => 'admin.ai-plans'],
-            ['route' => 'admin.settings.ai-keys',  'icon' => 'fa-key',                  'label' => 'AI Anahtarları',     'match' => 'admin.settings.ai-keys'],
-            ['route' => 'admin.settings.mailcow', 'icon' => 'fa-envelope-open-text', 'label' => 'Mail Ayarları',      'match' => 'admin.settings.mailcow'],
-            ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield', 'label' => 'Yöneticiler',       'match' => 'admin.admin-users'],
-            ['route' => 'admin.roles.index',       'icon' => 'fa-key',         'label' => 'Roller/Yetkiler',   'match' => 'admin.roles'],
-            ['route' => 'admin.ai-dashboard',      'icon' => 'fa-chart-pie',   'label' => 'AI Kullanım',       'match' => 'admin.ai-dashboard'],
-            ['route' => 'admin.maintenance.index', 'icon' => 'fa-database',    'label' => 'DB Bakım',          'match' => 'admin.maintenance'],
-            ['route' => 'admin.activity-log.index','icon' => 'fa-history',     'label' => 'Aktivite Log',      'match' => 'admin.activity-log'],
-            ['route' => 'admin.library.index',     'icon' => 'fa-ship',        'label' => 'Cruise Kütüphanesi','match' => 'admin.library'],
+            ['route' => 'admin.ai-dashboard', 'icon' => 'fa-chart-pie', 'label' => 'AI Kullanım', 'match' => 'admin.ai-dashboard'],
         ]);
     } elseif ($activeTenantId) {
-        // Tenant admin: kendi sitesinin AI kullanım raporu (per-tenant görünüm).
         array_splice($systemItems, 1, 0, [
             ['route' => 'admin.tenants.ai-usage', 'icon' => 'fa-chart-pie', 'label' => 'AI Kullanım', 'match' => 'admin.tenants.ai-usage', 'url' => route('admin.tenants.ai-usage', $activeTenantId, false)],
         ]);
     }
+
+    // PLATFORM YÖNETİMİ — SADECE superadmin (ajans/platform araçları).
+    $platformItems = $isAgencyAdmin ? [
+        ['route' => 'admin.packages.index',    'icon' => 'fa-box-open',           'label' => 'Paketler',          'match' => 'admin.packages'],
+        ['route' => 'admin.ai-plans.index',    'icon' => 'fa-robot',              'label' => 'AI Planları',       'match' => 'admin.ai-plans'],
+        ['route' => 'admin.settings.ai-keys',  'icon' => 'fa-key',                'label' => 'AI Anahtarları',    'match' => 'admin.settings.ai-keys'],
+        ['route' => 'admin.settings.mailcow',  'icon' => 'fa-envelope-open-text', 'label' => 'Mail Ayarları',     'match' => 'admin.settings.mailcow'],
+        ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield',        'label' => 'Yöneticiler',       'match' => 'admin.admin-users'],
+        ['route' => 'admin.roles.index',       'icon' => 'fa-key',                'label' => 'Roller/Yetkiler',   'match' => 'admin.roles'],
+        ['route' => 'admin.maintenance.index', 'icon' => 'fa-database',           'label' => 'DB Bakım',          'match' => 'admin.maintenance'],
+        ['route' => 'admin.activity-log.index','icon' => 'fa-history',            'label' => 'Aktivite Log',      'match' => 'admin.activity-log'],
+        ['route' => 'admin.library.index',     'icon' => 'fa-ship',               'label' => 'Cruise Kütüphanesi','match' => 'admin.library'],
+    ] : [];
 @endphp
 
 {{-- ── Kurulum Sihirbazı — her zaman erişilebilir, flag'e göre stil --}}
@@ -180,7 +185,7 @@
     </a>
 @endforeach
 
-<!-- Sistem -->
+<!-- Sistem (hem superadmin hem müşteri) -->
 <div class="my-3 border-t border-gray-200"></div>
 <div class="px-3 pt-2 pb-1">
     <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider" x-show="sidebarOpen" x-transition>Sistem</span>
@@ -192,3 +197,20 @@
         <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
     </a>
 @endforeach
+
+<!-- Platform Yönetimi (sadece superadmin / ajans) -->
+@if(!empty($platformItems))
+<div class="my-3 border-t border-gray-200"></div>
+<div class="px-3 pt-2 pb-1">
+    <span class="text-[10px] font-semibold text-indigo-400 uppercase tracking-wider" x-show="sidebarOpen" x-transition>
+        <i class="fas fa-shield-halved mr-0.5"></i> Platform Yönetimi
+    </span>
+</div>
+@foreach($platformItems as $item)
+    <a href="{{ $item['url'] ?? route($item['route']) }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
+        <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
+        <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
+    </a>
+@endforeach
+@endif
