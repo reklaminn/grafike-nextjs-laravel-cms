@@ -108,6 +108,14 @@ async function fetchJson<T>(
       requestHeaders["X-Tenant-ID"] = tenantId;
     }
 
+    // Bu istemci yalnızca sunucuda (SSR/RSC) çalışır. İç token, Laravel'in
+    // MeterTenantUsage middleware'inde bu renderer çağrılarını günlük public
+    // istek limitinden muaf tutar. NEXT_PUBLIC_ DEĞİL → tarayıcıya sızmaz.
+    const internalToken = process.env.INTERNAL_API_TOKEN;
+    if (internalToken) {
+      requestHeaders["X-Internal-Token"] = internalToken;
+    }
+
     // Prefix every tag with the site host so a revalidation for
     // tenant-A never busts tenant-B's cache on the same Next.js instance.
     // e.g. "page-home" → "nuhcicek.com.tr:page-home"

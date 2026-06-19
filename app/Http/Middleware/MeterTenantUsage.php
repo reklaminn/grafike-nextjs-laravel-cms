@@ -35,6 +35,14 @@ class MeterTenantUsage
                 ], 503);
             }
 
+            // Frontend SSR (Next.js renderer) — günlük public limitten MUAF.
+            // Limit gerçek ziyaretçi/abuse trafiği içindir; renderer'ın kendi
+            // sunucu çağrıları (özellikle preview no-store modunda sayfa başına
+            // birkaç çağrı) buna sayılmaz. Geçerli iç token → say(ma)/engelle(me).
+            if ($this->isInternalRequest($request)) {
+                return $next($request);
+            }
+
             // Günlük limit = paket limiti + aktif geçici yükseltmeler
             // (quota_extensions). Paket limiti tanımsızsa sınırsız.
             $max = $tenant->effectiveDailyRequestLimit();
@@ -50,5 +58,22 @@ class MeterTenantUsage
         }
 
         return $next($request);
+    }
+
+    /**
+     * İstek frontend SSR renderer'ından mı geliyor? Paylaşılan gizli token
+     * (CMS_INTERNAL_API_TOKEN) X-Internal-Token header'ıyla eşleşmeli. Token
+     * tanımsızsa (boş) muafiyet kapalıdır — yani yanlışlıkla herkesi muaf
+     * tutmaz. hash_equals ile zamanlama-güvenli karşılaştırma.
+     */
+    private function isInternalRequest(Request $request): bool
+    {
+        $token = (string) config('cms.internal_api_token', '');
+
+        if ($token === '') {
+            return false;
+        }
+
+        return hash_equals($token, (string) $request->header('X-Internal-Token', ''));
     }
 }
