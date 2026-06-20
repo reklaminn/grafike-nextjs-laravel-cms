@@ -12,9 +12,9 @@
         <div class="flex items-center gap-2">
             <span class="text-xs text-gray-400" x-text="fields.length + ' alan'"></span>
             <button type="button" @click="sortFields()" x-show="fields.length > 1"
-                    title="Alanları ada göre sırala (group_1, group_2… bir arada, sayısal sıralı)"
+                    title="Alanları HTML'deki görünüm sırasına göre diz (placeholder geliş sırası; HTML'de olmayanlar sona)"
                     class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
-                <i class="fas fa-arrow-down-a-z"></i> Sırala
+                <i class="fas fa-list-ol"></i> Sırala
             </button>
             <div class="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
                 <button type="button" @click="mode='visual'"
@@ -348,15 +348,28 @@ document.addEventListener('alpine:init', () => {
             this.fields.splice(targetIdx, 0, moved);
         },
 
-        // Alanları doğal alfanumerik sıraya dizer (anahtar bazlı): group_1_*
-        // bir arada, group_2_* sonra; sayısal ekler doğru sırada (text_2<text_10).
-        // "Şablona Dönüştür" doküman sırasında üretip group_1/group_2 iç içe
-        // geçince karışık görünüyordu — bu tek tıkla düzenler. Sürükle-bırak ile
-        // elle sıralama yine mümkün.
+        // Alanları HTML'deki GÖRÜNÜM (placeholder geliş) sırasına göre dizer —
+        // sayfa akışıyla aynı, en mantıklı sıra. window.getHtmlPlaceholders()
+        // doküman sırasını verir. Repeater alanları HTML'de key_html /
+        // key_items_html olarak geçtiği için o ekler de eşlenir. HTML'de hiç
+        // geçmeyen alanlar sona alınır (kendi aralarında doğal alfanumerik).
+        // Sürükle-bırak ile elle sıralama yine mümkün.
         sortFields() {
-            this.fields.sort((a, b) =>
-                String(a.key || '').localeCompare(String(b.key || ''), undefined, { numeric: true, sensitivity: 'base' })
-            );
+            const order = (typeof window.getHtmlPlaceholders === 'function')
+                ? (window.getHtmlPlaceholders() || []) : [];
+            const rank = (key) => {
+                const k = String(key || '');
+                let i = order.indexOf(k);
+                if (i === -1) i = order.indexOf(k + '_html');
+                if (i === -1) i = order.indexOf(k + '_items_html');
+                return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+            };
+            this.fields.sort((a, b) => {
+                const ra = rank(a.key), rb = rank(b.key);
+                if (ra !== rb) return ra - rb;
+                // HTML'de olmayanlar / eşit rank → doğal alfanumerik
+                return String(a.key || '').localeCompare(String(b.key || ''), undefined, { numeric: true, sensitivity: 'base' });
+            });
         },
 
         normalizeKey(val) {
