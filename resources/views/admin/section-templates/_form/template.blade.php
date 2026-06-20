@@ -1,79 +1,109 @@
 <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
     <h3 class="text-base font-semibold text-gray-900">HTML Template</h3>
     <div class="mt-4">
-        <div class="mb-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <label class="block text-sm font-medium text-gray-700">HTML Template</label>
-            <div class="flex flex-wrap items-center gap-2">
-                {{-- Menü placeholder --}}
-                <select id="menu_placeholder_select" class="min-w-40 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Menü seç…</option>
-                    @foreach($menuPlaceholders as $placeholder)
-                        <option value="{{ $placeholder['html_token'] }}" data-items-token="{{ $placeholder['items_token'] }}">
-                            {{ $placeholder['label'] }}
-                        </option>
-                    @endforeach
-                </select>
-                <button type="button" id="insert_menu_html"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100">
-                    <i class="fas fa-bars"></i> HTML
-                </button>
-                <button type="button" id="insert_menu_items"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100">
-                    <i class="fas fa-list"></i> Items
-                </button>
-                <button type="button" id="reload_menu_placeholders"
-                        title="Menüleri yeniden yükle"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100">
-                    <i class="fas fa-rotate"></i>
-                </button>
+        <p class="mb-3 text-xs leading-relaxed text-gray-500">
+            Ham HTML yapıştır → <strong class="text-indigo-600">Şablona Dönüştür</strong> ile placeholder'lı şablona + şema alanlarına çevir.
+            Hazır <strong>menü/sistem alanlarını</strong> imlece ekleyebilir, <strong>tekrar</strong> ve <strong>görsel</strong> alanlarını otomatik bulabilirsin.
+        </p>
 
-                <span class="text-gray-200">|</span>
+        {{-- Araç çubuğu — 2 grup: (1) imlece ekle  (2) otomatik HTML→şema --}}
+        <div class="mb-3 flex flex-col gap-3 rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 xl:flex-row xl:flex-wrap xl:items-start xl:gap-4">
 
-                {{-- Sistem placeholder — role göre iki grup: "Genel" herkese,
-                     "Gelişmiş" yalnızca superadmin'e (müşteride listeyi sadeleştirir) --}}
-                @php
-                    $sysAll   = collect($systemPlaceholders ?? [])->filter(fn ($p) => ($p['audience'] ?? 'all') === 'all');
-                    $sysAdmin = collect($systemPlaceholders ?? [])->filter(fn ($p) => ($p['audience'] ?? 'all') === 'admin');
-                @endphp
-                <select id="system_placeholder_select" class="min-w-40 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Sistem alanı seç</option>
-                    <optgroup label="Genel (içerik & iletişim)">
-                        @foreach($sysAll as $ph)
-                            <option value="{{ $ph['token'] }}" data-source="{{ $ph['source'] }}">{{ $ph['label'] }}</option>
+            {{-- ── Grup 1: İmlece Ekle ──────────────────────────────────────── --}}
+            <div class="min-w-0">
+                <div class="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                    <i class="fas fa-i-cursor text-[9px]"></i> İmlece Ekle
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    {{-- Menü placeholder --}}
+                    <select id="menu_placeholder_select" title="Bir menü seç; sonra HTML veya Items ile imlece ekle" class="min-w-36 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Menü seç…</option>
+                        @foreach($menuPlaceholders as $placeholder)
+                            <option value="{{ $placeholder['html_token'] }}" data-items-token="{{ $placeholder['items_token'] }}">
+                                {{ $placeholder['label'] }}
+                            </option>
                         @endforeach
-                    </optgroup>
-                    @if(($isSuperAdmin ?? false) && $sysAdmin->isNotEmpty())
-                        <optgroup label="Gelişmiş / Sistem (sadece yönetici)">
-                            @foreach($sysAdmin as $ph)
+                    </select>
+                    <button type="button" id="insert_menu_html"
+                            title="Seçili menünün hazır HTML çıktısını imlece ekle"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100">
+                        <i class="fas fa-bars"></i> HTML
+                    </button>
+                    <button type="button" id="insert_menu_items"
+                            title="Seçili menünün item-tekrar placeholder'ını ekle (kendi HTML'ini sararsın)"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100">
+                        <i class="fas fa-list"></i> Items
+                    </button>
+                    <button type="button" id="reload_menu_placeholders"
+                            title="Menü listesini yeniden yükle"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100">
+                        <i class="fas fa-rotate"></i>
+                    </button>
+
+                    <span class="text-gray-200">|</span>
+
+                    {{-- Sistem placeholder — role göre iki grup: "Genel" herkese,
+                         "Gelişmiş" yalnızca superadmin'e (müşteride listeyi sadeleştirir) --}}
+                    @php
+                        $sysAll   = collect($systemPlaceholders ?? [])->filter(fn ($p) => ($p['audience'] ?? 'all') === 'all');
+                        $sysAdmin = collect($systemPlaceholders ?? [])->filter(fn ($p) => ($p['audience'] ?? 'all') === 'admin');
+                    @endphp
+                    <select id="system_placeholder_select" title="Site/iletişim alanı (logo, telefon, e-posta…) seç" class="min-w-36 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Sistem alanı seç</option>
+                        <optgroup label="Genel (içerik & iletişim)">
+                            @foreach($sysAll as $ph)
                                 <option value="{{ $ph['token'] }}" data-source="{{ $ph['source'] }}">{{ $ph['label'] }}</option>
                             @endforeach
                         </optgroup>
-                    @endif
-                </select>
-                <button type="button" id="insert_system_placeholder"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100">
-                    <i class="fas fa-plus"></i> Ekle
-                </button>
+                        @if(($isSuperAdmin ?? false) && $sysAdmin->isNotEmpty())
+                            <optgroup label="Gelişmiş / Sistem (sadece yönetici)">
+                                @foreach($sysAdmin as $ph)
+                                    <option value="{{ $ph['token'] }}" data-source="{{ $ph['source'] }}">{{ $ph['label'] }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endif
+                    </select>
+                    <button type="button" id="insert_system_placeholder"
+                            title="Seçili sistem alanını imlece ekle"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100">
+                        <i class="fas fa-plus"></i> Ekle
+                    </button>
+                </div>
+            </div>
 
-                <span class="text-gray-200">|</span>
+            {{-- dikey ayraç (geniş ekran) --}}
+            <div class="hidden w-px self-stretch bg-gray-200 xl:block"></div>
 
-                {{-- Repeat ve dönüştür --}}
-                <button type="button" id="find_repeat_candidates"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100">
-                    <i class="fas fa-layer-group"></i> Repeat Alan Bul
-                </button>
-                <button type="button" id="find_asset_fields"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100">
-                    <i class="fas fa-image"></i> Eksik Görsel Alanı Bul
-                </button>
-                <select id="generate_mode_select" class="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
-                    <option value="merge">Schema ile birleştir</option>
-                    <option value="replace">Schema'yı yenile</option>
-                </select>
-                <button type="button" id="generate_from_template"
-                        class="inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100">
-                    <i class="fas fa-wand-magic-sparkles"></i> Şablona Dönüştür
-                </button>
+            {{-- ── Grup 2: Otomatik (HTML'i analiz et → şema) ────────────────── --}}
+            <div class="min-w-0">
+                <div class="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                    <i class="fas fa-wand-magic-sparkles text-[9px]"></i> Otomatik · HTML → Şema
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    {{-- Birincil: ham HTML → şablon --}}
+                    <button type="button" id="generate_from_template"
+                            title="Ham HTML'i placeholder'lı şablona ÇEVİR ve şema alanlarını otomatik üret"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700">
+                        <i class="fas fa-wand-magic-sparkles"></i> Şablona Dönüştür
+                    </button>
+                    <select id="generate_mode_select" title="Dönüştürürken: mevcut şemayla birleştir mi, sıfırdan mı üret" class="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
+                        <option value="merge">↪ Şema ile birleştir</option>
+                        <option value="replace">⟳ Şemayı yenile</option>
+                    </select>
+
+                    <span class="text-gray-200">|</span>
+
+                    <button type="button" id="find_repeat_candidates"
+                            title="Tekrarlayan blokları bul → tek tıkla repeater (çoğaltılabilir) alana çevir"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100">
+                        <i class="fas fa-layer-group"></i> Repeat Alan Bul
+                    </button>
+                    <button type="button" id="find_asset_fields"
+                            title="Şemaya bağlı olmayan sabit görselleri bul → düzenlenebilir görsel alanına çevir"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100">
+                        <i class="fas fa-image"></i> Eksik Görsel
+                    </button>
+                </div>
             </div>
         </div>
 
