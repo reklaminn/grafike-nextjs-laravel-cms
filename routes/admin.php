@@ -97,7 +97,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get ('ai-dashboard',              [AiDashboardController::class, 'index'])->name('ai-dashboard');
 
         // ── Tenant-scoped routes (require active tenant in session) ───────────
-        Route::middleware('tenant.admin')->group(function () {
+        Route::middleware(['tenant.admin', 'admin.permission'])->group(function () {
 
         // Dashboard
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

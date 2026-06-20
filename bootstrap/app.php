@@ -63,6 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin.auth'      => \App\Http\Middleware\AdminAuthenticate::class,
             'agency.admin'    => \App\Http\Middleware\EnsureAgencyAdmin::class,
+            'admin.permission'=> \App\Http\Middleware\EnforceAdminPermission::class,
             'member.auth'     => \App\Http\Middleware\MemberAuthenticate::class,
             'tenant.admin'    => \App\Http\Middleware\InitializeTenancyForAdmin::class,
             'tenant.module'   => \App\Http\Middleware\RequireTenantModule::class,

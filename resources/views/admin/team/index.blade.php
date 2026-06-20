@@ -56,11 +56,14 @@
                         </span>
                     @else
                         {{-- Rol değiştir --}}
+                        @php $currentRole = $m->roles->first()?->name; @endphp
                         <form method="POST" action="{{ route('admin.team.update', $m, false) }}" class="flex items-center gap-1.5">
                             @csrf @method('PUT')
                             <select name="role" class="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
-                                <option value="manager" @selected($access->role === 'manager')>Yönetici (manager)</option>
-                                <option value="editor"  @selected($access->role === 'editor')>Editör (editor)</option>
+                                <option value="">Tam yetki (kısıtlamasız)</option>
+                                @foreach($roles as $r)
+                                    <option value="{{ $r->name }}" @selected($currentRole === $r->name)>{{ $r->name }}</option>
+                                @endforeach
                             </select>
                             <button type="submit" title="Rolü kaydet"
                                     class="rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-200">
@@ -110,12 +113,17 @@
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Rol <span class="text-red-500">*</span></label>
-                    <select name="role" required
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Yetki (rol)</label>
+                    <select name="role"
                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
-                        <option value="manager" @selected(old('role') === 'manager')>Yönetici (manager)</option>
-                        <option value="editor"  @selected(old('role') === 'editor')>Editör (editor)</option>
+                        <option value="">Tam yetki (kısıtlamasız)</option>
+                        @foreach($roles as $r)
+                            <option value="{{ $r->name }}" @selected(old('role') === $r->name)>{{ $r->name }}</option>
+                        @endforeach
                     </select>
+                    @if($roles->isEmpty())
+                        <p class="mt-1 text-[11px] text-amber-600">Kısıtlı rol tanımlı değil — ajanstan Roller/Yetkiler'de müşteri rolü oluşturmasını isteyin. Şimdilik eklenen üye tam yetkili olur.</p>
+                    @endif
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Ad <span class="text-gray-400">(yeni hesap için)</span></label>
@@ -146,7 +154,7 @@
 
     <p class="mt-4 text-xs text-gray-400">
         <i class="fas fa-circle-info mr-0.5"></i>
-        Site sahibi (owner) atama yalnızca ajans/superadmin tarafından yapılır. Buradan yalnızca <strong>manager</strong> ve <strong>editor</strong> eklenebilir.
+        Yetki = Roller/Yetkiler'de tanımlı rolün izinleri. <strong>Tam yetki</strong> seçilirse üye sitenizde her şeyi yapabilir; bir rol seçilirse yalnızca o rolün izinleriyle sınırlanır. Site sahibi (owner) ataması yalnızca ajans tarafından yapılır.
     </p>
 </div>
 @endsection

@@ -4,46 +4,49 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\AdminRole;
 use App\Models\AdminTenantAccess;
 use App\Models\Tenant;
+use App\Support\AdminPermissions;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Tenant'a özel "Ekip / Yöneticiler" — site SAHİBİ (owner) kendi sitesine
- * manager/editor ekler. Ajans/superadmin'in global "Yöneticiler" sayfasından
- * (agency.admin) FARKLI: yalnızca AKTİF tenant kapsamında çalışır.
+ * Tenant'a özel "Ekip / Yöneticiler" — site SAHİBİ (owner) kendi sitesine üye
+ * ekler ve onlara Roller/Yetkiler'de tanımlı bir rol atar (izinler enforce
+ * edilir). Ajans/superadmin'in global "Yöneticiler" sayfasından (agency.admin)
+ * FARKLI: yalnızca AKTİF tenant kapsamında çalışır.
  *
  * Güvenlik:
  *  - Sadece aktif tenant'ın owner'ı (veya agency admin) erişir.
- *  - Atanabilir roller yalnızca manager/editor — owner ASLA (yetki yükseltme).
- *  - Hiçbir global rol (super-admin) atanmaz.
- *  - Çıkarma: admin'in BAŞKA tenant erişimi kalmıyor ve super-admin değilse
- *    admin tamamen silinir — yoksa tenantAccesses boşalıp isAgencyAdmin()=true
- *    olur ve TÜM platforma erişim kazanır (kritik!).
+ *  - Atanabilir roller YALNIZCA tenant-güvenli olanlar — super-admin ve
+ *    ajans-seviyesi izin (tenants/admins/roles/maintenance) içerenler DIŞARIDA.
+ *  - Rol opsiyonel: seçilmezse üye tam tenant yetkisine sahip (eski davranış,
+ *    Gate::before rolsüz bypass'ı); seçilirse rolün izinleriyle kısıtlanır.
+ *  - Çıkarma: üyenin başka tenant erişimi kalmıyor ve super-admin değilse hesap
+ *    tamamen silinir (yoksa isAgencyAdmin()=true olup tüm platforma erişir).
  */
 class TenantTeamController extends Controller
 {
-    /** Atanabilir roller — owner kasıtlı olarak DIŞARIDA. */
-    private const ASSIGNABLE_ROLES = ['manager', 'editor'];
-
     public function index()
     {
         $tenant = $this->activeOwnedTenant();
 
-        $members = AdminTenantAccess::with('admin')
+        $members = AdminTenantAccess::with('admin.roles')
             ->where('tenant_id', $tenant->id)
             ->get()
             ->filter(fn (AdminTenantAccess $a) => $a->admin !== null)
             ->sortBy(fn (AdminTenantAccess $a) => [$a->role === 'owner' ? 0 : 1, $a->admin->name])
             ->values();
 
+        $roles   = $this->assignableRoles();
         $max     = $tenant->maxAdminUsers();
         $current = $members->count();
 
-        return view('admin.team.index', compact('tenant', 'members', 'max', 'current'));
+        return view('admin.team.index', compact('tenant', 'members', 'roles', 'max', 'current'));
     }
 
     public function store(Request $request)
@@ -52,7 +55,7 @@ class TenantTeamController extends Controller
 
         $request->validate([
             'email' => 'required|email|max:255',
-            'role'  => ['required', Rule::in(self::ASSIGNABLE_ROLES)],
+            'role'  => ['nullable', Rule::in($this->assignableRoles()->pluck('name')->all())],
         ]);
 
         $existing = Admin::where('email', $request->input('email'))->first();
@@ -63,18 +66,13 @@ class TenantTeamController extends Controller
             }
 
             $this->assertQuota($tenant);
-
-            AdminTenantAccess::create([
-                'admin_id'   => $existing->id,
-                'tenant_id'  => $tenant->id,
-                'role'       => $request->input('role'),
-                'is_default' => false, // mevcut kullanıcının varsayılanını bozma
-            ]);
+            $this->grantAccess($existing, $tenant, isDefault: false);
+            $this->applyRole($existing, $request->input('role'));
 
             return back()->with('success', "«{$existing->name}» ekibe eklendi (mevcut hesaba site erişimi verildi).");
         }
 
-        // Yeni yönetici — ad + şifre zorunlu
+        // Yeni hesap — ad + şifre zorunlu
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'password' => 'required|string|min:6|confirmed',
@@ -87,15 +85,10 @@ class TenantTeamController extends Controller
             'email'    => $request->input('email'),
             'username' => $this->uniqueUsername($request->input('email')),
             'password' => $data['password'],
-            // GLOBAL ROL ATANMAZ — yalnızca tenant erişimi
         ]);
 
-        AdminTenantAccess::create([
-            'admin_id'   => $admin->id,
-            'tenant_id'  => $tenant->id,
-            'role'       => $request->input('role'),
-            'is_default' => true, // tek erişimi bu site
-        ]);
+        $this->grantAccess($admin, $tenant, isDefault: true);
+        $this->applyRole($admin, $request->input('role'));
 
         return back()->with('success', "«{$admin->name}» oluşturuldu ve ekibe eklendi.");
     }
@@ -104,19 +97,21 @@ class TenantTeamController extends Controller
     {
         $tenant = $this->activeOwnedTenant();
 
-        $request->validate(['role' => ['required', Rule::in(self::ASSIGNABLE_ROLES)]]);
+        $request->validate([
+            'role' => ['nullable', Rule::in($this->assignableRoles()->pluck('name')->all())],
+        ]);
 
         $access = AdminTenantAccess::where('admin_id', $admin->id)
             ->where('tenant_id', $tenant->id)
             ->firstOrFail();
 
         if ($access->role === 'owner') {
-            return back()->with('error', 'Site sahibinin rolü buradan değiştirilemez.');
+            return back()->with('error', 'Site sahibinin yetkisi buradan değiştirilemez.');
         }
 
-        $access->update(['role' => $request->input('role')]);
+        $this->applyRole($admin, $request->input('role'));
 
-        return back()->with('success', "«{$admin->name}» rolü güncellendi.");
+        return back()->with('success', "«{$admin->name}» yetkisi güncellendi.");
     }
 
     public function destroy(Admin $admin)
@@ -137,11 +132,11 @@ class TenantTeamController extends Controller
 
         $access->delete();
 
-        // Kritik: başka tenant erişimi YOKSA ve super-admin DEĞİLSE admin'i sil.
-        // Aksi halde tenantAccesses boşalır → isAgencyAdmin()=true → tüm platforma
-        // erişim kazanır.
+        // Kritik: başka tenant erişimi YOKSA ve super-admin DEĞİLSE hesabı sil —
+        // aksi halde tenantAccesses boşalır → isAgencyAdmin()=true → tüm platform.
         if (! $admin->hasRole('super-admin') && ! $admin->tenantAccesses()->exists()) {
-            $admin->delete(); // soft delete
+            $admin->delete();
+
             return back()->with('success', "«{$admin->name}» ekipten çıkarıldı ve hesabı kapatıldı (başka site erişimi yoktu).");
         }
 
@@ -149,6 +144,33 @@ class TenantTeamController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+
+    /** Müşteri (owner) tarafından atanabilir tenant-güvenli roller. */
+    private function assignableRoles(): Collection
+    {
+        return AdminRole::where('guard_name', 'admin')
+            ->with('permissions')
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (AdminRole $role) => AdminPermissions::isTenantAssignable($role))
+            ->values();
+    }
+
+    /** Üyeye global Spatie rolünü uygular (boşsa rol yok = tam tenant yetkisi). */
+    private function applyRole(Admin $admin, ?string $roleName): void
+    {
+        $admin->syncRoles($roleName ? [$roleName] : []);
+    }
+
+    private function grantAccess(Admin $admin, Tenant $tenant, bool $isDefault): void
+    {
+        AdminTenantAccess::create([
+            'admin_id'   => $admin->id,
+            'tenant_id'  => $tenant->id,
+            'role'       => 'manager', // pivot: owner-dışı erişim seviyesi (gerçek yetki Spatie rolünde)
+            'is_default' => $isDefault,
+        ]);
+    }
 
     /**
      * Aktif tenant'ı döndürür; yalnızca o tenant'ın owner'ı (veya agency admin)
@@ -177,7 +199,7 @@ class TenantTeamController extends Controller
     {
         $max = $tenant->maxAdminUsers();
         if ($max === null) {
-            return; // sınırsız paket
+            return;
         }
 
         $current = AdminTenantAccess::where('tenant_id', $tenant->id)->distinct()->count('admin_id');
