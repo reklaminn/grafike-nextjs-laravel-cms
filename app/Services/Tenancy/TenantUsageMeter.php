@@ -129,6 +129,27 @@ class TenantUsageMeter
         }
     }
 
+    /** Belirli bir günün (Ymd) istek sayısı — rollup/raporlama için. */
+    public function requestsOn(string $tenantId, string $ymd): int
+    {
+        return $this->readDay("req:{$tenantId}", $ymd);
+    }
+
+    /** Belirli bir günün (Ymd) giriş sayısı — rollup/raporlama için. */
+    public function loginsOn(string $tenantId, string $ymd): int
+    {
+        return $this->readDay("login:{$tenantId}", $ymd);
+    }
+
+    private function readDay(string $suffix, string $ymd): int
+    {
+        try {
+            return (int) (Redis::get('meter:' . $suffix . ':' . $ymd) ?? 0);
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
     private function key(string $suffix): string
     {
         return 'meter:' . $suffix . ':' . now()->format('Ymd');

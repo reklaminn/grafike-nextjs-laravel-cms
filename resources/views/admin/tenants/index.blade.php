@@ -28,6 +28,14 @@
 </div>
 @endif
 
+{{-- ── Operasyon panosu (yalnızca ajans/superadmin) ──────────────────────── --}}
+@if(!empty($dashboard))
+    @include('admin.tenants._dashboard.kpis')
+    @include('admin.tenants._dashboard.near-limit')
+    @include('admin.tenants._dashboard.charts')
+    @include('admin.tenants._dashboard.operations')
+@endif
+
 @if($tenants->isEmpty())
 <div class="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center">
     <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

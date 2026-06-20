@@ -35,3 +35,12 @@ Schedule::command('traefik:sync')
     ->hourly()
     ->withoutOverlapping()
     ->runInBackground();
+
+// Tenant kullanım rollup — Redis sayaçlarını (2 gün TTL) kalıcı günlük tabloya
+// yazar + depolama/DB/kullanıcı anlık görüntüsünü alır. Saatlik koşar ki hem
+// zaman serisi grafiği birikir hem de tenant panosu web isteğinde ağır tarama
+// yapmadan tablodan okur.
+Schedule::command('cms:rollup-usage')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground();

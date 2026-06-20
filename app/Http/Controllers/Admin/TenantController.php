@@ -51,7 +51,13 @@ class TenantController extends Controller
 
         $canManageTenants = $admin?->isAgencyAdmin() ?? false;
 
-        return view('admin.tenants.index', compact('tenants', 'canManageTenants'));
+        // Operasyon panosu — yalnızca ajans/superadmin (tüm tenant'lar üzerinden).
+        // Ağır ölçümler cron'da (cms:rollup-usage); burada 60 sn cache'li, ucuz.
+        $dashboard = $canManageTenants
+            ? app(\App\Services\Tenancy\TenantDashboardService::class)->overview()
+            : null;
+
+        return view('admin.tenants.index', compact('tenants', 'canManageTenants', 'dashboard'));
     }
 
     /**
