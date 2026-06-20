@@ -2,8 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\AdminPermission as Permission;
 use App\Models\AdminRole;
-use Spatie\Permission\Models\Permission;
 
 /**
  * Admin paneli izinleri için TEK kaynak. Hem rol tanım UI'si (RoleController)
