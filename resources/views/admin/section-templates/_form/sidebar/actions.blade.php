@@ -1,4 +1,6 @@
-<div class="sticky bottom-4 z-20 flex gap-3 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
+{{-- Sabit yüzen kaydet çubuğu — sidebar kolonuna değil VIEWPORT'a sabit
+     (sticky sidebar kolonu kısa olunca üste kayıyordu). Hep sağ-altta. --}}
+<div class="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-xl border border-gray-200 bg-white/95 p-2.5 shadow-xl backdrop-blur">
     <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">
         <i class="fas fa-save"></i> Kaydet
     </button>
@@ -7,7 +9,7 @@
         İptal
     </a>
     @if(isset($sectionTemplate) && $sectionTemplate->exists)
-        <form method="POST" action="{{ route('admin.section-templates.duplicate', $sectionTemplate, false) }}" class="ml-auto">
+        <form method="POST" action="{{ route('admin.section-templates.duplicate', $sectionTemplate, false) }}">
             @csrf
             <button type="submit"
                     class="inline-flex items-center gap-2 rounded-lg bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100">
