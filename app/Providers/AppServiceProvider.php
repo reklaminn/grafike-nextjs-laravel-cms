@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Admin;
 use App\Models\Article;
 use App\Models\Menu;
 use App\Models\Page;
@@ -12,6 +13,7 @@ use App\Observers\MenuObserver;
 use App\Observers\PageObserver;
 use App\Observers\SiteSettingObserver;
 use App\View\Composers\FrontendComposer;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -42,6 +44,31 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ── İzin enforcement bypass (geriye uyumlu) ─────────────────────────────
+        // Granüler izinler YALNIZCA rol ATANMIŞ teammate'leri kısıtlar; mevcut
+        // kullanıcılar bozulmasın diye şunlar tüm yetkileri bypass eder:
+        //   - hiç Spatie rolü olmayan admin (eski tenant admin'leri dahil)
+        //   - super-admin / ajans admin (isAgencyAdmin)
+        //   - aktif sitenin owner'ı (kendi sitesine tam yetki)
+        // Sadece "rolü olan + owner olmayan" teammate Spatie iznine tabi olur.
+        Gate::before(function ($user, string $ability) {
+            if (! $user instanceof Admin) {
+                return null; // bu kapı yalnızca admin guard'ı içindir
+            }
+            if ($user->roles->isEmpty()) {
+                return true;
+            }
+            if ($user->isAgencyAdmin()) {
+                return true;
+            }
+            $active = session('active_tenant');
+            if ($active && $user->ownsTenant($active)) {
+                return true;
+            }
+
+            return null; // rol atanmış teammate → Spatie izin kontrolüne düş
+        });
+
         // Force HTTPS URLs so all generated URLs (form actions, route(), asset(),
         // redirect()) always use https://.
         //
