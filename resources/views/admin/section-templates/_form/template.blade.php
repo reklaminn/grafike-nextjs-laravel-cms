@@ -9,13 +9,12 @@
         {{-- Araç çubuğu — 2 grup: (1) imlece ekle  (2) otomatik HTML→şema --}}
         <div class="mb-3 flex flex-col gap-3 rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 xl:flex-row xl:flex-wrap xl:items-start xl:gap-4">
 
-            {{-- ── Grup 1: İmlece Ekle ──────────────────────────────────────── --}}
+            {{-- ── Grup: Menü ────────────────────────────────────────────────── --}}
             <div class="min-w-0">
                 <div class="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                    <i class="fas fa-i-cursor text-[9px]"></i> İmlece Ekle
+                    <i class="fas fa-bars text-[9px]"></i> Menü
                 </div>
                 <div class="flex flex-wrap items-center gap-1.5">
-                    {{-- Menü placeholder --}}
                     <select id="menu_placeholder_select" title="Bir menü seç; sonra HTML veya Items ile imlece ekle" class="min-w-36 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
                         <option value="">Menü seç…</option>
                         @foreach($menuPlaceholders as $placeholder)
@@ -36,12 +35,21 @@
                     </button>
                     <button type="button" id="reload_menu_placeholders"
                             title="Menü listesini yeniden yükle"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100">
-                        <i class="fas fa-rotate"></i>
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100">
+                        <i class="fas fa-rotate"></i> Yenile
                     </button>
+                </div>
+            </div>
 
-                    <span class="text-gray-200">|</span>
+            {{-- dikey ayraç (geniş ekran) --}}
+            <div class="hidden w-px self-stretch bg-gray-200 xl:block"></div>
 
+            {{-- ── Grup: Sistem Alanı ────────────────────────────────────────── --}}
+            <div class="min-w-0">
+                <div class="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                    <i class="fas fa-sliders text-[9px]"></i> Sistem Alanı
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
                     {{-- Sistem placeholder — role göre iki grup: "Genel" herkese,
                          "Gelişmiş" yalnızca superadmin'e (müşteride listeyi sadeleştirir) --}}
                     @php
@@ -49,7 +57,7 @@
                         $sysAdmin = collect($systemPlaceholders ?? [])->filter(fn ($p) => ($p['audience'] ?? 'all') === 'admin');
                     @endphp
                     <select id="system_placeholder_select" title="Site/iletişim alanı (logo, telefon, e-posta…) seç" class="min-w-36 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:ring-2 focus:ring-indigo-500">
-                        <option value="">Sistem alanı seç</option>
+                        <option value="">Sistem alanı seç…</option>
                         <optgroup label="Genel (içerik & iletişim)">
                             @foreach($sysAll as $ph)
                                 <option value="{{ $ph['token'] }}" data-source="{{ $ph['source'] }}">{{ $ph['label'] }}</option>
@@ -106,6 +114,61 @@
                 </div>
             </div>
         </div>
+
+        {{-- ── Yardım (editör üstünde) — nasıl kullanılır + placeholder kuralları --}}
+        <details class="group mb-2 rounded-lg border border-indigo-100 bg-indigo-50/40">
+            <summary class="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-50">
+                <i class="fas fa-circle-question"></i>
+                Nasıl kullanılır? — 3 adım + araçlar
+                <i class="fas fa-chevron-down ml-auto text-[10px] text-indigo-400 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="space-y-3 border-t border-indigo-100 px-4 py-3 text-xs leading-relaxed text-gray-700">
+                <div>
+                    <div class="mb-1 font-semibold text-gray-800">3 adımda</div>
+                    <ol class="list-decimal space-y-1 pl-5">
+                        <li>Tasarımın <strong>HTML'ini editöre yapıştır</strong> (ya da placeholder'lı mevcut şablonu düzenle).</li>
+                        <li><strong>Şablona Dönüştür</strong>'e bas → metin/görsel/link değerleri otomatik <code class="rounded bg-gray-100 px-1">@verbatim{{alan}}@endverbatim</code>'lara çevrilir ve sağdaki <strong>Şema Alanları</strong> oluşur. <em>(Mod: “birleştir” mevcut şemayı korur, “yenile” sıfırdan üretir.)</em></li>
+                        <li>Tekrarlayan bloklar için <strong>Repeat Alan Bul</strong> → çoğaltılabilir (repeater) alan; CSS'e gömülü sabit görseller için <strong>Eksik Görsel</strong> → düzenlenebilir görsel alanı.</li>
+                    </ol>
+                </div>
+                <div>
+                    <div class="mb-1 font-semibold text-gray-800"><i class="fas fa-bars mr-1 text-gray-400"></i> Menü &amp; Sistem Alanı</div>
+                    <ul class="list-disc space-y-0.5 pl-5">
+                        <li><strong>Menü:</strong> bir menü seç → <strong>HTML</strong> hazır menü çıktısını, <strong>Items</strong> ise kendi item HTML'ini saran tekrar placeholder'ını ekler.</li>
+                        <li><strong>Sistem Alanı:</strong> logo, telefon, e-posta gibi site/iletişim alanlarını imlece ekler (şemaya eklenmez; site ayarlarından otomatik dolar).</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="mb-1 font-semibold text-gray-800"><i class="fas fa-lightbulb mr-1 text-amber-400"></i> İpuçları</div>
+                    <ul class="list-disc space-y-0.5 pl-5">
+@verbatim
+                        <li><code class="rounded bg-gray-100 px-1">{{title}}</code> düz metin · <code class="rounded bg-gray-100 px-1">{{{body_html}}}</code> ham HTML · <code class="rounded bg-gray-100 px-1">{{{items_html}}}</code> tekrar çıktısı.</li>
+@endverbatim
+                        <li>Şema alanları karışırsa <strong>Şema Alanları → Sırala</strong> ile düzenli grupla.</li>
+                        <li>Detaylı placeholder sözdizimi için aşağıdaki <strong>“Placeholder kuralları”</strong> kutusuna bak.</li>
+                    </ul>
+                </div>
+            </div>
+        </details>
+
+        {{-- Placeholder kuralı --}}
+        <details class="mb-3">
+            <summary class="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-circle-info mr-1"></i> Placeholder kuralları
+            </summary>
+            <div class="mt-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-xs text-blue-900">
+                <div class="space-y-1">
+@verbatim
+                    <div><code>{{title}}</code>, <code>{{button_text}}</code>: düz alan</div>
+                    <div><code>{{{body_html}}}</code>, <code>{{items_html}}</code>: HTML / repeat çıktı alanı</div>
+                    <div><code>{{image_url}}</code>, <code>{{logo_url}}</code>: görsel URL alanı</div>
+                    <div><code>{{slide_1_title}}</code>, <code>{{slide_2_image_url}}</code>: indeksli alan</div>
+                    <div><code>{{site_name}}</code>, <code>{{phone}}</code>, <code>{{email}}</code>, <code>{{address}}</code>: sistem alanları</div>
+                    <div><code>{{{menu_header_html}}}</code>, <code>{{{menu_footer_html}}}</code>: menü HTML</div>
+@endverbatim
+                </div>
+            </div>
+        </details>
 
         {{-- CodeMirror wrapper --}}
         <div id="cm_html_wrapper" class="relative">
@@ -210,64 +273,5 @@
             <div id="asset_field_list" class="mt-2 space-y-2"></div>
         </div>
 
-        {{-- ── Yardım (alt bölüm: nasıl kullanılır + placeholder kuralları) ──── --}}
-        <div class="mt-5 mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-            <i class="fas fa-circle-question text-[9px]"></i> Yardım
-        </div>
-
-        {{-- Nasıl kullanılır? (3 adım + araçlar) --}}
-        <details class="group mb-2 rounded-lg border border-indigo-100 bg-indigo-50/40">
-            <summary class="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-50">
-                <i class="fas fa-circle-question"></i>
-                Nasıl kullanılır? — 3 adım + araçlar
-                <i class="fas fa-chevron-down ml-auto text-[10px] text-indigo-400 transition-transform group-open:rotate-180"></i>
-            </summary>
-            <div class="space-y-3 border-t border-indigo-100 px-4 py-3 text-xs leading-relaxed text-gray-700">
-                <div>
-                    <div class="mb-1 font-semibold text-gray-800">3 adımda</div>
-                    <ol class="list-decimal space-y-1 pl-5">
-                        <li>Tasarımın <strong>HTML'ini editöre yapıştır</strong> (ya da placeholder'lı mevcut şablonu düzenle).</li>
-                        <li><strong>Şablona Dönüştür</strong>'e bas → metin/görsel/link değerleri otomatik <code class="rounded bg-gray-100 px-1">@verbatim{{alan}}@endverbatim</code>'lara çevrilir ve sağdaki <strong>Şema Alanları</strong> oluşur. <em>(Mod: “birleştir” mevcut şemayı korur, “yenile” sıfırdan üretir.)</em></li>
-                        <li>Tekrarlayan bloklar için <strong>Repeat Alan Bul</strong> → çoğaltılabilir (repeater) alan; CSS'e gömülü sabit görseller için <strong>Eksik Görsel</strong> → düzenlenebilir görsel alanı.</li>
-                    </ol>
-                </div>
-                <div>
-                    <div class="mb-1 font-semibold text-gray-800"><i class="fas fa-i-cursor mr-1 text-gray-400"></i> İmlece Ekle</div>
-                    <ul class="list-disc space-y-0.5 pl-5">
-                        <li><strong>Menü:</strong> bir menü seç → <strong>HTML</strong> hazır menü çıktısını, <strong>Items</strong> ise kendi item HTML'ini saran tekrar placeholder'ını ekler.</li>
-                        <li><strong>Sistem alanı:</strong> logo, telefon, e-posta gibi site/iletişim alanlarını imlece ekler (şemaya eklenmez; site ayarlarından otomatik dolar).</li>
-                    </ul>
-                </div>
-                <div>
-                    <div class="mb-1 font-semibold text-gray-800"><i class="fas fa-lightbulb mr-1 text-amber-400"></i> İpuçları</div>
-                    <ul class="list-disc space-y-0.5 pl-5">
-@verbatim
-                        <li><code class="rounded bg-gray-100 px-1">{{title}}</code> düz metin · <code class="rounded bg-gray-100 px-1">{{{body_html}}}</code> ham HTML · <code class="rounded bg-gray-100 px-1">{{{items_html}}}</code> tekrar çıktısı.</li>
-@endverbatim
-                        <li>Şema alanları karışırsa <strong>Şema Alanları → Sırala</strong> ile düzenli grupla.</li>
-                        <li>Detaylı placeholder sözdizimi için aşağıdaki <strong>“Placeholder kuralları”</strong> kutusuna bak.</li>
-                    </ul>
-                </div>
-            </div>
-        </details>
-
-        {{-- Placeholder kuralı --}}
-        <details class="mt-2">
-            <summary class="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700">
-                <i class="fas fa-circle-info mr-1"></i> Placeholder kuralları
-            </summary>
-            <div class="mt-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-xs text-blue-900">
-                <div class="space-y-1">
-@verbatim
-                    <div><code>{{title}}</code>, <code>{{button_text}}</code>: düz alan</div>
-                    <div><code>{{{body_html}}}</code>, <code>{{items_html}}</code>: HTML / repeat çıktı alanı</div>
-                    <div><code>{{image_url}}</code>, <code>{{logo_url}}</code>: görsel URL alanı</div>
-                    <div><code>{{slide_1_title}}</code>, <code>{{slide_2_image_url}}</code>: indeksli alan</div>
-                    <div><code>{{site_name}}</code>, <code>{{phone}}</code>, <code>{{email}}</code>, <code>{{address}}</code>: sistem alanları</div>
-                    <div><code>{{{menu_header_html}}}</code>, <code>{{{menu_footer_html}}}</code>: menü HTML</div>
-@endverbatim
-                </div>
-            </div>
-        </details>
     </div>
 </div>
