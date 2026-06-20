@@ -107,6 +107,47 @@
             </div>
         </div>
 
+        {{-- ── Nasıl kullanılır? (katlanabilir yardım) ───────────────────────── --}}
+        <details class="group mb-3 rounded-lg border border-indigo-100 bg-indigo-50/40">
+            <summary class="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-50">
+                <i class="fas fa-circle-question"></i>
+                Nasıl kullanılır? — 3 adım + araçlar
+                <i class="fas fa-chevron-down ml-auto text-[10px] text-indigo-400 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="space-y-3 border-t border-indigo-100 px-4 py-3 text-xs leading-relaxed text-gray-700">
+                {{-- 3 adım --}}
+                <div>
+                    <div class="mb-1 font-semibold text-gray-800">3 adımda</div>
+                    <ol class="list-decimal space-y-1 pl-5">
+                        <li>Tasarımın <strong>HTML'ini editöre yapıştır</strong> (ya da placeholder'lı mevcut şablonu düzenle).</li>
+                        <li><strong>Şablona Dönüştür</strong>'e bas → metin/görsel/link değerleri otomatik <code class="rounded bg-gray-100 px-1">@verbatim{{alan}}@endverbatim</code>'lara çevrilir ve sağdaki <strong>Şema Alanları</strong> oluşur. <em>(Mod: “birleştir” mevcut şemayı korur, “yenile” sıfırdan üretir.)</em></li>
+                        <li>Tekrarlayan bloklar için <strong>Repeat Alan Bul</strong> → çoğaltılabilir (repeater) alan; CSS'e gömülü sabit görseller için <strong>Eksik Görsel</strong> → düzenlenebilir görsel alanı.</li>
+                    </ol>
+                </div>
+
+                {{-- İmlece ekle --}}
+                <div>
+                    <div class="mb-1 font-semibold text-gray-800"><i class="fas fa-i-cursor mr-1 text-gray-400"></i> İmlece Ekle</div>
+                    <ul class="list-disc space-y-0.5 pl-5">
+                        <li><strong>Menü:</strong> bir menü seç → <strong>HTML</strong> hazır menü çıktısını, <strong>Items</strong> ise kendi item HTML'ini saran tekrar placeholder'ını ekler.</li>
+                        <li><strong>Sistem alanı:</strong> logo, telefon, e-posta gibi site/iletişim alanlarını imlece ekler (şemaya eklenmez; site ayarlarından otomatik dolar).</li>
+                    </ul>
+                </div>
+
+                {{-- İpuçları --}}
+                <div>
+                    <div class="mb-1 font-semibold text-gray-800"><i class="fas fa-lightbulb mr-1 text-amber-400"></i> İpuçları</div>
+                    <ul class="list-disc space-y-0.5 pl-5">
+@verbatim
+                        <li><code class="rounded bg-gray-100 px-1">{{title}}</code> düz metin · <code class="rounded bg-gray-100 px-1">{{{body_html}}}</code> ham HTML · <code class="rounded bg-gray-100 px-1">{{{items_html}}}</code> tekrar çıktısı.</li>
+@endverbatim
+                        <li>Şema alanları karışırsa <strong>Şema Alanları → Sırala</strong> ile düzenli grupla.</li>
+                        <li>Detaylı placeholder sözdizimi için aşağıdaki <strong>“Placeholder kuralları”</strong> kutusuna bak.</li>
+                    </ul>
+                </div>
+            </div>
+        </details>
+
         {{-- CodeMirror wrapper --}}
         <div id="cm_html_wrapper" class="relative">
             <textarea id="html_template_input" name="html_template" rows="18"
