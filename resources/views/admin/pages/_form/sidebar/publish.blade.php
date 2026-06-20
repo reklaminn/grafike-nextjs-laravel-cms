@@ -202,9 +202,12 @@
         @endisset
     </div>
 
-    <div class="mt-6 flex gap-3">
+    {{-- Sabit yüzen kaydet çubuğu — sidebar'a değil VIEWPORT'a fixed; sayfanın
+         neresinde olursan ol Güncelle/İptal hep sağ-altta görünür (modaller
+         z-[70]+ olduğu için onların altında kalır). --}}
+    <div class="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-xl border border-gray-200 bg-white/95 p-2.5 shadow-xl backdrop-blur">
         <button type="submit"
-                class="flex-1 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
             <i class="fas fa-save mr-1"></i>
             {{ isset($page) ? 'Güncelle' : 'Oluştur' }}
         </button>
