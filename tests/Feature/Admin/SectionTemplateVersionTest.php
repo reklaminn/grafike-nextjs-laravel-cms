@@ -17,6 +17,17 @@ class SectionTemplateVersionTest extends TestCase
 
     protected $connectionsToTransact = ['central'];
 
+    public function test_edit_page_renders_without_error(): void
+    {
+        $admin = Admin::factory()->create(); // ajans admin
+        $tpl = SectionTemplate::factory()->create();
+
+        $this->actingAs($admin, 'admin')
+            ->withoutExceptionHandling()
+            ->get(route('admin.section-templates.edit', $tpl))
+            ->assertOk();
+    }
+
     public function test_restore_to_identical_content_creates_no_new_version(): void
     {
         $admin = Admin::factory()->create(); // tenant ataması yok = ajans admin → küresel katalog yazabilir

@@ -545,8 +545,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         // Zaten placeholder içeren değer/metni TEKRAR kaydetme. Aksi halde
         // "Şablona Dönüştür" (düzleştirme) yapıldıktan SONRA "Repeat Alan Bul"
-        // çalıştırılınca mevcut {{...}}'ler iç içe placeholder'a dönüşüp item
-        // bozuluyor → frontend'de boş render. (Doğrusu: repeat'i ÖNCE çalıştır.)
+        // çalıştırılınca mevcut placeholder'lar iç içe sarılıp item bozuluyor →
+        // frontend'de boş render. (Doğrusu: repeat'i ÖNCE çalıştır.)
         const hasPh = (v) => /\{\{.*?\}\}/.test(String(v || ''));
         item.querySelectorAll('*').forEach(el => {
             if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
@@ -943,8 +943,8 @@ document.addEventListener('DOMContentLoaded', () => {
             defaults[key] = dv;
             return createPlaceholderToken(key, raw);
         };
-        // Zaten {{...}} içeren değer/metni TEKRAR sarma — repeater collapse'tan
-        // sonra ({{{x_html}}} varken) bu fonksiyon çalışınca placeholder'ı bozmasın.
+        // Zaten placeholder içeren değer/metni TEKRAR sarma — repeater collapse'tan
+        // sonra (raw repeater çıktısı varken) bu fonksiyon placeholder'ı bozmasın.
         const hasPh = (v) => /\{\{.*?\}\}/.test(String(v || ''));
         root.querySelectorAll('*').forEach(el => {
             if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
