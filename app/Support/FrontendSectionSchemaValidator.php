@@ -72,7 +72,7 @@ final class FrontendSectionSchemaValidator
                     }
                 }
 
-                if ($type === 'url' && ! empty($value) && ! filter_var($value, FILTER_VALIDATE_URL)) {
+                if ($type === 'url' && ! empty($value) && ! self::isAcceptableUrl((string) $value)) {
                     $errors[$fieldPath][] = "{$label} geçerli bir URL olmalıdır.";
                 }
 
@@ -95,5 +95,29 @@ final class FrontendSectionSchemaValidator
     private static function isEmpty(mixed $value): bool
     {
         return $value === null || $value === '' || (is_array($value) && empty($value));
+    }
+
+    /**
+     * URL alanı için kabul edilebilir değer mi? CMS linkleri çoğu zaman İÇ/göreli
+     * olur (/iletisim, /projeler, #bölüm); salt FILTER_VALIDATE_URL bunları
+     * reddediyordu. Kabul: kök-göreli (/...), göreli (./ ../), çapa (#...),
+     * protokol-göreli (//...), mailto:/tel: ve mutlak http(s)/ftp URL'ler.
+     */
+    private static function isAcceptableUrl(string $value): bool
+    {
+        $v = trim($value);
+        if ($v === '') {
+            return true;
+        }
+
+        if (str_starts_with($v, '/')          // /iletisim, //cdn.example
+            || str_starts_with($v, '#')       // #section
+            || str_starts_with($v, './')
+            || str_starts_with($v, '../')
+            || preg_match('#^(mailto:|tel:|https?://|ftp://)#i', $v) === 1) {
+            return true;
+        }
+
+        return filter_var($v, FILTER_VALIDATE_URL) !== false;
     }
 }
