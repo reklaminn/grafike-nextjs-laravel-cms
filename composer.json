@@ -92,7 +92,7 @@
     },
     "config": {
         "optimize-autoloader": true,
-        "preferred-install": "dist",
+        "preferred-install": "auto",
         "sort-packages": true,
         "platform": {
             "php": "8.4.1"
