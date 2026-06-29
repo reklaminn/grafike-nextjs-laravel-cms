@@ -45,9 +45,11 @@ jobs:
         # YAKALAMAZ. View'ları derle, derlenmiş çıktıda bareword echo'su ara.
         run: |
           php artisan view:cache
-          if grep -rEn "echo e\([a-z_][a-z0-9_]*\)" storage/framework/views/ \
+          # bare {{word}} → echo e(word)  VE  literal {{...}} / {{.*?}} (JS yorum/
+          # regex) → echo e(...) / echo e(.  (PHP 8.1 first-class-callable → Closure 500).
+          if grep -rEn "echo e\([a-z_][a-z0-9_]*\)|echo e\(\." storage/framework/views/ \
              | grep -vE "echo e\((true|false|null)\)"; then
-            echo "::error::Blade view'inde bare {{word}} echo'su var (Undefined-constant 500 riski). @{{word}} kullan veya süslü parantezleri kaldır."
+            echo "::error::Blade view'inde tuzaklı {{ }} echo'su var (Undefined-constant / Closure 500 riski). @{{ }} ya da @verbatim kullan, JS yorum/regex'te literal {{ }} yazma."
             exit 1
           fi
           php artisan view:clear
