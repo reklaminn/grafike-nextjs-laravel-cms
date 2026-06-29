@@ -389,19 +389,23 @@
                                                     :id="'media-cell-' + m.id"
                                                     @@click="onItemClick(m)"
                                                     @@dblclick="mediaMultiple ? null : useMedia(m)"
-                                                    class="group relative aspect-square overflow-hidden rounded-lg border bg-gray-100 focus:outline-none"
+                                                    class="group flex flex-col overflow-hidden rounded-lg border bg-white text-left focus:outline-none"
                                                     :class="(mediaMultiple ? isChosen(m) : (mediaActive && mediaActive.url === m.url)) ? 'border-indigo-500 ring-2 ring-indigo-300' : 'border-gray-200 hover:border-indigo-300'">
-                                                <img :src="m.thumbnail_url || m.url"
-                                                     :alt="m.file_name || m.name"
-                                                     class="h-full w-full object-cover"
-                                                     @@load="captureDims(m, $el)"
-                                                     @@error="$el.style.opacity = '0.3'">
-                                                {{-- Çoklu seçim onay rozeti --}}
-                                                <template x-if="mediaMultiple && isChosen(m)">
-                                                    <span class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-white"><i class="fas fa-check"></i></span>
-                                                </template>
-                                                <div class="absolute inset-x-0 bottom-0 truncate bg-black/50 px-1 py-0.5 text-[10px] leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100"
-                                                     x-text="m.file_name || m.name"></div>
+                                                <div class="relative aspect-square w-full overflow-hidden bg-gray-100">
+                                                    <img :src="m.thumbnail_url || m.url"
+                                                         :alt="m.file_name || m.name"
+                                                         class="h-full w-full object-cover"
+                                                         @@load="captureDims(m, $el)"
+                                                         @@error="$el.style.opacity = '0.3'">
+                                                    {{-- Çoklu seçim onay rozeti --}}
+                                                    <template x-if="mediaMultiple && isChosen(m)">
+                                                        <span class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] text-white"><i class="fas fa-check"></i></span>
+                                                    </template>
+                                                </div>
+                                                {{-- Dosya adı — küçük resmin ALTINDA sabit (eskiden hover overlay'di) --}}
+                                                <span class="block w-full truncate px-1.5 py-1 text-[11px] leading-tight text-gray-600"
+                                                      :title="m.file_name || m.name"
+                                                      x-text="m.file_name || m.name"></span>
                                             </button>
                                         </template>
                                     </div>
