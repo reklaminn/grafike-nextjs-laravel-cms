@@ -24,7 +24,8 @@ class TopMenuModule extends BaseModule
         $languageId = $page->language_id ?? 1;
 
         $menu = Menu::where('location', 'header')
-            ->where('language_id', $languageId)
+            // language_id = X VEYA NULL — null-dil menüler (StarterSeeder/Industry) düşmesin
+            ->where(fn ($q) => $q->where('language_id', $languageId)->orWhereNull('language_id'))
             ->where('is_active', true)
             ->with(['items' => function ($q) {
                 $q->whereNull('parent_id')
