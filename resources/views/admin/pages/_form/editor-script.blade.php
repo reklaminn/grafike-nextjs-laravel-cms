@@ -1109,7 +1109,23 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         },
 
         repeaterFieldSchema(fieldSchema = {}) {
-            return fieldSchema.fields || fieldSchema.item_schema || {};
+            const raw = fieldSchema.fields || fieldSchema.item_schema || {};
+            // İki format da kabul edilir:
+            //  - OBJE map {key:{type,label}}        (sihirbaz/buildRepeaterItem üretir)
+            //  - DİZİ [{key,type,label}]            (elle/JSON ile girilebilir)
+            // Dizi gelirse key'e göre map'e çevir; aksi halde alanlar 0,1,2… diye
+            // anahtarlanıp form inputları yanlış bağlanır ve değerler BOŞ görünür.
+            if (Array.isArray(raw)) {
+                const map = {};
+                raw.forEach((f) => {
+                    if (f && typeof f === 'object' && f.key) {
+                        const { key, ...rest } = f;
+                        map[key] = rest;
+                    }
+                });
+                return map;
+            }
+            return (raw && typeof raw === 'object') ? raw : {};
         },
 
         schemaDefaultValue(fieldSchema = {}) {
