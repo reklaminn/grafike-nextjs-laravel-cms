@@ -349,7 +349,7 @@
                         </p>
                     </div>
 
-                    <template x-for="[fieldName, fieldSchema] in Object.entries(settingsBlock.schema || {})" :key="fieldName">
+                    <template x-for="[fieldName, fieldSchema] in visibleSchemaFields(settingsBlock.schema)" :key="fieldName">
                         <div>
                             <template x-if="(fieldSchema.type || 'text') === 'repeater'">
                                 <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-3"

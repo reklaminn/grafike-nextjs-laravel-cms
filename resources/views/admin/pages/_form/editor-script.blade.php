@@ -1108,6 +1108,23 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             return fieldSchema.label || fieldSchema.name || fieldName;
         },
 
+        // Sistem/menü token'ı mı? Bunlar blok içeriği DEĞİL — renderer menüden/site
+        // ayarlarından otomatik doldurur. Block Ayarları formunda düzenlenebilir
+        // input olarak GÖSTERİLMEMELİ (yoksa boş text input görünür + kafa karıştırır).
+        isSystemFieldKey(key) {
+            const k = String(key || '');
+            const SYS = ['site_name', 'site_domain', 'theme_slug', 'logo_url', 'favicon_url',
+                'phone', 'email', 'address', 'whatsapp_number', 'working_hours', 'tax_id', 'footer_text'];
+            if (SYS.includes(k)) return true;
+            // menü tokenları: menu_{key}_html / _items_html / _name
+            return /^menu_[a-z0-9_]+_(items_html|html|name)$/.test(k);
+        },
+
+        // Block Ayarları formunda gösterilecek şema alanları (sistem/menü token'ları hariç).
+        visibleSchemaFields(schema) {
+            return Object.entries(schema || {}).filter(([key]) => ! this.isSystemFieldKey(key));
+        },
+
         repeaterFieldSchema(fieldSchema = {}) {
             const raw = fieldSchema.fields || fieldSchema.item_schema || {};
             // İki format da kabul edilir:
