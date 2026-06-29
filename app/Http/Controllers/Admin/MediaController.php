@@ -148,17 +148,24 @@ class MediaController extends Controller
         //  grid'de görünmüyor + tenant'ta /tenancy/assets/storage/.. 500.)
         // addMedia, çalışan kapak/önizleme akışıyla aynı disk + getUrl() üretir.
         $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        // Görünen "Ad" okunur kalsın (Türkçe/büyük harf serbest). Ama DEPOLANAN
+        // dosya adı URL'de yer alır → Türkçe karakter/büyük harf/boşluk linklemede
+        // sorun çıkarır. Bu yüzden file_name'i slug'la: ü→u, ş→s, ı→i, küçük, tire.
+        $slug = \Illuminate\Support\Str::slug($baseName) ?: 'gorsel';
         $asset = \App\Models\MediaAsset::create(['name' => $baseName]);
 
         if ($processed) {
-            // İşlenmiş geçici dosyadan ekle; orijinal adı koru, uzantı değişebilir
+            // İşlenmiş geçici dosyadan ekle; görünen adı koru, uzantı değişebilir
             // (örn. .webp'ye çevrildiyse). addMedia geçici dosyayı taşır.
             $media = $asset->addMedia($processed['path'])
                 ->usingName($baseName)
-                ->usingFileName($baseName . '.' . $processed['extension'])
+                ->usingFileName($slug . '.' . $processed['extension'])
                 ->toMediaCollection('library');
         } else {
-            $media = $asset->addMedia($file)->toMediaCollection('library');
+            $media = $asset->addMedia($file)
+                ->usingName($baseName)
+                ->usingFileName($slug . '.' . strtolower($file->getClientOriginalExtension()))
+                ->toMediaCollection('library');
         }
 
         return response()->json([
