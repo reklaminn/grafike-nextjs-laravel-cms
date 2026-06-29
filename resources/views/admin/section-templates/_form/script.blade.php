@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fillManualRepeatSnippetButton = document.getElementById('fill_manual_repeat_snippet');
     const applyManualRepeatButton = document.getElementById('apply_manual_repeat');
     const generateModeSelect = document.getElementById('generate_mode_select');
+    const undoConversionButton = document.getElementById('undo_conversion');
     const diffPanel = document.getElementById('html_schema_diff');
     const diffOkBadge = document.getElementById('diff_ok_badge');
     const diffMissingSchemaWrapper = document.getElementById('diff_missing_schema_wrapper');
@@ -122,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ].filter(Boolean);
 
     let repeatCandidates = [];
+    let preConvert = null; // 'Şablona Dönüştür' öncesi anlık kopya (Dönüşümü Geri Al)
 
     // dispatch change event so preview panel can react
     if (defaultContentInput) {
@@ -563,6 +565,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const applyGeneratedData = (generatedSchema, generatedDefaults, generatedTemplate = null) => {
+        // Template değişiyorsa (tam dönüşüm / repeat uygula) ÖNCEKİ hali sakla →
+        // "Dönüşümü Geri Al" ile oturum içinde geri dönülebilsin.
+        if (generatedTemplate !== null) {
+            preConvert = {
+                html: getHtmlValue(),
+                schema: schemaInput?.value || '',
+                defaults: defaultContentInput?.value || '',
+            };
+            if (undoConversionButton) undoConversionButton.classList.remove('hidden');
+        }
         const shouldMerge = generateModeSelect?.value === 'merge';
         const curSchema = shouldMerge ? parseJsonObject(schemaInput?.value || '') : {};
         const curDefaults = shouldMerge ? parseJsonObject(defaultContentInput?.value || '') : {};
@@ -955,6 +967,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const transformed = transformRawHtmlToTemplate(template);
         if (!transformed) { window.alert('HTML dönüştürülemedi.'); return; }
         applyGeneratedData(transformed.schema, transformed.defaults, transformed.template);
+    });
+
+    // Dönüşümü Geri Al — dönüşümden hemen önceki HTML + şema + içerik haline döner
+    // (oturum içi; kaydetmeden). Kalıcı geri dönüş için sağdaki Versiyon Geçmişi.
+    if (undoConversionButton) undoConversionButton.addEventListener('click', () => {
+        if (!preConvert) return;
+        if (!window.confirm('Şablona Dönüştür öncesi HTML + şema + içerik geri yüklenecek (kaydetmeden). Devam?')) return;
+        setHtmlValue(preConvert.html);
+        if (schemaInput) schemaInput.value = preConvert.schema;
+        if (defaultContentInput) defaultContentInput.value = preConvert.defaults;
+        if (window.Alpine) {
+            const alpineEl = document.querySelector('[x-data^="schemaBuilder"]');
+            if (alpineEl?._x_dataStack?.[0]) alpineEl._x_dataStack[0].loadFromObject(parseJsonObject(schemaInput?.value || ''));
+        }
+        updateSchemaDiff();
+        preConvert = null;
+        undoConversionButton.classList.add('hidden');
+        window.dispatchEvent(new CustomEvent('section-template-editor-change'));
     });
 });
 </script>

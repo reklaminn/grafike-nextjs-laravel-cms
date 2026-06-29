@@ -98,6 +98,12 @@
                         <option value="merge">↪ Şema ile birleştir</option>
                         <option value="replace">⟳ Şemayı yenile</option>
                     </select>
+                    {{-- Dönüşümden hemen önceki ham hali geri yükler (oturum içi, kaydetmeden). --}}
+                    <button type="button" id="undo_conversion"
+                            title="Şablona Dönüştür'den önceki HTML + şema + içerik haline geri dön (bu oturumda, kaydetmeden)"
+                            class="hidden inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100">
+                        <i class="fas fa-rotate-left"></i> Dönüşümü Geri Al
+                    </button>
 
                     <span class="text-gray-200">|</span>
 
