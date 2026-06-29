@@ -88,6 +88,12 @@
                     <i class="fas fa-wand-magic-sparkles text-[9px]"></i> Otomatik · HTML → Şema
                 </div>
                 <div class="flex flex-wrap items-center gap-1.5">
+                    {{-- Sihirbaz: adım adım, önizlemeli, atlanabilir (önerilen yol) --}}
+                    <button type="button" id="open_convert_wizard"
+                            title="Adım adım sihirbaz: tekrar alanları → metin/görsel → özet. Önizlemeli, atlanabilir, İptal ile geri alınır."
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-violet-700">
+                        <i class="fas fa-hat-wizard"></i> Sihirbaz
+                    </button>
                     {{-- Birincil: ham HTML → şablon --}}
                     <button type="button" id="generate_from_template"
                             title="Ham HTML'i placeholder'lı şablona ÇEVİR ve şema alanlarını otomatik üret"

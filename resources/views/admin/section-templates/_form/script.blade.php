@@ -634,23 +634,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (repeatCandidateSelect) repeatCandidateSelect.addEventListener('change', () => { const c = repeatCandidates[Number(repeatCandidateSelect.value)]; if (repeatFieldKeyInput && c) repeatFieldKeyInput.value = c.key; updateRepeatCandidateMeta(); });
     if (repeatFieldKeyInput) repeatFieldKeyInput.addEventListener('input', updateRepeatCandidateMeta);
 
-    if (applyRepeatCandidateButton) applyRepeatCandidateButton.addEventListener('click', () => {
-        const candidate = repeatCandidates[Number(repeatCandidateSelect?.value)];
-        if (!candidate) { window.alert('Önce repeat adayı seç.'); return; }
+    // Bir repeat adayını verilen anahtarla uygular (manuel buton + sihirbaz ortak).
+    // Başarılıysa true; grup bulunamazsa false.
+    const applyRepeatCandidateWith = (candidate, rawKey) => {
+        if (!candidate) return false;
         const { root } = parseTemplateRoot();
         const parent = root ? resolveElementPath(root, candidate.parentPath) : null;
-        if (!root || !parent) { window.alert('Repeat parent bulunamadı.'); return; }
+        if (!root || !parent) return false;
         const items = Array.from(parent.children).filter(c => elementSignature(c) === candidate.signature);
-        if (items.length < 2) { window.alert('Seçilen repeat grubu artık bulunamıyor.'); return; }
+        if (items.length < 2) return false;
         const currentSchema = parseJsonObject(schemaInput?.value || '');
-        const fieldKey = nextUniqueKey(normalizeKey(repeatFieldKeyInput?.value, candidate.key), currentSchema);
+        const fieldKey = nextUniqueKey(normalizeKey(rawKey, candidate.key), currentSchema);
         const firstItem = buildRepeaterItem(items[0]);
-        if (!firstItem) { window.alert('Repeat item dönüştürülemedi.'); return; }
+        if (!firstItem) return false;
         const defaultItems = items.map(item => buildRepeaterItem(item)?.itemDefaults || {});
         const placeholder = document.createTextNode(createPlaceholderToken(`${fieldKey}_html`, true));
         parent.insertBefore(placeholder, items[0]);
         items.forEach(item => item.remove());
         applyGeneratedData({ [fieldKey]: { type: 'repeater', label: labelize(fieldKey), repeat_kind: candidate.kind, item_template: firstItem.itemTemplate, fields: firstItem.itemSchema } }, { [fieldKey]: defaultItems }, root.innerHTML.trim());
+        return true;
+    };
+
+    if (applyRepeatCandidateButton) applyRepeatCandidateButton.addEventListener('click', () => {
+        const candidate = repeatCandidates[Number(repeatCandidateSelect?.value)];
+        if (!candidate) { window.alert('Önce repeat adayı seç.'); return; }
+        if (! applyRepeatCandidateWith(candidate, repeatFieldKeyInput?.value)) {
+            window.alert('Repeat uygulanamadı — grup bulunamadı veya HTML değişmiş. Tekrar "Repeat Alan Bul" de.');
+        }
     });
 
     // Manual repeat snippets
@@ -933,15 +943,18 @@ document.addEventListener('DOMContentLoaded', () => {
             defaults[key] = dv;
             return createPlaceholderToken(key, raw);
         };
+        // Zaten {{...}} içeren değer/metni TEKRAR sarma — repeater collapse'tan
+        // sonra ({{{x_html}}} varken) bu fonksiyon çalışınca placeholder'ı bozmasın.
+        const hasPh = (v) => /\{\{.*?\}\}/.test(String(v || ''));
         root.querySelectorAll('*').forEach(el => {
             if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
             const rp = inferRepeatPrefix(el);
-            if (el.hasAttribute('href')) el.setAttribute('href', reg(`${rp}${el.tagName.toLowerCase() === 'a' ? 'button_url' : 'link_url'}`, 'text', el.getAttribute('href') || '#'));
-            if (el.hasAttribute('src')) { const k = `${rp}${el.tagName.toLowerCase() === 'img' ? 'image_url' : 'media_url'}`; el.setAttribute('src', reg(k, 'image', el.getAttribute('src') || inferDefaultValue(k, 'image'))); }
-            if (el.hasAttribute('alt')) el.setAttribute('alt', reg(`${rp}image_alt`, 'text', el.getAttribute('alt') || 'Görsel açıklaması'));
+            if (el.hasAttribute('href') && !hasPh(el.getAttribute('href'))) el.setAttribute('href', reg(`${rp}${el.tagName.toLowerCase() === 'a' ? 'button_url' : 'link_url'}`, 'text', el.getAttribute('href') || '#'));
+            if (el.hasAttribute('src') && !hasPh(el.getAttribute('src'))) { const k = `${rp}${el.tagName.toLowerCase() === 'img' ? 'image_url' : 'media_url'}`; el.setAttribute('src', reg(k, 'image', el.getAttribute('src') || inferDefaultValue(k, 'image'))); }
+            if (el.hasAttribute('alt') && !hasPh(el.getAttribute('alt'))) el.setAttribute('alt', reg(`${rp}image_alt`, 'text', el.getAttribute('alt') || 'Görsel açıklaması'));
             const style = el.getAttribute('style') || '';
             const bgMatch = style.match(/background-image\s*:\s*url\((['"]?)(.*?)\1\)/i);
-            if (bgMatch?.[2]) el.setAttribute('style', style.replace(bgMatch[2], reg(`${rp}background_image_url`, 'image', bgMatch[2])));
+            if (bgMatch?.[2] && !hasPh(bgMatch[2])) el.setAttribute('style', style.replace(bgMatch[2], reg(`${rp}background_image_url`, 'image', bgMatch[2])));
         });
         const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         const textNodes = [];
@@ -949,6 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         textNodes.forEach(node => {
             const raw = node.nodeValue || '', trimmed = raw.trim(), parent = node.parentElement;
             if (!parent || !trimmed || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') return;
+            if (hasPh(trimmed)) return; // zaten placeholder
             const rp = inferRepeatPrefix(parent);
             const baseKey = `${rp}${inferTextBaseKey(parent, trimmed)}`;
             node.nodeValue = raw.replace(trimmed, reg(baseKey, inferType(baseKey), trimmed, /_html$/i.test(baseKey)));
@@ -992,6 +1006,197 @@ document.addEventListener('DOMContentLoaded', () => {
         undoConversionButton.classList.add('hidden');
         window.dispatchEvent(new CustomEvent('section-template-editor-change'));
     });
+
+    // ════════════════════════════════════════════════════════════════════
+    // ŞABLONA DÖNÜŞTÜRME SİHİRBAZI (adım adım, önizlemeli, atlanabilir)
+    //   1) Tekrar grupları → repeater   2) Şablona Dönüştür (metin+link+görsel)
+    //   3) Eksik görsel (kalan)          → Özet
+    // Canlı editör üstünde çalışır; açılışta snapshot alır, İptal'de geri yükler.
+    // Mevcut tespit/uygula fonksiyonlarını yeniden kullanır. En sonda + try/catch
+    // ile izole — bir hata diğer butonları (yukarıda bağlandı) etkilemez.
+    // ════════════════════════════════════════════════════════════════════
+    const cwModal = document.getElementById('convert_wizard');
+    if (cwModal) {
+        const cwBody   = document.getElementById('cw_body');
+        const cwTitle  = document.getElementById('cw_title');
+        const cwSkip   = document.getElementById('cw_skip');
+        const cwNext   = document.getElementById('cw_next');
+        const cwCancel = document.getElementById('cw_cancel');
+        const cwCloseBtn = document.getElementById('cw_close');
+        const cwOpenBtn = document.getElementById('open_convert_wizard');
+
+        let cwStep = 1;
+        let cwSnap = null;
+        let cwRepCands = [];
+        let cwTextPlan = null;
+        let cwAssetCands = [];
+
+        const cwRestore = () => {
+            if (!cwSnap) return;
+            setHtmlValue(cwSnap.html);
+            if (schemaInput) schemaInput.value = cwSnap.schema;
+            if (defaultContentInput) defaultContentInput.value = cwSnap.defaults;
+            syncAlpineSchema(); updateSchemaDiff();
+        };
+        const cwHide = () => { cwModal.classList.add('hidden'); cwModal.classList.remove('flex'); };
+        const cwOpen = () => {
+            cwSnap = { html: getHtmlValue(), schema: schemaInput?.value || '', defaults: defaultContentInput?.value || '' };
+            cwStep = 1;
+            cwModal.classList.remove('hidden');
+            cwModal.classList.add('flex');
+            cwRender();
+        };
+
+        const cwSchemaRows = () => {
+            const s = parseJsonObject(schemaInput?.value || '');
+            return Object.entries(s).map(([k, f]) => ({ key: k, type: (f && f.type) || 'text', sub: (f && f.type === 'repeater' && f.fields) ? Object.keys(f.fields) : null }));
+        };
+
+        // ── Adım 1: Tekrar ───────────────────────────────────────────────
+        const cwRenderRepeat = () => {
+            cwTitle.textContent = '1/3 · Tekrar Alanları (slider / liste / kart)';
+            cwRepCands = findRepeatCandidates();
+            if (!cwRepCands.length) {
+                cwBody.innerHTML = '<div class="py-8 text-center text-sm text-gray-400"><i class="fas fa-circle-info mr-1"></i> Tekrar eden grup bulunamadı. <strong>İleri</strong> ile devam.</div>';
+                cwNext.textContent = 'İleri →';
+                return;
+            }
+            cwBody.innerHTML = '<p class="mb-3 text-xs text-gray-500">Tekrar eden gruplar tek bir çoğaltılabilir (repeater) alana iner. İşaretle, anahtarı düzenle.</p>' +
+                cwRepCands.map((c, i) => {
+                    let fields = [];
+                    try {
+                        const el = new DOMParser().parseFromString('<div id="cwx">' + c.sampleHtml + '</div>', 'text/html').getElementById('cwx');
+                        const first = el ? el.firstElementChild : null;
+                        const built = first ? buildRepeaterItem(first) : null;
+                        fields = built ? Object.keys(built.itemSchema) : [];
+                    } catch (_) {}
+                    return '<label class="mb-2 flex items-start gap-2 rounded-lg border border-gray-200 p-2.5 hover:bg-gray-50">' +
+                        '<input type="checkbox" class="cw-rep mt-1" data-i="' + i + '"' + (c.priority >= 70 ? ' checked' : '') + '>' +
+                        '<div class="min-w-0 flex-1">' +
+                            '<div class="text-xs font-medium text-gray-800">' + escapeText(c.label) + '</div>' +
+                            '<div class="mt-1.5 flex items-center gap-1.5"><span class="text-[11px] text-gray-400">anahtar:</span>' +
+                            '<input type="text" class="cw-rep-key w-44 rounded border border-gray-300 px-1.5 py-0.5 text-xs" data-i="' + i + '" value="' + escapeText(c.key) + '"></div>' +
+                            (fields.length ? '<div class="mt-1 text-[11px] text-gray-400">alanlar: ' + escapeText(fields.join(', ')) + '</div>' : '') +
+                        '</div></label>';
+                }).join('');
+            cwNext.textContent = 'Uygula ve Devam →';
+        };
+        const cwApplyRepeat = () => {
+            const checks = Array.from(cwBody.querySelectorAll('.cw-rep:checked'));
+            checks.forEach(chk => {
+                const i = Number(chk.dataset.i);
+                const sel = cwRepCands[i];
+                if (!sel) return;
+                const keyInput = cwBody.querySelector('.cw-rep-key[data-i="' + i + '"]');
+                // Önceki apply DOM'u kaydırmış olabilir → taze tespitte imzayla eşleştir.
+                const fresh = findRepeatCandidates().find(c => c.signature === sel.signature && c.parentSignature === sel.parentSignature);
+                if (fresh) applyRepeatCandidateWith(fresh, (keyInput && keyInput.value) || sel.key);
+            });
+        };
+
+        // ── Adım 2: Şablona Dönüştür (metin+link+görsel) ─────────────────
+        const cwRenderText = () => {
+            cwTitle.textContent = '2/3 · Metin & Görsel Alanları';
+            if (generateModeSelect) generateModeSelect.value = 'merge'; // repeater'ı koru
+            cwTextPlan = transformRawHtmlToTemplate(getHtmlValue());
+            const keys = cwTextPlan ? Object.keys(cwTextPlan.schema) : [];
+            if (!keys.length) {
+                cwBody.innerHTML = '<div class="py-8 text-center text-sm text-gray-400"><i class="fas fa-circle-info mr-1"></i> Alanlaştırılacak statik metin/görsel kalmadı. <strong>İleri</strong>.</div>';
+                cwNext.textContent = 'İleri →';
+                return;
+            }
+            cwBody.innerHTML = '<p class="mb-3 text-xs text-gray-500">Statik metin, link ve görseller düzenlenebilir alanlara çevrilecek. Adların ince ayarını sonra <strong>Şema Alanları</strong>\'ndan yapabilirsin.</p>' +
+                '<div class="space-y-1">' + keys.map(k => {
+                    const t = (cwTextPlan.schema[k] && cwTextPlan.schema[k].type) || 'text';
+                    const dv = String(cwTextPlan.defaults[k] == null ? '' : cwTextPlan.defaults[k]);
+                    return '<div class="flex items-center gap-2 rounded border border-gray-100 px-2 py-1 text-xs">' +
+                        '<span class="font-mono text-indigo-700">' + escapeText(k) + '</span>' +
+                        '<span class="rounded bg-gray-100 px-1.5 text-[10px] text-gray-500">' + escapeText(t) + '</span>' +
+                        '<span class="ml-auto truncate text-gray-400" style="max-width:55%">' + escapeText(dv.slice(0, 60)) + '</span>' +
+                    '</div>';
+                }).join('') + '</div>';
+            cwNext.textContent = 'Uygula (' + keys.length + ' alan) ve Devam →';
+        };
+        const cwApplyText = () => {
+            if (cwTextPlan && Object.keys(cwTextPlan.schema).length) {
+                if (generateModeSelect) generateModeSelect.value = 'merge';
+                applyGeneratedData(cwTextPlan.schema, cwTextPlan.defaults, cwTextPlan.template);
+            }
+        };
+
+        // ── Adım 3: Eksik görsel ─────────────────────────────────────────
+        const cwRenderAsset = () => {
+            cwTitle.textContent = '3/3 · Eksik Görseller';
+            cwAssetCands = findAssetCandidates().map(withSuggested);
+            if (!cwAssetCands.length) {
+                cwBody.innerHTML = '<div class="py-8 text-center text-sm text-gray-400"><i class="fas fa-circle-check mr-1 text-green-400"></i> Şemaya bağlı olmayan sabit görsel yok. <strong>İleri</strong> → özet.</div>';
+                cwNext.textContent = 'İleri →';
+                return;
+            }
+            cwBody.innerHTML = '<p class="mb-3 text-xs text-gray-500">Hâlâ alana bağlı olmayan sabit görseller. İşaretle, anahtarı düzenle.</p>' +
+                cwAssetCands.map((c, i) =>
+                    '<label class="mb-2 flex items-start gap-2 rounded-lg border border-gray-200 p-2.5 hover:bg-gray-50">' +
+                    '<input type="checkbox" class="cw-asset mt-1" data-i="' + i + '" checked>' +
+                    '<div class="min-w-0 flex-1">' +
+                        '<div class="text-xs text-gray-700">' + escapeText(c.scopeLabel) + ' · ' + escapeText(c.prop) + '</div>' +
+                        '<div class="truncate text-[11px] text-gray-400">' + escapeText(c.currentValue) + '</div>' +
+                        '<div class="mt-1.5 flex items-center gap-1.5"><span class="text-[11px] text-gray-400">anahtar:</span>' +
+                        '<input type="text" class="cw-asset-key w-44 rounded border border-gray-300 px-1.5 py-0.5 text-xs" data-i="' + i + '" value="' + escapeText(c.suggestedKey) + '"></div>' +
+                    '</div></label>').join('');
+            cwNext.textContent = 'Uygula ve Devam →';
+        };
+        const cwApplyAsset = () => {
+            const checks = Array.from(cwBody.querySelectorAll('.cw-asset:checked'));
+            checks.forEach(chk => {
+                const i = Number(chk.dataset.i);
+                const cand = cwAssetCands[i];
+                if (!cand) return;
+                const keyInput = cwBody.querySelector('.cw-asset-key[data-i="' + i + '"]');
+                applyAssetField(cand, (keyInput && keyInput.value) || cand.suggestedKey);
+            });
+        };
+
+        // ── Özet ─────────────────────────────────────────────────────────
+        const cwRenderSummary = () => {
+            cwTitle.textContent = 'Özet · Oluşan Alanlar';
+            const rows = cwSchemaRows();
+            cwBody.innerHTML = rows.length
+                ? '<p class="mb-3 text-xs text-gray-500">Şema alanları (Bitir\'e basınca editöre + şemaya işlenir):</p><div class="space-y-1">' +
+                    rows.map(r => '<div class="flex items-center gap-2 rounded border border-gray-100 px-2 py-1 text-xs">' +
+                        '<span class="font-mono text-indigo-700">' + escapeText(r.key) + '</span>' +
+                        '<span class="rounded bg-gray-100 px-1.5 text-[10px] text-gray-500">' + escapeText(r.type) + '</span>' +
+                        (r.sub ? '<span class="text-[11px] text-gray-400">→ ' + escapeText(r.sub.join(', ')) + '</span>' : '') +
+                    '</div>').join('') + '</div>'
+                : '<div class="py-6 text-center text-sm text-gray-400">Hiç alan oluşmadı. İptal ile çıkabilirsin.</div>';
+            cwNext.textContent = '✓ Bitir';
+        };
+
+        const cwRender = () => {
+            if (cwSkip) cwSkip.classList.toggle('hidden', cwStep >= 4);
+            if (cwStep === 1) cwRenderRepeat();
+            else if (cwStep === 2) cwRenderText();
+            else if (cwStep === 3) cwRenderAsset();
+            else cwRenderSummary();
+        };
+
+        if (cwOpenBtn) cwOpenBtn.addEventListener('click', () => { try { cwOpen(); } catch (e) { console.error('[wizard] open', e); } });
+        if (cwCancel) cwCancel.addEventListener('click', () => { cwRestore(); cwHide(); });
+        if (cwCloseBtn) cwCloseBtn.addEventListener('click', () => { cwRestore(); cwHide(); });
+        if (cwSkip) cwSkip.addEventListener('click', () => { cwStep++; cwRender(); });
+        if (cwNext) cwNext.addEventListener('click', () => {
+            try {
+                if (cwStep === 1) cwApplyRepeat();
+                else if (cwStep === 2) cwApplyText();
+                else if (cwStep === 3) cwApplyAsset();
+                else { cwHide(); return; } // Bitir — uygulanmış haliyle kapat
+                cwStep++;
+                cwRender();
+            } catch (e) {
+                console.error('[wizard] step', e);
+                window.alert('Bu adım uygulanamadı: ' + (e && e.message ? e.message : e));
+            }
+        });
+    }
 });
 </script>
 @endpush
