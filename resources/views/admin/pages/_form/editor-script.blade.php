@@ -71,6 +71,7 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         mediaAltDraft: '',
         mediaNameDraft: '',
         mediaSavingMeta: false,
+        mediaRenaming: false,
         mediaGenAltLoading: false,
         mediaChosen: [],            // çoklu seçim: seçilen url'ler
 
@@ -377,6 +378,43 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
                 console.error('[blockFieldInput] Media meta save error:', e);
             } finally {
                 this.mediaSavingMeta = false;
+            }
+        },
+
+        // Dosya adını URL-güvenli (slug) yap: file_name'i slug'lar, diski taşır,
+        // bu sitedeki içeriklerde eski URL'i yenisiyle değiştirir (link kırılmaz).
+        async renameMediaFile() {
+            if (!this.mediaActive || String(this.mediaActive.id).startsWith('up_')) return;
+            if (!window.confirm('Dosya adı URL-güvenli (slug) yapılacak ve dosya taşınacak. Bu görseli kullanan sayfa/yazı içeriklerindeki linkler otomatik güncellenir. Devam?')) return;
+            this.mediaRenaming = true;
+            try {
+                const resp = await fetch('/admin/media/' + this.mediaActive.id + '/rename', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this._csrf(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ _method: 'PUT', name: this.mediaNameDraft }),
+                });
+                const json = await resp.json().catch(() => ({}));
+                if (resp.ok && json.success) {
+                    this.mediaActive.name = json.name;
+                    this.mediaActive.file_name = json.file_name;
+                    this.mediaActive.url = json.url;
+                    const it = (this.mediaItems || []).find(m => m.id === this.mediaActive.id);
+                    if (it) { it.file_name = json.file_name; it.url = json.url; it.thumbnail_url = json.url; }
+                    window.alert(json.renamed
+                        ? ('Dosya adı: ' + json.file_name + (json.refs_updated ? (' · ' + json.refs_updated + ' içerik linki güncellendi') : ''))
+                        : 'Dosya adı zaten URL-güvenli.');
+                } else {
+                    window.alert('Yeniden adlandırılamadı: ' + (json.error || 'hata'));
+                }
+            } catch (e) {
+                console.error('[blockFieldInput] Media rename error:', e);
+            } finally {
+                this.mediaRenaming = false;
             }
         },
 

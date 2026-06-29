@@ -171,6 +171,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('media/upload', [MediaController::class, 'upload'])->name('media.upload');
         Route::get('media/{medium}', [MediaController::class, 'show'])->name('media.show');
         Route::put('media/{medium}', [MediaController::class, 'update'])->name('media.update');
+        Route::put('media/{medium}/rename', [MediaController::class, 'renameFile'])->name('media.rename');
         Route::delete('media/{medium}', [MediaController::class, 'destroy'])->name('media.destroy');
         Route::post('media/bulk-destroy', [MediaController::class, 'bulkDestroy'])->name('media.bulk-destroy');
         Route::post('media/generate-alt-bulk', [MediaController::class, 'generateAltBulk'])->name('media.generate-alt-bulk');
