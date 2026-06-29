@@ -67,10 +67,17 @@
 <script>
 function sectionVersionPanel(versionsUrl) {
     return {
-        open: false,
+        open: true,
         loading: false,
         versions: [],
         restoreUrl: '{{ route('admin.section-templates.restore-version', [$sectionTemplate, '__version__']) }}',
+
+        // Panel açık başlar ve versiyonları hemen yükler — kaydetten sonra
+        // sayfa yenilenince liste anında görünür (eskiden kapalıydı, kullanıcı
+        // kaydettiği versiyonu göremiyordu).
+        init() {
+            this.load();
+        },
 
         toggle() {
             this.open = !this.open;
