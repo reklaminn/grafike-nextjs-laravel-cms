@@ -134,7 +134,7 @@
                     <ol class="list-decimal space-y-1 pl-5">
                         <li>Tasarımın <strong>HTML'ini editöre yapıştır</strong> (ya da placeholder'lı mevcut şablonu düzenle).</li>
                         <li><strong>Şablona Dönüştür</strong>'e bas → metin/görsel/link değerleri otomatik <code class="rounded bg-gray-100 px-1">@verbatim{{alan}}@endverbatim</code>'lara çevrilir ve sağdaki <strong>Şema Alanları</strong> oluşur. <em>(Mod: “birleştir” mevcut şemayı korur, “yenile” sıfırdan üretir.)</em></li>
-                        <li>Tekrarlayan bloklar için <strong>Repeat Alan Bul</strong> → çoğaltılabilir (repeater) alan; CSS'e gömülü sabit görseller için <strong>Eksik Görsel</strong> → düzenlenebilir görsel alanı.</li>
+                        <li><strong class="text-rose-600">Tekrar eden bloklar (slider/liste/kart) varsa:</strong> Şablona Dönüştür'den <strong>ÖNCE</strong> <strong>Repeat Alan Bul</strong> kullan → tek çoğaltılabilir (repeater) alana iner. Sıra önemli: önce dönüştürürsen her tekrar ayrı alana düzleşir. CSS'e gömülü sabit görseller için <strong>Eksik Görsel</strong>.</li>
                     </ol>
                 </div>
                 <div>

@@ -200,12 +200,17 @@ class SectionTemplateController extends Controller
     {
         $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
 
-        // Snapshot before overwrite if html_template or schema changed
-        $dirty = array_intersect(
-            array_keys($request->validated()),
-            ['html_template', 'schema_json', 'default_content_json']
+        $validated = $request->validated();
+
+        // Snapshot before overwrite — YALNIZCA içerik (html/şema/varsayılan) gerçekten
+        // değiştiyse. İçeriği değiştirmeyen bir "Kaydet" artık gereksiz versiyon üretmez.
+        $contentChanged = ! $this->sameTemplateContent(
+            $sectionTemplate,
+            $validated['html_template'] ?? $sectionTemplate->html_template,
+            $validated['schema_json'] ?? $sectionTemplate->schema_json,
+            $validated['default_content_json'] ?? $sectionTemplate->default_content_json,
         );
-        if (! empty($dirty)) {
+        if ($contentChanged) {
             $sectionTemplate->recordVersion('pre-update');
             // Prune versions beyond 30 most recent
             if ($sectionTemplate->versions()->count() > 30) {
@@ -214,7 +219,7 @@ class SectionTemplateController extends Controller
             }
         }
 
-        $sectionTemplate->update($request->validated());
+        $sectionTemplate->update($validated);
 
         if ($request->hasFile('preview_image')) {
             $sectionTemplate->addMediaFromRequest('preview_image')
@@ -257,6 +262,14 @@ class SectionTemplateController extends Controller
     {
         $this->authorizeCatalogWrite($sectionTemplate->tenant_id);
 
+        // İçerik zaten bu versiyonla birebir aynıysa: no-op. Gereksiz pre-restore
+        // snapshot'ı OLUŞTURMA — her "Geri Yükle"de yeni versiyon birikmesin.
+        if ($this->sameTemplateContent($sectionTemplate, $version->html_template, $version->schema_json, $version->default_content_json)) {
+            return redirect()
+                ->route('admin.section-templates.edit', $sectionTemplate)
+                ->with('success', 'İçerik zaten bu versiyonla aynı — değişiklik yapılmadı, yeni geri dönüş noktası oluşturulmadı.');
+        }
+
         // Snapshot current before restore
         $sectionTemplate->recordVersion('pre-restore');
 
@@ -269,6 +282,19 @@ class SectionTemplateController extends Controller
         return redirect()
             ->route('admin.section-templates.edit', $sectionTemplate)
             ->with('success', 'Versiyon geri yüklendi.');
+    }
+
+    /**
+     * Verilen içerik (html + şema + varsayılan) şablonun MEVCUT içeriğiyle birebir
+     * aynı mı? Gereksiz versiyon snapshot'larını önlemek için kullanılır.
+     */
+    private function sameTemplateContent(SectionTemplate $template, $html, $schema, $defaults): bool
+    {
+        $norm = fn ($v) => json_encode(is_string($v) ? json_decode($v, true) : $v);
+
+        return (string) $template->html_template === (string) $html
+            && $norm($template->schema_json) === $norm($schema)
+            && $norm($template->default_content_json) === $norm($defaults);
     }
 
     public function duplicate(SectionTemplate $sectionTemplate)
