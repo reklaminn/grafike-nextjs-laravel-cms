@@ -455,7 +455,14 @@
                                 {{-- Ad düzenle --}}
                                 <label class="mb-0.5 block text-[11px] font-medium text-gray-600">Ad</label>
                                 <input type="text" x-model="mediaNameDraft"
-                                       class="mb-2 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                       class="mb-1.5 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                {{-- Dosya adını URL-güvenli (slug) yap: file_name + disk taşıma + linkleri güncelle --}}
+                                <button type="button" @@click="renameMediaFile()"
+                                        :disabled="mediaRenaming || String(mediaActive.id).startsWith('up_')"
+                                        class="mb-2 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                                        title="Dosya adını yukarıdaki 'Ad'a göre URL-güvenli (slug) yapar, diski taşır ve bu görseli kullanan sayfa/yazı linklerini otomatik günceller">
+                                    <i class="fas" :class="mediaRenaming ? 'fa-spinner fa-spin' : 'fa-link'"></i> Dosya adını URL-güvenli yap
+                                </button>
 
                                 {{-- Alt metni + AI --}}
                                 <div class="mb-0.5 flex items-center justify-between">

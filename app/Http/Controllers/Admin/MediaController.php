@@ -260,6 +260,112 @@ class MediaController extends Controller
         return back()->with('success', 'Medya bilgileri güncellendi.');
     }
 
+    /**
+     * Dosya adını URL-güvenli hale getirir (slug) + diskteki dosyayı taşır +
+     * bu sitedeki içeriklerde (pages.sections_json, articles.content_json) eski
+     * URL'i yenisiyle değiştirir → linkler kırılmaz. Görünen "name" de güncellenir.
+     */
+    public function renameFile(Request $request, Media $medium)
+    {
+        $validated = $request->validate(['name' => 'required|string|max:255']);
+        $name = trim($validated['name']);
+
+        $ext  = strtolower(pathinfo((string) $medium->file_name, PATHINFO_EXTENSION));
+        $slug = \Illuminate\Support\Str::slug(pathinfo($name, PATHINFO_FILENAME)) ?: 'gorsel';
+        $newFileName = $slug . ($ext !== '' ? '.' . $ext : '');
+
+        $medium->name = $name; // görünen ad her durumda güncellenir
+
+        // Dosya adı zaten aynıysa: yalnızca görünen adı kaydet (taşıma/refs yok).
+        if ($newFileName === $medium->file_name) {
+            $medium->save();
+
+            return response()->json([
+                'success' => true, 'renamed' => false, 'id' => $medium->id,
+                'name' => $medium->name, 'file_name' => $medium->file_name,
+                'url' => $medium->getUrl(), 'refs_updated' => 0,
+            ]);
+        }
+
+        $disk        = $medium->disk;
+        $oldRelative = $medium->getPathRelativeToRoot();
+        $dir         = trim(str_replace('\\', '/', \dirname($oldRelative)), '/.');
+        $oldUrl      = $medium->getUrl();
+        $fs          = \Illuminate\Support\Facades\Storage::disk($disk);
+
+        // Hedef çakışması → benzersizleştir (slug-2, slug-3 …).
+        $finalFileName = $newFileName;
+        $newRelative   = ($dir !== '' ? $dir . '/' : '') . $finalFileName;
+        for ($i = 2; $newRelative !== $oldRelative && $fs->exists($newRelative); $i++) {
+            $finalFileName = $slug . '-' . $i . ($ext !== '' ? '.' . $ext : '');
+            $newRelative   = ($dir !== '' ? $dir . '/' : '') . $finalFileName;
+        }
+
+        // Diskte taşı (kaynak varsa). Başarısızsa file_name'i DEĞİŞTİRME (tutarlılık).
+        try {
+            if ($fs->exists($oldRelative)) {
+                $fs->move($oldRelative, $newRelative);
+            }
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => 'Dosya taşınamadı: ' . $e->getMessage()], 422);
+        }
+
+        $medium->file_name = $finalFileName;
+        $medium->save();
+
+        $newUrl = $medium->fresh()->getUrl();
+        $refs   = $this->updateMediaReferences($oldUrl, $newUrl);
+
+        return response()->json([
+            'success' => true, 'renamed' => true, 'id' => $medium->id,
+            'name' => $medium->name, 'file_name' => $finalFileName,
+            'url' => $newUrl, 'refs_updated' => $refs,
+        ]);
+    }
+
+    /** Eski URL'i yeni URL ile bu sitenin sayfa/yazı içeriklerinde değiştirir. */
+    private function updateMediaReferences(string $oldUrl, string $newUrl): int
+    {
+        if ($oldUrl === '' || $oldUrl === $newUrl) {
+            return 0;
+        }
+
+        $count = 0;
+
+        \App\Models\Page::query()->whereNotNull('sections_json')->each(function ($page) use (&$count, $oldUrl, $newUrl) {
+            $new = $this->replaceUrlInData($page->sections_json, $oldUrl, $newUrl);
+            if ($new !== $page->sections_json) {
+                $page->sections_json = $new;
+                $page->save();
+                $count++;
+            }
+        });
+
+        \App\Models\Article::query()->whereNotNull('content_json')->each(function ($article) use (&$count, $oldUrl, $newUrl) {
+            $new = $this->replaceUrlInData($article->content_json, $oldUrl, $newUrl);
+            if ($new !== $article->content_json) {
+                $article->content_json = $new;
+                $article->save();
+                $count++;
+            }
+        });
+
+        return $count;
+    }
+
+    /** İç içe diziyi gezip string değerlerde eski URL'i yeni URL ile değiştirir. */
+    private function replaceUrlInData(mixed $data, string $old, string $new): mixed
+    {
+        if (is_string($data)) {
+            return str_contains($data, $old) ? str_replace($old, $new, $data) : $data;
+        }
+        if (is_array($data)) {
+            return array_map(fn ($v) => $this->replaceUrlInData($v, $old, $new), $data);
+        }
+
+        return $data;
+    }
+
     public function destroy(Request $request, Media $medium)
     {
         $id = $medium->id;
