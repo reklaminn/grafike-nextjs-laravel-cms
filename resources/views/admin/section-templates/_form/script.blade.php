@@ -543,14 +543,19 @@ document.addEventListener('DOMContentLoaded', () => {
             itemDefaults[key] = dv;
             return createPlaceholderToken(key, raw);
         };
+        // Zaten placeholder içeren değer/metni TEKRAR kaydetme. Aksi halde
+        // "Şablona Dönüştür" (düzleştirme) yapıldıktan SONRA "Repeat Alan Bul"
+        // çalıştırılınca mevcut {{...}}'ler iç içe placeholder'a dönüşüp item
+        // bozuluyor → frontend'de boş render. (Doğrusu: repeat'i ÖNCE çalıştır.)
+        const hasPh = (v) => /\{\{.*?\}\}/.test(String(v || ''));
         item.querySelectorAll('*').forEach(el => {
             if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
-            if (el.hasAttribute('href')) el.setAttribute('href', reg(el.tagName.toLowerCase() === 'a' ? 'button_url' : 'link_url', 'text', el.getAttribute('href') || '#'));
-            if (el.hasAttribute('src')) { const k = el.tagName.toLowerCase() === 'img' ? 'image_url' : 'media_url'; el.setAttribute('src', reg(k, inferType(k), el.getAttribute('src') || inferDefaultValue(k, 'image'))); }
-            if (el.hasAttribute('alt')) el.setAttribute('alt', reg('image_alt', 'text', el.getAttribute('alt') || 'Görsel açıklaması'));
+            if (el.hasAttribute('href') && !hasPh(el.getAttribute('href'))) el.setAttribute('href', reg(el.tagName.toLowerCase() === 'a' ? 'button_url' : 'link_url', 'text', el.getAttribute('href') || '#'));
+            if (el.hasAttribute('src') && !hasPh(el.getAttribute('src'))) { const k = el.tagName.toLowerCase() === 'img' ? 'image_url' : 'media_url'; el.setAttribute('src', reg(k, inferType(k), el.getAttribute('src') || inferDefaultValue(k, 'image'))); }
+            if (el.hasAttribute('alt') && !hasPh(el.getAttribute('alt'))) el.setAttribute('alt', reg('image_alt', 'text', el.getAttribute('alt') || 'Görsel açıklaması'));
             const style = el.getAttribute('style') || '';
             const bgMatch = style.match(/background-image\s*:\s*url\((['"]?)(.*?)\1\)/i);
-            if (bgMatch?.[2]) el.setAttribute('style', style.replace(bgMatch[2], reg('background_image_url', 'image', bgMatch[2])));
+            if (bgMatch?.[2] && !hasPh(bgMatch[2])) el.setAttribute('style', style.replace(bgMatch[2], reg('background_image_url', 'image', bgMatch[2])));
         });
         const walker = doc.createTreeWalker(item, NodeFilter.SHOW_TEXT);
         const textNodes = [];
@@ -558,6 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         textNodes.forEach(node => {
             const raw = node.nodeValue || '', trimmed = raw.trim(), parent = node.parentElement;
             if (!parent || !trimmed || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') return;
+            if (hasPh(trimmed)) return; // zaten placeholder → tekrar kaydetme
             const key = inferTextBaseKey(parent, trimmed);
             node.nodeValue = raw.replace(trimmed, reg(key, inferType(key), trimmed, /_html$/i.test(key)));
         });
