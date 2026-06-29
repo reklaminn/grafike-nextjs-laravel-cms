@@ -18,7 +18,12 @@ class MenuController extends Controller
         $language = $this->resolveLanguage();
 
         $menus = Menu::query()
-            ->when($language, fn ($query) => $query->where('language_id', $language->id))
+            // language_id = X VEYA NULL — IndustryTemplateApplier/StarterSeeder
+            // menüleri language_id=null kurar; katı filtre bunları düşürüp menüyü
+            // boş bırakıyordu (header/footer çıkmıyordu).
+            ->when($language, fn ($query) => $query->where(fn ($q) => $q
+                ->where('language_id', $language->id)
+                ->orWhereNull('language_id')))
             ->where('is_active', true)
             ->with([
                 'items' => fn ($query) => $query
@@ -46,7 +51,10 @@ class MenuController extends Controller
 
         $menu = Menu::query()
             ->where('location', $location)
-            ->when($language, fn ($query) => $query->where('language_id', $language->id))
+            // language_id = X VEYA NULL (bkz. index) — null-dil menüler düşmesin.
+            ->when($language, fn ($query) => $query->where(fn ($q) => $q
+                ->where('language_id', $language->id)
+                ->orWhereNull('language_id')))
             ->where('is_active', true)
             ->with([
                 'items' => fn ($query) => $query

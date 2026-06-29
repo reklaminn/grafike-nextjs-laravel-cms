@@ -25,7 +25,8 @@ class CorporateMenuModule extends BaseModule
 
         // Load the corporate/institutional menu
         $menu = Menu::where('location', 'header')
-            ->where('language_id', $languageId)
+            // language_id = X VEYA NULL — null-dil menüler (StarterSeeder/Industry) düşmesin
+            ->where(fn ($q) => $q->where('language_id', $languageId)->orWhereNull('language_id'))
             ->where('is_active', true)
             ->with(['items' => function ($q) {
                 $q->whereNull('parent_id')
