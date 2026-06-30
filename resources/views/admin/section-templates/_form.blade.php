@@ -34,4 +34,5 @@
 </div>
 
 @include('admin.section-templates._form.convert-wizard')
+@include('admin.section-templates._form.ai-modal')
 @include('admin.section-templates._form.script')

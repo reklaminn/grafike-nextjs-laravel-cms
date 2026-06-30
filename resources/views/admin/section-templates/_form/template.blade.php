@@ -94,6 +94,12 @@
                             class="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-violet-700">
                         <i class="fas fa-hat-wizard"></i> Sihirbaz
                     </button>
+                    {{-- AI: sıfırdan oluştur veya mevcut şablonu prompt'la düzenle --}}
+                    <button type="button" id="open_ai_template"
+                            title="AI ile sıfırdan block şablonu oluştur veya mevcut şablonu prompt'la düzenle"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100">
+                        <i class="fas fa-wand-magic-sparkles"></i> AI
+                    </button>
                     {{-- Birincil: ham HTML → şablon --}}
                     <button type="button" id="generate_from_template"
                             title="Ham HTML'i placeholder'lı şablona ÇEVİR ve şema alanlarını otomatik üret"

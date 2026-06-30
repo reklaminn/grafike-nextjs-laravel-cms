@@ -1197,6 +1197,64 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ════════════════════════════════════════════════════════════════════
+    // AI ile Oluştur / Düzenle (Madde 4) — mevcut generate endpoint'i kullanır;
+    // 'düzenle' modunda current_html + current_schema bağlam olarak gönderilir.
+    // Sonuç editöre applyGeneratedData(replace) ile basılır → Dönüşümü Geri Al ile geri alınır.
+    // ════════════════════════════════════════════════════════════════════
+    const aiTmModal = document.getElementById('ai_template_modal');
+    if (aiTmModal) {
+        const aiTmStatus = document.getElementById('ai_tm_status');
+        const aiTmPrompt = document.getElementById('ai_tm_prompt');
+        const aiTmRun = document.getElementById('ai_tm_run');
+        const aiTmSetStatus = (msg, ok) => {
+            if (!aiTmStatus) return;
+            aiTmStatus.textContent = msg || '';
+            aiTmStatus.className = 'rounded-md p-2 text-xs ' + (ok === false ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600');
+            aiTmStatus.classList.toggle('hidden', !msg);
+        };
+        const aiTmClose = () => aiTmModal.classList.add('hidden');
+        document.getElementById('open_ai_template')?.addEventListener('click', () => { aiTmSetStatus('', true); aiTmModal.classList.remove('hidden'); });
+        document.getElementById('ai_tm_close')?.addEventListener('click', aiTmClose);
+        document.getElementById('ai_tm_cancel')?.addEventListener('click', aiTmClose);
+
+        if (aiTmRun) aiTmRun.addEventListener('click', async () => {
+            const prompt = (aiTmPrompt?.value || '').trim();
+            if (prompt.length < 10) { aiTmSetStatus('En az 10 karakterlik bir istek yaz.', false); return; }
+            const mode = document.querySelector('input[name="ai_tm_mode"]:checked')?.value || 'edit';
+            aiTmRun.disabled = true;
+            aiTmSetStatus('AI üretiyor… (birkaç saniye)', true);
+            try {
+                const body = { prompt: prompt };
+                if (mode === 'edit') {
+                    body.current_html = getHtmlValue();
+                    body.current_schema = parseJsonObject(schemaInput?.value || '');
+                }
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch(@js(route('admin.ai.section-templates.generate', [], false)), {
+                    method: 'POST', credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify(body),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (res.ok && json.ok && json.preview) {
+                    const p = json.preview;
+                    if (generateModeSelect) generateModeSelect.value = 'replace';
+                    applyGeneratedData(p.schema_json || {}, p.default_content_json || {}, p.html_template ?? null);
+                    aiTmClose();
+                    window.dispatchEvent(new CustomEvent('section-template-editor-change'));
+                } else {
+                    aiTmSetStatus(json.message || ('Üretilemedi (HTTP ' + res.status + ').'), false);
+                }
+            } catch (e) {
+                console.error('[ai-template]', e);
+                aiTmSetStatus('Hata: ' + (e && e.message ? e.message : e), false);
+            } finally {
+                aiTmRun.disabled = false;
+            }
+        });
+    }
 });
 </script>
 @endpush
