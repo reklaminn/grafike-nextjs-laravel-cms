@@ -55,6 +55,40 @@ class AiBlockEditor
     }
 
     /**
+     * The text-editable subset of a block's content — what an AI is allowed
+     * to rewrite. Identifier/url/color/media fields are excluded. Exposed so
+     * page-level tooling (AiPageAssistant) can build prompts without
+     * duplicating the field-safety logic.
+     *
+     * @param  array<string, mixed>  $content
+     * @param  array<int, array<string,mixed>>|null  $schema
+     * @return array<string, mixed>
+     */
+    public function editableSubset(array $content, ?array $schema): array
+    {
+        $allowed = $this->allowedKeys($schema);
+
+        return $allowed !== null
+            ? array_intersect_key($content, array_flip($allowed))
+            : $this->filterNonTextFields($content);
+    }
+
+    /**
+     * Merge AI-produced field values back onto the original content, applying
+     * the same allowlist + type-preservation guards as edit(). Used by
+     * AiPageAssistant which gets already-parsed fields (not raw output).
+     *
+     * @param  array<string, mixed>  $original
+     * @param  array<string, mixed>  $aiFields
+     * @param  array<int, array<string,mixed>>|null  $schema
+     * @return array<string, mixed>
+     */
+    public function mergeFields(array $original, array $aiFields, ?array $schema): array
+    {
+        return $this->mergeOutput($original, $aiFields, $this->allowedKeys($schema));
+    }
+
+    /**
      * Build the system + user prompt parts for streaming — same logic as
      * edit(), but without making the AI call itself.
      *
@@ -202,11 +236,29 @@ class AiBlockEditor
                  'url', 'href', 'color', 'icon', 'class', 'css', 'align', 'size',
                  'background', 'video_url', 'embed', 'tag'];
 
+        // Suffix patterns catch derived identifier/style keys (button_url,
+        // icon_class, hero_image_id, accent_color, …) that the exact-match
+        // blacklist misses — the AI must never rewrite these.
+        $skipSuffixes = ['_url', '_href', '_link', '_id', '_color', '_icon', '_class'];
+
         return array_filter(
             $content,
-            fn ($value, $key) => is_string($value)
-                && is_string($key)
-                && ! in_array(strtolower($key), $skip, true),
+            function ($value, $key) use ($skip, $skipSuffixes) {
+                if (! is_string($value) || ! is_string($key)) {
+                    return false;
+                }
+                $lower = strtolower($key);
+                if (in_array($lower, $skip, true)) {
+                    return false;
+                }
+                foreach ($skipSuffixes as $suffix) {
+                    if (str_ends_with($lower, $suffix)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            },
             ARRAY_FILTER_USE_BOTH,
         );
     }

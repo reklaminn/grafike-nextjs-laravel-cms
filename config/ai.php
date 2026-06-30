@@ -75,6 +75,8 @@ return [
         'block.edit'        => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7, 'cache_ttl' => 0],
         'block.template'    => ['tier' => 'complex', 'max_tokens' => 2500, 'temperature' => 0.5, 'cache_ttl' => 0],
         'page.create'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.7, 'cache_ttl' => 0],
+        // Sayfa asistanı: çok-bloklu düzenleme + sıralama planı (diff/onayla).
+        'page.assist'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.6, 'cache_ttl' => 0],
         'page.translate'    => ['tier' => 'simple',  'max_tokens' => 2500, 'temperature' => 0.3, 'cache_ttl' => 10080],
         'misc.text'         => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7, 'cache_ttl' => 0],
         // Medya kütüphanesi: görsel için alt yazısı üretimi (vision, ucuz tier)

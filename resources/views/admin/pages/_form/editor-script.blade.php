@@ -688,6 +688,18 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         aiStatus: '',
         aiStatusOk: false,
 
+        // ── AI Sayfa Asistanı (Madde 3b) — çok-bloklu düzenleme + sıralama ──
+        // Tek talimattan bir DEĞİŞİKLİK PLANI (edit/reorder/remove) alınır,
+        // diff olarak gösterilir, onaydan SONRA client-side uygulanır.
+        assistOpen: false,
+        assistInstruction: '',
+        assistLoading: false,
+        assistError: '',
+        assistPlan: null,            // {summary, operations:[...], warnings:[...]}
+        assistRefMap: {},            // ref -> {rowIndex, columnIndex, blockIndex} (body)
+        assistSingleBlockRows: true, // true ise satır sırası = blok sırası (güvenli reorder)
+        assistApplied: false,
+
         // Şablon kataloğu canlı senkronizasyon state'i
         templateSyncToast: '',
         templateSyncToastVisible: false,
@@ -713,6 +725,10 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 this.normalizeSortOrder();
                 this.syncSerializedRegions();
             });
+
+            // AI Sayfa Asistanı'nı sidebar'daki butondan aç (ayrı Alpine scope'u
+            // bu kök bileşene custom event ile haber verir — ai-translate gibi).
+            window.addEventListener('open-ai-assist', () => this.openAssist());
 
             // Kaydedilmemiş bölüm değişikliği varken sekme kapanır/sayfa
             // değişirse tarayıcı onayı iste — kaydet ile ayrılırken sessiz.
@@ -1955,6 +1971,177 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
         abortAiTransform() {
             this.aiAbortController?.abort();
+        },
+
+        // ── AI Sayfa Asistanı (Madde 3b) ─────────────────────────────────
+        //
+        // openAssist → modal aç. requestAssistPlan → body bloklarını düz
+        // listeye çıkar, /ai/pages/assist'e gönder, dönen planı diff olarak
+        // tut. applyAssistPlan → planı regions üzerine uygula (edit yerinde;
+        // reorder/remove yalnızca tek-bloklu satır düzeninde güvenli).
+        openAssist() {
+            this.assistError = '';
+            this.assistPlan = null;
+            this.assistApplied = false;
+            this.assistOpen = true;
+        },
+
+        closeAssist() {
+            this.assistOpen = false;
+        },
+
+        // Body bloklarını sıralı düz listeye çıkar + ref->konum haritası kur.
+        buildAssistBlocks() {
+            const rows = this.regions.body || [];
+            const blocks = [];
+            const refMap = {};
+            let singleBlockRows = rows.length > 0;
+            let ref = 0;
+
+            rows.forEach((row, rowIndex) => {
+                const cols = row.columns || [];
+                if (cols.length !== 1 || (cols[0].blocks || []).length !== 1) {
+                    singleBlockRows = false;
+                }
+                cols.forEach((col, columnIndex) => {
+                    (col.blocks || []).forEach((block, blockIndex) => {
+                        ref += 1;
+                        const tpl = this.getTemplateById(block.section_template_id);
+                        const name = (tpl && tpl.name) ? tpl.name : (block.type || 'blok');
+                        refMap[ref] = { rowIndex, columnIndex, blockIndex };
+                        blocks.push({
+                            ref,
+                            type: block.type || '',
+                            name,
+                            content: block.content || {},
+                        });
+                    });
+                });
+            });
+
+            this.assistRefMap = refMap;
+            this.assistSingleBlockRows = singleBlockRows;
+            return blocks;
+        },
+
+        async requestAssistPlan() {
+            const instruction = (this.assistInstruction || '').trim();
+            if (instruction.length < 4) {
+                this.assistError = 'Lütfen ne yapmak istediğinizi yazın (örn. "tüm metinleri daha satış odaklı yap").';
+                return;
+            }
+            const blocks = this.buildAssistBlocks();
+            if (!blocks.length) {
+                this.assistError = 'Bu sayfada düzenlenecek blok yok. Önce blok ekleyin.';
+                return;
+            }
+
+            this.assistLoading = true;
+            this.assistError = '';
+            this.assistPlan = null;
+            this.assistApplied = false;
+
+            try {
+                const resp = await fetch(@js(route('admin.ai.pages.assist', [], false)), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                    },
+                    body: JSON.stringify({ instruction, blocks }),
+                });
+                const data = await resp.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
+                if (!data.ok) {
+                    this.assistError = data.message || 'AI planı üretilemedi.';
+                    return;
+                }
+                this.assistPlan = data.plan;
+            } catch (e) {
+                this.assistError = e.message || 'Ağ hatası.';
+            } finally {
+                this.assistLoading = false;
+            }
+        },
+
+        assistBlockAt(ref) {
+            const loc = this.assistRefMap[ref];
+            if (!loc) return null;
+            const col = this.regions.body?.[loc.rowIndex]?.columns?.[loc.columnIndex];
+            return (col && col.blocks) ? (col.blocks[loc.blockIndex] || null) : null;
+        },
+
+        assistHasOps() {
+            return !!(this.assistPlan && Array.isArray(this.assistPlan.operations) && this.assistPlan.operations.length);
+        },
+
+        applyAssistPlan() {
+            const plan = this.assistPlan;
+            if (!plan || !Array.isArray(plan.operations)) return;
+
+            const removeRefs = [];
+            let reorder = null;
+
+            // 1) Edit'leri YERİNDE uygula — yapısal değişiklik yok, ref haritası geçerli.
+            plan.operations.forEach((op) => {
+                if (op.op === 'edit') {
+                    const block = this.assistBlockAt(op.ref);
+                    if (!block) return;
+                    if (!block.content) block.content = {};
+                    (op.changes || []).forEach((c) => {
+                        if (c && typeof c.key === 'string') block.content[c.key] = c.new;
+                    });
+                } else if (op.op === 'remove') {
+                    removeRefs.push(Number(op.ref));
+                } else if (op.op === 'reorder') {
+                    reorder = (op.order || []).map(Number);
+                }
+            });
+
+            // 2) Sıralama + kaldırma — tek-bloklu satır düzeninde satır listesini
+            //    yeniden kur; çok sütunlu düzende kaldırmayı konum bazlı yap, reorder'ı atla.
+            const skipped = [];
+            if (reorder || removeRefs.length) {
+                if (this.assistSingleBlockRows) {
+                    const rows = this.regions.body || [];
+                    // ref i  ↔  rows[i-1] (flatten sırası satır sırasıyla birebir)
+                    let order = (reorder && reorder.length) ? reorder.slice() : rows.map((_, i) => i + 1);
+                    rows.forEach((_, i) => { if (!order.includes(i + 1)) order.push(i + 1); });
+                    order = order.filter((ref) => !removeRefs.includes(ref));
+                    this.regions.body = order.map((ref) => rows[ref - 1]).filter(Boolean);
+                } else {
+                    const locs = removeRefs
+                        .map((ref) => this.assistRefMap[ref])
+                        .filter(Boolean)
+                        .sort((a, b) => b.rowIndex - a.rowIndex || b.columnIndex - a.columnIndex || b.blockIndex - a.blockIndex);
+                    locs.forEach((loc) => {
+                        const col = this.regions.body?.[loc.rowIndex]?.columns?.[loc.columnIndex];
+                        if (col && Array.isArray(col.blocks)) col.blocks.splice(loc.blockIndex, 1);
+                    });
+                    this.regions.body = (this.regions.body || []).filter((row) => {
+                        row.columns = (row.columns || []).filter((col) => (col.blocks || []).length > 0);
+                        return row.columns.length > 0;
+                    });
+                    if (reorder) {
+                        skipped.push('Çok sütunlu düzen olduğu için sıralama otomatik uygulanmadı; blokları elle taşıyabilirsiniz.');
+                    }
+                }
+            }
+
+            this.normalizeSortOrder();
+            this.syncSerializedRegions();
+
+            this.assistApplied = true;
+            this.assistPlan = null;
+            this.assistInstruction = '';
+            this.assistError = skipped.length ? skipped.join(' ') : '';
+            setTimeout(() => { this.assistApplied = false; this.assistOpen = false; }, 1700);
+        },
+
+        assistTruncate(text, max = 90) {
+            const s = String(text == null ? '' : text);
+            return s.length > max ? s.slice(0, max) + '…' : s;
         },
 
         get settingsBlock() {

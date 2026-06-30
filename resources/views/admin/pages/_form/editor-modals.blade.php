@@ -768,3 +768,186 @@
         </template>
     </div>
 </div>
+
+{{-- ── AI Sayfa Asistanı Modal (Madde 3b) ──────────────────────────────────
+     Tek talimattan çok-bloklu değişiklik planı (edit/reorder/remove) üretir,
+     diff olarak gösterir, onaydan SONRA uygular. frontendSectionEditor scope'u. --}}
+<div x-show="assistOpen" x-cloak
+     class="fixed inset-0 z-[85] flex items-end justify-center bg-black/60 p-0 sm:items-start sm:px-4 sm:pt-12 sm:pb-8"
+     @click.self="closeAssist()"
+     @keydown.escape.window="assistOpen && closeAssist()">
+    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+         style="max-height: 88vh">
+
+        {{-- Header --}}
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4">
+            <div class="flex items-center gap-2.5">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                    <i class="fas fa-wand-magic-sparkles text-sm"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800">AI Sayfa Asistanı</h3>
+                    <p class="text-[11px] text-gray-500">Tüm sayfayı tek talimatla düzenle — onaydan önce göster</p>
+                </div>
+            </div>
+            <button type="button" @click="closeAssist()"
+                    class="rounded-lg p-1.5 text-gray-400 hover:bg-white/70 hover:text-gray-600">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-5 py-4">
+
+            {{-- Talimat girişi --}}
+            <label class="mb-1.5 block text-xs font-medium text-gray-700">Ne yapmak istiyorsun?</label>
+            <textarea x-model="assistInstruction" rows="3"
+                      :disabled="assistLoading"
+                      placeholder="Örn: Tüm metinleri daha satış odaklı yap ve yazım hatalarını düzelt. Sıkça Sorulan Sorular bloğunu en alta taşı."
+                      class="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                      @keydown.meta.enter="requestAssistPlan()"
+                      @keydown.ctrl.enter="requestAssistPlan()"></textarea>
+
+            {{-- Hızlı örnekler --}}
+            <div class="mt-2 flex flex-wrap gap-1.5">
+                <template x-for="ex in [
+                    'Tüm metinleri daha profesyonel ve kurumsal yap',
+                    'Yazım ve dilbilgisi hatalarını düzelt',
+                    'Başlıkları SEO odaklı, aksiyon davetli yeniden yaz',
+                    'Tüm metinleri %20 kısalt',
+                ]" :key="ex">
+                    <button type="button" @click="assistInstruction = ex"
+                            class="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] text-indigo-700 hover:bg-indigo-100">
+                        <span x-text="ex"></span>
+                    </button>
+                </template>
+            </div>
+
+            {{-- Öner butonu --}}
+            <div class="mt-3 flex items-center gap-2">
+                <button type="button" @click="requestAssistPlan()"
+                        :disabled="assistLoading"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                    <i class="fas" :class="assistLoading ? 'fa-spinner fa-spin' : 'fa-lightbulb'"></i>
+                    <span x-text="assistLoading ? 'Plan hazırlanıyor…' : (assistPlan ? 'Yeniden Öner' : 'Değişiklik Öner')"></span>
+                </button>
+                <span class="text-[11px] text-gray-400">⌘/Ctrl + Enter</span>
+            </div>
+
+            {{-- Hata --}}
+            <div x-show="assistError" x-cloak
+                 class="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <i class="fas fa-triangle-exclamation mt-0.5"></i>
+                <span x-text="assistError"></span>
+            </div>
+
+            {{-- Uygulandı bildirimi --}}
+            <div x-show="assistApplied" x-cloak
+                 class="mt-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                <i class="fas fa-check-circle"></i>
+                <span>Değişiklikler uygulandı. Kalıcı olması için sayfayı <strong>Güncelle</strong> ile kaydedin.</span>
+            </div>
+
+            {{-- ── Önerilen plan (diff) ── --}}
+            <template x-if="assistPlan && !assistApplied">
+                <div class="mt-4 border-t border-gray-100 pt-4">
+                    <div class="mb-2 flex items-center gap-2">
+                        <i class="fas fa-clipboard-list text-indigo-500"></i>
+                        <span class="text-sm font-semibold text-gray-800">Önerilen değişiklikler</span>
+                    </div>
+                    <p x-show="assistPlan.summary" class="mb-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600" x-text="assistPlan.summary"></p>
+
+                    {{-- Boş plan --}}
+                    <div x-show="!assistHasOps()" x-cloak class="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500">
+                        Uygulanabilir bir değişiklik önerilmedi. Talimatı netleştirip tekrar deneyin.
+                    </div>
+
+                    {{-- Operasyon listesi --}}
+                    <div class="space-y-2">
+                        <template x-for="(op, i) in assistPlan.operations" :key="i">
+                            <div class="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+
+                                {{-- edit --}}
+                                <template x-if="op.op === 'edit'">
+                                    <div>
+                                        <div class="mb-1.5 flex items-center gap-2 text-xs font-semibold text-gray-700">
+                                            <i class="fas fa-pen text-indigo-400"></i>
+                                            <span x-text="op.name"></span>
+                                            <span class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600"
+                                                  x-text="(op.changes ? op.changes.length : 0) + ' alan'"></span>
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <template x-for="(c, ci) in op.changes" :key="ci">
+                                                <div class="rounded bg-gray-50 px-2 py-1.5 text-[11px]">
+                                                    <div class="mb-0.5 font-medium text-gray-400" x-text="c.key"></div>
+                                                    <div class="flex items-start gap-1.5">
+                                                        <i class="fas fa-minus mt-0.5 text-[9px] text-rose-400"></i>
+                                                        <span class="text-gray-400 line-through" x-text="assistTruncate(c.old)"></span>
+                                                    </div>
+                                                    <div class="flex items-start gap-1.5 text-emerald-700">
+                                                        <i class="fas fa-plus mt-0.5 text-[9px] text-emerald-500"></i>
+                                                        <span x-text="assistTruncate(c.new)"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                {{-- reorder --}}
+                                <template x-if="op.op === 'reorder'">
+                                    <div>
+                                        <div class="mb-1.5 flex items-center gap-2 text-xs font-semibold text-gray-700">
+                                            <i class="fas fa-arrows-up-down text-violet-400"></i>
+                                            <span>Yeni sıralama</span>
+                                        </div>
+                                        <ol class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                            <template x-for="(item, oi) in op.order_named" :key="oi">
+                                                <li class="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-violet-700">
+                                                    <span class="font-semibold" x-text="(oi + 1) + '.'"></span>
+                                                    <span x-text="item.name"></span>
+                                                </li>
+                                            </template>
+                                        </ol>
+                                    </div>
+                                </template>
+
+                                {{-- remove --}}
+                                <template x-if="op.op === 'remove'">
+                                    <div class="flex items-center gap-2 text-xs font-semibold text-rose-600">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Kaldırılacak:</span>
+                                        <span class="font-normal text-gray-700" x-text="op.name"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- Plan uyarıları --}}
+                    <template x-if="assistPlan.warnings && assistPlan.warnings.length">
+                        <ul class="mt-2 space-y-1">
+                            <template x-for="(w, wi) in assistPlan.warnings" :key="wi">
+                                <li class="flex items-start gap-1.5 text-[11px] text-amber-700">
+                                    <i class="fas fa-circle-info mt-0.5"></i><span x-text="w"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        {{-- Footer aksiyonları (yalnızca uygulanabilir plan varken) --}}
+        <div x-show="assistPlan && !assistApplied && assistHasOps()" x-cloak
+             class="flex items-center justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
+            <button type="button" @click="assistPlan = null"
+                    class="rounded-lg bg-white border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
+                Vazgeç
+            </button>
+            <button type="button" @click="applyAssistPlan()"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                <i class="fas fa-check"></i> Uygula
+            </button>
+        </div>
+    </div>
+</div>
