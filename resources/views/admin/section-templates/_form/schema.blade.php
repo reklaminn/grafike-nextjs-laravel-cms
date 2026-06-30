@@ -151,6 +151,26 @@
                                    class="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400">
                         </div>
                     </div>
+
+                    {{-- Repeater: item HTML şablonu (her tekrar için) — sihirbazsız elle düzenleme --}}
+                    <div x-show="field.type === 'repeater'" x-init="if (!field._extra) field._extra = {}"
+                         class="mt-3 border-t border-amber-100 pt-3">
+                        <label class="mb-1 flex items-center gap-1 text-[11px] font-medium text-amber-700">
+                            <i class="fas fa-layer-group"></i> Item HTML şablonu
+                        </label>
+                        <textarea x-model="field._extra.item_template" rows="6" spellcheck="false"
+                                  placeholder="Tek bir item'ın HTML'i — alt alanları @verbatim{{alan}}@endverbatim olarak kullan"
+                                  class="w-full rounded border border-amber-200 px-2 py-1.5 font-mono text-[11px] leading-relaxed focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                                  style="white-space:pre;overflow-wrap:normal;overflow-x:auto"></textarea>
+                        <div class="mt-1 flex flex-wrap items-center gap-1">
+                            <span class="text-[10px] text-gray-400">Alt alanlar:</span>
+                            <template x-for="k in repeaterSubKeys(field)" :key="k">
+                                <code class="rounded bg-amber-50 px-1 text-[10px] text-amber-700" x-text="k"></code>
+                            </template>
+                            <span x-show="repeaterSubKeys(field).length === 0" class="text-[10px] text-gray-300">— (alt alan yapısını JSON modundan ekle)</span>
+                        </div>
+                        <p class="mt-1 text-[10px] text-gray-400">Ana şablonda <code class="rounded bg-gray-100 px-1">@verbatim{{{anahtar_html}}}@endverbatim</code> olarak basılır. Alt alan tiplerini "JSON" modundan düzenleyebilirsin.</p>
+                    </div>
                 </div>
             </div>
         </template>
@@ -258,6 +278,14 @@ document.addEventListener('alpine:init', () => {
             if (!unused.size) return;
             if (!window.confirm(unused.size + ' kullanılmayan alan silinecek. Devam edilsin mi?')) return;
             this.fields = this.fields.filter((f) => !unused.has(f._uid));
+        },
+
+        // Repeater alt-alan anahtarları (obje map {key:{...}} veya dizi [{key,...}]).
+        repeaterSubKeys(field) {
+            const f = field && field._extra && field._extra.fields;
+            if (!f) return [];
+            if (Array.isArray(f)) return f.map((x) => x && x.key).filter(Boolean);
+            return Object.keys(f);
         },
 
         get serialized() {
