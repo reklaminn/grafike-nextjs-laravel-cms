@@ -11,6 +11,15 @@
     $activeTenant   = $activeTenantId ? \App\Models\Tenant::query()->find($activeTenantId) : null;
     $hasTours       = $activeTenant?->hasModule('tours')    ?? false;
     $hasCommerce    = $activeTenant?->hasModule('commerce') ?? false;
+    $hasLodging     = $activeTenant?->hasModule('lodging')  ?? false;
+
+    // Konaklama (Lodging) vertical — oda tipi / müsaitlik / rezervasyon.
+    $lodgingItems = $hasLodging ? [
+        ['route' => 'admin.lodging.room-types.index',   'icon' => 'fa-bed',           'label' => 'Oda Tipleri',    'match' => 'admin.lodging.room-types'],
+        ['route' => 'admin.lodging.availability.index',  'icon' => 'fa-calendar-check', 'label' => 'Müsaitlik',      'match' => 'admin.lodging.availability'],
+        ['route' => 'admin.lodging.reservations.index',  'icon' => 'fa-inbox',          'label' => 'Rezervasyonlar', 'match' => 'admin.lodging.reservations'],
+        ['route' => 'admin.lodging.settings.edit',       'icon' => 'fa-sliders-h',      'label' => 'Ayarlar',        'match' => 'admin.lodging.settings'],
+    ] : [];
 
     $toursItems = $hasTours ? [
         ['route' => 'admin.tours.index',           'icon' => 'fa-route',        'label' => 'Turlar',         'match' => 'admin.tours.index'],
@@ -165,6 +174,23 @@
     </span>
 </div>
 @foreach($cruiseItems as $item)
+    <a href="{{ route($item['route']) }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
+        <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
+        <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
+    </a>
+@endforeach
+@endif
+
+<!-- Konaklama (module-gated; only shows when active tenant has 'lodging' enabled) -->
+@if(!empty($lodgingItems))
+<div class="my-3 border-t border-gray-200"></div>
+<div class="px-3 pt-2 pb-1">
+    <span class="text-[10px] font-semibold text-teal-500 uppercase tracking-wider" x-show="sidebarOpen" x-transition>
+        <i class="fas fa-hotel mr-0.5"></i> Konaklama
+    </span>
+</div>
+@foreach($lodgingItems as $item)
     <a href="{{ route($item['route']) }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
         <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>

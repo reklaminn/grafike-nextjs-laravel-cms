@@ -18,4 +18,5 @@ return [
     App\Modules\Payments\Providers\PaymentsModuleServiceProvider::class,
     App\Modules\Tours\Providers\ToursModuleServiceProvider::class,
     App\Modules\Commerce\Providers\CommerceModuleServiceProvider::class,
+    App\Modules\Lodging\Providers\LodgingModuleServiceProvider::class,
 ];
