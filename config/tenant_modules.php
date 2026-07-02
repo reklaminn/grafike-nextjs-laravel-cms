@@ -90,6 +90,16 @@ return [
             'user_installable' => false, // Phase 6'da true yapılacak
         ],
 
+        'lodging' => [
+            'label'            => 'Konaklama Rezervasyon',
+            'description'      => 'Otel / apart / pansiyon için oda tipi, müsaitlik ve rezervasyon talebi motoru. Ödeme entegrasyonu yok (talep + müsaitlik MVP).',
+            'service_provider' => \App\Modules\Lodging\Providers\LodgingModuleServiceProvider::class,
+            'migrations_path'  => 'app/Modules/Lodging/Database/migrations',
+            // No payment gateway in MVP — reservations are request-only.
+            'requires'         => [],
+            'user_installable' => true,
+        ],
+
     ],
 
     /*

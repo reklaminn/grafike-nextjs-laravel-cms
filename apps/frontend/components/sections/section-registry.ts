@@ -19,6 +19,7 @@ import { GallerySection }       from "@/components/sections/blocks/gallery-secti
 import { LogoBandSection }      from "@/components/sections/blocks/logo-band-section";
 import { PricingSection }       from "@/components/sections/blocks/pricing-section";
 import { SearchSection }        from "@/components/sections/blocks/search-section";
+import { ReservationSection }   from "@/components/sections/blocks/reservation-section";
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 // Catch-all for any hero variation that is not explicitly overridden
@@ -68,3 +69,10 @@ sectionRegistry.register("pricing",           PricingSection);
 // component_key/type "search" olan bir SectionTemplate ile kullanılır.
 sectionRegistry.register("search",            SearchSection);
 sectionRegistry.register("arama",             SearchSection);
+
+// ─── Reservation (Lodging / Konaklama module) ─────────────────────────────────
+// Konaklama rezervasyon talebi bloğu — Lodging modülünün tenant API'sini
+// kullanır (/api/v1/lodging/*).  CMS'te render_mode=component, type
+// "reservation" (veya "rezervasyon") olan bir blok ile döşenir.
+sectionRegistry.register("reservation",       ReservationSection);
+sectionRegistry.register("rezervasyon",       ReservationSection);

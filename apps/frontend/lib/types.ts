@@ -5,6 +5,7 @@ export type ThemeTokens = Record<string, string>;
  *
  * - `tours`     — cruise / paket / günlük tur kataloğu + booking
  * - `commerce`  — e-ticaret katalogu + sepet (Phase 6, not shipped yet)
+ * - `lodging`   — konaklama rezervasyon motoru (oda tipi / müsaitlik / talep)
  * - `payments`  — paylaşılan ödeme altyapısı (dependency-only; transitively
  *                 enabled when Tours or Commerce is on)
  *
@@ -12,7 +13,7 @@ export type ThemeTokens = Record<string, string>;
  * frontend should ship the base CMS bundle only — no module-specific
  * sections or routes load.  See lib/modules/registry-loader.ts.
  */
-export type TenantModule = "tours" | "commerce" | "payments" | string;
+export type TenantModule = "tours" | "commerce" | "lodging" | "payments" | string;
 
 export type SitePayload = {
   site: {
