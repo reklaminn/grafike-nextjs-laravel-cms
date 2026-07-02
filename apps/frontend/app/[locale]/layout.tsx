@@ -11,6 +11,7 @@
  */
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { PreviewBanner } from "@/components/layout/preview-banner";
 import { SiteShell } from "@/components/layout/site-shell";
 import { ThemeScripts } from "@/components/layout/theme-scripts";
 import { getSitePayload, getSettingsPayload } from "@/lib/api/client";
@@ -219,24 +220,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         dangerouslySetInnerHTML={buildJsonLd(globalJsonLd)}
       />
 
-      {/* Önizleme modu banner'ı — editör draft içeriğe baktığını bilsin */}
+      {/* Önizleme modu rozeti — editör draft içeriğe baktığını bilsin.
+          Sabit köşe pill'i: tema header'ını (position:fixed) örtmez, kapatılabilir. */}
       {previewTenantId && (
-        <div
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 9999,
-            background: "#4f46e5",
-            color: "#fff",
-            textAlign: "center",
-            fontSize: ".8rem",
-            fontWeight: 600,
-            padding: ".45rem 1rem",
-            letterSpacing: ".01em",
-          }}
-        >
-          👁 {uiStrings(locale).previewBanner(previewTenantId)}
-        </div>
+        <PreviewBanner label={uiStrings(locale).previewBanner(previewTenantId)} />
       )}
 
       <SiteShell availableLocales={site.available_locales ?? []}>{children}</SiteShell>

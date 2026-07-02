@@ -20,10 +20,12 @@ git reset --hard origin/main
 echo "  HEAD: $(git rev-parse --short HEAD)"
 
 echo "▸ Building images..."
-docker compose build app1 app2 app3
+# frontend = Next.js container (grafike_cms_frontend). Değişmediyse docker layer
+# cache sayesinde build anında geçer; frontend değişikliği unutulup deploy dışı kalmasın.
+docker compose build app1 app2 app3 frontend
 
 echo "▸ Restarting containers..."
-docker compose up -d --no-deps app1 app2 app3
+docker compose up -d --no-deps app1 app2 app3 frontend
 
 echo "▸ Clearing caches..."
 docker compose exec app1 php artisan optimize:clear
