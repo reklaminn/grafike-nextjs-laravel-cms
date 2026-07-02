@@ -76,11 +76,11 @@
                 Seçenekler <code>apps/frontend/public/component-manifest.json</code>'dan gelir.
             </p>
         </div>
-        <div>
+        <div x-data="previewImageField()">
             <label class="mb-1 block text-sm font-medium text-gray-700">Önizleme Görseli</label>
             @php $previewUrl = $sectionTemplate->exists ? $sectionTemplate->getFirstMediaUrl('preview_image') : null; @endphp
             @if($previewUrl)
-                <div class="mb-2 flex items-start gap-3">
+                <div class="mb-2 flex items-start gap-3" x-show="!selectedUrl">
                     <img src="{{ $previewUrl }}" alt="Önizleme" class="h-20 w-32 rounded-lg border border-gray-200 object-cover">
                     <label class="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-800 cursor-pointer mt-1">
                         <input type="checkbox" name="remove_preview_image" value="1" class="h-3.5 w-3.5 rounded">
@@ -88,9 +88,35 @@
                     </label>
                 </div>
             @endif
+
+            {{-- Seçilen görselin hedef oranlarda kırpılmış önizlemesi --}}
+            <div x-show="selectedUrl" x-cloak class="mb-2">
+                <div class="mb-1.5 flex items-center gap-1.5">
+                    <span class="text-[11px] text-gray-500">Oran:</span>
+                    <template x-for="r in ratios" :key="r.key">
+                        <button type="button" @click="ratio = r.key"
+                                class="rounded px-2 py-0.5 text-[11px] font-medium transition"
+                                :class="ratio === r.key ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                                x-text="r.label"></button>
+                    </template>
+                    <button type="button" @click="clearSelection()"
+                            class="ml-auto rounded px-2 py-0.5 text-[11px] font-medium text-red-500 hover:bg-red-50">
+                        <i class="fas fa-xmark mr-0.5"></i> Kaldır
+                    </button>
+                </div>
+                <div class="mx-auto overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
+                     :style="{ width: '256px', aspectRatio: currentRatio() }">
+                    <img :src="selectedUrl" alt="Kırpma önizlemesi" class="h-full w-full object-cover object-center">
+                </div>
+                <p class="mt-1 text-center text-[11px] text-gray-400">
+                    Görsel <span class="font-medium" x-text="ratioLabel()"></span> oranında bu şekilde kırpılarak gösterilir (object-cover, ortalı).
+                </p>
+            </div>
+
             <input type="file" name="preview_image" accept="image/*"
+                   @change="onFile($event)"
                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-indigo-500">
-            <p class="mt-1 text-xs text-gray-500">JPG, PNG, WebP — maks. 4 MB.</p>
+            <p class="mt-1 text-xs text-gray-500">JPG, PNG, WebP — maks. 4 MB. Önerilen oran 16:9.</p>
         </div>
         <label class="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 md:col-span-2">
             <input type="hidden" name="is_active" value="0">
@@ -100,3 +126,43 @@
         </label>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function previewImageField() {
+    return {
+        selectedUrl: null,
+        ratio: '16:9',
+        ratios: [
+            { key: '16:9', label: '16:9' },
+            { key: '4:3',  label: '4:3' },
+            { key: '1:1',  label: '1:1' },
+        ],
+
+        onFile(event) {
+            const file = event.target.files?.[0];
+            if (this.selectedUrl) { URL.revokeObjectURL(this.selectedUrl); this.selectedUrl = null; }
+            if (file && file.type.startsWith('image/')) {
+                this.selectedUrl = URL.createObjectURL(file);
+            }
+        },
+
+        clearSelection() {
+            if (this.selectedUrl) { URL.revokeObjectURL(this.selectedUrl); }
+            this.selectedUrl = null;
+            // file input'u sıfırla
+            const input = this.$root.querySelector('input[type="file"]');
+            if (input) input.value = '';
+        },
+
+        currentRatio() {
+            return this.ratio.replace(':', ' / ');
+        },
+
+        ratioLabel() {
+            return this.ratio;
+        },
+    };
+}
+</script>
+@endpush

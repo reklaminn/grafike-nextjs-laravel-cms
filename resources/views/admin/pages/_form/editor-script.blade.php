@@ -1,16 +1,34 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldgutter.min.css">
 <style>
     /* Quill overrides inside the block settings modal */
     .ql-toolbar { border: none !important; border-bottom: 1px solid #e5e7eb !important; background: #f9fafb; padding: 6px 8px !important; }
     .ql-container { border: none !important; font-family: inherit; font-size: 0.875rem; }
     .ql-editor { min-height: 110px; padding: 10px 12px; }
     .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; }
+    /* HTML Override CodeMirror */
+    .html-override-cm .CodeMirror { height: 220px; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; border: 1px solid #d1d5db; border-radius: 0.5rem; }
+    .html-override-cm .CodeMirror-focused { border-color: transparent; box-shadow: 0 0 0 2px #f59e0b; }
+    /* Katlama (fold) göstergeleri */
+    .html-override-cm .CodeMirror-foldgutter { width: 14px; }
+    .html-override-cm .CodeMirror-foldmarker { color: #b45309; background: #fef3c7; border-radius: 3px; padding: 0 4px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; text-shadow: none; cursor: pointer; }
 </style>
 @endpush
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/xml-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/fold/comment-fold.min.js"></script>
 @endpush
 
 @push('scripts')
@@ -38,7 +56,34 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         mediaPickerOpen: false,
         mediaItems: [],
         mediaSearch: '',
-        mediaLoading: false,
+        mediaSearchTimer: null,
+        mediaCollection: '',
+        mediaCollections: [],
+        mediaLoading: false,        // ilk yükleme
+        mediaLoadingMore: false,    // sonsuz kaydırma
+        mediaPage: 1,
+        mediaLastPage: 1,
+        mediaTotal: 0,
+        mediaUploading: false,
+        mediaUploadError: '',
+        mediaActive: null,          // sağ panelde gösterilen aktif öğe
+        mediaDragOver: false,
+        mediaAltDraft: '',
+        mediaNameDraft: '',
+        mediaSavingMeta: false,
+        mediaRenaming: false,
+        mediaGenAltLoading: false,
+        mediaChosen: [],            // çoklu seçim: seçilen url'ler
+
+        // Icon picker state
+        iconPickerOpen: false,
+        iconSearch: '',
+
+        // Page link picker state
+        pagePickerOpen: false,
+        pageSearch: '',
+        pagesLoading: false,
+        pages: [],
 
         // Quill
         quillInstance: null,
@@ -48,49 +93,510 @@ function blockFieldInput(parentRef, fieldKey, fieldSchema) {
         },
 
         // ── Media picker ────────────────────────────────────────────────────
+        get mediaMultiple() {
+            return this.fieldSchema?.multiple === true;
+        },
+
+        get mediaHasMore() {
+            return this.mediaPage < this.mediaLastPage;
+        },
+
+        _csrf() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        },
+
         openMediaPicker() {
             this.mediaPickerOpen = true;
             this.mediaSearch = '';
-            if (!this.mediaItems.length) {
-                this.loadMedia();
-            }
+            this.mediaCollection = '';
+            this.mediaUploadError = '';
+            this.mediaActive = null;
+            this.mediaDragOver = false;
+            // Çoklu modda mevcut değer(ler)i ön-seç.
+            this.mediaChosen = this.mediaMultiple && Array.isArray(this.parentRef[this.fieldKey])
+                ? [...this.parentRef[this.fieldKey]]
+                : [];
+            this.loadMedia({ reset: true });
         },
 
         closeMediaPicker() {
             this.mediaPickerOpen = false;
         },
 
-        async loadMedia() {
-            this.mediaLoading = true;
+        // Arama + collection + sayfa parametreleriyle medya listesini çeker.
+        // reset=true → ilk sayfa (listeyi sıfırla); false → sonraki sayfayı ekle.
+        async loadMedia({ reset = true } = {}) {
+            if (reset) {
+                this.mediaPage = 1;
+                this.mediaLoading = true;
+            } else {
+                if (this.mediaLoadingMore || !this.mediaHasMore) return;
+                this.mediaLoadingMore = true;
+                this.mediaPage += 1;
+            }
+
             try {
-                const resp = await fetch('/admin/media?type=image&per_page=96', {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    },
+                const params = new URLSearchParams({
+                    type: 'image',
+                    per_page: '40',
+                    page: String(this.mediaPage),
+                });
+                if (this.mediaSearch) params.set('q', this.mediaSearch);
+                if (this.mediaCollection) params.set('collection', this.mediaCollection);
+
+                const resp = await fetch('/admin/media?' + params.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                 });
                 if (resp.ok) {
                     const json = await resp.json();
-                    this.mediaItems = json.data || [];
+                    const items = json.data || [];
+                    this.mediaItems = reset ? items : this.mediaItems.concat(items);
+                    this.mediaLastPage = json.meta?.last_page ?? 1;
+                    this.mediaTotal = json.meta?.total ?? this.mediaItems.length;
+                    if (reset && Array.isArray(json.meta?.collections)) {
+                        this.mediaCollections = json.meta.collections;
+                    }
+                    if (reset && !this.mediaActive && this.mediaItems.length) {
+                        this.focusMedia(this.mediaItems[0]);
+                    }
                 }
             } catch (e) {
                 console.error('[blockFieldInput] Media load error:', e);
             } finally {
                 this.mediaLoading = false;
+                this.mediaLoadingMore = false;
             }
         },
 
-        filteredMedia() {
-            if (!this.mediaSearch) return this.mediaItems;
-            const q = this.mediaSearch.toLowerCase();
-            return this.mediaItems.filter((m) =>
-                (m.file_name || m.name || '').toLowerCase().includes(q)
+        // Debounce'lu server-side arama (yazarken 350ms bekler).
+        onMediaSearchInput() {
+            clearTimeout(this.mediaSearchTimer);
+            this.mediaSearchTimer = setTimeout(() => this.loadMedia({ reset: true }), 350);
+        },
+
+        setMediaCollection(name) {
+            this.mediaCollection = name;
+            this.loadMedia({ reset: true });
+        },
+
+        // Grid altına yaklaşınca sonraki sayfayı yükle (sonsuz kaydırma).
+        onMediaScroll(e) {
+            const el = e.target;
+            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 240) {
+                this.loadMedia({ reset: false });
+            }
+        },
+
+        // Sağ panelde göster + alt/ad taslaklarını hazırla.
+        focusMedia(item) {
+            this.mediaActive = item;
+            this.mediaAltDraft = item.alt_text || '';
+            this.mediaNameDraft = item.name || item.file_name || '';
+        },
+
+        isChosen(item) {
+            return this.mediaChosen.includes(item.url);
+        },
+
+        toggleChosen(item) {
+            const i = this.mediaChosen.indexOf(item.url);
+            if (i === -1) this.mediaChosen.push(item.url);
+            else this.mediaChosen.splice(i, 1);
+        },
+
+        // Grid'de bir öğeye tıklama: çoklu modda seçimi değiştirir,
+        // tekli modda sağ panele odaklar.
+        onItemClick(item) {
+            if (this.mediaMultiple) this.toggleChosen(item);
+            else this.focusMedia(item);
+        },
+
+        // Çift tık / "Kullan": tekli modda alana ata + kapat.
+        useMedia(item) {
+            this.parentRef[this.fieldKey] = item.url || item.original_url || '';
+            this.closeMediaPicker();
+        },
+
+        // Onay butonu — modaa göre tekli/çoklu.
+        confirmSelection() {
+            if (this.mediaMultiple) {
+                this.parentRef[this.fieldKey] = [...this.mediaChosen];
+            } else if (this.mediaActive) {
+                this.parentRef[this.fieldKey] = this.mediaActive.url || '';
+            }
+            this.closeMediaPicker();
+        },
+
+        // Klavye navigasyonu: ok tuşları aktifi gezer, Enter kullanır.
+        onMediaKey(e) {
+            if (!this.mediaItems.length) return;
+            const idx = this.mediaActive ? this.mediaItems.findIndex((m) => m.url === this.mediaActive.url) : -1;
+            if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+                e.preventDefault();
+                const step = (e.key === 'ArrowRight') ? 1 : (e.key === 'ArrowLeft') ? -1 : (e.key === 'ArrowDown') ? 5 : -5;
+                const next = Math.min(Math.max(idx + step, 0), this.mediaItems.length - 1);
+                this.focusMedia(this.mediaItems[next]);
+                // yakına kayan görseli görünür kıl
+                this.$nextTick(() => document.getElementById('media-cell-' + this.mediaItems[next].id)?.scrollIntoView({ block: 'nearest' }));
+            } else if (e.key === 'Enter' && this.mediaActive) {
+                e.preventDefault();
+                this.mediaMultiple ? this.confirmSelection() : this.useMedia(this.mediaActive);
+            }
+        },
+
+        // Görsel yüklenince doğal ölçüyü öğeye yaz (detay panelinde gösterilir).
+        captureDims(item, el) {
+            if (el && el.naturalWidth) {
+                item.width = el.naturalWidth;
+                item.height = el.naturalHeight;
+            }
+        },
+
+        formatSize(bytes) {
+            if (!bytes) return '';
+            const kb = bytes / 1024;
+            return kb < 1024 ? Math.round(kb) + ' KB' : (kb / 1024).toFixed(1) + ' MB';
+        },
+
+        // ── Yükleme (dosya seç / sürükle-bırak / panodan yapıştır) ──────────
+        onMediaDrop(e) {
+            this.mediaDragOver = false;
+            const files = e.dataTransfer?.files;
+            if (files && files.length) this.uploadFiles(files);
+        },
+
+        onMediaPaste(e) {
+            const items = e.clipboardData?.items || [];
+            const files = [];
+            for (const it of items) {
+                if (it.kind === 'file' && it.type.startsWith('image/')) {
+                    const f = it.getAsFile();
+                    if (f) files.push(f);
+                }
+            }
+            if (files.length) {
+                e.preventDefault();
+                this.uploadFiles(files);
+            }
+        },
+
+        onMediaFileInput(event) {
+            // event.target.files CANLI bir FileList; value='' onu boşaltır.
+            // Bu yüzden value'yu temizlemeden ÖNCE sabit bir diziye kopyala,
+            // yoksa aşağıdaki length kontrolü 0 görür ve yükleme hiç başlamaz.
+            const files = Array.from(event.target.files || []);
+            event.target.value = ''; // aynı dosya tekrar seçilebilsin
+            if (files.length) this.uploadFiles(files);
+        },
+
+        // Tek veya çok dosyayı sırayla yükler; yenileri listeye ekler,
+        // sonuncusunu aktif yapar + tekli modda alana atar.
+        async uploadFiles(fileList) {
+            const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
+            if (!files.length) {
+                this.mediaUploadError = 'Yalnızca görsel dosyaları yüklenebilir.';
+                return;
+            }
+
+            this.mediaUploadError = '';
+            this.mediaUploading = true;
+            let last = null;
+
+            for (const file of files) {
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const resp = await fetch('/admin/media/upload', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': this._csrf(),
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: fd,
+                    });
+                    const json = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !json.success) {
+                        this.mediaUploadError = json.error || `Yükleme başarısız (HTTP ${resp.status}).`;
+                        continue;
+                    }
+                    const item = {
+                        id: json.id ?? ('up_' + Date.now()),
+                        url: json.url,
+                        thumbnail_url: json.url,
+                        name: json.name,
+                        file_name: json.file_name || json.name,
+                        mime_type: json.mime,
+                        size: json.size,
+                        alt_text: '',
+                        is_image: true,
+                    };
+                    this.mediaItems.unshift(item);
+                    last = item;
+                } catch (e) {
+                    console.error('[blockFieldInput] Media upload error:', e);
+                    this.mediaUploadError = 'Yükleme sırasında bir hata oluştu.';
+                }
+            }
+
+            if (last) {
+                this.focusMedia(last);
+                if (this.mediaMultiple) {
+                    if (!this.mediaChosen.includes(last.url)) this.mediaChosen.push(last.url);
+                } else {
+                    this.parentRef[this.fieldKey] = last.url; // hemen alana ata (modal açık kalır)
+                }
+            }
+            this.mediaUploading = false;
+        },
+
+        // ── Aktif öğe işlemleri (ad/alt kaydet, AI alt, sil) ────────────────
+        async saveMediaMeta() {
+            if (!this.mediaActive || String(this.mediaActive.id).startsWith('up_')) return;
+            this.mediaSavingMeta = true;
+            try {
+                const resp = await fetch('/admin/media/' + this.mediaActive.id, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this._csrf(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        _method: 'PUT',
+                        name: this.mediaNameDraft,
+                        custom_properties: { alt_text: this.mediaAltDraft },
+                    }),
+                });
+                const json = await resp.json().catch(() => ({}));
+                if (resp.ok && json.success) {
+                    this.mediaActive.name = json.name;
+                    this.mediaActive.alt_text = json.alt_text;
+                }
+            } catch (e) {
+                console.error('[blockFieldInput] Media meta save error:', e);
+            } finally {
+                this.mediaSavingMeta = false;
+            }
+        },
+
+        // Dosya adını URL-güvenli (slug) yap: file_name'i slug'lar, diski taşır,
+        // bu sitedeki içeriklerde eski URL'i yenisiyle değiştirir (link kırılmaz).
+        async renameMediaFile() {
+            if (!this.mediaActive || String(this.mediaActive.id).startsWith('up_')) return;
+            if (!window.confirm('Dosya adı URL-güvenli (slug) yapılacak ve dosya taşınacak. Bu görseli kullanan sayfa/yazı içeriklerindeki linkler otomatik güncellenir. Devam?')) return;
+            this.mediaRenaming = true;
+            try {
+                const resp = await fetch('/admin/media/' + this.mediaActive.id + '/rename', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this._csrf(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ _method: 'PUT', name: this.mediaNameDraft }),
+                });
+                const json = await resp.json().catch(() => ({}));
+                if (resp.ok && json.success) {
+                    this.mediaActive.name = json.name;
+                    this.mediaActive.file_name = json.file_name;
+                    this.mediaActive.url = json.url;
+                    const it = (this.mediaItems || []).find(m => m.id === this.mediaActive.id);
+                    if (it) { it.file_name = json.file_name; it.url = json.url; it.thumbnail_url = json.url; }
+                    window.alert(json.renamed
+                        ? ('Dosya adı: ' + json.file_name + (json.refs_updated ? (' · ' + json.refs_updated + ' içerik linki güncellendi') : ''))
+                        : 'Dosya adı zaten URL-güvenli.');
+                } else {
+                    window.alert('Yeniden adlandırılamadı: ' + (json.error || 'hata'));
+                }
+            } catch (e) {
+                console.error('[blockFieldInput] Media rename error:', e);
+            } finally {
+                this.mediaRenaming = false;
+            }
+        },
+
+        async generateActiveAlt() {
+            if (!this.mediaActive || String(this.mediaActive.id).startsWith('up_')) return;
+            this.mediaGenAltLoading = true;
+            try {
+                const resp = await fetch('/admin/media/' + this.mediaActive.id + '/generate-alt', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this._csrf(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                const json = await resp.json().catch(() => ({}));
+                if (resp.ok && json.ok) {
+                    this.mediaAltDraft = json.alt || '';
+                } else {
+                    this.mediaUploadError = json.message || 'AI alt metni üretilemedi.';
+                }
+            } catch (e) {
+                console.error('[blockFieldInput] Alt generate error:', e);
+            } finally {
+                this.mediaGenAltLoading = false;
+            }
+        },
+
+        async deleteMedia(item) {
+            if (!confirm('Bu görseli kütüphaneden kalıcı olarak silmek istiyor musunuz?')) return;
+            if (String(item.id).startsWith('up_')) {
+                this.mediaItems = this.mediaItems.filter((m) => m.url !== item.url);
+                return;
+            }
+            try {
+                const resp = await fetch('/admin/media/' + item.id, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': this._csrf(),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ _method: 'DELETE' }),
+                });
+                const json = await resp.json().catch(() => ({}));
+                if (resp.ok && json.success) {
+                    this.mediaItems = this.mediaItems.filter((m) => m.id !== item.id);
+                    if (this.mediaActive && this.mediaActive.id === item.id) {
+                        this.mediaActive = this.mediaItems[0] || null;
+                        if (this.mediaActive) this.focusMedia(this.mediaActive);
+                    }
+                }
+            } catch (e) {
+                console.error('[blockFieldInput] Media delete error:', e);
+            }
+        },
+
+        // ── Icon picker (Font Awesome) ──────────────────────────────────────
+        // Curated set of common business/corporate FA solid icons.
+        get iconCatalog() {
+            return [
+                'fa-star','fa-heart','fa-check','fa-circle-check','fa-xmark','fa-plus','fa-minus',
+                'fa-phone','fa-mobile-screen','fa-envelope','fa-location-dot','fa-map','fa-globe','fa-clock',
+                'fa-calendar','fa-calendar-check','fa-user','fa-users','fa-user-doctor','fa-user-tie','fa-user-group',
+                'fa-house','fa-building','fa-hospital','fa-store','fa-briefcase','fa-handshake','fa-award','fa-trophy',
+                'fa-medal','fa-certificate','fa-shield','fa-shield-halved','fa-lock','fa-thumbs-up','fa-gem',
+                'fa-bolt','fa-fire','fa-lightbulb','fa-rocket','fa-gear','fa-gears','fa-wrench','fa-screwdriver-wrench',
+                'fa-chart-line','fa-chart-pie','fa-chart-column','fa-magnifying-glass','fa-eye','fa-bullseye','fa-flag',
+                'fa-graduation-cap','fa-book','fa-pen','fa-pen-nib','fa-camera','fa-image','fa-video','fa-music',
+                'fa-truck','fa-car','fa-plane','fa-ship','fa-box','fa-boxes-stacked','fa-cart-shopping','fa-bag-shopping',
+                'fa-tag','fa-tags','fa-percent','fa-gift','fa-credit-card','fa-wallet','fa-coins','fa-money-bill',
+                'fa-leaf','fa-seedling','fa-tree','fa-sun','fa-droplet','fa-recycle','fa-earth-europe',
+                'fa-heart-pulse','fa-stethoscope','fa-syringe','fa-pills','fa-tooth','fa-spa','fa-hand-holding-heart',
+                'fa-comments','fa-comment-dots','fa-headset','fa-paper-plane','fa-bell','fa-thumbtack',
+                'fa-list-check','fa-clipboard-check','fa-file-lines','fa-folder','fa-database','fa-server','fa-cloud',
+                'fa-wifi','fa-code','fa-laptop','fa-desktop','fa-palette','fa-wand-magic-sparkles','fa-puzzle-piece',
+                'fa-arrow-right','fa-arrow-up','fa-circle-arrow-right','fa-angles-right','fa-link','fa-share-nodes',
+                'fa-quote-left','fa-hashtag','fa-infinity','fa-crown','fa-key','fa-compass','fa-anchor','fa-cube',
+            ];
+        },
+
+        openIconPicker() {
+            this.iconPickerOpen = true;
+            this.iconSearch = '';
+        },
+
+        closeIconPicker() {
+            this.iconPickerOpen = false;
+        },
+
+        filteredIcons() {
+            const q = (this.iconSearch || '').toLowerCase().trim();
+            if (!q) return this.iconCatalog;
+            return this.iconCatalog.filter((ic) => ic.includes(q));
+        },
+
+        // Saklanan değerden render edilebilir tam class üretir.
+        // "fa-star" → "fas fa-star"; zaten "fas/far/fab ..." içeriyorsa dokunma.
+        iconClass(value) {
+            const v = (value || '').trim();
+            if (!v) return '';
+            if (/\b(fa-solid|fa-regular|fa-brands|fas|far|fab|fa-light|fa-thin|fa-duotone)\b/.test(v)) return v;
+            return 'fas ' + v;
+        },
+
+        iconValueMatches(ic) {
+            const v = (this.parentRef[this.fieldKey] || '').trim();
+            return v === ic || v === 'fas ' + ic;
+        },
+
+        selectIcon(ic) {
+            // TAM class sakla ("fas fa-star"). Next.js component path ikonu
+            // dogrudan <i className=icon> ile basar -> stil prefix'i sart.
+            // HTML template prefix'li "fas ..." kullansa bile cift "fas" zararsiz.
+            this.parentRef[this.fieldKey] = ic ? this.iconClass(ic) : '';
+            this.closeIconPicker();
+        },
+
+        // ── Page link picker (iç sayfa) ─────────────────────────────────────
+        // Katalog tüm page_link alanlarınca paylaşılır: tek fetch, window cache.
+        async ensurePagesLoaded() {
+            if (window.__pageCatalog) {
+                this.pages = window.__pageCatalog;
+                return;
+            }
+            if (window.__pageCatalogPromise) {
+                this.pagesLoading = true;
+                this.pages = await window.__pageCatalogPromise;
+                this.pagesLoading = false;
+                return;
+            }
+
+            this.pagesLoading = true;
+            window.__pageCatalogPromise = (async () => {
+                try {
+                    const resp = await fetch(@js(route('admin.pages.catalog-json', [], false)), {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                    });
+                    if (!resp.ok) return [];
+                    const json = await resp.json();
+                    window.__pageCatalog = json.data || [];
+                    return window.__pageCatalog;
+                } catch (e) {
+                    console.error('[blockFieldInput] Page catalog load error:', e);
+                    return [];
+                }
+            })();
+
+            this.pages = await window.__pageCatalogPromise;
+            this.pagesLoading = false;
+        },
+
+        openPagePicker() {
+            this.pagePickerOpen = true;
+            this.pageSearch = '';
+            this.ensurePagesLoaded();
+        },
+
+        closePagePicker() {
+            this.pagePickerOpen = false;
+        },
+
+        filteredPages() {
+            const q = (this.pageSearch || '').toLowerCase().trim();
+            if (!q) return this.pages;
+            return this.pages.filter((p) =>
+                (p.title || '').toLowerCase().includes(q) ||
+                (p.path || '').toLowerCase().includes(q)
             );
         },
 
-        selectMedia(item) {
-            this.parentRef[this.fieldKey] = item.url || item.original_url || '';
-            this.closeMediaPicker();
+        matchedPageTitle(value) {
+            const v = (value || '').trim();
+            if (!v) return '';
+            const match = (this.pages || []).find((p) => p.path === v);
+            return match ? match.title : '';
+        },
+
+        selectPage(pg) {
+            this.parentRef[this.fieldKey] = pg.path;
+            this.closePagePicker();
         },
 
         // ── Quill rich-text ─────────────────────────────────────────────────
@@ -155,6 +661,23 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         rowSettingsDraft: null,
         initialSerializedRegions: null,
 
+        // Sürükle-bırak state'i: dragBlock/dragRow kaynak konumu tutar,
+        // *Over anahtarları hedef vurgusu için kullanılır.
+        dragBlock: null,
+        dragBlockOver: null,
+        dragRow: null,
+        dragRowOver: null,
+
+        // Repeater item aç/kapa durumu — content'e sızmasın diye _uid ile
+        // ayrı tutulur (serializeContent yalnızca _uid'i ayıklıyor).
+        expandedRepeaterItems: {},
+
+        // HTML Override CodeMirror (Kod tabı). Modal yeniden kullanıldığı için
+        // tek instance; blok/tab değişince değer senkronlanır.
+        htmlOverrideCM: null,
+        htmlOverrideSyncing: false,
+        htmlOverrideCloned: false, // "kopyalandı" geçici buton geri bildirimi
+
         // AI block-edit state (FAZ 3.6 streaming)
         aiAction: 'shorten',
         aiCustomPrompt: '',
@@ -164,6 +687,26 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         aiAbortController: null,
         aiStatus: '',
         aiStatusOk: false,
+
+        // ── AI Sayfa Asistanı (Madde 3b) — çok-bloklu düzenleme + sıralama ──
+        // Tek talimattan bir DEĞİŞİKLİK PLANI (edit/reorder/remove) alınır,
+        // diff olarak gösterilir, onaydan SONRA client-side uygulanır.
+        assistOpen: false,
+        assistInstruction: '',
+        assistLoading: false,
+        assistError: '',
+        assistPlan: null,            // {summary, operations:[...], warnings:[...]}
+        assistRefMap: {},            // ref -> {rowIndex, columnIndex, blockIndex} (body)
+        assistSingleBlockRows: true, // true ise satır sırası = blok sırası (güvenli reorder)
+        assistApplied: false,
+
+        // Şablon kataloğu canlı senkronizasyon state'i
+        templateSyncToast: '',
+        templateSyncToastVisible: false,
+        catalogRefreshing: false,
+
+        // Form submit (kaydet) sırasında beforeunload uyarısını bastır
+        suppressUnloadWarning: false,
 
         init() {
             this.regions = this.normalizeRegions(initialRegions);
@@ -183,6 +726,45 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                 this.syncSerializedRegions();
             });
 
+            // AI Sayfa Asistanı'nı sidebar'daki butondan aç (ayrı Alpine scope'u
+            // bu kök bileşene custom event ile haber verir — ai-translate gibi).
+            window.addEventListener('open-ai-assist', () => this.openAssist());
+
+            // Kaydedilmemiş bölüm değişikliği varken sekme kapanır/sayfa
+            // değişirse tarayıcı onayı iste — kaydet ile ayrılırken sessiz.
+            window.addEventListener('beforeunload', (event) => {
+                if (this.suppressUnloadWarning || !this.sectionsJsonIsDirty()) return;
+                event.preventDefault();
+                event.returnValue = '';
+            });
+
+            // Başka bir sekmede şablon kaydedildiğinde (edit.blade.php
+            // localStorage sinyali yazar) kataloğu ve blokları tazele.
+            // storage event'i yalnızca diğer sekmelerde tetiklenir.
+            window.addEventListener('storage', (event) => {
+                if (event.key !== 'grafike:section-template-updated' || !event.newValue) return;
+                let info = null;
+                try { info = JSON.parse(event.newValue); } catch (e) { /* bozuk sinyal — adsız yenile */ }
+                this.refreshTemplateCatalog(info?.name || null);
+            });
+
+            // Klavye kısayolları: Cmd/Ctrl+S kaydet, Esc açık modalı kapat.
+            window.addEventListener('keydown', (event) => this.handleEditorKeydown(event));
+
+            // HTML Override CodeMirror: Kod tabı açılınca veya blok değişince
+            // editörü kur/tazele ve değeri senkronla (modal gizliyken init
+            // edilen CM'in refresh edilmesi şart).
+            this.$watch('settingsTab', (tab) => {
+                if (tab === 'code') {
+                    this.$nextTick(() => this.syncHtmlOverrideEditor());
+                }
+            });
+            this.$watch('settingsDraft', () => {
+                if (this.settingsTab === 'code') {
+                    this.$nextTick(() => this.syncHtmlOverrideEditor());
+                }
+            });
+
             this.$nextTick(() => {
                 this.syncSerializedRegions();
 
@@ -193,6 +775,7 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
                 form.dataset.frontendSectionsSyncBound = '1';
                 form.addEventListener('submit', () => {
+                    this.suppressUnloadWarning = true;
                     this.syncSerializedRegions();
                 }, { capture: true });
                 form.addEventListener('formdata', (event) => {
@@ -204,6 +787,43 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
                     this.syncSerializedRegions();
                 });
             });
+        },
+
+        // ── Klavye kısayolları ──────────────────────────────────────────────
+        anySettingsOpen() {
+            return this.settingsModalOpen || this.rowSettingsModalOpen
+                || this.columnSettingsModalOpen || this.pickerModalOpen;
+        },
+
+        closeTopmostModal() {
+            // En içteki/öncelikli modaldan dışa doğru kapat.
+            if (this.pickerModalOpen) { this.closeBlockPicker(); return true; }
+            if (this.settingsModalOpen) { this.closeBlockSettings(); return true; }
+            if (this.columnSettingsModalOpen) { this.closeColumnSettings(); return true; }
+            if (this.rowSettingsModalOpen) { this.closeRowSettings(); return true; }
+            return false;
+        },
+
+        handleEditorKeydown(event) {
+            // Cmd/Ctrl+S → kaydet (formu gönder)
+            if ((event.metaKey || event.ctrlKey) && (event.key === 's' || event.key === 'S')) {
+                event.preventDefault();
+                // Açık modal varsa önce ayarları uygula, sonra kaydet
+                if (this.settingsModalOpen) this.saveBlockSettings();
+                const form = this.$root.closest('form');
+                if (form) {
+                    this.suppressUnloadWarning = true;
+                    // requestSubmit → native doğrulama + submit event'i çalışır
+                    (form.requestSubmit ? form.requestSubmit() : form.submit());
+                }
+                return;
+            }
+
+            // Esc → açık modalı kapat. Alt picker'lar (medya/ikon/sayfa) kendi
+            // escape handler'larında stopPropagation yaptığı için buraya ulaşmaz.
+            if (event.key === 'Escape' && this.anySettingsOpen()) {
+                if (this.closeTopmostModal()) event.preventDefault();
+            }
         },
 
         get serializedRegions() {
@@ -239,6 +859,93 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
         sectionsJsonIsDirty() {
             return this.initialSerializedRegions !== null
                 && this.serializedRegions !== this.initialSerializedRegions;
+        },
+
+        // ── Şablon kataloğu canlı senkronizasyonu ────────────────────────
+        //
+        // catalog-json endpoint'inden güncel şablonları çeker, bu şablonları
+        // kullanan blokların schema/html_template gibi şablon-türevi
+        // alanlarını yeniler. Kullanıcının girdiği content KORUNUR — yalnızca
+        // yeni schema alanları için default değerler eklenir.
+        async refreshTemplateCatalog(updatedName = null) {
+            if (this.catalogRefreshing) return false;
+            this.catalogRefreshing = true;
+
+            try {
+                const response = await fetch(@js(route('admin.section-templates.catalog-json', [], false)), {
+                    headers: { 'Accept': 'application/json' },
+                });
+                if (!response.ok) return false;
+
+                const data = await response.json();
+                if (!Array.isArray(data.templates)) return false;
+
+                this.availableTemplates = data.templates;
+                this.rehydrateBlocksFromCatalog();
+                this.showTemplateSyncToast(updatedName
+                    ? `"${updatedName}" şablonu güncellendi — bloklar yenilendi`
+                    : 'Şablon kataloğu yenilendi');
+                return true;
+            } catch (e) {
+                return false;
+            } finally {
+                this.catalogRefreshing = false;
+            }
+        },
+
+        rehydrateBlocksFromCatalog() {
+            this.regionNames.forEach((region) => {
+                (this.regions[region] || []).forEach((row) => {
+                    (row.columns || []).forEach((column) => {
+                        (column.blocks || []).forEach((block) => {
+                            this.applyTemplateToBlock(block);
+                        });
+                    });
+                });
+            });
+
+            // Ayarlar modalı açıksa draft da tazelensin — yeni alanlar anında görünür
+            if (this.settingsDraft) {
+                this.applyTemplateToBlock(this.settingsDraft);
+            }
+
+            this.queueSerializedRegionsSync();
+        },
+
+        applyTemplateToBlock(block) {
+            if (!block?.section_template_id) return;
+            const template = this.getTemplateById(block.section_template_id);
+            if (!template) return;
+
+            block.type          = template.type || block.type;
+            block.variation     = template.variation || block.variation;
+            block.render_mode   = template.render_mode || block.render_mode;
+            block.component_key = template.component_key ?? block.component_key;
+            block.template_name = template.name || block.template_name;
+            block.schema        = template.schema || {};
+            block.html_template = template.html_template || null;
+            block.content       = {
+                ...(template.default_content || {}),
+                ...(block.content || {}),
+            };
+        },
+
+        // Blok schema'sı katalogdaki güncel şablondan farklı mı?
+        // (modal açıkken başka tarayıcıdan şablon değiştirilmiş olabilir)
+        blockSchemaIsStale(block) {
+            if (!block?.section_template_id) return false;
+            const template = this.getTemplateById(block.section_template_id);
+            if (!template) return false;
+            return JSON.stringify(block.schema || {}) !== JSON.stringify(template.schema || {});
+        },
+
+        showTemplateSyncToast(message) {
+            this.templateSyncToast = message;
+            this.templateSyncToastVisible = true;
+            clearTimeout(this._templateSyncToastTimer);
+            this._templateSyncToastTimer = setTimeout(() => {
+                this.templateSyncToastVisible = false;
+            }, 4000);
         },
 
         getTemplateById(templateId) {
@@ -455,8 +1162,41 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             return fieldSchema.label || fieldSchema.name || fieldName;
         },
 
+        // Sistem/menü token'ı mı? Bunlar blok içeriği DEĞİL — renderer menüden/site
+        // ayarlarından otomatik doldurur. Block Ayarları formunda düzenlenebilir
+        // input olarak GÖSTERİLMEMELİ (yoksa boş text input görünür + kafa karıştırır).
+        isSystemFieldKey(key) {
+            const k = String(key || '');
+            const SYS = ['site_name', 'site_domain', 'theme_slug', 'logo_url', 'favicon_url',
+                'phone', 'email', 'address', 'whatsapp_number', 'working_hours', 'tax_id', 'footer_text'];
+            if (SYS.includes(k)) return true;
+            // menü tokenları: menu_{key}_html / _items_html / _name
+            return /^menu_[a-z0-9_]+_(items_html|html|name)$/.test(k);
+        },
+
+        // Block Ayarları formunda gösterilecek şema alanları (sistem/menü token'ları hariç).
+        visibleSchemaFields(schema) {
+            return Object.entries(schema || {}).filter(([key]) => ! this.isSystemFieldKey(key));
+        },
+
         repeaterFieldSchema(fieldSchema = {}) {
-            return fieldSchema.fields || fieldSchema.item_schema || {};
+            const raw = fieldSchema.fields || fieldSchema.item_schema || {};
+            // İki format da kabul edilir:
+            //  - OBJE map {key:{type,label}}        (sihirbaz/buildRepeaterItem üretir)
+            //  - DİZİ [{key,type,label}]            (elle/JSON ile girilebilir)
+            // Dizi gelirse key'e göre map'e çevir; aksi halde alanlar 0,1,2… diye
+            // anahtarlanıp form inputları yanlış bağlanır ve değerler BOŞ görünür.
+            if (Array.isArray(raw)) {
+                const map = {};
+                raw.forEach((f) => {
+                    if (f && typeof f === 'object' && f.key) {
+                        const { key, ...rest } = f;
+                        map[key] = rest;
+                    }
+                });
+                return map;
+            }
+            return (raw && typeof raw === 'object') ? raw : {};
         },
 
         schemaDefaultValue(fieldSchema = {}) {
@@ -519,7 +1259,9 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
         addRepeaterItem(block, fieldName, fieldSchema) {
             this.ensureRepeaterContent(block, fieldName);
-            block.content[fieldName].push(this.createRepeaterItem(fieldSchema));
+            const item = this.createRepeaterItem(fieldSchema);
+            block.content[fieldName].push(item);
+            this.expandedRepeaterItems[item._uid] = true;
         },
 
         removeRepeaterItem(block, fieldName, itemIndex) {
@@ -535,6 +1277,7 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             const clone = JSON.parse(JSON.stringify(source));
             clone._uid = this.generateUid('item');
             block.content[fieldName].splice(itemIndex + 1, 0, clone);
+            this.expandedRepeaterItems[clone._uid] = true;
         },
 
         moveRepeaterItem(block, fieldName, itemIndex, direction) {
@@ -544,6 +1287,39 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             if (targetIndex < 0 || targetIndex >= items.length) return;
 
             [items[itemIndex], items[targetIndex]] = [items[targetIndex], items[itemIndex]];
+        },
+
+        // ── Repeater item akıllı etiket + aç/kapa ───────────────────────
+        // İlk dolu metin alanından kısa özet üretir: "Item #1 — Hizmetlerimiz"
+        repeaterItemLabel(item, fieldSchema) {
+            const schema = this.repeaterFieldSchema(fieldSchema);
+            const names = Object.keys(schema);
+            const preferred = ['title', 'name', 'label', 'heading'].filter((n) => names.includes(n));
+            const ordered = [...preferred, ...names.filter((n) => !preferred.includes(n))];
+
+            for (const name of ordered) {
+                const type = schema[name]?.type || 'text';
+                if (!['text', 'textarea', 'rich-text', 'html'].includes(type)) continue;
+                const raw = item?.[name];
+                if (typeof raw !== 'string' || !raw.trim()) continue;
+                const text = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (!text) continue;
+                return text.length > 40 ? text.slice(0, 40) + '…' : text;
+            }
+
+            return '';
+        },
+
+        // 2'den fazla item varsa varsayılan kapalı; kullanıcı tercihi _uid ile saklanır
+        repeaterItemExpanded(item, itemCount) {
+            const state = this.expandedRepeaterItems[item?._uid];
+            if (state !== undefined) return state;
+            return itemCount <= 2;
+        },
+
+        toggleRepeaterItem(item, itemCount) {
+            if (!item?._uid) return;
+            this.expandedRepeaterItems[item._uid] = !this.repeaterItemExpanded(item, itemCount);
         },
 
         createColumn(region, rowIndex, columnIndex) {
@@ -761,6 +1537,52 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             this.normalizeSortOrder();
         },
 
+        // ── Satır sürükle-bırak ──────────────────────────────────────────
+        startRowDrag(event, region, rowIndex) {
+            this.dragRow = { region, rowIndex };
+            event.dataTransfer.effectAllowed = 'move';
+            // Firefox sürüklemeyi başlatmak için data ister
+            event.dataTransfer.setData('text/plain', 'row');
+            const card = event.target.closest('[data-row-card]');
+            if (card && event.dataTransfer.setDragImage) {
+                event.dataTransfer.setDragImage(card, 24, 24);
+            }
+        },
+
+        endRowDrag() {
+            this.dragRow = null;
+            this.dragRowOver = null;
+        },
+
+        rowDropKey(region, rowIndex) {
+            return region + ':' + (rowIndex === null ? 'end' : rowIndex);
+        },
+
+        rowDragOver(event, region, rowIndex) {
+            if (!this.dragRow) return;
+            event.preventDefault();
+            this.dragRowOver = this.rowDropKey(region, rowIndex);
+        },
+
+        dropRow(region, rowIndex = null) {
+            const src = this.dragRow;
+            this.endRowDrag();
+            if (!src) return;
+
+            const srcRows = this.regions[src.region];
+            if (!Array.isArray(srcRows)) return;
+            if (!Array.isArray(this.regions[region])) this.regions[region] = [];
+            const dstRows = this.regions[region];
+
+            let target = rowIndex === null ? dstRows.length : rowIndex;
+            if (srcRows === dstRows && target === src.rowIndex) return;
+
+            const [moved] = srcRows.splice(src.rowIndex, 1);
+            if (!moved) return;
+            dstRows.splice(Math.min(target, dstRows.length), 0, moved);
+            this.normalizeSortOrder();
+        },
+
         addColumn(region, rowIndex) {
             const row = this.regions[region][rowIndex];
             row.columns.push(this.createColumn(region, rowIndex, row.columns.length));
@@ -958,6 +1780,10 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
         saveBlockSettings() {
             if (!this.settingsTarget || !this.settingsDraft) return;
+            // CM düzenlemesi henüz settingsDraft'a yansımadıysa son değeri al.
+            if (this.htmlOverrideCM && this.settingsDraft.render_mode === 'html') {
+                this.settingsDraft.html_override = this.htmlOverrideCM.getValue();
+            }
             const { region, rowIndex, columnIndex, blockIndex } = this.settingsTarget;
             this.regions[region][rowIndex].columns[columnIndex].blocks[blockIndex] = {
                 ...this.regions[region][rowIndex].columns[columnIndex].blocks[blockIndex],
@@ -965,6 +1791,63 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             };
             this.normalizeSortOrder();
             this.closeBlockSettings();
+        },
+
+        // ── HTML Override CodeMirror (Kod tabı) ─────────────────────────
+        // Modal yeniden kullanıldığı için tek CM instance; blok/tab değişince
+        // değer senkronlanır. Modal gizliyken init edilirse refresh şart.
+        mountHtmlOverrideEditor(textarea) {
+            if (this.htmlOverrideCM || typeof CodeMirror === 'undefined' || !textarea) return;
+            const cm = CodeMirror.fromTextArea(textarea, {
+                mode: 'htmlmixed',
+                lineNumbers: true,
+                lineWrapping: true,
+                tabSize: 2,
+                // Katlama: <style>/<script>/tag ve {} blokları gutter okuyla aç-kapa
+                foldGutter: true,
+                gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+                extraKeys: { 'Ctrl-Q': c => c.foldCode(c.getCursor()), 'Cmd-Q': c => c.foldCode(c.getCursor()) },
+            });
+            cm.on('change', () => {
+                if (this.htmlOverrideSyncing) return;
+                if (this.settingsDraft) this.settingsDraft.html_override = cm.getValue();
+            });
+            this.htmlOverrideCM = cm;
+        },
+
+        syncHtmlOverrideEditor() {
+            if (! this.htmlOverrideCM) {
+                this.mountHtmlOverrideEditor(this.$refs.htmlOverrideTextarea);
+                if (! this.htmlOverrideCM) return; // CodeMirror henüz yüklenmemiş
+            }
+            const cm = this.htmlOverrideCM;
+            if (! this.settingsDraft) return;
+            const val = this.settingsDraft.html_override || '';
+            if (cm.getValue() !== val) {
+                this.htmlOverrideSyncing = true;
+                cm.setValue(val);
+                this.htmlOverrideSyncing = false;
+            }
+            this.$nextTick(() => cm.refresh());
+        },
+
+        // Üretilen HTML kodunu (placeholder'lar çözülmüş çıktı) HTML Override
+        // alanına klonlar; render_mode'u html'e çevirir ki override görünür/etkin
+        // olsun. Override doluysa üzerine yazmadan önce onay ister.
+        cloneGeneratedToOverride() {
+            if (! this.settingsDraft) return;
+            const generated = (this.blockCodePreview(this.settingsDraft) || '').trim();
+            if (! generated) return;
+            const current = (this.settingsDraft.html_override || '').trim();
+            if (current && current !== generated &&
+                ! window.confirm('HTML Override alanında içerik var. Üretilen kodla değiştirilsin mi?')) {
+                return;
+            }
+            this.settingsDraft.render_mode = 'html';
+            this.settingsDraft.html_override = generated;
+            this.$nextTick(() => this.syncHtmlOverrideEditor());
+            this.htmlOverrideCloned = true;
+            setTimeout(() => { this.htmlOverrideCloned = false; }, 2000);
         },
 
         // ── AI block-edit — streaming (FAZ 3.6) ─────────────────────────
@@ -1088,6 +1971,177 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
 
         abortAiTransform() {
             this.aiAbortController?.abort();
+        },
+
+        // ── AI Sayfa Asistanı (Madde 3b) ─────────────────────────────────
+        //
+        // openAssist → modal aç. requestAssistPlan → body bloklarını düz
+        // listeye çıkar, /ai/pages/assist'e gönder, dönen planı diff olarak
+        // tut. applyAssistPlan → planı regions üzerine uygula (edit yerinde;
+        // reorder/remove yalnızca tek-bloklu satır düzeninde güvenli).
+        openAssist() {
+            this.assistError = '';
+            this.assistPlan = null;
+            this.assistApplied = false;
+            this.assistOpen = true;
+        },
+
+        closeAssist() {
+            this.assistOpen = false;
+        },
+
+        // Body bloklarını sıralı düz listeye çıkar + ref->konum haritası kur.
+        buildAssistBlocks() {
+            const rows = this.regions.body || [];
+            const blocks = [];
+            const refMap = {};
+            let singleBlockRows = rows.length > 0;
+            let ref = 0;
+
+            rows.forEach((row, rowIndex) => {
+                const cols = row.columns || [];
+                if (cols.length !== 1 || (cols[0].blocks || []).length !== 1) {
+                    singleBlockRows = false;
+                }
+                cols.forEach((col, columnIndex) => {
+                    (col.blocks || []).forEach((block, blockIndex) => {
+                        ref += 1;
+                        const tpl = this.getTemplateById(block.section_template_id);
+                        const name = (tpl && tpl.name) ? tpl.name : (block.type || 'blok');
+                        refMap[ref] = { rowIndex, columnIndex, blockIndex };
+                        blocks.push({
+                            ref,
+                            type: block.type || '',
+                            name,
+                            content: block.content || {},
+                        });
+                    });
+                });
+            });
+
+            this.assistRefMap = refMap;
+            this.assistSingleBlockRows = singleBlockRows;
+            return blocks;
+        },
+
+        async requestAssistPlan() {
+            const instruction = (this.assistInstruction || '').trim();
+            if (instruction.length < 4) {
+                this.assistError = 'Lütfen ne yapmak istediğinizi yazın (örn. "tüm metinleri daha satış odaklı yap").';
+                return;
+            }
+            const blocks = this.buildAssistBlocks();
+            if (!blocks.length) {
+                this.assistError = 'Bu sayfada düzenlenecek blok yok. Önce blok ekleyin.';
+                return;
+            }
+
+            this.assistLoading = true;
+            this.assistError = '';
+            this.assistPlan = null;
+            this.assistApplied = false;
+
+            try {
+                const resp = await fetch(@js(route('admin.ai.pages.assist', [], false)), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '',
+                    },
+                    body: JSON.stringify({ instruction, blocks }),
+                });
+                const data = await resp.json().catch(() => ({ ok: false, message: 'Geçersiz yanıt' }));
+                if (!data.ok) {
+                    this.assistError = data.message || 'AI planı üretilemedi.';
+                    return;
+                }
+                this.assistPlan = data.plan;
+            } catch (e) {
+                this.assistError = e.message || 'Ağ hatası.';
+            } finally {
+                this.assistLoading = false;
+            }
+        },
+
+        assistBlockAt(ref) {
+            const loc = this.assistRefMap[ref];
+            if (!loc) return null;
+            const col = this.regions.body?.[loc.rowIndex]?.columns?.[loc.columnIndex];
+            return (col && col.blocks) ? (col.blocks[loc.blockIndex] || null) : null;
+        },
+
+        assistHasOps() {
+            return !!(this.assistPlan && Array.isArray(this.assistPlan.operations) && this.assistPlan.operations.length);
+        },
+
+        applyAssistPlan() {
+            const plan = this.assistPlan;
+            if (!plan || !Array.isArray(plan.operations)) return;
+
+            const removeRefs = [];
+            let reorder = null;
+
+            // 1) Edit'leri YERİNDE uygula — yapısal değişiklik yok, ref haritası geçerli.
+            plan.operations.forEach((op) => {
+                if (op.op === 'edit') {
+                    const block = this.assistBlockAt(op.ref);
+                    if (!block) return;
+                    if (!block.content) block.content = {};
+                    (op.changes || []).forEach((c) => {
+                        if (c && typeof c.key === 'string') block.content[c.key] = c.new;
+                    });
+                } else if (op.op === 'remove') {
+                    removeRefs.push(Number(op.ref));
+                } else if (op.op === 'reorder') {
+                    reorder = (op.order || []).map(Number);
+                }
+            });
+
+            // 2) Sıralama + kaldırma — tek-bloklu satır düzeninde satır listesini
+            //    yeniden kur; çok sütunlu düzende kaldırmayı konum bazlı yap, reorder'ı atla.
+            const skipped = [];
+            if (reorder || removeRefs.length) {
+                if (this.assistSingleBlockRows) {
+                    const rows = this.regions.body || [];
+                    // ref i  ↔  rows[i-1] (flatten sırası satır sırasıyla birebir)
+                    let order = (reorder && reorder.length) ? reorder.slice() : rows.map((_, i) => i + 1);
+                    rows.forEach((_, i) => { if (!order.includes(i + 1)) order.push(i + 1); });
+                    order = order.filter((ref) => !removeRefs.includes(ref));
+                    this.regions.body = order.map((ref) => rows[ref - 1]).filter(Boolean);
+                } else {
+                    const locs = removeRefs
+                        .map((ref) => this.assistRefMap[ref])
+                        .filter(Boolean)
+                        .sort((a, b) => b.rowIndex - a.rowIndex || b.columnIndex - a.columnIndex || b.blockIndex - a.blockIndex);
+                    locs.forEach((loc) => {
+                        const col = this.regions.body?.[loc.rowIndex]?.columns?.[loc.columnIndex];
+                        if (col && Array.isArray(col.blocks)) col.blocks.splice(loc.blockIndex, 1);
+                    });
+                    this.regions.body = (this.regions.body || []).filter((row) => {
+                        row.columns = (row.columns || []).filter((col) => (col.blocks || []).length > 0);
+                        return row.columns.length > 0;
+                    });
+                    if (reorder) {
+                        skipped.push('Çok sütunlu düzen olduğu için sıralama otomatik uygulanmadı; blokları elle taşıyabilirsiniz.');
+                    }
+                }
+            }
+
+            this.normalizeSortOrder();
+            this.syncSerializedRegions();
+
+            this.assistApplied = true;
+            this.assistPlan = null;
+            this.assistInstruction = '';
+            this.assistError = skipped.length ? skipped.join(' ') : '';
+            setTimeout(() => { this.assistApplied = false; this.assistOpen = false; }, 1700);
+        },
+
+        assistTruncate(text, max = 90) {
+            const s = String(text == null ? '' : text);
+            return s.length > max ? s.slice(0, max) + '…' : s;
         },
 
         get settingsBlock() {
@@ -1248,6 +2302,60 @@ function frontendSectionEditor({ initialRegions = null, availableTemplates = [],
             const targetIndex = blockIndex + direction;
             if (targetIndex < 0 || targetIndex >= blocks.length) return;
             [blocks[blockIndex], blocks[targetIndex]] = [blocks[targetIndex], blocks[blockIndex]];
+            this.normalizeSortOrder();
+        },
+
+        // ── Blok sürükle-bırak (kolon içi + kolonlar/bölgeler arası) ─────
+        startBlockDrag(event, region, rowIndex, columnIndex, blockIndex) {
+            this.dragBlock = { region, rowIndex, columnIndex, blockIndex };
+            event.dataTransfer.effectAllowed = 'move';
+            // Firefox sürüklemeyi başlatmak için data ister
+            event.dataTransfer.setData('text/plain', 'block');
+            const card = event.target.closest('[data-block-card]');
+            if (card && event.dataTransfer.setDragImage) {
+                event.dataTransfer.setDragImage(card, 16, 16);
+            }
+        },
+
+        endBlockDrag() {
+            this.dragBlock = null;
+            this.dragBlockOver = null;
+        },
+
+        blockDropKey(region, rowIndex, columnIndex, blockIndex) {
+            return [region, rowIndex, columnIndex, blockIndex === null ? 'end' : blockIndex].join(':');
+        },
+
+        blockDragOver(event, region, rowIndex, columnIndex, blockIndex = null) {
+            if (!this.dragBlock) return;
+            event.preventDefault();
+            this.dragBlockOver = this.blockDropKey(region, rowIndex, columnIndex, blockIndex);
+        },
+
+        blockIsDragSource(region, rowIndex, columnIndex, blockIndex) {
+            return this.dragBlock
+                && this.dragBlock.region === region
+                && this.dragBlock.rowIndex === rowIndex
+                && this.dragBlock.columnIndex === columnIndex
+                && this.dragBlock.blockIndex === blockIndex;
+        },
+
+        dropBlock(region, rowIndex, columnIndex, blockIndex = null) {
+            const src = this.dragBlock;
+            this.endBlockDrag();
+            if (!src) return;
+
+            const srcBlocks = this.regions[src.region]?.[src.rowIndex]?.columns?.[src.columnIndex]?.blocks;
+            const dstColumn = this.regions[region]?.[rowIndex]?.columns?.[columnIndex];
+            if (!Array.isArray(srcBlocks) || !dstColumn) return;
+            if (!Array.isArray(dstColumn.blocks)) dstColumn.blocks = [];
+
+            let target = blockIndex === null ? dstColumn.blocks.length : blockIndex;
+            if (srcBlocks === dstColumn.blocks && target === src.blockIndex) return;
+
+            const [moved] = srcBlocks.splice(src.blockIndex, 1);
+            if (!moved) return;
+            dstColumn.blocks.splice(Math.min(target, dstColumn.blocks.length), 0, moved);
             this.normalizeSortOrder();
         },
 

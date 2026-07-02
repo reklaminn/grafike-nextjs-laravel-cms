@@ -42,9 +42,17 @@ class AiSectionTemplateGenerator
         ?array $hints = null,
         ?string $imageBase64 = null,
         string $imageMimeType = 'image/jpeg',
+        ?string $currentHtml = null,
+        ?array $currentSchema = null,
     ): array {
         $system = $this->systemPrompt();
-        $user   = $this->userPrompt($prompt, $hints ?? [], hasImage: $imageBase64 !== null);
+        $user   = $this->userPrompt(
+            $prompt,
+            $hints ?? [],
+            hasImage: $imageBase64 !== null,
+            currentHtml: $currentHtml,
+            currentSchema: $currentSchema,
+        );
 
         try {
             $response = $this->router->generate(
@@ -130,7 +138,7 @@ Beklenen şema:
 PROMPT;
     }
 
-    private function userPrompt(string $prompt, array $hints, bool $hasImage = false): string
+    private function userPrompt(string $prompt, array $hints, bool $hasImage = false, ?string $currentHtml = null, ?array $currentSchema = null): string
     {
         $hintLines = [];
         if (! empty($hints['color_scheme'])) {
@@ -149,6 +157,19 @@ PROMPT;
         $imageNote = $hasImage
             ? "\nReferans görsel eklendi — tasarımı bu görseldeki layout, renk ve bileşen yapısına benzetmeye çalış.\n"
             : '';
+
+        // DÜZENLE modu: mevcut html + şema verilirse, sıfırdan değil ÜZERİNDE çalış.
+        if ($currentHtml !== null && trim($currentHtml) !== '') {
+            $schemaJson = json_encode($currentSchema ?? new \stdClass(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+            return "GÖREV: Aşağıdaki MEVCUT block şablonunu, kullanıcının isteğine göre DÜZENLE. "
+                . "Genel yapıyı, Tailwind class'larını ve çalışan kısımları KORU; yalnızca istenen değişikliği uygula. "
+                . "Placeholder ({{key}}) ↔ schema_json tutarlılığını koru (yeni alan eklersen schema_json'a da ekle).{$imageNote}{$hintBlock}"
+                . "\n\nMEVCUT html_template:\n{$currentHtml}"
+                . "\n\nMEVCUT schema_json:\n{$schemaJson}"
+                . "\n\nKULLANICI İSTEĞİ:\n{$prompt}"
+                . "\n\nÇIKTI: Güncellenmiş TAM JSON (name/type/variation/html_template/schema_json/default_content_json), başka hiçbir şey.";
+        }
 
         return "Block şablonu tarifi:\n{$prompt}{$imageNote}{$hintBlock}\n\nÇIKTI: Yukarıdaki şemada tam JSON, başka hiçbir şey.";
     }

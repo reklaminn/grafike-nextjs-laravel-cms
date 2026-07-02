@@ -1,3 +1,4 @@
+import { uiStrings } from "@/lib/ui-strings";
 import { RegionLayoutRenderer } from "@/components/sections/region-layout-renderer";
 import { SectionRenderer } from "@/components/sections/section-renderer";
 import type { MenusPayload, PagePayload, SettingsPayload, SitePayload } from "@/lib/types";
@@ -79,10 +80,10 @@ export function CmsPageContent({
       <span style={{ fontSize: "1.5rem" }}>🔒</span>
       <div style={{ flex: 1 }}>
         <p style={{ fontWeight: 600, color: "var(--color-heading, #111827)", marginBottom: "0.25rem" }}>
-          Üyelere özel içerik
+          {uiStrings(locale).memberOnlyTitle}
         </p>
         <p style={{ fontSize: "0.875rem", color: "var(--color-text-soft, #6b7280)" }}>
-          Bu sayfanın bir kısmı sadece kayıtlı üyelere açıktır.
+          {uiStrings(locale).memberOnlyBody}
         </p>
       </div>
       <a
@@ -98,7 +99,7 @@ export function CmsPageContent({
           whiteSpace:     "nowrap",
         }}
       >
-        Giriş Yap
+        {uiStrings(locale).login}
       </a>
     </div>
   ) : null;

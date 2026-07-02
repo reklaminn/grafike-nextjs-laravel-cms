@@ -103,8 +103,8 @@ class BackupTenant extends Command
             Storage::disk('local')->put($storagePath, file_get_contents($zipTmp));
             @unlink($zipTmp);
 
-            // ── 5. Prune old backups (keep last 30) ───────────────────────────
-            $this->pruneOld("backups/{$tenantId}", 30);
+            // ── 5. Eski yedekleri buda — GFS katmanlı saklama ─────────────────
+            $this->pruneOld("backups/{$tenantId}");
 
             return $storagePath;
 
@@ -165,13 +165,61 @@ class BackupTenant extends Command
         @rmdir($dir);
     }
 
-    private function pruneOld(string $dir, int $keep): void
+    /**
+     * GFS (Grandfather-Father-Son) katmanlı saklama:
+     *  - Son 7 gün: TÜM yedekler (yakın güvenlik + aynı-gün manuel checkpoint'ler)
+     *  - 8 gün – ~5 hafta: her ISO hafta için en yeni 1 yedek
+     *  - ~5 hafta – ~6 ay: her takvim ayı için en yeni 1 yedek
+     *  - Daha eski: silinir
+     * Sonuç ≈ 17 yedek, ~6 ay geriye dönük kapsama; disk şişmez.
+     * Dosya adı: backup_{tenant}_{Y-m-d_H-i-s}.zip — tenant id'si alt çizgi
+     * içerebildiği için zaman damgası SONDAN regex'le ayrıştırılır.
+     */
+    private function pruneOld(string $dir): void
     {
-        $files = Storage::disk('local')->files($dir);
-        rsort($files); // newest first (timestamp in filename)
+        $items = [];
+        foreach (Storage::disk('local')->files($dir) as $f) {
+            if (preg_match('/(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.zip$/', $f, $m)) {
+                $ts = \DateTimeImmutable::createFromFormat('Y-m-d_H-i-s', $m[1]);
+                if ($ts !== false) {
+                    $items[] = ['path' => $f, 'ts' => $ts];
+                }
+            }
+        }
+        if ($items === []) {
+            return;
+        }
 
-        foreach (array_slice($files, $keep) as $old) {
-            Storage::disk('local')->delete($old);
+        usort($items, fn ($a, $b) => $b['ts'] <=> $a['ts']); // en yeni → en eski
+
+        $now = new \DateTimeImmutable('now');
+        $keep = [];
+        $seenWeek = [];
+        $seenMonth = [];
+
+        foreach ($items as $it) {
+            $ageDays = (int) $now->diff($it['ts'])->days;
+
+            if ($ageDays <= 7) {
+                $keep[$it['path']] = true;                       // günlük: son 7 gün — hepsi
+            } elseif ($ageDays <= 35) {
+                $wk = $it['ts']->format('o-W');                  // haftalık: hafta başına 1
+                if (! isset($seenWeek[$wk])) {
+                    $seenWeek[$wk] = $keep[$it['path']] = true;
+                }
+            } elseif ($ageDays <= 215) {
+                $mo = $it['ts']->format('Y-m');                  // aylık: ay başına 1
+                if (! isset($seenMonth[$mo])) {
+                    $seenMonth[$mo] = $keep[$it['path']] = true;
+                }
+            }
+            // daha eski → tutulmaz (silinecek)
+        }
+
+        foreach ($items as $it) {
+            if (! isset($keep[$it['path']])) {
+                Storage::disk('local')->delete($it['path']);
+            }
         }
     }
 }

@@ -109,6 +109,20 @@
         </button>
     </div>
     <p x-show="error" x-cloak class="mt-2 text-xs text-red-600 bg-red-50 rounded p-2" x-text="error"></p>
+
+    {{-- AI ile Düzenle — mevcut blokları tek talimatla düzenle (Madde 3b).
+         Asistan modalı frontendSectionEditor kök scope'unda; buradan event ile açılır. --}}
+    <div class="mt-3 border-t border-indigo-100 pt-3">
+        <button type="button"
+                @click="window.dispatchEvent(new CustomEvent('open-ai-assist'))"
+                class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-indigo-300 text-indigo-700 text-xs font-medium rounded-lg hover:bg-indigo-50 transition-colors">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            AI ile Düzenle
+        </button>
+        <p class="mt-1.5 text-center text-[11px] text-indigo-500/80">
+            Tek talimatla tüm bloklarda metin/sıra düzenle — uygulamadan önce gösterir.
+        </p>
+    </div>
 </div>
 @endisset
 
@@ -117,14 +131,30 @@
     <h3 class="text-base font-semibold text-gray-800 mb-4">Yayın</h3>
 
     <div class="space-y-4">
-        <div>
+        <div x-data="{ pageStatus: @js(old('status', $page->status ?? 'draft')) }">
             <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Durum *</label>
-            <select id="status" name="status" required
+            <select id="status" name="status" required x-model="pageStatus"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                 <option value="draft" {{ old('status', $page->status ?? 'draft') === 'draft' ? 'selected' : '' }}>Taslak</option>
+                <option value="scheduled" {{ old('status', $page->status ?? '') === 'scheduled' ? 'selected' : '' }}>Zamanlanmış</option>
                 <option value="published" {{ old('status', $page->status ?? '') === 'published' ? 'selected' : '' }}>Yayında</option>
                 <option value="archived" {{ old('status', $page->status ?? '') === 'archived' ? 'selected' : '' }}>Arşivlenmiş</option>
             </select>
+
+            {{-- Zamanlanmış yayın tarihi --}}
+            <div x-show="pageStatus === 'scheduled'" x-cloak class="mt-3">
+                <label for="scheduled_at" class="block text-sm font-medium text-gray-700 mb-1">
+                    <i class="fas fa-clock text-blue-500 mr-1"></i>Yayın Tarihi *
+                </label>
+                <input type="datetime-local" id="scheduled_at" name="scheduled_at"
+                       value="{{ old('scheduled_at', isset($page) && $page->scheduled_at ? $page->scheduled_at->format('Y-m-d\TH:i') : '') }}"
+                       min="{{ now()->format('Y-m-d\TH:i') }}"
+                       class="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-blue-50/50">
+                <p class="mt-1 text-xs text-gray-500">Sayfa bu tarihte otomatik yayınlanır.</p>
+                @error('scheduled_at')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
         </div>
 
         <div>
@@ -186,9 +216,12 @@
         @endisset
     </div>
 
-    <div class="mt-6 flex gap-3">
+    {{-- Sabit yüzen kaydet çubuğu — sidebar'a değil VIEWPORT'a fixed; sayfanın
+         neresinde olursan ol Güncelle/İptal hep sağ-altta görünür (modaller
+         z-[70]+ olduğu için onların altında kalır). --}}
+    <div class="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-xl border border-gray-200 bg-white/95 p-2.5 shadow-xl backdrop-blur">
         <button type="submit"
-                class="flex-1 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
             <i class="fas fa-save mr-1"></i>
             {{ isset($page) ? 'Güncelle' : 'Oluştur' }}
         </button>

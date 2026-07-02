@@ -60,6 +60,41 @@ class PageController extends Controller
         return view('admin.pages.index', compact('pages', 'languages'));
     }
 
+    /**
+     * Editör "iç sayfa link seçici" için yayınlanmış sayfa kataloğu.
+     * Her sayfa için frontend yolunu (locale-prefix) hesaplar:
+     *   home / boş slug → /{locale}
+     *   diğerleri       → /{locale}/{slug}
+     */
+    public function catalogJson(): JsonResponse
+    {
+        $pages = Page::query()
+            ->with('language:id,locale,code,name')
+            ->where('status', 'published')
+            ->orderByRaw("CASE WHEN slug = '' OR slug = 'home' THEN 0 ELSE 1 END")
+            ->orderBy('title')
+            ->get(['id', 'title', 'slug', 'language_id', 'external_url'])
+            ->map(function (Page $page) {
+                $locale = $page->language?->locale ?: ($page->language?->code ?: 'tr');
+                $isHome = $page->slug === '' || $page->slug === 'home';
+                $path = $page->external_url
+                    ?: ($isHome ? "/{$locale}" : "/{$locale}/{$page->slug}");
+
+                return [
+                    'id' => $page->id,
+                    'title' => $page->title,
+                    'slug' => $page->slug,
+                    'locale' => $locale,
+                    'language' => $page->language?->name,
+                    'path' => $path,
+                    'is_external' => (bool) $page->external_url,
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $pages]);
+    }
+
     public function create()
     {
         $languages = Language::where('is_active', true)->get();
@@ -93,6 +128,11 @@ class PageController extends Controller
         // Generate slug if not provided
         if (empty($data['slug'])) {
             $data['slug'] = $this->generateUniqueSlug($data['title']);
+        }
+
+        // Zamanlanmış değilse scheduled_at anlamsız — temizle
+        if (($data['status'] ?? '') !== 'scheduled') {
+            $data['scheduled_at'] = null;
         }
 
         // Handle boolean fields
@@ -211,6 +251,11 @@ class PageController extends Controller
         // Generate slug if not provided
         if (empty($data['slug'])) {
             $data['slug'] = $this->generateUniqueSlug($data['title'], $page->id);
+        }
+
+        // Zamanlanmış değilse scheduled_at anlamsız — temizle
+        if (($data['status'] ?? '') !== 'scheduled') {
+            $data['scheduled_at'] = null;
         }
 
         // Handle boolean fields
@@ -373,10 +418,17 @@ class PageController extends Controller
 
         Page::recordSnapshot($page, "restore-from-revision-{$revision->id}");
 
-        $page->forceFill([
-            'sections_json' => $revision->snapshot['sections_json'] ?? null,
-            'layout_json'   => $revision->snapshot['layout_json'] ?? null,
-        ])->saveQuietly();
+        // Snapshot'ta bulunan tüm revizyon alanlarını geri yükle.
+        // Eski (yalnızca sections/layout içeren) snapshot'larla geriye uyumlu:
+        // snapshot'ta olmayan alanlara dokunulmaz.
+        $restore = [];
+        foreach (Page::REVISION_FIELDS as $field) {
+            if (array_key_exists($field, $revision->snapshot ?? [])) {
+                $restore[$field] = $revision->snapshot[$field];
+            }
+        }
+
+        $page->forceFill($restore)->saveQuietly();
 
         return redirect()
             ->route('admin.pages.edit', $page)

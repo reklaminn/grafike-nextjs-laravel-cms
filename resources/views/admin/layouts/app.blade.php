@@ -11,7 +11,9 @@
 
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js -->
+    <!-- Alpine.js — collapse plugin core'dan ÖNCE yüklenmeli (defer sırayı korur);
+         yoksa x-collapse "plugin yüklü değil" hatası verir (seo.blade / preview-panel) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Heroicons (for inline SVG icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -154,6 +156,40 @@
 
                 <div class="flex items-center gap-4">
                     @if($isAdminAuthenticated)
+                        <!-- Global search -->
+                        <div x-data="adminGlobalSearch()" class="relative hidden md:block"
+                             @keydown.escape.window="open = false" @click.away="open = false">
+                            <div class="relative">
+                                <i class="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" x-model="query" @input.debounce.300ms="search()"
+                                       @focus="query.length >= 2 && (open = true)"
+                                       placeholder="Ara: sayfa, yazı, form, şablon…"
+                                       class="w-48 lg:w-64 rounded-lg border border-gray-200 bg-gray-50 py-2 pl-8 pr-3 text-sm focus:border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                            </div>
+
+                            <div x-show="open" x-cloak
+                                 class="absolute left-0 right-0 z-50 mt-2 max-h-96 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl">
+                                <template x-if="loading">
+                                    <div class="px-4 py-3 text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i> Aranıyor…</div>
+                                </template>
+                                <template x-if="!loading && Object.keys(groups).length === 0">
+                                    <div class="px-4 py-3 text-xs text-gray-400">Sonuç bulunamadı.</div>
+                                </template>
+                                <template x-for="[groupKey, rows] in Object.entries(groups)" :key="groupKey">
+                                    <div class="border-b border-gray-50 last:border-0">
+                                        <p class="px-4 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400"
+                                           x-text="groupLabels[groupKey] || groupKey"></p>
+                                        <template x-for="row in rows" :key="row.url">
+                                            <a :href="row.url" class="block px-4 py-2 hover:bg-indigo-50">
+                                                <span class="block truncate text-sm text-gray-800" x-text="row.label"></span>
+                                                <span class="block truncate text-[11px] text-gray-400" x-text="row.sublabel"></span>
+                                            </a>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
                         <!-- Tenant preview -->
                         <a href="{{ $visitSiteUrl }}" target="{{ $activeTenantId ? '_blank' : '_self' }}"
                            title="{{ $activeTenantId ? 'Preview: ' . $previewTenantName : 'Önizleme için önce site seç' }}"
@@ -284,6 +320,46 @@
         </main>
     </div>
 </div>
+
+<script>
+// Header global arama bileşeni — GET /admin/search?q=… (GlobalSearchController)
+function adminGlobalSearch() {
+    return {
+        query: '',
+        open: false,
+        loading: false,
+        groups: {},
+        groupLabels: {
+            pages: 'Sayfalar',
+            articles: 'Yazılar',
+            forms: 'Formlar',
+            templates: 'Block Şablonları',
+        },
+        async search() {
+            const q = this.query.trim();
+            if (q.length < 2) { this.open = false; this.groups = {}; return; }
+
+            this.open = true;
+            this.loading = true;
+            try {
+                const r = await fetch(@js(route('admin.search', [], false)) + '?q=' + encodeURIComponent(q), {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' },
+                });
+                const data = await r.json().catch(() => ({ groups: {} }));
+                // Yanıt gelene kadar kullanıcı yazmaya devam etmiş olabilir
+                if (this.query.trim() === q) {
+                    this.groups = data.groups || {};
+                }
+            } catch (e) {
+                this.groups = {};
+            } finally {
+                this.loading = false;
+            }
+        },
+    };
+}
+</script>
 
 @stack('scripts')
 </body>

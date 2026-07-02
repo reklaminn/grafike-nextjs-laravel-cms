@@ -19,14 +19,17 @@
     </div>
     <label class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 cursor-pointer transition-colors">
         <i class="fas fa-upload"></i> Dosya Yükle
+        {{-- Bu buton mediaLibrary() component'inin DIŞINDA; bare x-data izole
+             bir scope yaratıyordu, uploadFiles tanımsızdı → buton çalışmıyordu.
+             Window event ile component'e ilet. --}}
         <input type="file" class="hidden" multiple
                accept="{{ implode(',', array_map(fn($ext) => '.' . $ext, config('cms.media.allowed_extensions', []))) }}"
-               x-ref="fileInput" @change="uploadFiles($event.target.files)" x-data>
+               @change="$dispatch('media-upload-files', $event.target.files)" x-data>
     </label>
 </div>
 
 {{-- Main Alpine component --}}
-<div x-data="mediaLibrary()" x-init="init()">
+<div x-data="mediaLibrary()" x-init="init()" @media-upload-files.window="uploadFiles($event.detail)">
 
     {{-- Upload drop zone --}}
     <div class="bg-white rounded-xl shadow-sm border p-5 mb-5"
@@ -70,6 +73,17 @@
                 <i class="fas fa-times mr-1"></i> Temizle
             </a>
         @endif
+    </form>
+
+    {{-- AI alt-text toplu üretim --}}
+    <form method="POST" action="{{ route('admin.media.generate-alt-bulk') }}" class="mb-5"
+          onsubmit="return confirm('Alt yazısı eksik tüm görseller için AI üretimi başlatılsın mı?\n\n(Görsel başına küçük bir AI maliyeti oluşur; üretim arka planda yapılır.)')">
+        @csrf
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-medium hover:bg-indigo-100">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            Eksik Alt Yazılarını AI ile Üret
+        </button>
     </form>
 
     {{-- Bulk action bar (appears when items selected) --}}

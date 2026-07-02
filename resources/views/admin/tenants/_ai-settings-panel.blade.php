@@ -79,6 +79,21 @@
             </span>
         </label>
 
+        {{-- Otomatik SEO meta --}}
+        <label class="flex items-start gap-3 cursor-pointer">
+            <input type="hidden" name="auto_seo_meta" value="0">
+            <input type="checkbox" name="auto_seo_meta" value="1"
+                   {{ ($tenant->aiSettings()['auto_seo_meta'] ?? false) ? 'checked' : '' }}
+                   class="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+            <span>
+                <span class="text-sm font-medium text-gray-700">Yayınlamada otomatik SEO meta üret</span>
+                <span class="block text-xs text-gray-500">
+                    Sayfa yayına alındığında meta başlık/açıklama boşsa AI arka planda doldurur
+                    (kota kullanır; sonradan SEO sekmesinden düzenlenebilir).
+                </span>
+            </span>
+        </label>
+
         {{-- Preferred provider --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tercih Edilen Sağlayıcı</label>

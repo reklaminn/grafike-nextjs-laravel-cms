@@ -184,6 +184,40 @@ class AiQuotaServiceTest extends TestCase
         $this->assertFalse($row->fallback_used);
     }
 
+    public function test_record_cache_hit_writes_free_row_with_savings(): void
+    {
+        $svc      = $this->service();
+        $tenant   = $this->tenant(['id' => 'acme']);
+        // The cached response carries the original token counts.
+        $response = $this->aiResponse('anthropic', 'claude-haiku-4-5', 1000, 200);
+
+        $row = $svc->recordCacheHit($tenant, 'seo.meta', $response, byok: false, extraMetadata: ['tier' => 'simple']);
+
+        // No API call happened → billable tokens & cost are zero (won't burn quota).
+        $this->assertSame(0, $row->input_tokens);
+        $this->assertSame(0, $row->total_tokens);
+        $this->assertEqualsWithDelta(0.0, (float) $row->cost_usd, 0.0000001);
+        $this->assertTrue($row->success);
+
+        // Savings surfaced in metadata for the dashboard.
+        $this->assertTrue($row->metadata['cache_hit']);
+        $this->assertSame(1200, $row->metadata['saved_tokens']);
+        $this->assertEqualsWithDelta(0.002, (float) $row->metadata['saved_cost_usd'], 0.0001);
+    }
+
+    public function test_cache_hit_does_not_count_against_token_or_cost_quota(): void
+    {
+        $svc    = $this->service();
+        $tenant = $this->tenant(['id' => 'acme']);
+
+        $svc->recordCacheHit($tenant, 'seo.meta', $this->aiResponse('anthropic', 'claude-haiku-4-5', 5000, 5000));
+
+        $usage = $svc->currentUsage($tenant);
+        // Tokens & cost stay at zero — a cache hit is free.
+        $this->assertSame(0, $usage['tokens']);
+        $this->assertEqualsWithDelta(0.0, $usage['cost_usd'], 0.0000001);
+    }
+
     public function test_record_failure_writes_zero_token_row_with_error(): void
     {
         $svc = $this->service();

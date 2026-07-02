@@ -33,6 +33,23 @@
      x-data="frontendSectionEditor({{ \Illuminate\Support\Js::from($frontendEditorPayload) }})"
      x-on:frontend-block-focus.window="focusBlock($event.detail.blockId)">
 
+    {{-- Şablon senkronizasyon toast'u (başka sekmede şablon kaydedilince) --}}
+    <div x-show="templateSyncToastVisible" x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed bottom-6 right-6 z-[90] flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 shadow-lg">
+        <i class="fas fa-arrows-rotate text-emerald-500"></i>
+        <span x-text="templateSyncToast"></span>
+        <button type="button" @click="templateSyncToastVisible = false"
+                class="ml-1 text-emerald-400 hover:text-emerald-600">
+            <i class="fas fa-times text-xs"></i>
+        </button>
+    </div>
+
     {{-- Editor header --}}
     <div class="flex items-center justify-between gap-4 mb-5">
         <div class="flex items-center gap-3">
@@ -122,15 +139,29 @@
                 </template>
 
                 {{-- Rows --}}
-                <div class="px-3 pb-3 space-y-2">
+                <div class="px-3 pb-3 space-y-2"
+                     @dragover="rowDragOver($event, region, null)"
+                     @drop.prevent="dropRow(region, null)">
                     <template x-for="(row, rowIndex) in (regions[region] || [])" :key="row._uid">
                         <div class="rounded-xl border bg-white overflow-hidden"
-                             :class="[rowShellClass(region), row.is_active ? '' : 'opacity-60']">
+                             data-row-card
+                             :class="[rowShellClass(region), row.is_active ? '' : 'opacity-60',
+                                      dragRow && dragRow.region === region && dragRow.rowIndex === rowIndex ? 'opacity-40' : '',
+                                      dragRowOver === rowDropKey(region, rowIndex) ? 'ring-2 ring-indigo-400' : '']"
+                             @dragover.stop="rowDragOver($event, region, rowIndex)"
+                             @drop.prevent.stop="dropRow(region, rowIndex)">
 
                             {{-- Row header — single line --}}
                             <div class="flex items-center justify-between gap-2 px-3 py-2">
                                 <div class="flex items-center gap-2 min-w-0">
-                                    <i class="fas fa-grip-vertical text-gray-300 flex-shrink-0 text-[11px]"></i>
+                                    <button type="button"
+                                            draggable="true"
+                                            @dragstart="startRowDrag($event, region, rowIndex)"
+                                            @dragend="endRowDrag()"
+                                            title="Sürükleyerek taşı"
+                                            class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 flex-shrink-0 text-[11px]">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </button>
                                     <span class="text-xs font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0"
                                           :class="regionBadgeClass(region)"
                                           x-text="regionLabel(region)"></span>
@@ -257,17 +288,32 @@
                                         </div>
 
                                         {{-- Blocks --}}
-                                        <div class="p-2 space-y-2">
+                                        <div class="p-2 space-y-2"
+                                             :class="dragBlock && dragBlockOver === blockDropKey(region, rowIndex, columnIndex, null) ? 'rounded-lg ring-2 ring-indigo-200 bg-indigo-50/50' : ''"
+                                             @dragover.stop="blockDragOver($event, region, rowIndex, columnIndex, null)"
+                                             @drop.prevent.stop="dropBlock(region, rowIndex, columnIndex, null)">
                                             <template x-for="(block, blockIndex) in (column.blocks || [])" :key="block._uid">
                                                 <div class="rounded-lg border bg-white px-3 py-2"
+                                                     data-block-card
                                                      :id="'builder-block-' + block.id"
-                                                     :class="fieldErrors[block.id] && Object.keys(fieldErrors[block.id]).length
+                                                     :class="[fieldErrors[block.id] && Object.keys(fieldErrors[block.id]).length
                                                          ? 'border-red-300 ring-1 ring-red-200'
-                                                         : (block.is_active === false ? 'border-gray-200 opacity-60' : 'border-indigo-200')">
+                                                         : (block.is_active === false ? 'border-gray-200 opacity-60' : 'border-indigo-200'),
+                                                         blockIsDragSource(region, rowIndex, columnIndex, blockIndex) ? 'opacity-40' : '',
+                                                         dragBlock && dragBlockOver === blockDropKey(region, rowIndex, columnIndex, blockIndex) ? 'ring-2 ring-indigo-300' : '']"
+                                                     @dragover.stop="blockDragOver($event, region, rowIndex, columnIndex, blockIndex)"
+                                                     @drop.prevent.stop="dropBlock(region, rowIndex, columnIndex, blockIndex)">
 
                                                     {{-- Block: single-line header --}}
                                                     <div class="flex items-center gap-2">
-                                                        <i class="fas fa-grip-vertical text-gray-300 text-[10px] flex-shrink-0"></i>
+                                                        <button type="button"
+                                                                draggable="true"
+                                                                @dragstart="startBlockDrag($event, region, rowIndex, columnIndex, blockIndex)"
+                                                                @dragend="endBlockDrag()"
+                                                                title="Sürükleyerek taşı"
+                                                                class="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 text-[10px] flex-shrink-0">
+                                                            <i class="fas fa-grip-vertical"></i>
+                                                        </button>
                                                         <span class="text-xs font-semibold text-gray-800 truncate flex-1 min-w-0"
                                                               x-text="block.template_name || block.type || 'Block'"></span>
                                                         <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 flex-shrink-0"
@@ -299,6 +345,14 @@
                                                                     class="rounded px-1 py-0.5 text-[11px] text-indigo-500 hover:bg-indigo-50">
                                                                 <i class="fas fa-cog"></i>
                                                             </button>
+                                                            <template x-if="block.section_template_id">
+                                                                <a :href="@js(url('admin/section-templates')) + '/' + block.section_template_id + '/edit'"
+                                                                   target="_blank"
+                                                                   title="Block şablonunu düzenle"
+                                                                   class="rounded px-1 py-0.5 text-[11px] text-purple-400 hover:bg-purple-50">
+                                                                    <i class="fas fa-pen-to-square"></i>
+                                                                </a>
+                                                            </template>
                                                             <button type="button"
                                                                     @click="duplicateBlock(region, rowIndex, columnIndex, blockIndex)"
                                                                     title="Çoğalt"

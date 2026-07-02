@@ -78,6 +78,19 @@ function normalizeTenantPreviewId(tenantId?: string | null): string | null {
  *
  * @param tags  Next.js cache tags — used by revalidateTag() in the ISR webhook.
  */
+/**
+ * API 429 (günlük istek limiti) veya 5xx (sunucu) → GEÇİCİ kullanılamazlık.
+ * Bunu fırlatınca Next.js, segment'in error.tsx sınırını render eder:
+ * aynı URL, "bulunamadı" DEĞİL, "tekrar dene" sayfası. 404 ise fallback döner
+ * (sayfa notFound() çağırır → gerçek "bulunamadı").
+ */
+export class ApiUnavailableError extends Error {
+  constructor(public readonly status: number) {
+    super(`API unavailable (${status})`);
+    this.name = "ApiUnavailableError";
+  }
+}
+
 async function fetchJson<T>(
   path: string,
   fallback: T,
@@ -108,6 +121,14 @@ async function fetchJson<T>(
       requestHeaders["X-Tenant-ID"] = tenantId;
     }
 
+    // Bu istemci yalnızca sunucuda (SSR/RSC) çalışır. İç token, Laravel'in
+    // MeterTenantUsage middleware'inde bu renderer çağrılarını günlük public
+    // istek limitinden muaf tutar. NEXT_PUBLIC_ DEĞİL → tarayıcıya sızmaz.
+    const internalToken = process.env.INTERNAL_API_TOKEN;
+    if (internalToken) {
+      requestHeaders["X-Internal-Token"] = internalToken;
+    }
+
     // Prefix every tag with the site host so a revalidation for
     // tenant-A never busts tenant-B's cache on the same Next.js instance.
     // e.g. "page-home" → "nuhcicek.com.tr:page-home"
@@ -130,11 +151,20 @@ async function fetchJson<T>(
       ...cacheOptions,
     });
 
-    if (!response.ok) return fallback;
+    if (!response.ok) {
+      // 429 (limit aşımı) / 5xx (sunucu) → GEÇİCİ → error boundary'ye fırlat
+      // (error.tsx aynı URL'de "tekrar dene" gösterir, "bulunamadı" değil).
+      // 404 ve diğer 4xx → fallback (gerçek bulunamadı → notFound()).
+      if (response.status === 429 || response.status >= 500) {
+        throw new ApiUnavailableError(response.status);
+      }
+      return fallback;
+    }
 
     const payload = (await response.json()) as T | ResourceEnvelope<T>;
     return wrapped ? unwrapResource<T>(payload) : (payload as T);
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiUnavailableError) throw e; // geçici hata yutulmasın
     return fallback;
   }
 }

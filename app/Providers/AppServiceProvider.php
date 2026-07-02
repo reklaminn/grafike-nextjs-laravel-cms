@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Admin;
 use App\Models\Article;
 use App\Models\Menu;
 use App\Models\Page;
@@ -12,6 +13,7 @@ use App\Observers\MenuObserver;
 use App\Observers\PageObserver;
 use App\Observers\SiteSettingObserver;
 use App\View\Composers\FrontendComposer;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
@@ -30,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
         // storage/logs/fatal.log'a yaz. Laravel'in kendi handler'ı OOM'da bunu
         // yapamaz (bellek kalmaz). Oku: `bash scripts/diag.sh fatal`.
         \App\Support\FatalLogger::register(storage_path('logs/fatal.log'));
+
+        // Tenant medya URL'leri /tenant-assets/{path}?tenant={id} üzerinden
+        // servis edilir (public disk tenant'a göre suffix'li; /storage/{path}
+        // 404 verir). Spatie getUrl()'ü TenantMediaUrlGenerator'a yönlendir.
+        config(['media-library.url_generator' => \App\Support\TenantMediaUrlGenerator::class]);
     }
 
     /**
@@ -37,6 +44,31 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ── İzin enforcement bypass (geriye uyumlu) ─────────────────────────────
+        // Granüler izinler YALNIZCA rol ATANMIŞ teammate'leri kısıtlar; mevcut
+        // kullanıcılar bozulmasın diye şunlar tüm yetkileri bypass eder:
+        //   - hiç Spatie rolü olmayan admin (eski tenant admin'leri dahil)
+        //   - super-admin / ajans admin (isAgencyAdmin)
+        //   - aktif sitenin owner'ı (kendi sitesine tam yetki)
+        // Sadece "rolü olan + owner olmayan" teammate Spatie iznine tabi olur.
+        Gate::before(function ($user, string $ability) {
+            if (! $user instanceof Admin) {
+                return null; // bu kapı yalnızca admin guard'ı içindir
+            }
+            if ($user->roles->isEmpty()) {
+                return true;
+            }
+            if ($user->isAgencyAdmin()) {
+                return true;
+            }
+            $active = session('active_tenant');
+            if ($active && $user->ownsTenant($active)) {
+                return true;
+            }
+
+            return null; // rol atanmış teammate → Spatie izin kontrolüne düş
+        });
+
         // Force HTTPS URLs so all generated URLs (form actions, route(), asset(),
         // redirect()) always use https://.
         //
@@ -54,6 +86,17 @@ class AppServiceProvider extends ServiceProvider
         } elseif (! app()->environment(['local', 'testing'])) {
             // Stale cache or mis-set APP_URL — still force https scheme.
             URL::forceScheme('https');
+        }
+
+        // Test ortamı: prod'da tenant tabloları (pages, articles, forms…)
+        // ayrı tenant DB'lerinde yaşar; testte tenancy başlatılmadığından
+        // modeller default sqlite bağlantısına gider. Tenant migration'larını
+        // migrator'a kaydet ki RefreshDatabase'in migrate:fresh'i bu
+        // tabloları da test DB'sine kursun. (Subclass'lardaki RefreshDatabase
+        // trait'i TestCase override'larını gölgelediği için hook yerine
+        // burada loadMigrationsFrom kullanıyoruz.)
+        if ($this->app->runningUnitTests()) {
+            $this->loadMigrationsFrom(database_path('migrations/tenant'));
         }
 
         // Register model observers for cache invalidation

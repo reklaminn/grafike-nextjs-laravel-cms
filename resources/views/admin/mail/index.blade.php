@@ -75,6 +75,104 @@
     </button>
 </div>
 
+{{-- ── Kota özeti (F1) ─────────────────────────────────────────────────── --}}
+@if(!empty($quota))
+@php
+    $usedGb  = $quota['bytes_used'] > 0 ? round($quota['bytes_used'] / 1073741824, 2) : 0;
+    $maxGb   = $quota['bytes_max'] > 0 ? round($quota['bytes_max'] / 1024, 1) : 0; // Mailcow MiB döner
+    $diskPct = $maxGb > 0 ? min(100, (int) round($usedGb / $maxGb * 100)) : 0;
+@endphp
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-inbox mr-1"></i>Mail Hesapları</p>
+        <p class="text-xl font-bold text-gray-800 tabular-nums">
+            {{ $quota['mboxes_used'] }}<span class="text-sm font-normal text-gray-400"> / {{ $quota['mboxes_max'] ?: '∞' }}</span>
+        </p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-random mr-1"></i>Alias'lar</p>
+        <p class="text-xl font-bold text-gray-800 tabular-nums">
+            {{ $quota['aliases_used'] }}<span class="text-sm font-normal text-gray-400"> / {{ $quota['aliases_max'] ?: '∞' }}</span>
+        </p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-hard-drive mr-1"></i>Disk Kullanımı</p>
+        <p class="text-xl font-bold text-gray-800 tabular-nums">
+            {{ $usedGb }} GB<span class="text-sm font-normal text-gray-400"> / {{ $maxGb ?: '∞' }} GB</span>
+        </p>
+        @if($maxGb > 0)
+            <div class="mt-2 h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                <div class="h-full rounded-full {{ $diskPct >= 90 ? 'bg-red-500' : ($diskPct >= 70 ? 'bg-amber-400' : 'bg-blue-500') }}"
+                     style="width: {{ $diskPct }}%"></div>
+            </div>
+        @endif
+    </div>
+</div>
+@endif
+
+{{-- ── DNS sağlığı: MX / SPF / DKIM (F2) ──────────────────────────────── --}}
+@if(!empty($dns))
+@php
+    $dnsBadge = fn (string $status) => match ($status) {
+        'ok'            => ['bg-emerald-100 text-emerald-700', 'fa-check', 'Doğru'],
+        'partial'       => ['bg-amber-100 text-amber-700', 'fa-triangle-exclamation', 'Kontrol edin'],
+        'missing'       => ['bg-red-100 text-red-700', 'fa-xmark', 'Eksik'],
+        'not_generated' => ['bg-gray-100 text-gray-500', 'fa-minus', 'Üretilmemiş'],
+        default         => ['bg-gray-100 text-gray-500', 'fa-question', 'Bilinmiyor'],
+    };
+@endphp
+<div class="bg-white rounded-xl border border-gray-200 p-4 mb-6" x-data="{ openDns: false }">
+    <button type="button" @click="openDns = !openDns" class="flex w-full items-center gap-3 text-left">
+        <span class="text-sm font-semibold text-gray-700"><i class="fas fa-shield-halved mr-1.5 text-blue-500"></i>DNS Durumu</span>
+        <span class="flex items-center gap-1.5 ml-2">
+            @foreach(['mx' => 'MX', 'spf' => 'SPF', 'dkim' => 'DKIM'] as $key => $label)
+                @php [$cls, $icon] = $dnsBadge($dns[$key]['status']); @endphp
+                <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium {{ $cls }}">
+                    <i class="fas {{ $icon }} text-[9px]"></i>{{ $label }}
+                </span>
+            @endforeach
+        </span>
+        <i class="fas ml-auto text-gray-400 text-xs" :class="openDns ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+    </button>
+
+    <div x-show="openDns" x-cloak class="mt-4 space-y-3 text-xs">
+        @foreach(['mx' => 'MX Kaydı', 'spf' => 'SPF Kaydı', 'dkim' => 'DKIM İmzası'] as $key => $title)
+            @php $row = $dns[$key]; [$cls, $icon, $statusLabel] = $dnsBadge($row['status']); @endphp
+            <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-semibold text-gray-700">{{ $title }}</span>
+                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium {{ $cls }}">
+                        <i class="fas {{ $icon }} text-[8px]"></i>{{ $statusLabel }}
+                    </span>
+                </div>
+                @if($row['found'])
+                    <p class="font-mono text-[11px] text-gray-500 break-all">Bulunan: {{ \Illuminate\Support\Str::limit($row['found'], 120) }}</p>
+                @endif
+                @if(in_array($row['status'], ['missing', 'partial']) && !empty($row['expected']))
+                    <div class="mt-1.5 flex items-start gap-2">
+                        <p class="font-mono text-[11px] text-blue-700 break-all flex-1 rounded bg-blue-50 px-2 py-1.5"
+                           id="dns_expected_{{ $key }}">{{ $key === 'dkim' ? $row['expected'] : ($key === 'mx' ? 'MX 10 '.$row['expected'] : $row['expected']) }}</p>
+                        <button type="button"
+                                onclick="navigator.clipboard.writeText(document.getElementById('dns_expected_{{ $key }}').textContent.trim()); this.innerHTML='<i class=\'fas fa-check\'></i>'"
+                                title="Önerilen kaydı kopyala"
+                                class="shrink-0 rounded bg-blue-100 px-2 py-1 text-blue-700 hover:bg-blue-200">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    @if($key === 'dkim')
+                        <p class="mt-1 text-[10px] text-gray-400">DNS host: <code>{{ $row['selector'] ?? 'dkim' }}._domainkey.{{ $domain }}</code> (TXT)</p>
+                    @endif
+                @endif
+                @if($row['status'] === 'not_generated')
+                    <p class="mt-1 text-gray-400">Mailcow panelinde bu domain için DKIM anahtarı üretilmemiş (Configuration → ARC/DKIM Keys).</p>
+                @endif
+            </div>
+        @endforeach
+        <p class="text-[10px] text-gray-400">DNS sonuçları 5 dakika önbelleklenir. Kayıt değişikliklerinin yayılması saatler sürebilir.</p>
+    </div>
+</div>
+@endif
+
 {{-- Tab navigation --}}
 <div x-data="{ tab: 'mailboxes' }">
     <div class="flex gap-1 border-b border-gray-200 mb-6">
@@ -198,7 +296,14 @@
                 <tbody class="divide-y divide-gray-100">
                     @foreach($aliases as $alias)
                     <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 font-medium text-gray-800">{{ $alias['address'] ?? '—' }}</td>
+                        <td class="px-4 py-3 font-medium text-gray-800">
+                            {{ $alias['address'] ?? '—' }}
+                            @if(str_starts_with((string) ($alias['address'] ?? ''), '@'))
+                                <span class="ml-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                                    <i class="fas fa-asterisk mr-1 text-[8px]"></i>catch-all
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-gray-600">{{ $alias['goto'] ?? '—' }}</td>
                         <td class="px-4 py-3 text-center">
                             @if($alias['active'] ?? 1)
@@ -273,6 +378,17 @@
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-400 mt-1">Minimum 100 MB, maksimum 100 GB</p>
                 </div>
+
+                {{-- SMTP profili otomatik oluştur (F3) --}}
+                <label class="flex items-start gap-2.5 rounded-lg bg-indigo-50 px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" name="create_smtp_profile" value="1"
+                           class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600">
+                    <span class="text-xs">
+                        <span class="block font-medium text-indigo-900">SMTP profili olarak da ekle</span>
+                        <span class="text-indigo-600">Form bildirimleri ve sistem mailleri bu hesaptan gönderilebilir
+                        (Ayarlar → SMTP Profilleri'nde görünür).</span>
+                    </span>
+                </label>
             </div>
             <div class="mt-5 flex gap-3">
                 <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
@@ -368,13 +484,24 @@
 <div id="newAliasModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
     <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
         <h3 class="text-base font-semibold text-gray-800 mb-4"><i class="fas fa-random text-blue-500 mr-2"></i>Yeni Alias</h3>
-        <form method="POST" action="{{ route('admin.mail.aliases.store') }}">
+        <form method="POST" action="{{ route('admin.mail.aliases.store') }}"
+              x-data="{ catchAll: false }">
             @csrf
             <input type="hidden" name="selected_tenant" value="{{ $selectedId ?? $tenant?->id }}">
             <div class="space-y-4">
-                <div>
+                {{-- Catch-all seçeneği (F4) --}}
+                <label class="flex items-start gap-2.5 rounded-lg bg-amber-50 px-3 py-2.5 cursor-pointer">
+                    <input type="checkbox" name="catch_all" value="1" x-model="catchAll"
+                           class="mt-0.5 h-4 w-4 rounded border-gray-300 text-amber-600">
+                    <span class="text-xs">
+                        <span class="block font-medium text-amber-900">Catch-all (tümünü yakala)</span>
+                        <span class="text-amber-700">{{ '@' . $domain }} — hiçbir hesaba/alias'a uymayan TÜM mailler hedefe yönlenir.</span>
+                    </span>
+                </label>
+
+                <div x-show="!catchAll">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kimden (From) *</label>
-                    <input type="email" name="address" required
+                    <input type="email" name="address" :required="!catchAll"
                            placeholder="{{ 'info@' . $domain }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-400 mt-1">Bu adrese gelen mailler yönlendirilir</p>

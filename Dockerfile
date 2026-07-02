@@ -48,10 +48,14 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 COPY composer.json composer.lock ./
+# NOT: --prefer-dist KASITLI olarak kaldırıldı. Strict dist iken bir dist zip'i
+# (codeload.github.com) geçici HTTP 400/5xx verince composer source fallback'i
+# kapatıp ("Source fallback is disabled") tüm build'i düşürüyordu. preferred-install
+# artık composer.json'da "auto" → dist başarısız olursa git'ten klonlar (vendor
+# aşamasında git kurulu). Böylece tek geçici indirme hatası build'i bozmaz.
 RUN composer install \
     --no-dev \
     --no-interaction \
-    --prefer-dist \
     --optimize-autoloader \
     --no-scripts \
     --ignore-platform-req=ext-gd \

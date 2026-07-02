@@ -28,9 +28,11 @@ class AiDashboardController extends Controller
             $providers  = $reporter->providerBreakdown(null);
             $topTenants = $reporter->topTenants(limit: 10);
             $recent     = $reporter->recentCalls(null, limit: 30);
+            $cacheStats = $reporter->cacheStats(null);                     // FAZ 3.5
         } catch (Throwable $e) {
             report($e);
             $totals = $dailyTrend = $features = $providers = $topTenants = $recent = [];
+            $cacheStats = ['hits' => 0, 'requests' => 0, 'hit_rate' => 0.0, 'saved_cost_usd' => 0.0, 'saved_tokens' => 0];
         }
 
         // Resolve tenant names for the top-tenants table — keep one query.
@@ -47,7 +49,7 @@ class AiDashboardController extends Controller
 
         return view('admin.ai-dashboard.index', compact(
             'totals', 'dailyTrend', 'features', 'providers',
-            'topTenants', 'tenantNames', 'recent'
+            'topTenants', 'tenantNames', 'recent', 'cacheStats'
         ));
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\Ai\BlockEditController as AiBlockEditController;
+use App\Http\Controllers\Admin\Ai\PageAssistController as AiPageAssistController;
 use App\Http\Controllers\Admin\Ai\PageGenerateController as AiPageGenerateController;
 use App\Http\Controllers\Admin\Ai\SectionTemplateGenerateController as AiSectionTemplateGenerateController;
 use App\Http\Controllers\Admin\Ai\SeoMetaController as AiSeoMetaController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\Admin\AiPlanController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\TenantBackupController;
 use App\Http\Controllers\Admin\TenantController;
+use App\Http\Controllers\Admin\TenantTeamController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\CurrencyController;
@@ -49,7 +51,10 @@ use Illuminate\Support\Facades\Route;
 // Admin Auth Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.submit');
+    // Brute-force koruması: IP başına dakikada 5 deneme
+    Route::post('login', [AuthController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('login.submit');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Protected Admin Routes
@@ -67,6 +72,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // ── Tenant Backups ────────────────────────────────────────────────────
         Route::post  ('tenants/{tenant}/backups',                    [TenantBackupController::class, 'store'])   ->name('tenants.backups.store');
         Route::get   ('tenants/{tenant}/backups/{filename}/download',[TenantBackupController::class, 'download'])->name('tenants.backups.download');
+        Route::post  ('tenants/{tenant}/backups/{filename}/restore', [TenantBackupController::class, 'restore']) ->name('tenants.backups.restore');
         Route::delete('tenants/{tenant}/backups/{filename}',         [TenantBackupController::class, 'destroy']) ->name('tenants.backups.destroy');
 
         // ── Tenant AI Settings (BYOK) ─────────────────────────────────────────
@@ -76,6 +82,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // ── Tenant Vertical Modules (Tours, Commerce, …) ─────────────────────
         Route::put('tenants/{tenant}/modules', [TenantController::class, 'updateModules'])->name('tenants.modules.update');
         Route::put('tenants/{tenant}/mailcow-domain', [TenantController::class, 'updateMailcowDomain'])->name('tenants.mailcow-domain.update');
+        Route::post('tenants/{tenant}/quota-extensions', [TenantController::class, 'storeQuotaExtension'])->name('tenants.quota-extensions.store');
+        Route::delete('tenants/{tenant}/quota-extensions/{extension}', [TenantController::class, 'destroyQuotaExtension'])->name('tenants.quota-extensions.destroy');
 
         // ── Tenant Iyzico Settings (BYOK) ─────────────────────────────────────
         Route::put('tenants/{tenant}/iyzico-settings', [TenantController::class, 'updateIyzicoSettings'])->name('tenants.iyzico-settings.update');
@@ -90,12 +98,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get ('ai-dashboard',              [AiDashboardController::class, 'index'])->name('ai-dashboard');
 
         // ── Tenant-scoped routes (require active tenant in session) ───────────
-        Route::middleware('tenant.admin')->group(function () {
+        Route::middleware(['tenant.admin', 'admin.permission'])->group(function () {
 
         // Dashboard
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('search', \App\Http\Controllers\Admin\GlobalSearchController::class)->name('search');
 
         // Pages CRUD
+        // catalog-json resource'tan ÖNCE — yoksa pages/{page} show ile çakışır
+        Route::get('pages/catalog-json', [PageController::class, 'catalogJson'])->name('pages.catalog-json');
         Route::resource('pages', PageController::class);
         Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
         Route::post('pages/{page}/migrate-to-sections', [PageController::class, 'migrateToSections'])->name('pages.migrate-to-sections');
@@ -108,6 +119,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('pages/{page}/ai/seo-meta',       AiSeoMetaController::class)->name('pages.ai.seo-meta');
         Route::post('ai/block-edit',                  AiBlockEditController::class)->name('ai.block-edit');
         Route::post('ai/pages/generate',              AiPageGenerateController::class)->name('ai.pages.generate');
+        Route::post('ai/pages/assist',                AiPageAssistController::class)->name('ai.pages.assist');
+        Route::get('ai/pages/generate/status/{jobId}', [AiPageGenerateController::class, 'status'])->name('ai.generate-page.status');
         Route::post('ai/section-templates/generate',  AiSectionTemplateGenerateController::class)->name('ai.section-templates.generate');
 
         // Prompt boost — ham tarifi ayrıntılı prompt'a dönüştürür (sayfa sihirbazı).
@@ -160,8 +173,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('media/upload', [MediaController::class, 'upload'])->name('media.upload');
         Route::get('media/{medium}', [MediaController::class, 'show'])->name('media.show');
         Route::put('media/{medium}', [MediaController::class, 'update'])->name('media.update');
+        Route::put('media/{medium}/rename', [MediaController::class, 'renameFile'])->name('media.rename');
         Route::delete('media/{medium}', [MediaController::class, 'destroy'])->name('media.destroy');
         Route::post('media/bulk-destroy', [MediaController::class, 'bulkDestroy'])->name('media.bulk-destroy');
+        Route::post('media/generate-alt-bulk', [MediaController::class, 'generateAltBulk'])->name('media.generate-alt-bulk');
+        Route::post('media/{medium}/generate-alt', [MediaController::class, 'generateAlt'])->name('media.generate-alt');
 
         // Reviews Moderation
         Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
@@ -174,6 +190,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Members Management
         Route::resource('members', MemberController::class)->except('show');
         Route::post('members/{member}/toggle-active', [MemberController::class, 'toggleActive'])->name('members.toggle-active');
+
+        // Tenant Team — site owner manages own site's managers/editors (agency.admin DEĞİL;
+        // controller içinde "aktif tenant owner" kontrolü var)
+        Route::get   ('team',          [TenantTeamController::class, 'index'])  ->name('team.index');
+        Route::post  ('team',          [TenantTeamController::class, 'store'])  ->name('team.store');
+        Route::put   ('team/{admin}',  [TenantTeamController::class, 'update']) ->name('team.update');
+        Route::delete('team/{admin}',  [TenantTeamController::class, 'destroy'])->name('team.destroy');
 
         // Languages Management
         Route::resource('languages', LanguageController::class)->except('show');
@@ -190,6 +213,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
         Route::resource('themes', ThemeController::class)->except('show');
         Route::get('section-templates/menu-placeholders', [SectionTemplateController::class, 'menuPlaceholders'])->name('section-templates.menu-placeholders');
+        Route::get('section-templates/catalog-json', [SectionTemplateController::class, 'catalogJson'])->name('section-templates.catalog-json');
         Route::match(['GET', 'POST'], 'section-templates/{section_template}/preview', [SectionTemplateController::class, 'preview'])->name('section-templates.preview');
         Route::post('section-templates/{section_template}/restore', [SectionTemplateController::class, 'restore'])->name('section-templates.restore')->withTrashed();
         Route::delete('section-templates/{section_template}/force-delete', [SectionTemplateController::class, 'forceDelete'])->name('section-templates.force-delete')->withTrashed();
@@ -264,6 +288,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Crawl / robots / llms settings
         Route::get('settings/crawl', [SettingsController::class, 'crawl'])->name('settings.crawl');
         Route::put('settings/crawl', [SettingsController::class, 'updateCrawl'])->name('settings.crawl.update');
+
+        // Media upload / compression defaults
+        Route::get('settings/media', [SettingsController::class, 'media'])->name('settings.media');
+        Route::put('settings/media', [SettingsController::class, 'updateMedia'])->name('settings.media.update');
 
         // Sistem geneli AI Anahtarları — sadece agency admin (superadmin) erişebilir
         Route::get('settings/ai-keys',  [SystemSettingsController::class, 'aiKeys'])->name('settings.ai-keys');

@@ -6,6 +6,7 @@ use App\Services\Ai\AiBlockEditor;
 use App\Services\Ai\AiManager;
 use App\Services\Ai\AiModelRouter;
 use App\Services\Ai\AiPageGenerator;
+use App\Services\Ai\AiPromptCache;
 use App\Services\Ai\AiQuotaService;
 use App\Services\Ai\AiSectionTemplateGenerator;
 use App\Services\Ai\AiSeoGenerator;
@@ -58,6 +59,14 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             );
         });
 
+        // Yanıt önbelleği (FAZ 3.5). Tekrar eden AI isteklerinde sağlayıcı
+        // çağrısını keser; tenant-scoped key + stampede lock.
+        $this->app->singleton(AiPromptCache::class, function ($app) {
+            $cfg = $app['config']->get('ai.cache', []);
+
+            return new AiPromptCache($cfg);
+        });
+
         // High-level router: feature → tier + parameters, with provider
         // fallback chain. Most application code should call this rather
         // than the raw AiManager.
@@ -66,6 +75,7 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
                 manager:         $app->make(AiManager::class),
                 tenantResolver:  $app->make(TenantAiResolver::class),
                 quota:           $app->make(AiQuotaService::class),
+                promptCache:     $app->make(AiPromptCache::class),
                 config:          $app['config']->get('ai', []),
             );
         });
@@ -105,6 +115,7 @@ class AiServiceProvider extends ServiceProvider implements DeferrableProvider
             'ai',
             TenantAiResolver::class,
             AiQuotaService::class,
+            AiPromptCache::class,
             AiModelRouter::class,
             AiSeoGenerator::class,
             AiBlockEditor::class,

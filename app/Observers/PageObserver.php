@@ -42,18 +42,36 @@ class PageObserver
 
     public function updating(Page $page): void
     {
-        if ($page->isDirty('sections_json') || $page->isDirty('layout_json')) {
-            // Capture the state BEFORE the update is written.
+        // Revizyona giren alanlardan herhangi biri değiştiyse, update
+        // yazılmadan ÖNCEKİ durumun tam snapshot'ını al. changed_fields
+        // hangi alanların değiştiğini saklar — UI'da diff özeti gösterilir.
+        $changed = array_values(array_filter(
+            Page::REVISION_FIELDS,
+            fn (string $field) => $page->isDirty($field)
+        ));
+
+        if ($changed !== []) {
+            $snapshot = [];
+            foreach (Page::REVISION_FIELDS as $field) {
+                $snapshot[$field] = $page->getOriginal($field);
+            }
+            $snapshot['changed_fields'] = $changed;
+
             PageRevision::create([
                 'page_id'    => $page->id,
                 'admin_id'   => auth()->id(),
-                'snapshot'   => [
-                    'sections_json' => $page->getOriginal('sections_json'),
-                    'layout_json'   => $page->getOriginal('layout_json'),
-                ],
+                'snapshot'   => $snapshot,
                 'reason'     => 'pre-update',
                 'created_at' => now(),
             ]);
+
+            // 30 en yeni dışındakileri buda — her kayıt yeni 'pre-update'
+            // revizyonu üretiyor; budama olmazsa sınırsız birikir (DB şişer).
+            // SectionTemplateController ile aynı politika (30).
+            if ($page->revisions()->count() > 30) {
+                $keepIds = $page->revisions()->limit(30)->pluck('id');
+                $page->revisions()->whereNotIn('id', $keepIds)->delete();
+            }
         }
     }
 
@@ -65,6 +83,34 @@ class PageObserver
         // IndexNow — only notify when the page is published
         if ($page->status === 'published') {
             $this->notifyIndexNow($page);
+        }
+
+        // Otomatik SEO meta (opt-in): sayfa yayına geçtiyse, tenant
+        // ai_settings.auto_seo_meta açıksa ve meta alanları boşsa kuyrukta
+        // AI ile doldur. Hata/kota durumunda job sessizce vazgeçer.
+        $this->maybeQueueSeoMeta($page);
+    }
+
+    private function maybeQueueSeoMeta(Page $page): void
+    {
+        if ($page->status !== 'published' || ! $page->wasChanged('status')) {
+            return;
+        }
+
+        try {
+            $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
+            if (! $tenant || ! ($tenant->aiSettings()['auto_seo_meta'] ?? false)) {
+                return;
+            }
+
+            $seo = $page->seo()->first();
+            if ($seo && (filled($seo->meta_title) || filled($seo->meta_description))) {
+                return;
+            }
+
+            \App\Jobs\Ai\GenerateSeoMetaJob::dispatch($page->id);
+        } catch (\Throwable) {
+            // otomatik özellik — kayıt akışını asla bozma
         }
     }
 

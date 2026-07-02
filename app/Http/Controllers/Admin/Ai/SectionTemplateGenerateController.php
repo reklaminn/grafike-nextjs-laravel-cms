@@ -37,6 +37,9 @@ class SectionTemplateGenerateController extends Controller
             // Vision: base64 string gönderilir (data-URI prefix olmadan)
             'image_base64'  => 'nullable|string|max:6000000', // ~4.5MB base64
             'image_mime'    => 'nullable|string|in:image/jpeg,image/png,image/webp,image/gif',
+            // DÜZENLE modu: editörden mevcut şablon bağlamı (sıfırdan değil üzerinde çalış)
+            'current_html'  => 'nullable|string|max:60000',
+            'current_schema' => 'nullable|array',
         ]);
 
         $hints = array_filter([
@@ -54,6 +57,8 @@ class SectionTemplateGenerateController extends Controller
                 hints:        $hints ?: null,
                 imageBase64:  $validated['image_base64'] ?? null,
                 imageMimeType: $validated['image_mime'] ?? 'image/jpeg',
+                currentHtml:  $validated['current_html'] ?? null,
+                currentSchema: $validated['current_schema'] ?? null,
             );
         } catch (AiQuotaExceededException $e) {
             return response()->json([

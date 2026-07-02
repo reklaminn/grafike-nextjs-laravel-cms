@@ -11,6 +11,15 @@
     $activeTenant   = $activeTenantId ? \App\Models\Tenant::query()->find($activeTenantId) : null;
     $hasTours       = $activeTenant?->hasModule('tours')    ?? false;
     $hasCommerce    = $activeTenant?->hasModule('commerce') ?? false;
+    $hasLodging     = $activeTenant?->hasModule('lodging')  ?? false;
+
+    // Konaklama (Lodging) vertical — oda tipi / müsaitlik / rezervasyon.
+    $lodgingItems = $hasLodging ? [
+        ['route' => 'admin.lodging.room-types.index',   'icon' => 'fa-bed',           'label' => 'Oda Tipleri',    'match' => 'admin.lodging.room-types'],
+        ['route' => 'admin.lodging.availability.index',  'icon' => 'fa-calendar-check', 'label' => 'Müsaitlik',      'match' => 'admin.lodging.availability'],
+        ['route' => 'admin.lodging.reservations.index',  'icon' => 'fa-inbox',          'label' => 'Rezervasyonlar', 'match' => 'admin.lodging.reservations'],
+        ['route' => 'admin.lodging.settings.edit',       'icon' => 'fa-sliders-h',      'label' => 'Ayarlar',        'match' => 'admin.lodging.settings'],
+    ] : [];
 
     $toursItems = $hasTours ? [
         ['route' => 'admin.tours.index',           'icon' => 'fa-route',        'label' => 'Turlar',         'match' => 'admin.tours.index'],
@@ -31,60 +40,78 @@
         ['route' => 'admin.destinations.index',     'icon' => 'fa-map-marked-alt','label' => 'Destinasyonlar',  'match' => 'admin.destinations'],
     ] : [];
 
+    // İzin gerektiren öğelerde 'can' anahtarı; kısıtlı teammate görmesin.
+    // (owner/ajans/rolsüz Gate::before ile hepsini görür.)
     $navItems = [
         ['route' => 'admin.dashboard', 'icon' => 'fa-tachometer-alt', 'label' => 'Dashboard', 'match' => 'admin.dashboard'],
-        ['route' => 'admin.pages.index', 'icon' => 'fa-file-alt', 'label' => 'Sayfalar', 'match' => 'admin.pages'],
-        ['route' => 'admin.articles.index', 'icon' => 'fa-newspaper', 'label' => 'Yazılar', 'match' => 'admin.articles'],
-        ['route' => 'admin.menus.index', 'icon' => 'fa-bars', 'label' => 'Menüler', 'match' => 'admin.menus'],
-        ['route' => 'admin.forms.index', 'icon' => 'fa-clipboard-list', 'label' => 'Formlar', 'match' => 'admin.forms'],
-        ['route' => 'admin.media.index', 'icon' => 'fa-images', 'label' => 'Medya', 'match' => 'admin.media'],
-        ['route' => 'admin.reviews.index', 'icon' => 'fa-star', 'label' => 'Yorumlar', 'match' => 'admin.reviews'],
-        ['route' => 'admin.members.index', 'icon' => 'fa-users', 'label' => 'Üyeler', 'match' => 'admin.members'],
+        ['route' => 'admin.pages.index', 'icon' => 'fa-file-alt', 'label' => 'Sayfalar', 'match' => 'admin.pages', 'can' => 'pages.view'],
+        ['route' => 'admin.articles.index', 'icon' => 'fa-newspaper', 'label' => 'Yazılar', 'match' => 'admin.articles', 'can' => 'articles.view'],
+        ['route' => 'admin.menus.index', 'icon' => 'fa-bars', 'label' => 'Menüler', 'match' => 'admin.menus', 'can' => 'menus.view'],
+        ['route' => 'admin.forms.index', 'icon' => 'fa-clipboard-list', 'label' => 'Formlar', 'match' => 'admin.forms', 'can' => 'forms.view'],
+        ['route' => 'admin.media.index', 'icon' => 'fa-images', 'label' => 'Medya', 'match' => 'admin.media', 'can' => 'media.view'],
+        ['route' => 'admin.reviews.index', 'icon' => 'fa-star', 'label' => 'Yorumlar', 'match' => 'admin.reviews', 'can' => 'reviews.view'],
+        ['route' => 'admin.members.index', 'icon' => 'fa-users', 'label' => 'Üyeler', 'match' => 'admin.members', 'can' => 'members.view'],
         ['route' => 'admin.mail.index', 'icon' => 'fa-envelope-open-text', 'label' => 'Mail Hesapları', 'match' => 'admin.mail'],
     ];
+    $navUser = auth('admin')->user();
+    $navCan = fn ($item) => empty($item['can']) || ($navUser?->can($item['can']) ?? false);
 
     $seoItems = [
-        ['route' => 'admin.seo.index', 'icon' => 'fa-search', 'label' => 'SEO', 'match' => 'admin.seo'],
-        ['route' => 'admin.redirects.index', 'icon' => 'fa-exchange-alt', 'label' => 'Yönlendirmeler', 'match' => 'admin.redirects'],
-        ['route' => 'admin.sitemap.index', 'icon' => 'fa-sitemap', 'label' => 'Sitemap', 'match' => 'admin.sitemap'],
-        ['route' => 'admin.languages.index', 'icon' => 'fa-globe', 'label' => 'Diller', 'match' => 'admin.languages'],
-        ['route' => 'admin.translations.index', 'icon' => 'fa-language', 'label' => 'Çeviriler', 'match' => 'admin.translations'],
+        ['route' => 'admin.seo.index', 'icon' => 'fa-search', 'label' => 'SEO', 'match' => 'admin.seo', 'can' => 'seo.view'],
+        ['route' => 'admin.redirects.index', 'icon' => 'fa-exchange-alt', 'label' => 'Yönlendirmeler', 'match' => 'admin.redirects', 'can' => 'redirects.view'],
+        ['route' => 'admin.sitemap.index', 'icon' => 'fa-sitemap', 'label' => 'Sitemap', 'match' => 'admin.sitemap', 'can' => 'seo.view'],
+        ['route' => 'admin.languages.index', 'icon' => 'fa-globe', 'label' => 'Diller', 'match' => 'admin.languages', 'can' => 'languages.view'],
+        ['route' => 'admin.translations.index', 'icon' => 'fa-language', 'label' => 'Çeviriler', 'match' => 'admin.translations', 'can' => 'languages.view'],
     ];
 
     $designItems = [
-        ['route' => 'admin.themes.index', 'icon' => 'fa-swatchbook', 'label' => 'Temalar', 'match' => 'admin.themes'],
-        ['route' => 'admin.section-templates.index', 'icon' => 'fa-cubes', 'label' => 'Block Şablonları', 'match' => 'admin.section-templates'],
-        ['route' => 'admin.design.index', 'icon' => 'fa-palette', 'label' => 'Tasarım (CSS/JS)', 'match' => 'admin.design'],
+        ['route' => 'admin.themes.index', 'icon' => 'fa-swatchbook', 'label' => 'Temalar', 'match' => 'admin.themes', 'can' => 'design.view'],
+        ['route' => 'admin.section-templates.index', 'icon' => 'fa-cubes', 'label' => 'Block Şablonları', 'match' => 'admin.section-templates', 'can' => 'design.view'],
+        ['route' => 'admin.design.index', 'icon' => 'fa-palette', 'label' => 'Tasarım (CSS/JS)', 'match' => 'admin.design', 'can' => 'design.view'],
         ['route' => 'admin.smtp-profiles.index', 'icon' => 'fa-envelope', 'label' => 'SMTP Profilleri', 'match' => 'admin.smtp-profiles'],
         ['route' => 'admin.currencies.index', 'icon' => 'fa-money-bill-wave', 'label' => 'Döviz Kurları', 'match' => 'admin.currencies'],
     ];
 
+    // SİSTEM — hem superadmin HEM müşteri (tenant admin) görür: site/ayar yönetimi.
     $systemItems = [
         ['route' => 'admin.tenants.index',    'icon' => 'fa-building',    'label' => 'Siteler',           'match' => 'admin.tenants'],
-        ['route' => 'admin.settings.index',   'icon' => 'fa-cog',         'label' => 'Ayarlar',           'match' => 'admin.settings.index'],
-        ['route' => 'admin.settings.business','icon' => 'fa-map-marker-alt','label' => 'İşletme Bilgileri','match' => 'admin.settings.business'],
-        ['route' => 'admin.settings.crawl',   'icon' => 'fa-robot',       'label' => 'Tarama & LLM',      'match' => 'admin.settings.crawl'],
+        ['route' => 'admin.settings.index',   'icon' => 'fa-cog',         'label' => 'Ayarlar',           'match' => 'admin.settings.index', 'can' => 'settings.view'],
+        ['route' => 'admin.settings.business','icon' => 'fa-map-marker-alt','label' => 'İşletme Bilgileri','match' => 'admin.settings.business','can' => 'settings.view'],
+        ['route' => 'admin.settings.crawl',   'icon' => 'fa-robot',       'label' => 'Tarama & LLM',      'match' => 'admin.settings.crawl', 'can' => 'settings.view'],
+        ['route' => 'admin.settings.media',   'icon' => 'fa-image',       'label' => 'Medya & Sıkıştırma','match' => 'admin.settings.media', 'can' => 'settings.view'],
     ];
 
+    // AI Kullanım — ikisi de görür; route role'e göre (agency: global, tenant: kendi).
     if ($isAgencyAdmin) {
         array_splice($systemItems, 1, 0, [
-            ['route' => 'admin.packages.index',    'icon' => 'fa-box-open',    'label' => 'Paketler',          'match' => 'admin.packages'],
-            ['route' => 'admin.ai-plans.index',   'icon' => 'fa-robot',       'label' => 'AI Planları',        'match' => 'admin.ai-plans'],
-            ['route' => 'admin.settings.ai-keys',  'icon' => 'fa-key',                  'label' => 'AI Anahtarları',     'match' => 'admin.settings.ai-keys'],
-            ['route' => 'admin.settings.mailcow', 'icon' => 'fa-envelope-open-text', 'label' => 'Mail Ayarları',      'match' => 'admin.settings.mailcow'],
-            ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield', 'label' => 'Yöneticiler',       'match' => 'admin.admin-users'],
-            ['route' => 'admin.roles.index',       'icon' => 'fa-key',         'label' => 'Roller/Yetkiler',   'match' => 'admin.roles'],
-            ['route' => 'admin.ai-dashboard',      'icon' => 'fa-chart-pie',   'label' => 'AI Kullanım',       'match' => 'admin.ai-dashboard'],
-            ['route' => 'admin.maintenance.index', 'icon' => 'fa-database',    'label' => 'DB Bakım',          'match' => 'admin.maintenance'],
-            ['route' => 'admin.activity-log.index','icon' => 'fa-history',     'label' => 'Aktivite Log',      'match' => 'admin.activity-log'],
-            ['route' => 'admin.library.index',     'icon' => 'fa-ship',        'label' => 'Cruise Kütüphanesi','match' => 'admin.library'],
+            ['route' => 'admin.ai-dashboard', 'icon' => 'fa-chart-pie', 'label' => 'AI Kullanım', 'match' => 'admin.ai-dashboard'],
         ]);
     } elseif ($activeTenantId) {
-        // Tenant admin: kendi sitesinin AI kullanım raporu (per-tenant görünüm).
         array_splice($systemItems, 1, 0, [
             ['route' => 'admin.tenants.ai-usage', 'icon' => 'fa-chart-pie', 'label' => 'AI Kullanım', 'match' => 'admin.tenants.ai-usage', 'url' => route('admin.tenants.ai-usage', $activeTenantId, false)],
         ]);
     }
+
+    // Ekip — aktif site seçiliyken görünür: site sahibi (owner) kendi ekibini
+    // yönetir; agency admin de (üstteki site seçicisinden bir site seçtiğinde) o
+    // sitenin ekibini buradan yönetebilir. Manager/editor görmez. Controller'daki
+    // activeOwnedTenant() ile aynı yetki (agency admin || owner).
+    if ($activeTenantId && ($isAgencyAdmin || (auth('admin')->user()?->ownsTenant($activeTenantId) ?? false))) {
+        $systemItems[] = ['route' => 'admin.team.index', 'icon' => 'fa-user-group', 'label' => 'Ekip', 'match' => 'admin.team'];
+    }
+
+    // PLATFORM YÖNETİMİ — SADECE superadmin (ajans/platform araçları).
+    $platformItems = $isAgencyAdmin ? [
+        ['route' => 'admin.packages.index',    'icon' => 'fa-box-open',           'label' => 'Paketler',          'match' => 'admin.packages'],
+        ['route' => 'admin.ai-plans.index',    'icon' => 'fa-robot',              'label' => 'AI Planları',       'match' => 'admin.ai-plans'],
+        ['route' => 'admin.settings.ai-keys',  'icon' => 'fa-key',                'label' => 'AI Anahtarları',    'match' => 'admin.settings.ai-keys'],
+        ['route' => 'admin.settings.mailcow',  'icon' => 'fa-envelope-open-text', 'label' => 'Mail Ayarları',     'match' => 'admin.settings.mailcow'],
+        ['route' => 'admin.admin-users.index', 'icon' => 'fa-user-shield',        'label' => 'Yöneticiler',       'match' => 'admin.admin-users'],
+        ['route' => 'admin.roles.index',       'icon' => 'fa-key',                'label' => 'Roller/Yetkiler',   'match' => 'admin.roles'],
+        ['route' => 'admin.maintenance.index', 'icon' => 'fa-database',           'label' => 'DB Bakım',          'match' => 'admin.maintenance'],
+        ['route' => 'admin.activity-log.index','icon' => 'fa-history',            'label' => 'Aktivite Log',      'match' => 'admin.activity-log'],
+        ['route' => 'admin.library.index',     'icon' => 'fa-ship',               'label' => 'Cruise Kütüphanesi','match' => 'admin.library'],
+    ] : [];
 @endphp
 
 {{-- ── Kurulum Sihirbazı — her zaman erişilebilir, flag'e göre stil --}}
@@ -112,11 +139,13 @@
 
 <!-- Main navigation -->
 @foreach($navItems as $item)
+    @if($navCan($item))
     <a href="{{ route($item['route']) }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
         <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
         <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
     </a>
+    @endif
 @endforeach
 
 <!-- Tours (module-gated; only shows when active tenant has 'tours' enabled) -->
@@ -153,17 +182,36 @@
 @endforeach
 @endif
 
+<!-- Konaklama (module-gated; only shows when active tenant has 'lodging' enabled) -->
+@if(!empty($lodgingItems))
+<div class="my-3 border-t border-gray-200"></div>
+<div class="px-3 pt-2 pb-1">
+    <span class="text-[10px] font-semibold text-teal-500 uppercase tracking-wider" x-show="sidebarOpen" x-transition>
+        <i class="fas fa-hotel mr-0.5"></i> Konaklama
+    </span>
+</div>
+@foreach($lodgingItems as $item)
+    <a href="{{ route($item['route']) }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
+        <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
+        <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
+    </a>
+@endforeach
+@endif
+
 <!-- SEO & Diller -->
 <div class="my-3 border-t border-gray-200"></div>
 <div class="px-3 pt-2 pb-1">
     <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider" x-show="sidebarOpen" x-transition>SEO & Diller</span>
 </div>
 @foreach($seoItems as $item)
+    @if($navCan($item))
     <a href="{{ route($item['route']) }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
         <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
         <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
     </a>
+    @endif
 @endforeach
 
 <!-- Tasarım & Entegrasyonlar -->
@@ -172,22 +220,43 @@
     <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider" x-show="sidebarOpen" x-transition>Tasarım</span>
 </div>
 @foreach($designItems as $item)
+    @if($navCan($item))
     <a href="{{ route($item['route']) }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
         <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
         <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
     </a>
+    @endif
 @endforeach
 
-<!-- Sistem -->
+<!-- Sistem (hem superadmin hem müşteri) -->
 <div class="my-3 border-t border-gray-200"></div>
 <div class="px-3 pt-2 pb-1">
     <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider" x-show="sidebarOpen" x-transition>Sistem</span>
 </div>
 @foreach($systemItems as $item)
+    @if($navCan($item))
+    <a href="{{ $item['url'] ?? route($item['route']) }}"
+       class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
+        <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
+        <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
+    </a>
+    @endif
+@endforeach
+
+<!-- Platform Yönetimi (sadece superadmin / ajans) -->
+@if(!empty($platformItems))
+<div class="my-3 border-t border-gray-200"></div>
+<div class="px-3 pt-2 pb-1">
+    <span class="text-[10px] font-semibold text-indigo-400 uppercase tracking-wider" x-show="sidebarOpen" x-transition>
+        <i class="fas fa-shield-halved mr-0.5"></i> Platform Yönetimi
+    </span>
+</div>
+@foreach($platformItems as $item)
     <a href="{{ $item['url'] ?? route($item['route']) }}"
        class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 transition-colors {{ str_starts_with($currentRoute, $item['match']) ? 'active' : '' }}">
         <i class="fas {{ $item['icon'] }} w-5 text-center text-base"></i>
         <span x-show="sidebarOpen" x-transition>{{ $item['label'] }}</span>
     </a>
 @endforeach
+@endif

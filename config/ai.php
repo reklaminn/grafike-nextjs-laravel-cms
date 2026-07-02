@@ -64,17 +64,63 @@ return [
     |
     | Tier values map to the per-provider `models` table above.
     |
+    | `cache_ttl` (dakika): aynı tenant + model + prompt için yanıtı Redis'te
+    | bu süre saklar (FAZ 3.5). 0 = cache kapalı. Yaratıcı/çeşitlilik isteyen
+    | feature'lar (page.create, block.template, library.rewrite) 0; tekrarlı &
+    | deterministik feature'lar (seo.meta, page.translate, media.alt) uzun TTL.
+    |
     */
     'features' => [
-        'seo.meta'          => ['tier' => 'simple',  'max_tokens' =>  300, 'temperature' => 0.3],
-        'block.edit'        => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7],
-        'block.template'    => ['tier' => 'complex', 'max_tokens' => 2500, 'temperature' => 0.5],
-        'page.create'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.7],
-        'page.translate'    => ['tier' => 'simple',  'max_tokens' => 2500, 'temperature' => 0.3],
-        'misc.text'         => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7],
+        'seo.meta'          => ['tier' => 'simple',  'max_tokens' =>  300, 'temperature' => 0.3, 'cache_ttl' => 1440],
+        'block.edit'        => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7, 'cache_ttl' => 0],
+        'block.template'    => ['tier' => 'complex', 'max_tokens' => 2500, 'temperature' => 0.5, 'cache_ttl' => 0],
+        'page.create'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.7, 'cache_ttl' => 0],
+        // Sayfa asistanı: çok-bloklu düzenleme + sıralama planı (diff/onayla).
+        'page.assist'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.6, 'cache_ttl' => 0],
+        'page.translate'    => ['tier' => 'simple',  'max_tokens' => 2500, 'temperature' => 0.3, 'cache_ttl' => 10080],
+        'misc.text'         => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7, 'cache_ttl' => 0],
+        // Medya kütüphanesi: görsel için alt yazısı üretimi (vision, ucuz tier)
+        'media.alt'         => ['tier' => 'simple',  'max_tokens' =>  150, 'temperature' => 0.3, 'cache_ttl' => 1440],
         // Cruise kütüphanesi import'unda açıklamaları SEO için özgünleştir.
         // Ucuz tier (Haiku / 4o-mini) + batch → düşük maliyet.
-        'library.rewrite'   => ['tier' => 'simple',  'max_tokens' => 3000, 'temperature' => 0.8],
+        'library.rewrite'   => ['tier' => 'simple',  'max_tokens' => 3000, 'temperature' => 0.8, 'cache_ttl' => 0],
+    ],
+
+    /*
+    |----------------------------------------------------------------------
+    | Yanıt önbelleği (FAZ 3.5 — Redis prompt caching)
+    |----------------------------------------------------------------------
+    |
+    | Aynı (tenant + provider + model + system + prompt + temperature +
+    | max_tokens) için AI yanıtını önbellekten döndürür → tekrar eden
+    | isteklerde sağlayıcı çağrısı yapılmaz (maliyet + gecikme kazancı).
+    | Per-feature TTL yukarıdaki 'features.*.cache_ttl' alanından gelir.
+    |
+    | - store: null = varsayılan cache store (prod'da redis). Tenant cache
+    |   bootstrapper zaten per-tenant prefix uygular; ek olarak key'e
+    |   tenant_id gömülür (savunma derinliği).
+    | - lock_wait: stampede koruması — N admin aynı anda aynı promptu
+    |   tetiklerse yalnızca biri API'yi çağırır, diğerleri sonucu bekler.
+    |
+    | 'prompt_cache' AYRI bir özelliktir: Anthropic'in yerleşik
+    | cache_control'ü (uzun stabil system prompt'lar için ~%90 input indirimi,
+    | ekstra Redis gerekmez). İkisi birlikte çalışır.
+    |
+    */
+    'cache' => [
+        'enabled'   => (bool) env('AI_CACHE_ENABLED', true),
+        'store'     => env('AI_CACHE_STORE'), // null = default store
+        'prefix'    => 'ai_resp',
+        'lock_wait' => (int) env('AI_CACHE_LOCK_WAIT', 10), // saniye
+
+        'prompt_cache' => [
+            'enabled'          => (bool) env('AI_PROMPT_CACHE_ENABLED', true),
+            // Yaklaşık alt sınır: Anthropic min önbelleklenebilir önek ~ Opus/Haiku
+            // için 4096 token. Karakter ~ token oranı kabaca 3.5; bu eşiğin
+            // altındaki system prompt'lara cache_control eklemek anlamsız
+            // (sessizce yazılmaz, boşuna işaretlenir).
+            'min_system_chars' => (int) env('AI_PROMPT_CACHE_MIN_CHARS', 12000),
+        ],
     ],
 
     /*

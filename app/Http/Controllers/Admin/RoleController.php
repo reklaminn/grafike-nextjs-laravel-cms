@@ -14,24 +14,8 @@ class RoleController extends Controller
 {
     protected function getPermissionGroups(): array
     {
-        return [
-            'tenants' => ['label' => 'Siteler', 'actions' => ['view', 'create', 'edit', 'delete', 'switch', 'provision']],
-            'pages' => ['label' => 'Sayfalar', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'articles' => ['label' => 'Yazılar', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'menus' => ['label' => 'Menüler', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'forms' => ['label' => 'Formlar', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'media' => ['label' => 'Medya', 'actions' => ['view', 'upload', 'edit', 'delete']],
-            'seo' => ['label' => 'SEO', 'actions' => ['view', 'edit', 'delete']],
-            'redirects' => ['label' => 'Yönlendirmeler', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'reviews' => ['label' => 'Yorumlar', 'actions' => ['view', 'edit', 'delete']],
-            'members' => ['label' => 'Üyeler', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'languages' => ['label' => 'Diller', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'settings' => ['label' => 'Ayarlar', 'actions' => ['view', 'edit']],
-            'admins' => ['label' => 'Yöneticiler', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'roles' => ['label' => 'Roller', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'design' => ['label' => 'Tasarım (CSS/JS)', 'actions' => ['view', 'edit']],
-            'maintenance' => ['label' => 'Bakım', 'actions' => ['view', 'execute']],
-        ];
+        // Tek kaynak: App\Support\AdminPermissions (enforcement de buradan okur).
+        return \App\Support\AdminPermissions::groups();
     }
 
     public function index()
@@ -141,13 +125,6 @@ class RoleController extends Controller
 
     protected function ensurePermissionsExist(array $groups): void
     {
-        foreach ($groups as $group => $config) {
-            foreach ($config['actions'] as $action) {
-                Permission::firstOrCreate([
-                    'name' => "{$group}.{$action}",
-                    'guard_name' => 'admin',
-                ]);
-            }
-        }
+        \App\Support\AdminPermissions::ensure();
     }
 }

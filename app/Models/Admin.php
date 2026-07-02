@@ -76,4 +76,21 @@ class Admin extends Authenticatable
             ->value('tenant_id')
             ?? $this->tenantAccesses()->orderBy('tenant_id')->value('tenant_id');
     }
+
+    /** Bu admin'in verilen tenant üzerindeki erişim rolü (owner/manager/editor) ya da null. */
+    public function tenantRole(Tenant|string|null $tenant): ?string
+    {
+        if (! $tenant) {
+            return null;
+        }
+        $tenantId = $tenant instanceof Tenant ? $tenant->getTenantKey() : $tenant;
+
+        return $this->tenantAccesses()->where('tenant_id', $tenantId)->value('role');
+    }
+
+    /** Verilen tenant'ın sahibi mi? (ekip yönetimi yetkisi buna bağlı) */
+    public function ownsTenant(Tenant|string|null $tenant): bool
+    {
+        return $this->tenantRole($tenant) === 'owner';
+    }
 }

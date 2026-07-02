@@ -139,6 +139,38 @@ class SettingsController extends Controller
             ->with('success', 'Tarama ayarları güncellendi. robots.txt ve llms.txt önbelleği temizlendi.');
     }
 
+    // ─── Medya / görsel yükleme varsayılanları ─────────────────────────────────
+
+    public function media()
+    {
+        $settings = SiteSetting::all()->pluck('value', 'key');
+
+        return view('admin.settings.media', compact('settings'));
+    }
+
+    public function updateMedia(Request $request)
+    {
+        $validated = $request->validate([
+            'media.compress_enabled' => 'nullable|boolean',
+            'media.to_webp'          => 'nullable|boolean',
+            'media.max_size_kb'      => 'required|integer|min:128|max:51200',
+            'media.max_width'        => 'required|integer|min:0|max:10000',
+            'media.max_height'       => 'required|integer|min:0|max:10000',
+            'media.quality'          => 'required|integer|min:10|max:100',
+        ]);
+
+        SiteSetting::set('media.compress_enabled', $request->boolean('media.compress_enabled') ? '1' : '0', 'media');
+        SiteSetting::set('media.to_webp',          $request->boolean('media.to_webp') ? '1' : '0', 'media');
+        SiteSetting::set('media.max_size_kb', (int) $validated['media']['max_size_kb'], 'media');
+        SiteSetting::set('media.max_width',   (int) $validated['media']['max_width'], 'media');
+        SiteSetting::set('media.max_height',  (int) $validated['media']['max_height'], 'media');
+        SiteSetting::set('media.quality',     (int) $validated['media']['quality'], 'media');
+
+        return redirect()
+            ->route('admin.settings.media')
+            ->with('success', 'Medya ayarları güncellendi. Bundan sonraki yüklemelere uygulanır.');
+    }
+
     // ─── Mail preview / test ──────────────────────────────────────────────────
 
     /**

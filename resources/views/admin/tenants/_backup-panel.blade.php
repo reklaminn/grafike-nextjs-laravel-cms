@@ -34,9 +34,9 @@
         @endif
     </p>
     @else
-    <div class="overflow-x-auto">
+    <div class="max-h-96 overflow-x-auto overflow-y-auto">
         <table class="w-full text-sm">
-            <thead>
+            <thead class="sticky top-0 z-10 bg-white">
                 <tr class="text-left text-xs text-gray-500 border-b">
                     <th class="pb-2 font-medium">Tarih</th>
                     <th class="pb-2 font-medium">Boyut</th>
@@ -67,6 +67,27 @@
                         </a>
 
                         @if($canManage)
+                        {{-- Restore: onay olarak tenant ID yazılmalı (controller doğrular) --}}
+                        <form method="POST"
+                              action="{{ $backup['restore_url'] }}"
+                              class="inline-block mr-1"
+                              onsubmit="
+                                  var v = prompt('⚠️ GERİ YÜKLEME — mevcut veriler bu yedekle DEĞİŞTİRİLECEK.\n(Önce otomatik güvenlik yedeği alınır.)\n\nOnaylamak için site ID\'sini yazın: {{ $tenant->id }}');
+                                  if (v === null) return false;
+                                  this.querySelector('[name=confirm_tenant_id]').value = v;
+                                  this.querySelector('button').disabled = true;
+                                  this.querySelector('button').innerHTML = '<i class=\'fas fa-spinner fa-spin\'></i> Yükleniyor…';
+                                  return true;">
+                            @csrf
+                            <input type="hidden" name="confirm_tenant_id" value="">
+                            <button type="submit"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium
+                                           text-amber-600 hover:text-amber-800 border border-amber-200
+                                           hover:border-amber-400 rounded-md transition-colors">
+                                <i class="fas fa-clock-rotate-left text-[10px]"></i> Geri Yükle
+                            </button>
+                        </form>
+
                         {{-- Delete --}}
                         <form method="POST"
                               action="{{ $backup['delete_url'] }}"
@@ -91,7 +112,7 @@
 
     <p class="text-xs text-gray-400 mt-3">
         <i class="fas fa-info-circle mr-0.5"></i>
-        Son 30 yedek saklanır, eskiler otomatik silinir.
+        Katmanlı saklama: son 7 gün (tümü) + son ~4 hafta (haftalık) + son ~6 ay (aylık) tutulur, gerisi otomatik silinir.
     </p>
     @endif
 </div>

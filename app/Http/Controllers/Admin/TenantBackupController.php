@@ -68,6 +68,39 @@ class TenantBackupController extends Controller
         return Storage::disk('local')->download($path, $filename);
     }
 
+    // ── Restore from a backup file ─────────────────────────────────────────────
+
+    public function restore(\Illuminate\Http\Request $request, Tenant $tenant, string $filename): RedirectResponse
+    {
+        $this->authorizeAgencyAdmin();
+
+        if (! preg_match('/^backup_[\w\-]+\.zip$/', $filename)) {
+            abort(400, 'Invalid backup filename.');
+        }
+
+        // Yanlışlıkla tıklamaya karşı onay: kullanıcı tenant ID'sini yazmalı
+        if ($request->input('confirm_tenant_id') !== $tenant->id) {
+            return redirect()
+                ->route('admin.tenants.show', $tenant)
+                ->with('error', 'Onay metni eşleşmedi — geri yükleme iptal edildi. Site ID\'sini aynen yazmalısınız.');
+        }
+
+        set_time_limit(600); // büyük yedeklerde import uzun sürebilir
+
+        try {
+            // Geri yükleme öncesi otomatik snapshot alınır (geri dönüş garantisi)
+            app(\App\Console\Commands\RestoreTenant::class)->restoreTenant($tenant, $filename);
+
+            return redirect()
+                ->route('admin.tenants.show', $tenant)
+                ->with('success', "Yedek geri yüklendi: {$filename}. Geri yükleme öncesi durum otomatik yedeklendi.");
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('admin.tenants.show', $tenant)
+                ->with('error', 'Geri yükleme başarısız: '.$e->getMessage());
+        }
+    }
+
     // ── Delete a backup file ──────────────────────────────────────────────────
 
     public function destroy(Tenant $tenant, string $filename): RedirectResponse
@@ -128,6 +161,7 @@ class TenantBackupController extends Controller
                     'size'         => $this->formatBytes($bytes),
                     'created_at'   => $createdAt,
                     'download_url' => route('admin.tenants.backups.download', [$tenant, $filename]),
+                    'restore_url'  => route('admin.tenants.backups.restore',  [$tenant, $filename]),
                     'delete_url'   => route('admin.tenants.backups.destroy',  [$tenant, $filename]),
                 ];
             })

@@ -10,9 +10,12 @@ class MediaController extends Controller
 {
     public function index(Request $request)
     {
+        // `search` (medya kütüphanesi sayfası) + `q` (picker) ikisini de kabul et.
+        $search = $request->input('search', $request->input('q'));
+
         $query = Media::latest();
 
-        if ($search = $request->input('search')) {
+        if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('file_name', 'like', "%{$search}%")
                     ->orWhere('name', 'like', "%{$search}%");
@@ -37,10 +40,12 @@ class MediaController extends Controller
             $query->where('collection_name', $collection);
         }
 
-        $media = $query->paginate(48)->withQueryString();
-
-        // JSON response for picker / AJAX calls
+        // JSON response for picker / AJAX calls — per_page'i (sınırlı) onurlandır,
+        // zengin metadata + filtre için collection listesini de döndür.
         if ($request->expectsJson()) {
+            $perPage = min(max((int) $request->input('per_page', 40), 1), 100);
+            $media   = $query->paginate($perPage)->withQueryString();
+
             return response()->json([
                 'data' => $media->getCollection()->map(fn ($m) => [
                     'id'            => $m->id,
@@ -49,13 +54,24 @@ class MediaController extends Controller
                     'mime_type'     => $m->mime_type,
                     'size'          => $m->size,
                     'url'           => $m->getUrl(),
-                    'thumbnail_url' => str_starts_with($m->mime_type, 'image/') ? $m->getUrl() : null,
+                    'thumbnail_url' => str_starts_with((string) $m->mime_type, 'image/') ? $m->getUrl() : null,
+                    'is_image'      => str_starts_with((string) $m->mime_type, 'image/'),
+                    'collection'    => $m->collection_name,
+                    'alt_text'      => (string) ($m->getCustomProperty('alt_text') ?? ''),
+                    'created_at'    => optional($m->created_at)->format('d.m.Y'),
                 ]),
                 'meta' => [
                     'total'        => $media->total(),
                     'per_page'     => $media->perPage(),
                     'current_page' => $media->currentPage(),
                     'last_page'    => $media->lastPage(),
+                    'collections'  => Media::query()
+                        ->select('collection_name')
+                        ->distinct()
+                        ->orderBy('collection_name')
+                        ->pluck('collection_name')
+                        ->filter()
+                        ->values(),
                 ],
             ]);
         }
@@ -79,8 +95,11 @@ class MediaController extends Controller
 
     public function upload(Request $request)
     {
+        // Maks dosya boyutu site ayarından (yoksa config varsayılanı, KB).
+        $maxSizeKb = (int) \App\Models\SiteSetting::get('media.max_size_kb', config('cms.media.max_upload_size', 10240));
+
         $request->validate([
-            'file' => 'required|file|max:' . config('cms.media.max_upload_size', 10240),
+            'file' => 'required|file|max:' . $maxSizeKb,
         ]);
 
         $file = $request->file('file');
@@ -90,11 +109,32 @@ class MediaController extends Controller
             return response()->json(['error' => 'Bu dosya uzantısına izin verilmiyor.'], 422);
         }
 
+        // SVG → gömülü script/onload XSS riski; içeriği sanitize et
+        if (! \App\Services\Media\SvgGuard::sanitizeIfSvg($file)) {
+            return response()->json(['error' => 'SVG dosyası güvenli değil veya bozuk.'], 422);
+        }
+
+        // Site ayarlarına göre yeniden boyutlandır + sıkıştır (raster görseller).
+        // İşlenirse depoya işlenmiş geçici dosya gider; aksi halde orijinal.
+        $processed = app(\App\Services\Media\MediaImageProcessor::class)->process($file, [
+            'enabled'    => \App\Models\SiteSetting::get('media.compress_enabled', '1') === '1',
+            'max_width'  => (int) \App\Models\SiteSetting::get('media.max_width', 2560),
+            'max_height' => (int) \App\Models\SiteSetting::get('media.max_height', 0),
+            'quality'    => (int) \App\Models\SiteSetting::get('media.quality', 82),
+            'to_webp'    => \App\Models\SiteSetting::get('media.to_webp', '0') === '1',
+        ]);
+
+        // Depoya gidecek gerçek boyut (işlenmişse o, değilse orijinal).
+        $effectiveSize = $processed ? (int) @filesize($processed['path']) : (int) $file->getSize();
+
         // Pakete göre depolama kotası — aktif tenant kotasını aşacaksa reddet.
         $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
         if ($tenant) {
             $meter = app(\App\Services\Tenancy\TenantUsageMeter::class);
-            if ($meter->wouldExceedStorage($tenant, (int) $file->getSize())) {
+            if ($meter->wouldExceedStorage($tenant, $effectiveSize)) {
+                if ($processed) {
+                    @unlink($processed['path']); // geçici dosyayı temizle
+                }
                 $quota = $tenant->packageConfig()['max_storage_mb'] ?? null;
 
                 return response()->json([
@@ -103,16 +143,41 @@ class MediaController extends Controller
             }
         }
 
-        // Store as orphan media (not associated with a model yet)
-        $path = $file->store('uploads/' . date('Y/m'), 'public');
+        // Proper Spatie Media record on a standalone MediaAsset owner.
+        // (Eski hali orphan dosya kaydedip asset('storage/..') döndürüyordu →
+        //  grid'de görünmüyor + tenant'ta /tenancy/assets/storage/.. 500.)
+        // addMedia, çalışan kapak/önizleme akışıyla aynı disk + getUrl() üretir.
+        $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        // Görünen "Ad" okunur kalsın (Türkçe/büyük harf serbest). Ama DEPOLANAN
+        // dosya adı URL'de yer alır → Türkçe karakter/büyük harf/boşluk linklemede
+        // sorun çıkarır. Bu yüzden file_name'i slug'la: ü→u, ş→s, ı→i, küçük, tire.
+        $slug = \Illuminate\Support\Str::slug($baseName) ?: 'gorsel';
+        $asset = \App\Models\MediaAsset::create(['name' => $baseName]);
+
+        if ($processed) {
+            // İşlenmiş geçici dosyadan ekle; görünen adı koru, uzantı değişebilir
+            // (örn. .webp'ye çevrildiyse). addMedia geçici dosyayı taşır.
+            $media = $asset->addMedia($processed['path'])
+                ->usingName($baseName)
+                ->usingFileName($slug . '.' . $processed['extension'])
+                ->toMediaCollection('library');
+        } else {
+            $media = $asset->addMedia($file)
+                ->usingName($baseName)
+                ->usingFileName($slug . '.' . strtolower($file->getClientOriginalExtension()))
+                ->toMediaCollection('library');
+        }
 
         return response()->json([
-            'success' => true,
-            'path' => $path,
-            'url' => asset('storage/' . $path),
-            'name' => $file->getClientOriginalName(),
-            'size' => $file->getSize(),
-            'mime' => $file->getMimeType(),
+            'success'   => true,
+            'id'        => $media->id,
+            'url'       => $media->getUrl(),
+            'name'      => $media->name,
+            'file_name' => $media->file_name,
+            'size'      => $media->size,
+            'mime'      => $media->mime_type,
+            'disk'      => $media->disk,
+            'path'      => $media->getPathRelativeToRoot(),
         ]);
     }
 
@@ -121,6 +186,48 @@ class MediaController extends Controller
         $medium->load('model');
 
         return view('admin.media.show', ['media' => $medium]);
+    }
+
+    /**
+     * Tek görsel için AI alt yazısı üret — sonucu JSON döner, UI input'u
+     * doldurur; admin gözden geçirip normal formdan kaydeder.
+     */
+    public function generateAlt(Media $medium, \App\Services\Ai\AiAltTextGenerator $generator)
+    {
+        $tenant = (function_exists('tenancy') && tenancy()->initialized) ? tenancy()->tenant : null;
+
+        try {
+            $alt = $generator->generate($medium, $tenant);
+        } catch (\App\Services\Ai\Exceptions\AiQuotaExceededException $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 402);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['ok' => true, 'alt' => $alt]);
+    }
+
+    /**
+     * Alt yazısı eksik tüm görseller için kuyrukta toplu üretim başlat.
+     */
+    public function generateAltBulk()
+    {
+        $missing = Media::query()
+            ->where('mime_type', 'like', 'image/%')
+            ->where('mime_type', '!=', 'image/svg+xml')
+            ->get()
+            ->filter(fn (Media $media) => blank($media->getCustomProperty('alt_text')));
+
+        foreach ($missing as $media) {
+            \App\Jobs\Ai\GenerateAltTextJob::dispatch($media->id);
+        }
+
+        return back()->with(
+            'success',
+            $missing->isEmpty()
+                ? 'Tüm görsellerin alt yazısı zaten dolu.'
+                : "{$missing->count()} görsel için alt yazısı üretimi kuyruğa alındı — birkaç dakika içinde tamamlanır."
+        );
     }
 
     public function update(Request $request, Media $medium)
@@ -141,12 +248,132 @@ class MediaController extends Controller
 
         $medium->save();
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success'  => true,
+                'id'       => $medium->id,
+                'name'     => $medium->name,
+                'alt_text' => (string) ($medium->getCustomProperty('alt_text') ?? ''),
+            ]);
+        }
+
         return back()->with('success', 'Medya bilgileri güncellendi.');
     }
 
-    public function destroy(Media $medium)
+    /**
+     * Dosya adını URL-güvenli hale getirir (slug) + diskteki dosyayı taşır +
+     * bu sitedeki içeriklerde (pages.sections_json, articles.content_json) eski
+     * URL'i yenisiyle değiştirir → linkler kırılmaz. Görünen "name" de güncellenir.
+     */
+    public function renameFile(Request $request, Media $medium)
     {
+        $validated = $request->validate(['name' => 'required|string|max:255']);
+        $name = trim($validated['name']);
+
+        $ext  = strtolower(pathinfo((string) $medium->file_name, PATHINFO_EXTENSION));
+        $slug = \Illuminate\Support\Str::slug(pathinfo($name, PATHINFO_FILENAME)) ?: 'gorsel';
+        $newFileName = $slug . ($ext !== '' ? '.' . $ext : '');
+
+        $medium->name = $name; // görünen ad her durumda güncellenir
+
+        // Dosya adı zaten aynıysa: yalnızca görünen adı kaydet (taşıma/refs yok).
+        if ($newFileName === $medium->file_name) {
+            $medium->save();
+
+            return response()->json([
+                'success' => true, 'renamed' => false, 'id' => $medium->id,
+                'name' => $medium->name, 'file_name' => $medium->file_name,
+                'url' => $medium->getUrl(), 'refs_updated' => 0,
+            ]);
+        }
+
+        $disk        = $medium->disk;
+        $oldRelative = $medium->getPathRelativeToRoot();
+        $dir         = trim(str_replace('\\', '/', \dirname($oldRelative)), '/.');
+        $oldUrl      = $medium->getUrl();
+        $fs          = \Illuminate\Support\Facades\Storage::disk($disk);
+
+        // Hedef çakışması → benzersizleştir (slug-2, slug-3 …).
+        $finalFileName = $newFileName;
+        $newRelative   = ($dir !== '' ? $dir . '/' : '') . $finalFileName;
+        for ($i = 2; $newRelative !== $oldRelative && $fs->exists($newRelative); $i++) {
+            $finalFileName = $slug . '-' . $i . ($ext !== '' ? '.' . $ext : '');
+            $newRelative   = ($dir !== '' ? $dir . '/' : '') . $finalFileName;
+        }
+
+        // Diskte taşı (kaynak varsa). Başarısızsa file_name'i DEĞİŞTİRME (tutarlılık).
+        try {
+            if ($fs->exists($oldRelative)) {
+                $fs->move($oldRelative, $newRelative);
+            }
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => 'Dosya taşınamadı: ' . $e->getMessage()], 422);
+        }
+
+        $medium->file_name = $finalFileName;
+        $medium->save();
+
+        $newUrl = $medium->fresh()->getUrl();
+        $refs   = $this->updateMediaReferences($oldUrl, $newUrl);
+
+        return response()->json([
+            'success' => true, 'renamed' => true, 'id' => $medium->id,
+            'name' => $medium->name, 'file_name' => $finalFileName,
+            'url' => $newUrl, 'refs_updated' => $refs,
+        ]);
+    }
+
+    /** Eski URL'i yeni URL ile bu sitenin sayfa/yazı içeriklerinde değiştirir. */
+    private function updateMediaReferences(string $oldUrl, string $newUrl): int
+    {
+        if ($oldUrl === '' || $oldUrl === $newUrl) {
+            return 0;
+        }
+
+        $count = 0;
+
+        \App\Models\Page::query()->whereNotNull('sections_json')->each(function ($page) use (&$count, $oldUrl, $newUrl) {
+            $new = $this->replaceUrlInData($page->sections_json, $oldUrl, $newUrl);
+            if ($new !== $page->sections_json) {
+                $page->sections_json = $new;
+                $page->save();
+                $count++;
+            }
+        });
+
+        \App\Models\Article::query()->whereNotNull('content_json')->each(function ($article) use (&$count, $oldUrl, $newUrl) {
+            $new = $this->replaceUrlInData($article->content_json, $oldUrl, $newUrl);
+            if ($new !== $article->content_json) {
+                $article->content_json = $new;
+                $article->save();
+                $count++;
+            }
+        });
+
+        return $count;
+    }
+
+    /** İç içe diziyi gezip string değerlerde eski URL'i yeni URL ile değiştirir. */
+    private function replaceUrlInData(mixed $data, string $old, string $new): mixed
+    {
+        if (is_string($data)) {
+            return str_contains($data, $old) ? str_replace($old, $new, $data) : $data;
+        }
+        if (is_array($data)) {
+            return array_map(fn ($v) => $this->replaceUrlInData($v, $old, $new), $data);
+        }
+
+        return $data;
+    }
+
+    public function destroy(Request $request, Media $medium)
+    {
+        $id = $medium->id;
         $medium->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'id' => $id]);
+        }
 
         return back()->with('success', 'Medya dosyası silindi.');
     }

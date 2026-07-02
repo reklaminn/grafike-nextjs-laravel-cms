@@ -18,6 +18,13 @@ Schedule::command('cms:backup-tenant --all')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/backup.log'));
 
+// Zamanlanmış sayfa yayınlama — vakti gelen status='scheduled' sayfaları
+// 'published' yapar (tüm tenant'lar). PageObserver cache + revalidation'ı
+// otomatik tetikler.
+Schedule::command('cms:publish-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 // Defensive Traefik dynamic-config sync.  The DomainObserver already
 // regenerates the file on every domain CRUD, so this hourly tick is purely
 // a drift-detection safety net for scenarios where the observer doesn't
@@ -25,6 +32,15 @@ Schedule::command('cms:backup-tenant --all')
 // The command itself is idempotent — same content → file mtime updates but
 // Traefik file provider detects no diff and skips the reload.
 Schedule::command('traefik:sync')
+    ->hourly()
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Tenant kullanım rollup — Redis sayaçlarını (2 gün TTL) kalıcı günlük tabloya
+// yazar + depolama/DB/kullanıcı anlık görüntüsünü alır. Saatlik koşar ki hem
+// zaman serisi grafiği birikir hem de tenant panosu web isteğinde ağır tarama
+// yapmadan tablodan okur.
+Schedule::command('cms:rollup-usage')
     ->hourly()
     ->withoutOverlapping()
     ->runInBackground();

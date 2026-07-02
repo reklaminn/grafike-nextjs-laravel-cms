@@ -111,6 +111,16 @@ function sectionPreviewPanel(previewUrl) {
                 let content = {};
                 try { content = JSON.parse(rawContent); } catch (_) {}
 
+                // Schema'dan örnek içerik TABAN, kullanıcının default content'i
+                // üstüne biner: yeni eklenen alanlar (default üretilmeden) de
+                // önizlemede örnek değerle görünür; kullanıcı değerleri korunur.
+                if (window.buildSchemaSampleContent) {
+                    try {
+                        const sample = window.buildSchemaSampleContent();
+                        content = { ...sample, ...content };
+                    } catch (_) {}
+                }
+
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
                 const res = await fetch(previewUrl, {
                     method: 'POST',

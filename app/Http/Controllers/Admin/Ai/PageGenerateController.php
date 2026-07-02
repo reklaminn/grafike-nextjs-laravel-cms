@@ -35,10 +35,39 @@ class PageGenerateController extends Controller
             'parent_id'   => 'nullable|integer',
             'auto_save'   => 'nullable|boolean',
             'locale'      => 'nullable|string|max:5',
+            'async'       => 'nullable|boolean',
         ]);
 
         $tenant = tenancy()->initialized ? tenant() : null;
         $locale = $validated['locale'] ?? $this->resolveLocale($validated['language_id'] ?? null);
+
+        // ── Async mod: job'u kuyruğa at, UI status endpoint'ini poll'lar ──
+        // (queue=sync ortamlarda dispatch inline çalışır; davranış aynı kalır)
+        if (filter_var($validated['async'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $jobId = (string) \Illuminate\Support\Str::uuid();
+
+            \Illuminate\Support\Facades\Cache::put(
+                \App\Jobs\Ai\GenerateAiPageJob::cacheKey($jobId),
+                ['status' => 'queued'],
+                3600
+            );
+
+            \App\Jobs\Ai\GenerateAiPageJob::dispatch(
+                jobId:      $jobId,
+                prompt:     $validated['prompt'],
+                locale:     $locale,
+                languageId: $validated['language_id'] ?? null,
+                parentId:   $validated['parent_id'] ?? null,
+                autoSave:   filter_var($validated['auto_save'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            );
+
+            return response()->json([
+                'ok'         => true,
+                'mode'       => 'queued',
+                'job_id'     => $jobId,
+                'status_url' => route('admin.ai.generate-page.status', $jobId, false),
+            ]);
+        }
 
         try {
             $result = $generator->generate(
@@ -93,6 +122,31 @@ class PageGenerateController extends Controller
             'mode'    => 'preview',
             'preview' => $result,
         ]);
+    }
+
+    /**
+     * GET /admin/ai/generate-page/status/{jobId}
+     * Async üretimin durumunu döner: queued | running | done | failed.
+     */
+    public function status(string $jobId): JsonResponse
+    {
+        if (! preg_match('/^[0-9a-f\-]{36}$/', $jobId)) {
+            abort(400, 'Geçersiz job id.');
+        }
+
+        $state = \Illuminate\Support\Facades\Cache::get(
+            \App\Jobs\Ai\GenerateAiPageJob::cacheKey($jobId)
+        );
+
+        if (! $state) {
+            return response()->json([
+                'ok'     => false,
+                'status' => 'not_found',
+                'message'=> 'Job bulunamadı veya süresi doldu.',
+            ], 404);
+        }
+
+        return response()->json(['ok' => true] + $state);
     }
 
     /**

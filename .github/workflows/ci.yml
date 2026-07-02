@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/multi-tenant]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Tests (PHP 8.4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # Prod Docker imajı PHP 8.4 (Dockerfile) — CI aynı sürümde koşar
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3, gd, zip, intl, bcmath
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Blade brace-trap guard
+        # .blade.php içindeki JS yorum/string'inde literal {{word}} (bareword,
+        # $var/helper değil) Blade tarafından `<?php echo e(word); ?>`'a derlenir
+        # → runtime'da "Undefined constant" 500. Compile + node-check bunu
+        # YAKALAMAZ. View'ları derle, derlenmiş çıktıda bareword echo'su ara.
+        run: |
+          php artisan view:cache
+          # bare {{word}} → echo e(word)  VE  literal {{...}} / {{.*?}} (JS yorum/
+          # regex) → echo e(...) / echo e(.  (PHP 8.1 first-class-callable → Closure 500).
+          if grep -rEn "echo e\([a-z_][a-z0-9_]*\)|echo e\(\." storage/framework/views/ \
+             | grep -vE "echo e\((true|false|null)\)"; then
+            echo "::error::Blade view'inde tuzaklı {{ }} echo'su var (Undefined-constant / Closure 500 riski). @{{ }} ya da @verbatim kullan, JS yorum/regex'te literal {{ }} yazma."
+            exit 1
+          fi
+          php artisan view:clear
+
+      - name: Run tests
+        # CI suite: bilinen eski hatalı dosyalar hariç (bkz. phpunit.xml CI testsuite).
+        # Tam suite ~30 dk sürüp 98 eski hatayla kırmızı kalıyordu.
+        run: php artisan test --testsuite=CI
+
+  audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Composer security audit
+        # --locked: vendor kurulumu gerektirmeden composer.lock üzerinden denetler
+        run: composer audit --locked

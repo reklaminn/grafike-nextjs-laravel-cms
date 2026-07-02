@@ -2,11 +2,11 @@
 
 {{-- ── Block Picker Modal ──────────────────────────────────────────────── --}}
 <div x-show="pickerModalOpen" x-cloak
-     class="fixed inset-0 z-[80] flex items-start justify-center bg-black/60 px-4 pt-12 pb-8"
+     class="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-0 sm:items-start sm:px-4 sm:pt-12 sm:pb-8"
      @click.self="closeBlockPicker()"
      @keydown.escape.window="closeBlockPicker()">
-    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-         style="max-height: calc(100vh - 5rem)">
+    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+         style="max-height: 90vh">
 
         {{-- Header --}}
         <div class="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
@@ -16,6 +16,12 @@
                     Sayfaya eklenecek block şablonunu seç
                 </p>
             </div>
+            <button type="button" @click="refreshTemplateCatalog()"
+                    :disabled="catalogRefreshing"
+                    title="Şablon listesini yenile (yeni eklenen şablonlar görünür)"
+                    class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 disabled:opacity-50">
+                <i class="fas fa-arrows-rotate text-sm" :class="catalogRefreshing && 'fa-spin'"></i>
+            </button>
             <button type="button" @click="closeBlockPicker()"
                     class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                 <i class="fas fa-xmark text-sm"></i>
@@ -111,23 +117,63 @@
 </div>
 
 <div x-show="settingsModalOpen" x-cloak
-     class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+     class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
      @click.self="closeBlockSettings()">
-    <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 max-h-[85vh] overflow-y-auto">
+    <div class="flex w-full max-w-3xl max-h-[92vh] flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-2xl sm:max-h-[85vh] sm:rounded-2xl">
+        {{-- Sabit başlık (üstte kalır, scroll etmez) --}}
+        <div class="shrink-0 border-b border-gray-100 px-4 pt-4 pb-3 sm:px-5 sm:pt-5">
+        {{-- Mobil sürükleme tutamağı --}}
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 sm:hidden"></div>
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h4 class="text-base font-semibold text-gray-900">Block Ayarları</h4>
                 <p class="mt-1 text-xs text-gray-500" x-text="settingsBlock ? (settingsBlock.template_name || settingsBlock.type) : ''"></p>
             </div>
-            <button type="button"
-                    @click="closeBlockSettings()"
-                    class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <a x-show="settingsBlock"
+                   x-cloak
+                   :href="settingsBlock?.section_template_id
+                           ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit')
+                           : @js(route('admin.section-templates.index'))"
+                   :title="settingsBlock?.section_template_id ? 'Block şablonunu düzenle' : 'Block şablonları listesi'"
+                   target="_blank"
+                   class="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">
+                    <i class="fas fa-pen-to-square text-[11px]"></i>
+                    <span>Şablonu Düzenle</span>
+                </a>
+                <button type="button" x-show="settingsBlock?.section_template_id" x-cloak
+                        @click="refreshTemplateCatalog()"
+                        :disabled="catalogRefreshing"
+                        title="Şablondan yenile — şablonda yapılan son değişiklikleri bu bloğa uygula"
+                        class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200 hover:text-indigo-600 disabled:opacity-50">
+                    <i class="fas fa-arrows-rotate" :class="catalogRefreshing && 'fa-spin'"></i>
+                </button>
+                <button type="button"
+                        @click="closeBlockSettings()"
+                        class="rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600 hover:bg-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
         </div>
 
         <template x-if="settingsBlock">
-            <div class="mt-5 space-y-4">
+            <div class="flex min-h-0 flex-1 flex-col">
+                <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+                {{-- Şablon güncellik uyarısı — blok schema'sı katalogdan farklıysa --}}
+                <div x-show="blockSchemaIsStale(settingsBlock)" x-cloak
+                     class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                    <div class="flex items-center gap-2 text-xs text-amber-800">
+                        <i class="fas fa-triangle-exclamation text-amber-500"></i>
+                        <span>Bu bloğun alan yapısı şablonun güncel haliyle eşleşmiyor.</span>
+                    </div>
+                    <button type="button"
+                            @click="applyTemplateToBlock(settingsDraft); queueSerializedRegionsSync()"
+                            class="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
+                        <i class="fas fa-arrows-rotate mr-1"></i> Şablondan Yenile
+                    </button>
+                </div>
+
                 {{-- Per-block validation error summary --}}
                 <template x-if="settingsBlock && fieldErrors[settingsBlock.id] && Object.keys(fieldErrors[settingsBlock.id]).length > 0">
                     <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -273,7 +319,37 @@
                         </p>
                     </div>
 
-                    <template x-for="[fieldName, fieldSchema] in Object.entries(settingsBlock.schema || {})" :key="fieldName">
+                    {{-- Boş schema yönlendirmesi — boş ekran yerine ne yapılacağını söyle --}}
+                    <div x-show="Object.keys(settingsBlock.schema || {}).length === 0" x-cloak
+                         class="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-8 text-center">
+                        <i class="fas fa-list-check mb-3 text-2xl text-gray-300"></i>
+                        <p class="text-sm font-medium text-gray-600">Bu şablonda içerik alanı tanımlı değil</p>
+                        <p class="mx-auto mt-1 max-w-md text-xs text-gray-400">
+                            İçerik tabında düzenlenebilir alanlar görmek için şablonun
+                            <strong>Schema Alanları</strong> bölümüne alan eklenmeli
+                            (örn. başlık, metin, görsel). Şablonda <code class="rounded bg-gray-200 px-1">@{{placeholder}}</code>
+                            varsa "HTML'den Üret" butonu alanları otomatik çıkarır.
+                        </p>
+                        <div class="mt-4 flex items-center justify-center gap-2">
+                            <a :href="settingsBlock?.section_template_id
+                                       ? (@js(url('admin/section-templates')) + '/' + settingsBlock.section_template_id + '/edit#schema-builder')
+                                       : @js(route('admin.section-templates.index'))"
+                               target="_blank"
+                               class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700">
+                                <i class="fas fa-pen-to-square"></i> Şablona Alan Ekle
+                            </a>
+                            <button type="button" @click="settingsTab = 'code'"
+                                    x-show="settingsBlock?.render_mode === 'html'"
+                                    class="inline-flex items-center gap-1.5 rounded-lg bg-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-300">
+                                <i class="fas fa-code"></i> Kod tabında düzenle
+                            </button>
+                        </div>
+                        <p class="mt-3 text-[11px] text-gray-400">
+                            Alan ekledikten sonra buraya dönüp üstteki <i class="fas fa-arrows-rotate"></i> ile yenileyin.
+                        </p>
+                    </div>
+
+                    <template x-for="[fieldName, fieldSchema] in visibleSchemaFields(settingsBlock.schema)" :key="fieldName">
                         <div>
                             <template x-if="(fieldSchema.type || 'text') === 'repeater'">
                                 <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-3"
@@ -295,11 +371,19 @@
                                     <div class="mt-3 space-y-3">
                                         <template x-for="(item, itemIndex) in settingsBlock.content[fieldName]" :key="item._uid || itemIndex">
                                             <div class="rounded-lg border border-amber-200 bg-white p-3">
-                                                <div class="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-amber-100 pb-2">
-                                                    <div class="text-xs font-semibold text-gray-700">
-                                                        Item #<span x-text="itemIndex + 1"></span>
-                                                    </div>
-                                                    <div class="flex items-center gap-1">
+                                                <div class="flex flex-wrap items-center justify-between gap-2"
+                                                     :class="repeaterItemExpanded(item, (settingsBlock.content[fieldName] || []).length) ? 'mb-3 border-b border-amber-100 pb-2' : ''">
+                                                    <button type="button"
+                                                            @click="toggleRepeaterItem(item, (settingsBlock.content[fieldName] || []).length)"
+                                                            class="flex min-w-0 flex-1 items-center gap-1.5 text-left text-xs font-semibold text-gray-700">
+                                                        <i class="fas text-[10px] text-gray-400 flex-shrink-0"
+                                                           :class="repeaterItemExpanded(item, (settingsBlock.content[fieldName] || []).length) ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                                        <span class="flex-shrink-0">Item #<span x-text="itemIndex + 1"></span></span>
+                                                        <span x-show="repeaterItemLabel(item, fieldSchema)"
+                                                              class="truncate font-normal text-gray-400"
+                                                              x-text="'— ' + repeaterItemLabel(item, fieldSchema)"></span>
+                                                    </button>
+                                                    <div class="flex items-center gap-1 flex-shrink-0">
                                                         <button type="button"
                                                                 @click="moveRepeaterItem(settingsBlock, fieldName, itemIndex, -1)"
                                                                 :disabled="itemIndex === 0"
@@ -325,7 +409,8 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="grid gap-3 sm:grid-cols-2">
+                                                <div class="grid gap-3 sm:grid-cols-2"
+                                                     x-show="repeaterItemExpanded(item, (settingsBlock.content[fieldName] || []).length)">
                                                     <template x-for="[itemFieldName, itemFieldSchema] in Object.entries(repeaterFieldSchema(fieldSchema))" :key="itemFieldName">
                                                         <div :class="['textarea','rich-text','html'].includes(itemFieldSchema.type || 'text') ? 'sm:col-span-2' : ''">
                                                             <label class="mb-1 block text-xs font-medium text-gray-600"
@@ -410,24 +495,42 @@
                                  x-html="blockRenderedHtml(settingsBlock)"></div>
                         </div>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-gray-600">Üretilen HTML Kodu</label>
-                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 font-mono overflow-x-auto"
-                             x-text="blockCodePreview(settingsBlock)"></div>
-                    </div>
-                    <div x-show="settingsBlock.render_mode === 'html'">
+                    {{-- HTML Override (CodeMirror) — düzenleme alanı üstte --}}
+                    <div x-show="settingsBlock.render_mode === 'html'" class="html-override-cm">
                         <label class="mb-1 block text-xs font-medium text-gray-600">HTML Override</label>
-                        <textarea x-model="settingsBlock.html_override"
-                                  rows="8"
+                        <textarea x-ref="htmlOverrideTextarea"
+                                  x-model="settingsBlock.html_override"
+                                  rows="10"
                                   placeholder="Boş bırakırsan şablonun varsayılan HTML'i kullanılır."
                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-xs focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"></textarea>
                     </div>
                     <div x-show="settingsBlock.render_mode !== 'html'" class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
                         Component mode için ham HTML override yerine props ve stil alanları kullanılmalı.
                     </div>
+
+                    {{-- Üretilen HTML Kodu — uzun, salt-okunur → katlanabilir, en altta --}}
+                    <details class="rounded-lg border border-gray-200">
+                        <summary class="flex items-center justify-between gap-2 cursor-pointer select-none px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                            <span><i class="fas fa-code mr-1 text-gray-400"></i> Üretilen HTML Kodu (göster)</span>
+                            <button type="button"
+                                    @click.prevent.stop="cloneGeneratedToOverride()"
+                                    title="Üretilen kodu yukarıdaki HTML Override alanına kopyalar (düzenlenebilir hale getirir)"
+                                    class="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-100">
+                                <template x-if="! htmlOverrideCloned">
+                                    <span><i class="fas fa-arrow-up mr-0.5"></i> HTML Override'a kopyala</span>
+                                </template>
+                                <template x-if="htmlOverrideCloned">
+                                    <span class="text-green-700"><i class="fas fa-check mr-0.5"></i> Kopyalandı</span>
+                                </template>
+                            </button>
+                        </summary>
+                        <div class="max-h-64 overflow-auto border-t border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 font-mono whitespace-pre-wrap break-words"
+                             x-text="blockCodePreview(settingsBlock)"></div>
+                    </details>
+                </div>
                 </div>
 
-                <div class="flex items-center justify-end gap-3 border-t border-gray-200 pt-4">
+                <div class="flex shrink-0 items-center justify-end gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:px-5">
                     <button type="button"
                             @click="closeBlockSettings()"
                             class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">
@@ -445,9 +548,10 @@
 </div>
 
 <div x-show="rowSettingsModalOpen" x-cloak
-     class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+     class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
      @click.self="closeRowSettings()">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 max-h-[85vh] overflow-y-auto">
+    <div class="w-full max-w-2xl rounded-t-2xl bg-white shadow-2xl border border-gray-200 p-4 max-h-[92vh] overflow-y-auto sm:rounded-2xl sm:p-5 sm:max-h-[85vh]">
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 sm:hidden"></div>
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h4 class="text-base font-semibold text-gray-900">Satır Ayarları</h4>
@@ -547,9 +651,10 @@
 </div>
 
 <div x-show="columnSettingsModalOpen" x-cloak
-     class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+     class="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
      @click.self="closeColumnSettings()">
-    <div class="w-full max-w-3xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-5 max-h-[85vh] overflow-y-auto">
+    <div class="w-full max-w-3xl rounded-t-2xl bg-white shadow-2xl border border-gray-200 p-4 max-h-[92vh] overflow-y-auto sm:rounded-2xl sm:p-5 sm:max-h-[85vh]">
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300 sm:hidden"></div>
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h4 class="text-base font-semibold text-gray-900">Kolon Ayarları</h4>
@@ -661,5 +766,188 @@
                 </div>
             </div>
         </template>
+    </div>
+</div>
+
+{{-- ── AI Sayfa Asistanı Modal (Madde 3b) ──────────────────────────────────
+     Tek talimattan çok-bloklu değişiklik planı (edit/reorder/remove) üretir,
+     diff olarak gösterir, onaydan SONRA uygular. frontendSectionEditor scope'u. --}}
+<div x-show="assistOpen" x-cloak
+     class="fixed inset-0 z-[85] flex items-end justify-center bg-black/60 p-0 sm:items-start sm:px-4 sm:pt-12 sm:pb-8"
+     @click.self="closeAssist()"
+     @keydown.escape.window="assistOpen && closeAssist()">
+    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+         style="max-height: 88vh">
+
+        {{-- Header --}}
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-purple-50 px-5 py-4">
+            <div class="flex items-center gap-2.5">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                    <i class="fas fa-wand-magic-sparkles text-sm"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-800">AI Sayfa Asistanı</h3>
+                    <p class="text-[11px] text-gray-500">Tüm sayfayı tek talimatla düzenle — onaydan önce göster</p>
+                </div>
+            </div>
+            <button type="button" @click="closeAssist()"
+                    class="rounded-lg p-1.5 text-gray-400 hover:bg-white/70 hover:text-gray-600">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-5 py-4">
+
+            {{-- Talimat girişi --}}
+            <label class="mb-1.5 block text-xs font-medium text-gray-700">Ne yapmak istiyorsun?</label>
+            <textarea x-model="assistInstruction" rows="3"
+                      :disabled="assistLoading"
+                      placeholder="Örn: Tüm metinleri daha satış odaklı yap ve yazım hatalarını düzelt. Sıkça Sorulan Sorular bloğunu en alta taşı."
+                      class="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                      @keydown.meta.enter="requestAssistPlan()"
+                      @keydown.ctrl.enter="requestAssistPlan()"></textarea>
+
+            {{-- Hızlı örnekler --}}
+            <div class="mt-2 flex flex-wrap gap-1.5">
+                <template x-for="ex in [
+                    'Tüm metinleri daha profesyonel ve kurumsal yap',
+                    'Yazım ve dilbilgisi hatalarını düzelt',
+                    'Başlıkları SEO odaklı, aksiyon davetli yeniden yaz',
+                    'Tüm metinleri %20 kısalt',
+                ]" :key="ex">
+                    <button type="button" @click="assistInstruction = ex"
+                            class="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] text-indigo-700 hover:bg-indigo-100">
+                        <span x-text="ex"></span>
+                    </button>
+                </template>
+            </div>
+
+            {{-- Öner butonu --}}
+            <div class="mt-3 flex items-center gap-2">
+                <button type="button" @click="requestAssistPlan()"
+                        :disabled="assistLoading"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                    <i class="fas" :class="assistLoading ? 'fa-spinner fa-spin' : 'fa-lightbulb'"></i>
+                    <span x-text="assistLoading ? 'Plan hazırlanıyor…' : (assistPlan ? 'Yeniden Öner' : 'Değişiklik Öner')"></span>
+                </button>
+                <span class="text-[11px] text-gray-400">⌘/Ctrl + Enter</span>
+            </div>
+
+            {{-- Hata --}}
+            <div x-show="assistError" x-cloak
+                 class="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <i class="fas fa-triangle-exclamation mt-0.5"></i>
+                <span x-text="assistError"></span>
+            </div>
+
+            {{-- Uygulandı bildirimi --}}
+            <div x-show="assistApplied" x-cloak
+                 class="mt-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                <i class="fas fa-check-circle"></i>
+                <span>Değişiklikler uygulandı. Kalıcı olması için sayfayı <strong>Güncelle</strong> ile kaydedin.</span>
+            </div>
+
+            {{-- ── Önerilen plan (diff) ── --}}
+            <template x-if="assistPlan && !assistApplied">
+                <div class="mt-4 border-t border-gray-100 pt-4">
+                    <div class="mb-2 flex items-center gap-2">
+                        <i class="fas fa-clipboard-list text-indigo-500"></i>
+                        <span class="text-sm font-semibold text-gray-800">Önerilen değişiklikler</span>
+                    </div>
+                    <p x-show="assistPlan.summary" class="mb-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600" x-text="assistPlan.summary"></p>
+
+                    {{-- Boş plan --}}
+                    <div x-show="!assistHasOps()" x-cloak class="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500">
+                        Uygulanabilir bir değişiklik önerilmedi. Talimatı netleştirip tekrar deneyin.
+                    </div>
+
+                    {{-- Operasyon listesi --}}
+                    <div class="space-y-2">
+                        <template x-for="(op, i) in assistPlan.operations" :key="i">
+                            <div class="rounded-lg border border-gray-200 bg-white px-3 py-2.5">
+
+                                {{-- edit --}}
+                                <template x-if="op.op === 'edit'">
+                                    <div>
+                                        <div class="mb-1.5 flex items-center gap-2 text-xs font-semibold text-gray-700">
+                                            <i class="fas fa-pen text-indigo-400"></i>
+                                            <span x-text="op.name"></span>
+                                            <span class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600"
+                                                  x-text="(op.changes ? op.changes.length : 0) + ' alan'"></span>
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <template x-for="(c, ci) in op.changes" :key="ci">
+                                                <div class="rounded bg-gray-50 px-2 py-1.5 text-[11px]">
+                                                    <div class="mb-0.5 font-medium text-gray-400" x-text="c.key"></div>
+                                                    <div class="flex items-start gap-1.5">
+                                                        <i class="fas fa-minus mt-0.5 text-[9px] text-rose-400"></i>
+                                                        <span class="text-gray-400 line-through" x-text="assistTruncate(c.old)"></span>
+                                                    </div>
+                                                    <div class="flex items-start gap-1.5 text-emerald-700">
+                                                        <i class="fas fa-plus mt-0.5 text-[9px] text-emerald-500"></i>
+                                                        <span x-text="assistTruncate(c.new)"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                {{-- reorder --}}
+                                <template x-if="op.op === 'reorder'">
+                                    <div>
+                                        <div class="mb-1.5 flex items-center gap-2 text-xs font-semibold text-gray-700">
+                                            <i class="fas fa-arrows-up-down text-violet-400"></i>
+                                            <span>Yeni sıralama</span>
+                                        </div>
+                                        <ol class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                            <template x-for="(item, oi) in op.order_named" :key="oi">
+                                                <li class="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-violet-700">
+                                                    <span class="font-semibold" x-text="(oi + 1) + '.'"></span>
+                                                    <span x-text="item.name"></span>
+                                                </li>
+                                            </template>
+                                        </ol>
+                                    </div>
+                                </template>
+
+                                {{-- remove --}}
+                                <template x-if="op.op === 'remove'">
+                                    <div class="flex items-center gap-2 text-xs font-semibold text-rose-600">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Kaldırılacak:</span>
+                                        <span class="font-normal text-gray-700" x-text="op.name"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- Plan uyarıları --}}
+                    <template x-if="assistPlan.warnings && assistPlan.warnings.length">
+                        <ul class="mt-2 space-y-1">
+                            <template x-for="(w, wi) in assistPlan.warnings" :key="wi">
+                                <li class="flex items-start gap-1.5 text-[11px] text-amber-700">
+                                    <i class="fas fa-circle-info mt-0.5"></i><span x-text="w"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        {{-- Footer aksiyonları (yalnızca uygulanabilir plan varken) --}}
+        <div x-show="assistPlan && !assistApplied && assistHasOps()" x-cloak
+             class="flex items-center justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
+            <button type="button" @click="assistPlan = null"
+                    class="rounded-lg bg-white border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">
+                Vazgeç
+            </button>
+            <button type="button" @click="applyAssistPlan()"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                <i class="fas fa-check"></i> Uygula
+            </button>
+        </div>
     </div>
 </div>

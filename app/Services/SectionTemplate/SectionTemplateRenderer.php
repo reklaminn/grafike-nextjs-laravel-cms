@@ -24,11 +24,13 @@ class SectionTemplateRenderer
 
         $system = $this->getSystemTokens();
         $menus  = $this->buildMenuTokens($template->schema_json ?? []);
+        // Repeater alanlarını {{{key_html}}} token'ına genişlet (item_template × items).
+        $repeaters = $this->buildRepeaterTokens($template->schema_json ?? [], $content);
 
-        // {{{key}}} — raw (menu tokens, html fields)
-        $html = preg_replace_callback('/\{\{\{([a-z0-9_]+)\}\}\}/', function ($m) use ($content, $system, $menus) {
+        // {{{key}}} — raw (menu tokens, repeater _html çıktısı, html alanları)
+        $html = preg_replace_callback('/\{\{\{([a-z0-9_]+)\}\}\}/', function ($m) use ($content, $system, $menus, $repeaters) {
             $key = $m[1];
-            return $menus[$key] ?? $content[$key] ?? $system[$key] ?? '';
+            return $menus[$key] ?? $repeaters[$key] ?? $content[$key] ?? $system[$key] ?? '';
         }, $html);
 
         // {{key}} — escaped
@@ -39,6 +41,59 @@ class SectionTemplateRenderer
         }, $html);
 
         return $html;
+    }
+
+    /**
+     * Repeater alanlarını "{key}_html" token'larına genişletir. Şemadaki her
+     * type=repeater alan için, içerikteki diziyi item_template'le tek tek render
+     * edip birleştirir; sonuç {{{key_html}}} placeholder'ına basılır.
+     *
+     * Ör: schema.slides (repeater, item_template) + content.slides=[...]
+     *     → tokens['slides_html'] = her slaytın render'ı arka arkaya.
+     *
+     * @param array<string,mixed> $schema
+     * @param array<string,mixed> $content
+     * @return array<string,string>
+     */
+    private function buildRepeaterTokens(array $schema, array $content): array
+    {
+        $tokens = [];
+
+        foreach ($schema as $key => $field) {
+            if (! is_array($field) || ($field['type'] ?? null) !== 'repeater') {
+                continue;
+            }
+            $itemTemplate = (string) ($field['item_template'] ?? '');
+            $items = $content[$key] ?? [];
+            if ($itemTemplate === '' || ! is_array($items)) {
+                $tokens["{$key}_html"] = '';
+                continue;
+            }
+
+            $html = '';
+            foreach ($items as $item) {
+                if (is_array($item)) {
+                    $html .= $this->renderRepeaterItem($itemTemplate, $item);
+                }
+            }
+            $tokens["{$key}_html"] = $html;
+        }
+
+        return $tokens;
+    }
+
+    /** Tek bir repeater item'ını kendi alan değerleriyle render eder. */
+    private function renderRepeaterItem(string $template, array $item): string
+    {
+        // {{{field}}} — raw
+        $html = preg_replace_callback('/\{\{\{([a-z0-9_]+)\}\}\}/', function ($m) use ($item) {
+            return (string) ($item[$m[1]] ?? '');
+        }, $template);
+
+        // {{field}} — escaped
+        return preg_replace_callback('/\{\{([a-z0-9_]+)\}\}/', function ($m) use ($item) {
+            return htmlspecialchars((string) ($item[$m[1]] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }, $html);
     }
 
     private function getSystemTokens(): array

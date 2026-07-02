@@ -33,3 +33,4 @@ frankenphp-worker.php
 
 # SQLite tenant test databases (created by the test suite)
 /database/tenant_*
+file::memory:*
