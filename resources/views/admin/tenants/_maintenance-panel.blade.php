@@ -52,6 +52,20 @@
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 resize-none">{{ old('maintenance_message', $tenant->getAttribute('maintenance_message')) }}</textarea>
         </div>
 
+        @php
+            $mtUntil = $tenant->getAttribute('maintenance_until');
+            try { $mtUntilInput = $mtUntil ? \Illuminate\Support\Carbon::parse($mtUntil)->format('Y-m-d\TH:i') : ''; }
+            catch (\Throwable $e) { $mtUntilInput = ''; }
+        @endphp
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">
+                Yayın tarihi (opsiyonel) — girilirse "Yakında" sayfasında geri sayım gösterilir
+            </label>
+            <input type="datetime-local" name="maintenance_until"
+                   value="{{ old('maintenance_until', $mtUntilInput) }}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400">
+        </div>
+
         <button type="submit" class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors">
             <i class="fas fa-save mr-1"></i> Kaydet
         </button>

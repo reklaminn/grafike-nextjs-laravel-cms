@@ -63,6 +63,7 @@ class SiteController extends Controller
             'maintenance'         => $maintenance,
             'maintenance_title'   => $maintenance ? (($tenant?->getAttribute('maintenance_title')) ?: null) : null,
             'maintenance_message' => $maintenance ? (($tenant?->getAttribute('maintenance_message')) ?: null) : null,
+            'maintenance_until'   => $maintenance ? (($tenant?->getAttribute('maintenance_until')) ?: null) : null,
         ]);
     }
 

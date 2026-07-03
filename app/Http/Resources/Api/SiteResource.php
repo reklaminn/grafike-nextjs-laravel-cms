@@ -28,6 +28,7 @@ class SiteResource extends JsonResource
                 'maintenance' => (bool) ($this['maintenance'] ?? false),
                 'maintenance_title' => $this['maintenance_title'] ?? null,
                 'maintenance_message' => $this['maintenance_message'] ?? null,
+                'maintenance_until' => $this['maintenance_until'] ?? null,
             ],
         ];
     }

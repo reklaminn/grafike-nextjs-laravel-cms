@@ -42,6 +42,8 @@ export type SitePayload = {
     maintenance?: boolean;
     maintenance_title?: string | null;
     maintenance_message?: string | null;
+    /** Yayın tarihi (ISO/datetime) — verilirse "Yakında" sayfasında geri sayım gösterilir. */
+    maintenance_until?: string | null;
   };
 };
 

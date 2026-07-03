@@ -478,11 +478,13 @@ class TenantController extends Controller
             'maintenance'         => 'nullable|boolean',
             'maintenance_title'   => 'nullable|string|max:120',
             'maintenance_message' => 'nullable|string|max:600',
+            'maintenance_until'   => 'nullable|date',
         ]);
 
         $tenant->setAttribute('maintenance', (bool) ($validated['maintenance'] ?? false));
         $tenant->setAttribute('maintenance_title', ($validated['maintenance_title'] ?? '') ?: null);
         $tenant->setAttribute('maintenance_message', ($validated['maintenance_message'] ?? '') ?: null);
+        $tenant->setAttribute('maintenance_until', ($validated['maintenance_until'] ?? '') ?: null);
 
         if (! $tenant->maintenancePreviewToken()) {
             $tenant->setAttribute('preview_token', \Illuminate\Support\Str::random(28));
