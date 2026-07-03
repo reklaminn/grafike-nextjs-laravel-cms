@@ -15,6 +15,7 @@ import { createElement } from "react";
 import { HtmlSection }         from "@/components/sections/html-section";
 import { ArticleListSection }  from "@/components/sections/article-list-section";
 import { FormSectionLoader }   from "@/components/sections/form-section-loader";
+import { RoomTypesSection }    from "@/components/sections/room-types-section";
 import type { MenusPayload, PageSection, SettingsPayload, SitePayload } from "@/lib/types";
 import { buildElementProps }        from "@/lib/sections/element-props";
 import { renderBasicHtmlSection }   from "@/lib/sections/basic-html-renderer";
@@ -39,6 +40,16 @@ export function SectionRenderer({
 
   if (section.type === "form") {
     return <FormSectionLoader section={section} />;
+  }
+
+  // Konaklama oda/daire tipleri listesi (Lodging modülü) — async veri çekimi.
+  if (
+    section.type === "daireler" ||
+    section.type === "oda-tipleri" ||
+    section.type === "room-types" ||
+    section.type === "daire-listesi"
+  ) {
+    return <RoomTypesSection section={section} />;
   }
 
   const props = buildElementProps({
