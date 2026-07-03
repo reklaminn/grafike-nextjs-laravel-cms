@@ -6,6 +6,7 @@ import type {
   MenuPayload,
   MenusPayload,
   PagePayload,
+  RoomType,
   SettingsPayload,
   SitePayload,
 } from "@/lib/types";
@@ -246,6 +247,24 @@ export async function getArticles(options: GetArticlesOptions = {}): Promise<Art
     ["articles", ...(options.pageId ? [`articles-page-${options.pageId}`] : [])],
     { tenantId: options.tenantId },
   );
+}
+
+// ─── Lodging (Konaklama) ────────────────────────────────────────────────────────
+
+/**
+ * Fetch the tenant's room/apartment types (Lodging module).
+ * Returns [] when the module is disabled (route 404 → fallback) or empty.
+ */
+export async function getRoomTypes(options: PreviewOptions = {}): Promise<RoomType[]> {
+  const payload = await fetchJson<{ data: RoomType[] }>(
+    "/api/v1/lodging/room-types",
+    { data: [] },
+    false,
+    ["lodging", "room-types"],
+    options,
+  );
+
+  return Array.isArray(payload?.data) ? payload.data : [];
 }
 
 export async function getArticle(

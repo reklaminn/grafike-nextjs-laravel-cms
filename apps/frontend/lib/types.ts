@@ -193,6 +193,24 @@ export type ArticleListPayload = {
   };
 };
 
+// Konaklama (Lodging) modülü — oda/daire tipi. /api/v1/lodging/room-types
+export type RoomType = {
+  slug: string;
+  name: string;
+  summary: string | null;
+  description: string | null;
+  capacity_min: number | null;
+  capacity_max: number | null;
+  size_m2: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  base_price: number;
+  currency: string;
+  unit_count: number | null;
+  amenities: string[];
+  images: string[];
+};
+
 export type FormField = {
   id: number;
   name: string;
