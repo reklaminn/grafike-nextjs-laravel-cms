@@ -41,6 +41,28 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return ['id'];
     }
 
+    /**
+     * GUARD — `domains` ilişkisinin `data` JSON'una sızmasını engelle.
+     *
+     * getCustomColumns() yalnızca `id` döndürdüğü için stancl VirtualColumn,
+     * kayıt anında `$attributes` içindeki HER anahtarı (id hariç) `data`'ya
+     * serileştirir. Bir yerde `$tenant->domains` bir attribute olarak set
+     * edilirse (fill/update/setAttribute ile) bu, `data.domains`'e yazılır ve
+     * okuma sırasında `domains()` İLİŞKİsini gölgeler → `$tenant->domains` bir
+     * Collection yerine array döner → DomainTenantResolver:58
+     * (`$tenant->domains->where(...)`) "Call to a member function where() on
+     * array" ile patlar → TÜM tenant istekleri 500. Kayıttan hemen önce
+     * ilişki adını attribute'lardan düşerek bunu kalıcı olarak önlüyoruz.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::saving(function (self $tenant): void {
+            unset($tenant->attributes['domains']);
+        });
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /**
