@@ -14,6 +14,7 @@ Route::prefix('v1')->group(function () {
     Route::get('settings', [SettingsController::class, 'index']);
     Route::get('menus', [MenuController::class, 'index']);
     Route::get('menus/{location}', [MenuController::class, 'show']);
+    Route::get('pages/{parent}/children', [PageController::class, 'children'])->whereNumber('parent');
     Route::get('pages/{slug}', [PageController::class, 'show']);
     Route::get('articles', [ArticleController::class, 'index']);
     Route::get('articles/{slug}', [ArticleController::class, 'show']);
