@@ -38,6 +38,10 @@ export type SitePayload = {
       locale: string;
       name: string;
     }>;
+    /** Bakım/Yakında modu — bypass sonrası değer. true ise "Yakında" sayfası gösterilir. */
+    maintenance?: boolean;
+    maintenance_title?: string | null;
+    maintenance_message?: string | null;
   };
 };
 

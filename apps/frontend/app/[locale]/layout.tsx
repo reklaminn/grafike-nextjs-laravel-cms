@@ -11,6 +11,7 @@
  */
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { MaintenancePage } from "@/components/layout/maintenance-page";
 import { PreviewBanner } from "@/components/layout/preview-banner";
 import { SiteShell } from "@/components/layout/site-shell";
 import { ThemeScripts } from "@/components/layout/theme-scripts";
@@ -196,6 +197,18 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     : null;
 
   const globalJsonLd = [customOrgJsonLd ?? organizationJsonLd, websiteJsonLd];
+
+  // Bakım/Yakında modu — bypass edilmemişse (SiteController maintenance=true)
+  // gerçek site yerine basit "Yakında" sayfasını render et. Tema token'ları
+  // korunur; theme JS/SiteShell yüklenmez (içerik sızmaz).
+  if (site.maintenance) {
+    return (
+      <>
+        {tokenCss && <style>{`:root { ${tokenCss} }`}</style>}
+        <MaintenancePage site={site} settings={settings} />
+      </>
+    );
+  }
 
   return (
     <>

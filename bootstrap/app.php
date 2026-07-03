@@ -60,6 +60,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'pages/*/unlock',
         ]);
 
+        // Bakım modu bypass cookie'si Next.js middleware'i tarafından DÜZ yazılır;
+        // Laravel EncryptCookies onu çözmeye çalışıp null'a düşürmesin (SiteController
+        // preview_token ile eşleştirir). Değer = Tenant::MAINTENANCE_BYPASS_COOKIE.
+        $middleware->encryptCookies(except: [
+            'grafike_site_bypass',
+        ]);
+
         $middleware->alias([
             'admin.auth'      => \App\Http\Middleware\AdminAuthenticate::class,
             'agency.admin'    => \App\Http\Middleware\EnsureAgencyAdmin::class,

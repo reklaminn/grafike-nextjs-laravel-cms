@@ -466,6 +466,37 @@ class TenantController extends Controller
      * Empty key fields are interpreted as "leave existing key untouched";
      * pass `clear_<provider>=1` to explicitly remove the stored key.
      */
+    /**
+     * Bakım/Yakında modu — public siteyi gizler; gizli link (?onizleme=<token>)
+     * ile login gerektirmeden bypass edilir. Token bir kez üretilir, sabit kalır.
+     */
+    public function updateMaintenance(Request $request, Tenant $tenant)
+    {
+        $this->authorizeTenantAccess($tenant);
+
+        $validated = $request->validate([
+            'maintenance'         => 'nullable|boolean',
+            'maintenance_title'   => 'nullable|string|max:120',
+            'maintenance_message' => 'nullable|string|max:600',
+        ]);
+
+        $tenant->setAttribute('maintenance', (bool) ($validated['maintenance'] ?? false));
+        $tenant->setAttribute('maintenance_title', ($validated['maintenance_title'] ?? '') ?: null);
+        $tenant->setAttribute('maintenance_message', ($validated['maintenance_message'] ?? '') ?: null);
+
+        if (! $tenant->maintenancePreviewToken()) {
+            $tenant->setAttribute('preview_token', \Illuminate\Support\Str::random(28));
+        }
+
+        $tenant->save();
+
+        return redirect()
+            ->route('admin.tenants.show', $tenant)
+            ->with('success', $tenant->isUnderMaintenance()
+                ? 'Bakım modu AÇIK — site ziyaretçilere kapalı, gizli linkle görebilirsin.'
+                : 'Bakım modu KAPALI — site herkese açık.');
+    }
+
     public function updateAiSettings(Request $request, Tenant $tenant)
     {
         $this->authorizeTenantAccess($tenant);

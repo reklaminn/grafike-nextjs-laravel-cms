@@ -23,6 +23,11 @@ class SiteResource extends JsonResource
                 'footer_variant' => $this['footer_variant'],
                 'locale' => $this['locale'],
                 'available_locales' => $this['available_locales'],
+                // Bakım/Yakında modu — bypass sonrası değer. true ise frontend
+                // gerçek site yerine "Yakında" sayfası gösterir.
+                'maintenance' => (bool) ($this['maintenance'] ?? false),
+                'maintenance_title' => $this['maintenance_title'] ?? null,
+                'maintenance_message' => $this['maintenance_message'] ?? null,
             ],
         ];
     }
