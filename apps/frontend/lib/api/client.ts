@@ -4,6 +4,7 @@ import type {
   ArticleListPayload,
   FormPayload,
   MenuPayload,
+  ChildPage,
   MenusPayload,
   PagePayload,
   RoomType,
@@ -266,6 +267,22 @@ export async function getRoomTypes(options: PreviewOptions = {}): Promise<RoomTy
     { data: [] },
     false,
     ["lodging", "room-types"],
+    options,
+  );
+
+  return Array.isArray(payload?.data) ? payload.data : [];
+}
+
+/**
+ * Fetch a page's published child pages (Listeleme bölümü, source=pages).
+ * Returns [] on failure/empty.
+ */
+export async function getChildPages(parentId: number, options: PreviewOptions = {}): Promise<ChildPage[]> {
+  const payload = await fetchJson<{ data: ChildPage[] }>(
+    `/api/v1/pages/${parentId}/children`,
+    { data: [] },
+    false,
+    ["pages", `page-children-${parentId}`],
     options,
   );
 

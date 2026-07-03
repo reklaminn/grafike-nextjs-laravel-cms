@@ -60,6 +60,30 @@ class PageController extends Controller
         return $this->pageResponse($entity);
     }
 
+    /**
+     * GET /api/v1/pages/{parent}/children — bir sayfanın yayınlanmış alt
+     * sayfaları (Listeleme bölümü, source=pages). Hafif kart verisi döner.
+     */
+    public function children(int $parent): \Illuminate\Http\JsonResponse
+    {
+        $children = Page::query()
+            ->where('parent_id', $parent)
+            ->published()
+            ->with('seo')
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->json([
+            'data' => $children->map(fn (Page $p) => [
+                'title'   => $p->title,
+                'slug'    => $p->slug,
+                'url'     => $p->external_url ?: '/'.$p->slug,
+                'summary' => (string) ($p->seo?->meta_description ?? ''),
+                'image'   => $p->getFirstMediaUrl('cover') ?: null,
+            ])->values(),
+        ]);
+    }
+
     private function pageResponse(Page $page)
     {
         $lastModified = $page->seo?->updated_at ?? $page->updated_at;

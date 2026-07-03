@@ -217,6 +217,15 @@ export type RoomType = {
   images: string[];
 };
 
+// Listeleme bölümü — alt sayfa kaynağı (/api/v1/pages/{parent}/children)
+export type ChildPage = {
+  title: string;
+  slug: string;
+  url: string;
+  summary: string;
+  image: string | null;
+};
+
 export type FormField = {
   id: number;
   name: string;
