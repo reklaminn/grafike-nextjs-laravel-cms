@@ -48,6 +48,28 @@ function tenantPreviewId(request: NextRequest): string | null {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Bakım modu bypass — ?onizleme=<token> gelince token'ı cookie'ye yaz ve
+  // parametreyi URL'den temizle. Sonraki istekler cookie'yi taşır; SSR bunu
+  // API'ye iletir, SiteController tenant preview_token ile eşleştirip bypass eder.
+  const bypassToken = request.nextUrl.searchParams.get("onizleme");
+  if (bypassToken !== null) {
+    const clean = request.nextUrl.clone();
+    clean.searchParams.delete("onizleme");
+    const res = NextResponse.redirect(clean, { status: 302 });
+    if (/^[A-Za-z0-9_-]{8,64}$/.test(bypassToken)) {
+      res.cookies.set("grafike_site_bypass", bypassToken, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 gün
+        sameSite: "lax",
+      });
+    } else {
+      // Geçersiz/boş token → bypass'ı temizle (bakım moduna geri dön).
+      res.cookies.delete("grafike_site_bypass");
+    }
+    return res;
+  }
+
   const tenant = tenantPreviewId(request);
 
   // Central domain without a tenant preview → redirect to admin panel.

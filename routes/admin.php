@@ -81,6 +81,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // ── Tenant Vertical Modules (Tours, Commerce, …) ─────────────────────
         Route::put('tenants/{tenant}/modules', [TenantController::class, 'updateModules'])->name('tenants.modules.update');
+        Route::put('tenants/{tenant}/maintenance', [TenantController::class, 'updateMaintenance'])->name('tenants.maintenance.update');
         Route::put('tenants/{tenant}/mailcow-domain', [TenantController::class, 'updateMailcowDomain'])->name('tenants.mailcow-domain.update');
         Route::post('tenants/{tenant}/quota-extensions', [TenantController::class, 'storeQuotaExtension'])->name('tenants.quota-extensions.store');
         Route::delete('tenants/{tenant}/quota-extensions/{extension}', [TenantController::class, 'destroyQuotaExtension'])->name('tenants.quota-extensions.destroy');

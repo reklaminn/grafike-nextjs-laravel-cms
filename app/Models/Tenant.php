@@ -93,6 +93,32 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->domains()->first()?->domain;
     }
 
+    // ─── Bakım / Yakında modu ──────────────────────────────────────────────────
+
+    /** Bypass token'ının taşındığı cookie adı (frontend middleware ile ortak). */
+    public const MAINTENANCE_BYPASS_COOKIE = 'grafike_site_bypass';
+
+    /**
+     * Tenant sitesi bakım/yakında modunda mı? true ise public ziyaretçilere
+     * "Yakında" sayfası gösterilir; geçerli bypass token'ı olanlar gerçek
+     * siteyi görür (SiteController + frontend layout).
+     */
+    public function isUnderMaintenance(): bool
+    {
+        return (bool) $this->getAttribute('maintenance');
+    }
+
+    /**
+     * Bakım modunu bypass etmek için per-tenant gizli token. Gizli linkte
+     * (?onizleme=<token>) ve cookie'de kullanılır; login gerektirmez.
+     */
+    public function maintenancePreviewToken(): ?string
+    {
+        $token = $this->getAttribute('preview_token');
+
+        return is_string($token) && $token !== '' ? $token : null;
+    }
+
     public function adminAccesses()
     {
         return $this->hasMany(AdminTenantAccess::class, 'tenant_id', 'id');

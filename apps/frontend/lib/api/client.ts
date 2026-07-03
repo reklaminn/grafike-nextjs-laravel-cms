@@ -138,7 +138,12 @@ async function fetchJson<T>(
       ? tags.map((t) => `${siteHost}:${t}`)
       : tags;
 
-    const cacheOptions = tenantId
+    // Bakım modu bypass cookie'si varken ASLA cache'leme: aksi halde bypass'lı
+    // (maintenance=false) yanıt paylaşımlı cache'e girip normal ziyaretçilere
+    // sızabilir. Bypass'lı istek her seferinde taze değerlendirilir.
+    const hasBypassCookie = !!incomingCookie && incomingCookie.includes("grafike_site_bypass=");
+
+    const cacheOptions = (tenantId || hasBypassCookie)
       ? { cache: "no-store" as const }
       : {
           next: {

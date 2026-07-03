@@ -201,6 +201,9 @@
             ])
         @endif
 
+        {{-- ─── Bakım / Yakında Modu (public siteyi gizle + gizli bypass linki) ── --}}
+        @include('admin.tenants._maintenance-panel', ['tenant' => $tenant])
+
         {{-- ─── Kaynak Kullanımı (paket bazlı metering) ───────────────────── --}}
         @include('admin.tenants._resource-usage-panel', ['resourceUsage' => $resourceUsage ?? []])
 
