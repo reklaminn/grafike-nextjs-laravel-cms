@@ -16,6 +16,7 @@ import { HtmlSection }         from "@/components/sections/html-section";
 import { ArticleListSection }  from "@/components/sections/article-list-section";
 import { FormSectionLoader }   from "@/components/sections/form-section-loader";
 import { ListingSection }      from "@/components/sections/listing-section";
+import { RoomDetailSection }   from "@/components/sections/blocks/room-detail-section";
 import type { MenusPayload, PageSection, SettingsPayload, SitePayload } from "@/lib/types";
 import { buildElementProps }        from "@/lib/sections/element-props";
 import { renderBasicHtmlSection }   from "@/lib/sections/basic-html-renderer";
@@ -53,6 +54,16 @@ export function SectionRenderer({
     section.type === "daire-listesi"
   ) {
     return <ListingSection section={section} pageId={pageId} />;
+  }
+
+  // Tek oda/daire detay bölümü (content.room_type slug'ı) — async veri.
+  // Görsel + açıklama + olanaklar + odaya kilitli rezervasyon formu.
+  if (
+    section.type === "daire-detay" ||
+    section.type === "oda-detay" ||
+    section.type === "room-detail"
+  ) {
+    return <RoomDetailSection section={section} />;
   }
 
   const props = buildElementProps({

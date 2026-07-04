@@ -18,8 +18,12 @@
  *   success_message — özel teşekkür metni
  */
 import { useEffect, useMemo, useState } from "react";
-import type { SectionBlockProps } from "@/lib/sections/component-registry";
+import type { PageSection } from "@/lib/types";
 import { str } from "@/lib/sections/component-registry";
+
+// Yalnızca `section`'a bağlı — registry (SectionBlockProps) tarafından da,
+// oda-detay sayfasından da tek başına render edilebilsin diye dar prop tipi.
+type ReservationSectionProps = { section: PageSection; lang?: string };
 
 type RoomType = {
   slug: string;
@@ -37,7 +41,7 @@ const nightsBetween = (a: string, b: string): number => {
   return ms > 0 ? Math.round(ms / 86_400_000) : 0;
 };
 
-export function ReservationSection({ section }: SectionBlockProps) {
+export function ReservationSection({ section }: ReservationSectionProps) {
   const c = (section.content ?? {}) as Record<string, unknown>;
 
   const title = str(c, "title") || "Rezervasyon Talebi";
@@ -63,6 +67,34 @@ export function ReservationSection({ section }: SectionBlockProps) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<{ code?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Ön-doldurma: anasayfa arama widget'ı ve listeleme "Rezervasyon" butonu
+  //   /rezervasyon?oda=&giris=&cikis=&yetiskin=&cocuk=
+  // ile yönlendirir. Formu bu parametrelerden doldur (İngilizce eşanlamlıları da
+  // kabul et). useSearchParams yerine window.location — Suspense sınırı / CSR
+  // bailout gerektirmez; efekt yalnızca hidrasyondan sonra çalışır (SSR ile
+  // ilk render defaults ⇒ hydration mismatch yok).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    const room = p.get("oda") || p.get("room_type");
+    const gin = p.get("giris") || p.get("checkin");
+    const gout = p.get("cikis") || p.get("checkout");
+    const ad = p.get("yetiskin") || p.get("adults");
+    const ch = p.get("cocuk") || p.get("children");
+
+    // Oda: yalnızca sabit ön-seçim yoksa URL'den al. Oda-detay sayfası content
+    // ile odayı kilitler (presetRoom dolu) → URL'yi yok say; /rezervasyon
+    // sayfasında content boş → URL kazanır.
+    if (room && !presetRoom) setRoomSlug(room);
+    if (gin) setCheckin(gin);
+    if (gout) setCheckout(gout);
+    const adN = Number(ad);
+    if (ad && Number.isFinite(adN) && adN >= 1) setAdults(Math.min(30, adN));
+    const chN = Number(ch);
+    if (ch && Number.isFinite(chN) && chN >= 0) setChildren(Math.min(30, chN));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load room types for the picker / price estimate.
   useEffect(() => {
