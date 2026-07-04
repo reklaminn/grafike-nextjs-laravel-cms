@@ -115,6 +115,24 @@ export function ReservationSection({ section }: ReservationSectionProps) {
     [roomTypes, roomSlug],
   );
 
+  // Kapasite (doluluk): belirli oda seçiliyse onun capacity_max'ı, "Farketmez"
+  // ise en büyük dairenin kapasitesi. Toplam misafir (yetişkin+çocuk) bunu aşamaz.
+  const largestCap = useMemo(
+    () => roomTypes.reduce((m, rt) => Math.max(m, rt.capacity_max ?? 0), 0),
+    [roomTypes],
+  );
+  const capMax = selectedRoom?.capacity_max ?? (largestCap || 30);
+
+  // Kapasite düşünce (küçük oda seçilince veya URL'den fazla misafir gelince)
+  // toplam misafiri kırp: önce çocuğu, sonra yetişkini (en az 1 yetişkin kalır).
+  useEffect(() => {
+    if (adults + children <= capMax) return;
+    const a = Math.max(1, Math.min(adults, capMax));
+    setAdults(a);
+    setChildren(Math.max(0, capMax - a));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [capMax]);
+
   const nights = nightsBetween(checkin, checkout);
   const estTotal = selectedRoom && nights > 0 ? selectedRoom.base_price * nights : null;
 
@@ -250,7 +268,7 @@ export function ReservationSection({ section }: ReservationSectionProps) {
                 <option value="">Farketmez</option>
                 {roomTypes.map((rt) => (
                   <option key={rt.slug} value={rt.slug}>
-                    {rt.name}
+                    {rt.name}{rt.capacity_max ? ` — en fazla ${rt.capacity_max} kişi` : ""}
                   </option>
                 ))}
               </select>
@@ -271,13 +289,32 @@ export function ReservationSection({ section }: ReservationSectionProps) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <label style={labelStyle}>Yetişkin</label>
-              <input type="number" min={1} max={30} value={adults} onChange={(e) => setAdults(Number(e.target.value))} style={inputStyle} />
+              <input
+                type="number"
+                min={1}
+                max={Math.max(1, capMax - children)}
+                value={adults}
+                onChange={(e) => setAdults(Math.max(1, Math.min(Number(e.target.value) || 1, capMax - children)))}
+                style={inputStyle}
+              />
             </div>
             <div>
               <label style={labelStyle}>Çocuk</label>
-              <input type="number" min={0} max={30} value={children} onChange={(e) => setChildren(Number(e.target.value))} style={inputStyle} />
+              <input
+                type="number"
+                min={0}
+                max={Math.max(0, capMax - adults)}
+                value={children}
+                onChange={(e) => setChildren(Math.max(0, Math.min(Number(e.target.value) || 0, capMax - adults)))}
+                style={inputStyle}
+              />
             </div>
           </div>
+          <p style={{ margin: "-.35rem 0 0", fontSize: ".78rem", color: "var(--color-text-soft, #9ca3af)" }}>
+            {selectedRoom
+              ? `Bu daire en fazla ${capMax} misafir alır.`
+              : `Dairelerimiz en fazla ${capMax} misafir alır — kişi sayısına uygun daireyi seçin.`}
+          </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
