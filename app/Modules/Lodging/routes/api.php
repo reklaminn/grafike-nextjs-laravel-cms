@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Route;
 | Lodging module — tenant API routes
 |--------------------------------------------------------------------------
 |
-| Loaded by LodgingModuleServiceProvider::bootTenant(), so reachable only on
-| tenants with the `lodging` module enabled.  Tenant resolution
-| (?tenant={id} / X-Tenant-ID) + MeterTenantUsage run in the parent `api`
-| group before we get here.
+| Loaded UNCONDITIONALLY by LodgingModuleServiceProvider::boot() (route:cache
+| uyumu). Sarmalayan middleware yığını orada tanımlı:
+|   UseSiteHostHeader → InitializeTenancyForPublicApi → MeterTenantUsage
+|   → tenant.module.active:lodging  (modülsüz tenant → 404)
+| Bu yüzden burada yalnızca prefix + isim + rota-özel throttle kalır.
 */
 
 Route::prefix('api/v1/lodging')
-    ->middleware(['api'])
     ->name('lodging.')
     ->group(function (): void {
 
