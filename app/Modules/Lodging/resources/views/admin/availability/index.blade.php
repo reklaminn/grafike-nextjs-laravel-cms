@@ -2,9 +2,18 @@
 @section('title', 'Müsaitlik')
 
 @section('content')
-<div class="mb-6">
+<div class="mb-4">
     <h1 class="text-2xl font-bold text-gray-800">Müsaitlik</h1>
     <p class="text-sm text-gray-500">Oda tipini seçin, dolu/bakım tarih aralıklarını bloklayın. Onaylı rezervasyonlar otomatik dolu görünür.</p>
+</div>
+
+<div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 leading-relaxed">
+    <strong>Nasıl çalışır?</strong> Oda tipleri <strong>adet bazlı</strong> satılır — müsaitlik
+    <em>eklemenize gerek yok</em>. Blok koymadığınız sürece tüm günler oda adediniz kadar
+    <strong>müsait</strong>tir ve site takviminde açık görünür. Bu sayfa yalnızca
+    <strong>kapatmak</strong> içindir: bakım, uzun konaklama veya elle dolu işaretlemek istediğiniz
+    tarihleri bloklarsınız; onaylı rezervasyonlar adetten otomatik düşülür.
+    Yani <strong>boş sayfa = her şey müsait</strong> demektir, eksik değil.
 </div>
 
 @if(session('success'))<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">{{ session('success') }}</div>@endif
@@ -69,7 +78,10 @@
                 Yaklaşan Bloklar — {{ $selected->name }}
             </div>
             @if($rows->isEmpty())
-                <div class="p-8 text-center text-sm text-gray-500">Bu oda tipi için bloklu/dolu tarih yok.</div>
+                <div class="p-8 text-center text-sm text-gray-500">
+                    Blok yok — <strong>{{ $selected->unit_count }} adet</strong> üzerinden tüm günler müsait.
+                    Kapatmak istediğiniz tarihleri soldan bloklayın.
+                </div>
             @else
             <table class="min-w-full text-sm">
                 <thead class="bg-gray-50">
