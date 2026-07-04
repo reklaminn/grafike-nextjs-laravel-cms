@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Lodging\Http\Requests\Api;
 
+use App\Modules\Lodging\Models\RoomType;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -41,5 +43,35 @@ class CreateReservationRequest extends FormRequest
             'checkout.after'         => 'Çıkış tarihi giriş tarihinden sonra olmalıdır.',
             'room_type.exists'       => 'Seçilen oda tipi bulunamadı.',
         ];
+    }
+
+    /**
+     * Kapasite (doluluk) kontrolü — belirli bir oda tipi seçiliyse toplam misafir
+     * (yetişkin + çocuk) o oda tipinin `capacity_max`'ını aşamaz. "Farketmez"
+     * (room_type boş) durumunda kontrol atlanır; rezervasyon oluşurken oda
+     * atanınca kapasite yeniden değerlendirilebilir. Envanter (adet) müsaitliği
+     * ayrı bir kontroldür (bkz. ReservationController::store → AvailabilityService).
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v): void {
+            $slug = $this->input('room_type');
+            if (! is_string($slug) || $slug === '') {
+                return;
+            }
+
+            $room = RoomType::query()->where('slug', $slug)->first();
+            if (! $room || $room->capacity_max === null) {
+                return;
+            }
+
+            $guests = (int) $this->input('adults', 1) + (int) $this->input('children', 0);
+            if ($guests > (int) $room->capacity_max) {
+                $v->errors()->add(
+                    'adults',
+                    "Bu daire en fazla {$room->capacity_max} misafir alır (seçtiğiniz: {$guests}). Lütfen daha büyük bir daire seçin veya kişi sayısını azaltın.",
+                );
+            }
+        });
     }
 }
