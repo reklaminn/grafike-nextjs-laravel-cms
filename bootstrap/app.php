@@ -74,6 +74,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'member.auth'     => \App\Http\Middleware\MemberAuthenticate::class,
             'tenant.admin'    => \App\Http\Middleware\InitializeTenancyForAdmin::class,
             'tenant.module'   => \App\Http\Middleware\RequireTenantModule::class,
+            // Public-API modül kapısı — o an initialize edilmiş tenant'ı kontrol eder
+            // (admin session değil). Modül rotaları route:cache uyumlu olsun diye
+            // koşulsuz kayıtlıdır; bu kapı modülsüz tenant'ı 404'e düşürür.
+            'tenant.module.active' => \App\Http\Middleware\EnsureActiveTenantModule::class,
             'tenant.required' => \App\Http\Middleware\RequireActiveTenant::class,
         ]);
 

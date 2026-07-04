@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Tours\Providers;
 
+use App\Http\Middleware\InitializeTenancyForPublicApi;
+use App\Http\Middleware\MeterTenantUsage;
+use App\Http\Middleware\UseSiteHostHeader;
 use App\Modules\Tours\Events\BookingCancelled;
 use App\Modules\Tours\Events\BookingConfirmed;
 use App\Modules\Tours\Events\BookingExpired;
@@ -14,8 +17,8 @@ use App\Modules\Tours\Services\Booking\CapacityLockService;
 use App\Modules\Tours\Services\Booking\QuoteService;
 use App\Modules\Tours\StateMachines\BookingStateMachine;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Stancl\Tenancy\Events\TenancyInitialized;
 
 /**
  * Tours module service provider.
@@ -92,27 +95,17 @@ class ToursModuleServiceProvider extends ServiceProvider
         // middleware on the route group itself.
         $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
 
-        // Tenant-scoped resource registration (public booking API) is
-        // deferred until a tenant is actually initialized and we know
-        // it has Tours enabled.
-        Event::listen(TenancyInitialized::class, function (TenancyInitialized $event): void {
-            $tenant = $event->tenancy->tenant;
-
-            if (! method_exists($tenant, 'hasModule') || ! $tenant->hasModule(self::SLUG)) {
-                return;
-            }
-
-            $this->bootTenant();
-        });
-    }
-
-    /**
-     * Called once per request when the active tenant has `tours` enabled.
-     * Routes load here so a "kurumsal" tenant's URL space stays free
-     * of /api/v1/tours/* endpoints it doesn't need.
-     */
-    protected function bootTenant(): void
-    {
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        // Public booking API — KOŞULSUZ boot'ta yüklenir ki `route:cache` ile
+        // serileştirilsin. (Önceki desen TenancyInitialized event'inde
+        // loadRoutesFrom idi → `route:cache` sonrası no-op → /api/v1/tours/*
+        // 404 olurdu; Lodging'de bu üretimde daireler'i boşalttı — aynı hata.)
+        // Çekirdek tenant_api ile AYNI yığın + modülü olmayan tenant'ı 404'e
+        // düşüren istek-başına modül kapısı.
+        Route::middleware([
+            UseSiteHostHeader::class,
+            InitializeTenancyForPublicApi::class,
+            MeterTenantUsage::class,
+            'tenant.module.active:' . self::SLUG,
+        ])->group(__DIR__ . '/../routes/api.php');
     }
 }

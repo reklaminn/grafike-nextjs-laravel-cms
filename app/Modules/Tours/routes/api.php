@@ -10,15 +10,14 @@ use Illuminate\Support\Facades\Route;
 | Tours module — tenant API routes
 |--------------------------------------------------------------------------
 |
-| Loaded by ToursModuleServiceProvider::bootTenant() — so these routes
-| are reachable only on tenants that have the `tours` module enabled.
-| Tenant resolution + module gating both happen before we get here, so
-| every controller can trust tenancy() is initialised and the right
-| tenant DB is selected.
+| Loaded UNCONDITIONALLY by ToursModuleServiceProvider::boot() (route:cache
+| uyumu). Sarmalayan middleware yığını orada tanımlı:
+|   UseSiteHostHeader → InitializeTenancyForPublicApi → MeterTenantUsage
+|   → tenant.module.active:tours  (modülsüz tenant → 404)
+| Controller'lar tenancy() initialise + doğru tenant DB'ye güvenebilir.
 */
 
 Route::prefix('api/v1/tours')
-    ->middleware(['api'])
     ->name('tours.')
     ->group(function (): void {
 
