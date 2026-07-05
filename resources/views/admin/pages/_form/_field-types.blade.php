@@ -6,7 +6,7 @@
 --}}
 
 {{-- text / string (default / unknown type) --}}
-<template x-if="!['url','email','color','textarea','number','boolean','select','enum','image','media_id','rich-text','html','icon','page_link'].includes(type)">
+<template x-if="!['url','email','color','textarea','number','boolean','select','enum','image','media_id','media_url','rich-text','html','icon','page_link'].includes(type)">
     <input type="text"
            x-model="parentRef[fieldKey]"
            :placeholder="fieldSchema.placeholder || ''"
@@ -259,8 +259,8 @@
     </select>
 </template>
 
-{{-- image / media_id --}}
-<template x-if="['image', 'media_id'].includes(type)">
+{{-- image / media_id / media_url — hepsi URL saklar + medya kütüphanesi seçici (repeater içinde de parentRef[fieldKey] ile çalışır) --}}
+<template x-if="['image', 'media_id', 'media_url'].includes(type)">
     <div class="space-y-2">
         <div class="flex gap-2">
             <input type="url"

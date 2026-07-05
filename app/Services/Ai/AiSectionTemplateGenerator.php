@@ -240,8 +240,18 @@ PROMPT;
         $placeholders = $this->extractPlaceholders($htmlTemplate);
         $schemaKeys   = array_keys($schemaJson);
 
-        $missingInSchema = array_values(array_diff($placeholders, $schemaKeys));
-        $missingInHtml   = array_values(array_diff($schemaKeys, $placeholders));
+        // Repeater alanları TÜREVİYLE kullanılır: schema'daki repeater 'X', HTML'de
+        // {{{X_html}}} olarak basılır (renderer X_html'i X repeater'ından üretir).
+        // Bu türev placeholder'ı ne "schema'da yok" say, ne de repeater'ı "kullanılmıyor" say.
+        $repeaterKeys    = array_keys(array_filter(
+            $schemaJson,
+            fn ($f) => is_array($f) && ($f['type'] ?? null) === 'repeater',
+        ));
+        $derivedHtmlKeys = array_map(static fn ($k) => $k.'_html', $repeaterKeys);
+        $usedRepeaters   = array_filter($repeaterKeys, fn ($k) => in_array($k.'_html', $placeholders, true));
+
+        $missingInSchema = array_values(array_diff($placeholders, $schemaKeys, $derivedHtmlKeys));
+        $missingInHtml   = array_values(array_diff($schemaKeys, $placeholders, $usedRepeaters));
 
         foreach ($missingInSchema as $key) {
             $warnings[] = "HTML'de {{ {$key} }} kullanılıyor ama schema_json'da yok.";
