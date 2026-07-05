@@ -17,8 +17,10 @@ class SettingsController extends Controller
         return response()->json([
             'settings' => [
                 'site_title'  => SiteSetting::get('site.title',   config('cms.name', 'Grafike CMS')),
-                'logo_url'    => SiteSetting::get('design.logo_url',    ''),
-                'favicon_url' => SiteSetting::get('design.favicon_url', ''),
+                // Admin marka formu bu anahtarları ÖN-EKSİZ yazar (settings[logo_url]/[favicon_url]);
+                // eski okuyucular design.* bekliyordu → ön-eksiz önce, design.* geriye-dönük fallback.
+                'logo_url'    => SiteSetting::get('logo_url',    '') ?: SiteSetting::get('design.logo_url',    ''),
+                'favicon_url' => SiteSetting::get('favicon_url', '') ?: SiteSetting::get('design.favicon_url', ''),
                 'footer_text' => SiteSetting::get('site.footer_text',   ''),
 
                 'contact' => [
