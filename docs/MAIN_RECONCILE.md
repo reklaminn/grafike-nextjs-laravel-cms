@@ -3,17 +3,18 @@
 > otelvatan + dagkent otel çalışması sırasında bulunan **çekirdek/paylaşımlı** düzeltmelerin
 > `main`'e alınması. Tenant-özel işler (seeder, chrome, field template) main'e **GİTMEZ**.
 >
-> **GÜNCELLEME (2026-07-05):** Bu belge, bu tarihteki main durumuna (`45a6b9d`) göre yeniden
-> değerlendirildi. Aşağıdaki ① **artık main'de** (ayrı bir session ekledi); yalnızca ② kaldı
-> (bu PR) + ③ opsiyonel.
+> **GÜNCELLEME (2026-07-05, v2):** ① ve ② **artık main'de** (doğrulandı). ② de merge oldu
+> (`75a6033`). main session'da **zorunlu iş kalmadı**; yalnızca ③ opsiyonel (deploy'u main'e
+> çekmek istenirse). Detaylar aşağıda.
 
-## Durum özeti (güncel main'e karşı doğrulandı)
+## Durum özeti (güncel main'e karşı doğrulandı — `git ls-tree`/`git show` ile)
 
 | # | Konu | Durum | Aksiyon |
 |---|------|-------|---------|
-| ① | Lodging public API routing (route:cache/404) | ✅ **main'de var** (`efc7ffc`) | **Hiçbir şey yapma.** ade5c67/206a01e cherry-pick ETME → çakışır |
-| ② | Traefik per-domain `/api` → Laravel | ⚠️ **KRİTİK, main'de yok** | **BU PR** (`6ec60c2` cherry-pick → `75a6033`) |
-| ③ | Tema-token (jenerik) daire-detay component | ⚙️ opsiyonel | İleride main'den otel kurulursa |
+| ① | Lodging public API routing (route:cache/404) | ✅ **main'de var** (`efc7ffc`) | Hiçbir şey yapma. ade5c67/206a01e cherry-pick ETME → çakışır |
+| ② | Traefik per-domain `/api` → Laravel | ✅ **main'de var** (`75a6033`) | Hiçbir şey yapma. Tek dosya `app/Services/TraefikDynamicConfig.php`, backend router (priority 150) main'de mevcut |
+| ③ | Tema-token (jenerik) daire-detay component | ⚙️ opsiyonel | Sadece **deploy'u main'den yapmak** istenirse gerekli |
+| ④ | Settings API logo_url/favicon_url ön-eksiz anahtar fallback | 🔴 **main'e ALINMALI** | `feat/multi-tenant` `0d243b4` cherry-pick → `app/Http/Controllers/Api/SettingsController.php` |
 
 ---
 
@@ -24,19 +25,28 @@ tenancy zinciri (`UseSiteHostHeader`+`InitializeTenancyForPublicApi`+`MeterTenan
 - ⚠️ MD'nin eski önerisi `ade5c67 206a01e` (yalnızca lodging, `origin/feat/otelvatan-site`) artık
   **GEREKSİZ ve ÇAKIŞIR** — cherry-pick etme.
 
-## ② ⚠️ BU PR — Traefik per-domain `/api` → Laravel
-**Sorun:** `TraefikDynamicConfig` her tenant domaini için yalnızca frontend router'ı (priority 100)
-üretiyordu; `/api` istisnası yoktu → tenant domaininde `/api` → Next.js gidiyordu (tarayıcı fetch'leri
-HTML alıp boş dönüyordu). **Fix:** her domain için `Host(domain) && PathPrefix(/api|/admin|…)` →
-Laravel, **priority 150** router.
-- Commit: `6ec60c2` (`origin/feat/dagkent-site`) → bu PR'da `75a6033`. Tek dosya:
-  `app/Services/TraefikDynamicConfig.php`.
-- **Deploy sonrası (main deploy edilince) ZORUNLU:** app restart (opcache) + dinamik config yeniden üret:
-  ```bash
-  docker exec grafike_cms_app1 php artisan tinker --execute="app(App\Services\TraefikDynamicConfig::class)->regenerate();"
-  ```
-> **Neden kritik:** main deploy edilip `regenerate()` çalışırsa, DÜZELTİLMEMİŞ config **tüm
-> domainlerin `/api`'sini** bozar. Bu fix main'e girmeden main'den regenerate ETME.
+## ④ 🔴 ALINMALI — Settings API marka anahtarı fallback (logo/favicon)
+**Sorun:** Admin marka formu (`resources/views/admin/settings/index.blade.php`) logo/favicon'u
+**ön-eksiz** `settings[logo_url]`/`settings[favicon_url]` olarak kaydeder; ama `Api\SettingsController`
+`design.logo_url`/`design.favicon_url` okuyordu → **tüm tenant'larda** header `{{logo_url}}` + `<head>`
+favicon boş. (`StructuredDataGenerator` zaten ön-eksiz `logo_url` kullanıyor — doğru konvansiyon.)
+**Fix (`feat/multi-tenant` `0d243b4`):** ön-eksiz anahtar önce, `design.*` geriye-dönük fallback:
+```php
+'logo_url'    => SiteSetting::get('logo_url',    '') ?: SiteSetting::get('design.logo_url',    ''),
+'favicon_url' => SiteSetting::get('favicon_url', '') ?: SiteSetting::get('design.favicon_url', ''),
+```
+Tek dosya, additive, düşük risk. Paylaşımlı controller → cp + restart tüm tenant sitelerini düzeltir.
+Aynı fix `feat/homeland-site` `4a0bd68`'de de var. **Aksiyon:** `git cherry-pick 0d243b4`.
+
+## ② ✅ TAMAM — Traefik per-domain `/api` → Laravel zaten main'de
+**Sorun (çözüldü):** `TraefikDynamicConfig` her tenant domaini için yalnızca frontend router'ı
+(priority 100) üretiyordu; `/api` istisnası yoktu → tenant domaininde `/api` → Next.js gidiyordu.
+**Fix (main'de):** her domain için `Host(domain) && PathPrefix(/api|/admin|…)` → Laravel, **priority 150**
+backend router. Commit **`75a6033`** — `origin/main`'de doğrulandı (`app/Services/TraefikDynamicConfig.php`
+satır ~184-191, `$backendService` + priority 150). `6ec60c2` (feat/dagkent-site) ile aynı içerik.
+- **Yapılacak: yok.** Yeniden cherry-pick/merge etme.
+- **Deploy notu:** main deploy edilirse `regenerate()` **artık güvenli** (fix main'de). Prod app
+  image'ları da fix'li koddan (feat/dagkent-site build'i) → recurrence riski kapandı.
 
 ## ③ ⚙️ OPSİYONEL — Tema-token daire-detay component
 main'de daire-detay component'i **yok** (bilinçli kaldırıldı — `909d99d`). `46b7714` (dagkent) bunu
