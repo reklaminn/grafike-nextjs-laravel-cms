@@ -16,6 +16,7 @@ import { HtmlSection }         from "@/components/sections/html-section";
 import { ArticleListSection }  from "@/components/sections/article-list-section";
 import { FormSectionLoader }   from "@/components/sections/form-section-loader";
 import { ListingSection }      from "@/components/sections/listing-section";
+import { HotelSearchSection }  from "@/components/sections/blocks/hotel-search-section";
 import type { MenusPayload, PageSection, SettingsPayload, SitePayload } from "@/lib/types";
 import { buildElementProps }        from "@/lib/sections/element-props";
 import { renderBasicHtmlSection }   from "@/lib/sections/basic-html-renderer";
@@ -53,6 +54,17 @@ export function SectionRenderer({
     section.type === "daire-listesi"
   ) {
     return <ListingSection section={section} pageId={pageId} />;
+  }
+
+  // Konaklama ana sayfa arama kutusu (tek date-range + geçmiş-pasif + kapasite)
+  // — çok-siteli tema-token client component. render_mode'dan bağımsız yakala.
+  if (
+    section.type === "konaklama-arama" ||
+    section.type === "reservation-search" ||
+    section.type === "hotel-search" ||
+    section.type === "rezervasyon-arama"
+  ) {
+    return <HotelSearchSection section={section} lang={lang} />;
   }
 
   const props = buildElementProps({
