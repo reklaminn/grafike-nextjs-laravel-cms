@@ -187,7 +187,14 @@ PROMPT;
 
         $decoded = json_decode($json, true);
         if (! is_array($decoded)) {
-            throw new RuntimeException('AI yanıtı geçerli JSON değil: '.mb_substr($raw, 0, 200));
+            // `{` ile başlayıp `}` ile bitmiyorsa yanıt büyük olasılıkla token
+            // limitinde YARIDA KESİLMİŞ (kesik JSON parse edilemez).
+            $looksTruncated = Str::startsWith($json, '{') && ! Str::endsWith(rtrim($json), '}');
+            $hint = $looksTruncated
+                ? ' (yanıt yarıda kesilmiş görünüyor — şablon çok büyük; daha küçük/parçalı bir düzenleme deneyin)'
+                : '';
+
+            throw new RuntimeException('AI yanıtı geçerli JSON değil'.$hint.': '.mb_substr($raw, 0, 200));
         }
 
         return $decoded;

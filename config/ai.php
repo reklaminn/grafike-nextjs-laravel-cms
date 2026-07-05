@@ -73,7 +73,10 @@ return [
     'features' => [
         'seo.meta'          => ['tier' => 'simple',  'max_tokens' =>  300, 'temperature' => 0.3, 'cache_ttl' => 1440],
         'block.edit'        => ['tier' => 'simple',  'max_tokens' =>  600, 'temperature' => 0.7, 'cache_ttl' => 0],
-        'block.template'    => ['tier' => 'complex', 'max_tokens' => 2500, 'temperature' => 0.5, 'cache_ttl' => 0],
+        // 8000: tam şablon (html_template + schema + defaults) üretir/düzenler; büyük
+        // hero/slider için 2500 yanıtı ortada kesip "geçerli JSON değil" 500'üne düşürüyordu.
+        // complex = Sonnet 4.6 (64k'ya kadar output), router clamp yok → güvenli.
+        'block.template'    => ['tier' => 'complex', 'max_tokens' => 8000, 'temperature' => 0.5, 'cache_ttl' => 0],
         'page.create'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.7, 'cache_ttl' => 0],
         // Sayfa asistanı: çok-bloklu düzenleme + sıralama planı (diff/onayla).
         'page.assist'       => ['tier' => 'complex', 'max_tokens' => 4000, 'temperature' => 0.6, 'cache_ttl' => 0],
