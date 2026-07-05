@@ -50,10 +50,19 @@ class TraefikDynamicConfig
      */
     private string $certResolver;
 
+    /**
+     * Docker-provider service that hosts Laravel (grafike-lb). Backend paths
+     * (/api, /admin, /tenancy …) on tenant custom domains must reach Laravel,
+     * not Next.js — otherwise browser fetch'leri (ör. daire-detay client fetch)
+     * Next.js HTML alır. Bkz per-domain backend router (priority 150).
+     */
+    private string $backendService;
+
     public function __construct()
     {
         $this->outputDir       = (string) env('TRAEFIK_DYNAMIC_PATH', '/var/traefik-dynamic');
         $this->frontendService = (string) env('TRAEFIK_FRONTEND_SERVICE', 'grafike-frontend@docker');
+        $this->backendService  = (string) env('TRAEFIK_BACKEND_SERVICE', 'grafike-lb@docker');
         $this->certResolver    = (string) env('TRAEFIK_CERT_RESOLVER', 'mytlschallenge');
     }
 
@@ -168,6 +177,22 @@ class TraefikDynamicConfig
             }
 
             $key = 'tenant-' . preg_replace('/[^a-z0-9-]/', '-', strtolower($host));
+
+            // Backend paths (/api, /admin, /tenancy …) → Laravel. Priority 150 >
+            // frontend (100) → tarayıcı fetch'leri (daire-detay client fetch dahil)
+            // Next.js yerine Laravel'e ulaşır. Cert per-domain (aynı çözücü, Traefik dedup'lar).
+            $routers[$key . '-backend'] = [
+                'rule'        => sprintf(
+                    'Host(`%s`) && (PathPrefix(`/api`) || PathPrefix(`/admin`) || PathPrefix(`/member`) || PathPrefix(`/forms`) || PathPrefix(`/reviews`) || PathPrefix(`/pages`) || PathPrefix(`/lang`) || PathPrefix(`/tenant-assets`) || PathPrefix(`/tenancy`) || PathPrefix(`/storage`) || PathPrefix(`/build`) || PathPrefix(`/vendor`) || PathPrefix(`/livewire`) || Path(`/up`) || Path(`/sitemap.xml`) || Path(`/robots.txt`) || PathPrefix(`/.well-known`))',
+                    $host
+                ),
+                'entryPoints' => ['websecure'],
+                'service'     => $this->backendService,
+                'priority'    => 150,
+                'tls'         => [
+                    'certResolver' => $this->certResolver,
+                ],
+            ];
 
             $routers[$key] = [
                 'rule'        => sprintf('Host(`%s`)', $host),
