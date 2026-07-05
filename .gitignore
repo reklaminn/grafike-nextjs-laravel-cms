@@ -34,3 +34,7 @@ frankenphp-worker.php
 # SQLite tenant test databases (created by the test suite)
 /database/tenant_*
 file::memory:*
+
+# Traefik file-provider runtime dir (regenerate yazar) — Origin Cert (certs.yaml)
+# gibi elle konan gizli dosyalar git clean -fd ile silinmesin. Bkz docs/TRAEFIK_ORIGIN_CERT.md
+/traefik-dynamic/
