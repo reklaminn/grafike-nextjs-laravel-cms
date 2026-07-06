@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { SectionBlockProps } from "@/lib/sections/component-registry";
-import { str, parseJsonArray, extractGroupItems, resolveMediaUrl } from "@/lib/sections/component-registry";
+import { str, parseJsonArray, extractGroupItems, resolveMediaUrl, isLocalMediaPath } from "@/lib/sections/component-registry";
 
 type LogoItem = { url?: string; alt?: string; href?: string };
 
@@ -73,6 +73,7 @@ export function LogoBandSection({ section }: SectionBlockProps) {
                   fill
                   sizes="120px"
                   style={{ objectFit: "contain" }}
+                  unoptimized={isLocalMediaPath(resolveMediaUrl(logo.url ?? ""))}
                 />
               </div>
             );

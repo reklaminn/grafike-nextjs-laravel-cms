@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getArticles } from "@/lib/api/client";
+import { isLocalMediaPath } from "@/lib/sections/component-registry";
 import type { ArticleListItem, PageSection } from "@/lib/types";
 
 type ArticleListSectionProps = {
@@ -41,6 +42,7 @@ function ArticleCard({ article, pageSlug }: { article: ArticleListItem; pageSlug
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             style={{ objectFit: "cover" }}
+            unoptimized={isLocalMediaPath(article.cover.thumb ?? article.cover.url)}
           />
         </Link>
       )}

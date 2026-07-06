@@ -6,6 +6,7 @@ import { CmsPageContent } from "@/components/pages/cms-page-content";
 import { PasswordGate } from "@/components/pages/password-gate";
 import { ArticleBlockRenderer } from "@/components/articles/article-block-renderer";
 import { RegionLayoutRenderer } from "@/components/sections/region-layout-renderer";
+import { isLocalMediaPath } from "@/lib/sections/component-registry";
 import type { PageRegions } from "@/lib/types";
 import {
   getArticle,
@@ -249,6 +250,7 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPag
             priority
             sizes="(max-width: 780px) 100vw, 780px"
             style={{ objectFit: "cover" }}
+            unoptimized={isLocalMediaPath(article.cover.url)}
           />
         </div>
       )}

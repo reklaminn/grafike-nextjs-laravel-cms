@@ -56,6 +56,20 @@ export function resolveMediaUrl(url: string, apiBase?: string): string {
 }
 
 /**
+ * True for domain-relative tenant media paths (ör. /tenant-assets/...?tenant=...).
+ * next/image'in kendi /_next/image optimize proxy'si "local" (relative) src'leri
+ * KENDİ sunucusundan (Next.js container) self-fetch etmeye çalışır — ama /tenant-assets
+ * yalnızca Laravel backend'de var, Next'te böyle bir route yok → 404 → "not a valid
+ * image" 400. `unoptimized` proxy'yi bypass eder; tarayıcı URL'i düz <img> gibi
+ * sayfanın kendi origin'ine göre çözer (asıl tasarım amacı zaten buydu —
+ * TenantMediaUrlGenerator, app/Support/TenantMediaUrlGenerator.php).
+ * Gerçek external (http/https) URL'lerde optimizasyon korunur.
+ */
+export function isLocalMediaPath(url: string): boolean {
+  return url.startsWith("/") && !url.startsWith("//");
+}
+
+/**
  * Try to parse a JSON-encoded array from section.content[key].
  * Returns [] on failure.
  */

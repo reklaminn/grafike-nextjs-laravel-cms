@@ -8,7 +8,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { SectionBlockProps } from "@/lib/sections/component-registry";
-import { str, parseJsonArray, extractGroupItems, resolveMediaUrl } from "@/lib/sections/component-registry";
+import { str, parseJsonArray, extractGroupItems, resolveMediaUrl, isLocalMediaPath } from "@/lib/sections/component-registry";
 
 type GalleryImage = {
   url?: string;
@@ -95,6 +95,7 @@ export function GallerySection({ section }: SectionBlockProps) {
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   style={{ objectFit: "cover", transition: "transform 0.3s" }}
+                  unoptimized={isLocalMediaPath(src)}
                 />
               </button>
             );
@@ -126,6 +127,7 @@ export function GallerySection({ section }: SectionBlockProps) {
               alt={lightbox.alt ?? ""}
               width={1200}
               height={800}
+              unoptimized={isLocalMediaPath(resolveMediaUrl(lightbox.url ?? ""))}
               style={{
                 objectFit:    "contain",
                 width:        "100%",
