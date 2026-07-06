@@ -16,6 +16,7 @@
 | ③ | Tema-token (jenerik) daire-detay component | ⚙️ opsiyonel | Sadece **deploy'u main'den yapmak** istenirse gerekli |
 | ④ | Settings API logo_url/favicon_url ön-eksiz anahtar fallback | 🔴 **main'e ALINMALI** | `feat/multi-tenant` `0d243b4` cherry-pick → `app/Http/Controllers/Api/SettingsController.php` |
 | ⑤ | Article detay sayfalarında header/footer eksik (self-contained-chrome) | 🔴 **main'e ALINMALI** | `feat/multi-tenant` `e715c26` cherry-pick → `apps/frontend/app/[locale]/[...slug]/page.tsx` |
+| ⑥ | next/image tenant medya kapaklarında "not a valid image" 400 | 🔴 **main'e ALINMALI** | `feat/multi-tenant` `3a93ae9` cherry-pick — 5 dosya (bkz. ⑥ detay) |
 
 ---
 
@@ -50,6 +51,24 @@ site-shell.tsx`) salt pass-through, global chrome yok. Catch-all route'un Articl
 `regions.footer`'ı ayrıca çekilip `RegionLayoutRenderer` ile Article içeriğinin etrafına sarılıyor
 (ebeveynin gövdesi render edilmiyor, sadece chrome). Additive — önceden hiç chrome yoktu, regresyon
 riski yok. Tek dosya. **Aksiyon:** `git cherry-pick e715c26`.
+
+## ⑥ 🔴 ALINMALI — next/image tenant medya kapaklarında "not a valid image" 400
+**Sorun:** `next/image`'in `/_next/image` optimize proxy'si "local" (relative) `src`'leri KENDİ
+Next.js sunucusundan self-fetch etmeye çalışır. `TenantMediaUrlGenerator` (`de1056e`/`fb0d13d`)
+bilinçli olarak **domain'siz/relative** URL üretir (`/tenant-assets/{path}?tenant={id}` — public
+sitede `cms.grafcore.com` görünmesin diye). Ama bu path yalnızca Laravel backend'de var, Next'in
+kendi sunucusunda böyle bir route yok → self-fetch 404 → Next "not a valid image" diyip **400**
+döner. Article/tenant medya kullanan **her** `<Image>` kullanımını etkiler (Estetik Dermal'e özgü
+değil — 95 ürünlük katalogla ilk kez görsel olarak fark edildi, muhtemelen önceden hep gizli kalmıştı).
+**Fix (`feat/multi-tenant` `3a93ae9`):** yeni `isLocalMediaPath()` helper'ı
+(`apps/frontend/lib/sections/component-registry.ts`) + relative src'lerde `unoptimized={true}` —
+proxy bypass edilir, tarayıcı düz `<img>` gibi URL'i sayfanın kendi origin'ine göre çözer (asıl
+tasarım amacı zaten buydu). Gerçek external (http/https) URL'lerde optimizasyon korunur. 5 dosya:
+`article-list-section.tsx`, `gallery-section.tsx`, `logo-band-section.tsx`,
+`app/[locale]/[...slug]/page.tsx`, `component-registry.ts` (Estetik Dermal'e özel
+`products-grid-client.tsx` main'de yok, dahil değil). **Aksiyon:** `git cherry-pick 3a93ae9`
+(bir dosyada — `products-grid-client.tsx` main'de olmadığı için — trivial "delete/modify" çakışması
+çıkarsa, o dosyayı `git rm` ile cherry-pick'ten çıkar, diğer 5 dosya sorunsuz gelir).
 
 ## ② ✅ TAMAM — Traefik per-domain `/api` → Laravel zaten main'de
 **Sorun (çözüldü):** `TraefikDynamicConfig` her tenant domaini için yalnızca frontend router'ı
