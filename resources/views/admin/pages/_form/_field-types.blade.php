@@ -93,8 +93,8 @@
     </div>
 </template>
 
-{{-- page_link (iç sayfa seçici + serbest URL) --}}
-<template x-if="type === 'page_link'">
+{{-- page_link + url (iç sayfa seçici + serbest URL) — url tipi de sayfa seçicisi alır --}}
+<template x-if="['page_link', 'url'].includes(type)">
     <div class="space-y-2" x-init="ensurePagesLoaded()">
         <div class="flex gap-2">
             <div class="relative flex-1">
@@ -180,18 +180,7 @@
     </div>
 </template>
 
-{{-- url --}}
-<template x-if="type === 'url'">
-    <div class="relative">
-        <span class="pointer-events-none absolute inset-y-0 left-0 flex w-9 items-center justify-center text-gray-400">
-            <i class="fas fa-link text-xs"></i>
-        </span>
-        <input type="url"
-               x-model="parentRef[fieldKey]"
-               placeholder="https://"
-               class="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200">
-    </div>
-</template>
+{{-- url — page_link ile birleşti (yukarıda): iç sayfa seçici + serbest URL --}}
 
 {{-- email --}}
 <template x-if="type === 'email'">
