@@ -20,6 +20,7 @@ import { LogoBandSection }      from "@/components/sections/blocks/logo-band-sec
 import { PricingSection }       from "@/components/sections/blocks/pricing-section";
 import { SearchSection }        from "@/components/sections/blocks/search-section";
 import { ReservationSection }   from "@/components/sections/blocks/reservation-section";
+import { RoomDetailSection }    from "@/components/sections/blocks/room-detail-section";
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 // Catch-all for any hero variation that is not explicitly overridden
@@ -76,3 +77,10 @@ sectionRegistry.register("arama",             SearchSection);
 // "reservation" (veya "rezervasyon") olan bir blok ile döşenir.
 sectionRegistry.register("reservation",       ReservationSection);
 sectionRegistry.register("rezervasyon",       ReservationSection);
+
+// ─── Room detail (Lodging / Konaklama) ────────────────────────────────────────
+// Tek oda/daire detay bloğu — content.room_type slug'ıyla RoomType'ı çeker;
+// tema-token'lı (her tenant kendi chrome'uyla) galeri + müsaitlik takvimi +
+// kapasiteli misafir + odaya kilitli rezervasyon CTA. render_mode=component.
+sectionRegistry.register("daire-detay",        RoomDetailSection);
+sectionRegistry.register("room-detail",        RoomDetailSection);
