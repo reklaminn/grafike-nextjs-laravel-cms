@@ -21,6 +21,7 @@ const BACKEND_PATH_PREFIXES = [
   "/api",
   "/build",
   "/storage",
+  "/tenant-assets",
   "/vendor",
   "/livewire",
   "/up",
