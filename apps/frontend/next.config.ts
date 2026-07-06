@@ -18,6 +18,25 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // ── Rewrites ────────────────────────────────────────────────────────────────
+  async rewrites() {
+    return [
+      {
+        // Tenant medya (Spatie MediaLibrary → TenantMediaUrlGenerator) domain'siz
+        // /tenant-assets/{path}?tenant={id} URL'i üretir (public sitede backend
+        // domain'i görünmesin diye). Bu path SADECE Laravel'de var — next/image'in
+        // kendi /_next/image optimize proxy'si "local" src'leri KENDİ sunucusundan
+        // self-fetch etmeye çalışır ve bu route Next'te tanımlı olmadığı için 404
+        // ("not a valid image" 400) alırdı. Bu rewrite Next'in kendi routing
+        // katmanına /tenant-assets'i tanıtıp CMS_API_URL (SSR'ın zaten kullandığı
+        // internal Docker bağlantısı) üzerinden Laravel'e proxy'ler — hem 400
+        // çözülür hem next/image'in boyutlandırma/WebP optimizasyonu korunur.
+        source: "/tenant-assets/:path*",
+        destination: `${process.env.CMS_API_URL ?? "http://app1:80"}/tenant-assets/:path*`,
+      },
+    ];
+  },
+
   // ── Headers ─────────────────────────────────────────────────────────────────
   async headers() {
     return [
