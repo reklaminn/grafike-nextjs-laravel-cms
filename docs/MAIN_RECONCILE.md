@@ -15,6 +15,7 @@
 | ② | Traefik per-domain `/api` → Laravel | ✅ **main'de var** (`75a6033`) | Hiçbir şey yapma. Tek dosya `app/Services/TraefikDynamicConfig.php`, backend router (priority 150) main'de mevcut |
 | ③ | Tema-token (jenerik) daire-detay component | ⚙️ opsiyonel | Sadece **deploy'u main'den yapmak** istenirse gerekli |
 | ④ | Settings API logo_url/favicon_url ön-eksiz anahtar fallback | 🔴 **main'e ALINMALI** | `feat/multi-tenant` `0d243b4` cherry-pick → `app/Http/Controllers/Api/SettingsController.php` |
+| ⑤ | Article detay sayfalarında header/footer eksik (self-contained-chrome) | 🔴 **main'e ALINMALI** | `feat/multi-tenant` `e715c26` cherry-pick → `apps/frontend/app/[locale]/[...slug]/page.tsx` |
 
 ---
 
@@ -37,6 +38,18 @@ favicon boş. (`StructuredDataGenerator` zaten ön-eksiz `logo_url` kullanıyor 
 ```
 Tek dosya, additive, düşük risk. Paylaşımlı controller → cp + restart tüm tenant sitelerini düzeltir.
 Aynı fix `feat/homeland-site` `4a0bd68`'de de var. **Aksiyon:** `git cherry-pick 0d243b4`.
+
+## ⑤ 🔴 ALINMALI — Article detay sayfalarında header/footer eksik
+**Sorun:** Self-contained-chrome tenant'larda (Estetik Dermal, otel'ler) header/footer HER Page'in
+kendi `sections_json.regions`'ından basılır; `SiteShell` (`apps/frontend/components/layout/
+site-shell.tsx`) salt pass-through, global chrome yok. Catch-all route'un Article-detay dalı
+(`apps/frontend/app/[locale]/[...slug]/page.tsx`) bir `Page` DEĞİLDİR → hiçbir chrome almaz.
+95 ürünlük Estetik Dermal kataloğuyla ilk kez fark edildi ama Article kullanan HER tenant'ı etkiler
+(ör. DemoSeeder blog örneği de aynı boşluğa düşer).
+**Fix (`feat/multi-tenant` `e715c26`):** ebeveyn sayfanın (`articlePage.slug`) `regions.header`/
+`regions.footer`'ı ayrıca çekilip `RegionLayoutRenderer` ile Article içeriğinin etrafına sarılıyor
+(ebeveynin gövdesi render edilmiyor, sadece chrome). Additive — önceden hiç chrome yoktu, regresyon
+riski yok. Tek dosya. **Aksiyon:** `git cherry-pick e715c26`.
 
 ## ② ✅ TAMAM — Traefik per-domain `/api` → Laravel zaten main'de
 **Sorun (çözüldü):** `TraefikDynamicConfig` her tenant domaini için yalnızca frontend router'ı
