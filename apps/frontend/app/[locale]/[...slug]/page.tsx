@@ -5,6 +5,8 @@ import Image from "next/image";
 import { CmsPageContent } from "@/components/pages/cms-page-content";
 import { PasswordGate } from "@/components/pages/password-gate";
 import { ArticleBlockRenderer } from "@/components/articles/article-block-renderer";
+import { RegionLayoutRenderer } from "@/components/sections/region-layout-renderer";
+import type { PageRegions } from "@/lib/types";
 import {
   getArticle,
   getMenusPayload,
@@ -184,7 +186,35 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPag
   // Locale-prefixed URL helper
   const localeHref = (path: string) => `/${locale}/${path}`;
 
+  // Self-contained-chrome tenants (ör. otel/klinik seeder'ları) header/footer'ı
+  // GLOBAL bir layout'tan değil, HER Page'in kendi sections_json.regions'ından
+  // basar (SiteShell salt pass-through — bkz. site-shell.tsx). Article detay
+  // bir Page değildir, bu yüzden chrome'suz kalırdı. Ebeveyn sayfanın (ör.
+  // /urunler) region'larını çekip header/footer'ı burada da giydiriyoruz;
+  // ebeveyn'in gövdesi (products-grid vb.) render EDİLMEZ, sadece header/footer.
+  const parentPayload = parentSlug
+    ? await getPagePayload(parentSlug, locale, { tenantId })
+    : null;
+  const parentRegions = parentPayload?.page?.regions ?? null;
+  const headerOnlyRegions: PageRegions | null = parentRegions
+    ? { header: parentRegions.header, body: [], footer: [] }
+    : null;
+  const footerOnlyRegions: PageRegions | null = parentRegions
+    ? { header: [], body: [], footer: parentRegions.footer }
+    : null;
+
   return (
+    <>
+      {headerOnlyRegions && (
+        <RegionLayoutRenderer
+          regions={headerOnlyRegions}
+          site={sitePayload.site}
+          settings={settingsPayload.settings}
+          menus={menusPayload}
+          pageId={parentPayload?.page?.id}
+          lang={locale}
+        />
+      )}
     <main className="container" style={{ maxWidth: "780px", margin: "0 auto", padding: "2rem 1rem" }}>
       {/* Breadcrumb */}
       {parentSlug && (
@@ -303,5 +333,16 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPag
         </div>
       )}
     </main>
+      {footerOnlyRegions && (
+        <RegionLayoutRenderer
+          regions={footerOnlyRegions}
+          site={sitePayload.site}
+          settings={settingsPayload.settings}
+          menus={menusPayload}
+          pageId={parentPayload?.page?.id}
+          lang={locale}
+        />
+      )}
+    </>
   );
 }
