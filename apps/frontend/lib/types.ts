@@ -180,6 +180,9 @@ export type ArticleListItem = {
   title: string;
   slug: string;
   excerpt: string | null;
+  // products-grid (estetikdermal) — Article kategori/marka (yoksa null).
+  category: string | null;
+  brand: string | null;
   display_date: string | null;
   published_at: string | null;
   is_featured: boolean;

@@ -19,6 +19,9 @@ class ArticleListItemResource extends JsonResource
             'title'        => $this->title,
             'slug'         => $this->slug,
             'excerpt'      => $this->excerpt,
+            // products-grid (estetikdermal) — Article kolonları (yoksa null).
+            'category'     => $this->category,
+            'brand'        => $this->brand,
             'display_date' => $this->display_date?->toDateString()
                 ?? $this->published_at?->toDateString(),
             'published_at' => $this->published_at?->toAtomString(),

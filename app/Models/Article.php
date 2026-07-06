@@ -15,7 +15,7 @@ class Article extends Model implements HasMedia
     protected $fillable = [
         'title', 'body', 'content_json', 'excerpt', 'page_id', 'language_id', 'parent_article_id',
         'status', 'sort_order', 'slug', 'external_url', 'link_target', 'template',
-        'listing_variant', 'detail_variant',
+        'listing_variant', 'detail_variant', 'category', 'brand',
         'content_type_id', 'form_id', 'is_featured', 'meta_description', 'extra_info',
         'published_at', 'display_date', 'author_id', 'custom_css', 'custom_js', 'legacy_id',
     ];

@@ -17,6 +17,7 @@ import { ArticleListSection }  from "@/components/sections/article-list-section"
 import { FormSectionLoader }   from "@/components/sections/form-section-loader";
 import { ListingSection }      from "@/components/sections/listing-section";
 import { HotelSearchSection }  from "@/components/sections/blocks/hotel-search-section";
+import { ProductsGridSection } from "@/components/sections/products-grid-section";
 import type { MenusPayload, PageSection, SettingsPayload, SitePayload } from "@/lib/types";
 import { buildElementProps }        from "@/lib/sections/element-props";
 import { renderBasicHtmlSection }   from "@/lib/sections/basic-html-renderer";
@@ -65,6 +66,11 @@ export function SectionRenderer({
     section.type === "rezervasyon-arama"
   ) {
     return <HotelSearchSection section={section} lang={lang} />;
+  }
+
+  // Ürünler ızgarası (estetikdermal — Article-tabanlı, kategori filtreli) — async veri.
+  if (section.type === "products-grid") {
+    return <ProductsGridSection section={section} pageId={pageId} lang={lang} />;
   }
 
   const props = buildElementProps({
