@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\DB;
  * Boblanlı Yapı — TENANT seeder (OtelVatan/Homeland deseni). TENANT CONTEXT'inde çalıştır.
  * ÖN KOŞUL: tenant 'boblanliyapi' + tenants:migrate +
  *   central: BoblanliThemeSeeder + BoblanliChromeSeeder + BoblanliFieldChromeSeeder.
- * Tek-sayfa kurumsal inşaat sitesi: tüm bölümler tek 'home' sayfasında (anchor-nav).
+ * Çok-sayfa kurumsal inşaat sitesi: menü öğeleri ayrı sayfalar (home + hizmetler +
+ * neden-biz + calismalar + iletisim). Ana Sayfa zengin landing; alt sayfalar başlık banner + bölüm.
  * İletişim formu = tenant'a özel "boblanli-teklif" formu (FormSection bloğuyla render).
  */
 class BoblanliTenantSeeder extends Seeder
@@ -31,6 +32,15 @@ class BoblanliTenantSeeder extends Seeder
         return ['id'=>$id,'type'=>'content-block','variation'=>$variation,'render_mode'=>'html',
             'section_template_id'=>$tpl?->id,'is_active'=>true,'sort_order'=>$sort,
             'content'=>($tpl?->default_content_json ?? []),'html_override'=>null];
+    }
+    /** Aynı fieldBlk ama content'i şablon default'una MERGE'ler (sayfa-özel başlık vb. için). */
+    private function fieldBlkC(string $id, string $variation, array $content, int $sort): array
+    {
+        $tpl = SectionTemplate::where('theme_id',$this->theme?->id)->where('variation',$variation)->first();
+        if (! $tpl) { $this->command?->warn("Alan şablonu yok: {$variation}"); }
+        return ['id'=>$id,'type'=>'content-block','variation'=>$variation,'render_mode'=>'html',
+            'section_template_id'=>$tpl?->id,'is_active'=>true,'sort_order'=>$sort,
+            'content'=>array_merge($tpl?->default_content_json ?? [], $content),'html_override'=>null];
     }
     private function formBlk(string $id, array $content, int $sort): array
     {
@@ -113,31 +123,78 @@ class BoblanliTenantSeeder extends Seeder
         $hdr = BoblanliChromeSeeder::headerHtml();
         $ftr = BoblanliChromeSeeder::footerHtml();
 
-        // Tek sayfa: tüm bölümler sırayla + en sonda teklif formu.
-        $bodyBlocks = [
-            $this->fieldBlk('b_hero','bl-01-hero',1),
-            $this->fieldBlk('b_guven','bl-02-guven',2),
-            $this->fieldBlk('b_hizmet','bl-03-hizmetler',3),
-            $this->fieldBlk('b_neden','bl-04-neden',4),
-            $this->fieldBlk('b_surec','bl-05-surec',5),
-            $this->fieldBlk('b_galeri','bl-06-galeri',6),
-            $this->fieldBlk('b_iletisim','bl-07-iletisim',7),
-        ];
-        if ($teklifFormId) {
-            $bodyBlocks[] = $this->formBlk('b_form',[
+        // Çok-sayfa: her menü öğesi kendi sayfası. Ana Sayfa zengin landing; alt sayfalar
+        // başlık banner (bl-page-hero) + kendi bölümü. Bölümler sayfalar arasında paylaşılır
+        // (her blok şablon default'unun KOPYASINI taşır → admin'de bağımsız düzenlenebilir).
+        $formBlk = $teklifFormId
+            ? [$this->formBlk('b_form',[
                 'form_id'=>$teklifFormId,'title'=>'Teklif İsteyin',
                 'description'=>'Bilgilerinizi bırakın, en kısa sürede ücretsiz keşif için sizi arayalım.',
                 'submit_label'=>'Teklif İsteyin',
-            ],8);
-        }
+              ],9)]
+            : [];
 
-        $pages = [ ['slug'=>'home','title'=>'Ana Sayfa','order'=>1,'menu'=>true] ];
+        $bodyByPage = [
+            // Ana Sayfa — zengin landing
+            'home' => [
+                $this->fieldBlk('b_hero','bl-01-hero',1),
+                $this->fieldBlk('b_guven','bl-02-guven',2),
+                $this->fieldBlk('b_hizmet','bl-03-hizmetler',3),
+                $this->fieldBlk('b_neden','bl-04-neden',4),
+                $this->fieldBlk('b_galeri','bl-06-galeri',5),
+                $this->fieldBlkC('b_cta','bl-cta',[
+                    'title'=>'Projeniz İçin Ücretsiz Keşif','cta_label'=>'İletişime Geçin','cta_url'=>'/iletisim',
+                ],6),
+            ],
+            // Hizmetler — hizmet kartları + süreç
+            'hizmetler' => [
+                $this->fieldBlkC('b_ph','bl-page-hero',[
+                    'eyebrow'=>'HİZMETLERİMİZ','title'=>'Sunduğumuz Hizmetler','crumb'=>'Hizmetler',
+                    'subtitle'=>'Kuşadası ve Aydın genelinde elektrik, tadilat, dekorasyon ve inşaat — tek elden, uçtan uca çözüm.',
+                ],1),
+                $this->fieldBlk('b_hizmet','bl-03-hizmetler',2),
+                $this->fieldBlk('b_surec','bl-05-surec',3),
+            ],
+            // Neden Biz — sayaçlar + avantajlar
+            'neden-biz' => [
+                $this->fieldBlkC('b_ph','bl-page-hero',[
+                    'eyebrow'=>'NEDEN BİZ','title'=>'Neden Kuşadası\'nda Boblanlı Yapı?','crumb'=>'Neden Biz',
+                    'subtitle'=>'Deneyimli ekip, zamanında teslim, şeffaf fiyat ve garantili işçilik — güveninizin karşılığı.',
+                ],1),
+                $this->fieldBlk('b_neden','bl-04-neden',2),
+            ],
+            // Çalışmalar — galeri
+            'calismalar' => [
+                $this->fieldBlkC('b_ph','bl-page-hero',[
+                    'eyebrow'=>'REFERANSLAR','title'=>'Tamamlanan İşlerimiz','crumb'=>'Çalışmalar',
+                    'subtitle'=>'Kuşadası ve çevresinde hayata geçirdiğimiz projelerden bir seçki.',
+                ],1),
+                $this->fieldBlk('b_galeri','bl-06-galeri',2),
+            ],
+            // İletişim — bilgi + harita + form
+            'iletisim' => array_merge([
+                $this->fieldBlkC('b_ph','bl-page-hero',[
+                    'eyebrow'=>'İLETİŞİM','title'=>'Bize Ulaşın','crumb'=>'İletişim',
+                    'subtitle'=>'Ücretsiz keşif için bir telefon uzağınızdayız. Ofisimize uğrayın ya da WhatsApp\'tan yazın.',
+                ],1),
+                $this->fieldBlk('b_iletisim','bl-07-iletisim',2),
+            ], $formBlk),
+        ];
+
+        $pages = [
+            ['slug'=>'home','title'=>'Ana Sayfa','order'=>1,'menu'=>true],
+            ['slug'=>'hizmetler','title'=>'Hizmetler','order'=>2,'menu'=>true],
+            ['slug'=>'neden-biz','title'=>'Neden Biz','order'=>3,'menu'=>true],
+            ['slug'=>'calismalar','title'=>'Çalışmalar','order'=>4,'menu'=>true],
+            ['slug'=>'iletisim','title'=>'İletişim','order'=>5,'menu'=>true],
+        ];
 
         // Trashed çakışması + tenant açılışından kalan NULL-dil scaffold sayfalarını temizle.
         Page::onlyTrashed()->whereIn('slug', array_column($pages,'slug'))->forceDelete();
         Page::whereNull('language_id')->whereNotIn('slug',['404','500'])->forceDelete();
 
         foreach ($pages as $p) {
+            $bodyBlocks = $bodyByPage[$p['slug']] ?? [];
             Page::updateOrCreate(
                 ['slug'=>$p['slug'],'language_id'=>$langId],
                 ['title'=>$p['title'],'status'=>'published','show_in_menu'=>$p['menu'],
@@ -160,7 +217,7 @@ class BoblanliTenantSeeder extends Seeder
             ['social.instagram','https://instagram.com/tahsinboblanli','social'],
         ] as $st) { SiteSetting::updateOrCreate(['key'=>$st[0]],['value'=>$st[1],'group'=>$st[2],'type'=>'text']); }
 
-        $this->command?->info('BoblanliTenantSeeder: tek sayfa (7 bölüm) + teklif formu'
+        $this->command?->info('BoblanliTenantSeeder: '.count($pages).' sayfa (çok-sayfa) + teklif formu'
             .($teklifFormId ? '' : ' (UYARI: form kurulamadı)').' + ayarlar kuruldu.');
     }
 }

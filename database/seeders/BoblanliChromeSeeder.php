@@ -142,26 +142,26 @@ input,textarea,select,button{font-family:inherit}
 </style>
 <header class="site-head">
   <div class="head-inner" style="position:relative">
-    <a class="bl-brand" href="#anasayfa" aria-label="Boblanlı Yapı ana sayfa">
+    <a class="bl-brand" href="/" aria-label="Boblanlı Yapı ana sayfa">
       <img src="{{logo_url}}" alt="Boblanlı Yapı" class="bl-brand__img" onload="if(this.naturalWidth>0)this.style.display='block'">
       <span class="bl-brand__txt"><b>BOBLANLI <i>YAPI</i></b><small>İNŞAAT | CONSTRUCTING</small></span>
     </a>
     <input type="checkbox" id="blNav" class="bl-navtoggle" aria-hidden="true">
     <label for="blNav" class="menu-btn" aria-label="Menüyü aç/kapat">☰</label>
     <nav class="desktop-nav" aria-label="Ana menü">
-      <a href="#anasayfa">Ana Sayfa</a>
-      <a href="#hizmetler">Hizmetler</a>
-      <a href="#neden-biz">Neden Biz</a>
-      <a href="#calismalar">Çalışmalar</a>
-      <a href="#iletisim">İletişim</a>
+      <a href="/">Ana Sayfa</a>
+      <a href="/hizmetler">Hizmetler</a>
+      <a href="/neden-biz">Neden Biz</a>
+      <a href="/calismalar">Çalışmalar</a>
+      <a href="/iletisim">İletişim</a>
       <a class="head-wa btn-slide" href="https://wa.me/905326576271" target="_blank" rel="noopener"><span style="display:inline-flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-.9L3 21l1.9-4.5a8.4 8.4 0 0 1-.9-4A8.4 8.4 0 0 1 12 4a8.4 8.4 0 0 1 9 7.5z"/></svg>WhatsApp</span></a>
     </nav>
     <nav class="mobile-nav" aria-label="Mobil menü">
-      <a href="#anasayfa">Ana Sayfa</a>
-      <a href="#hizmetler">Hizmetler</a>
-      <a href="#neden-biz">Neden Biz</a>
-      <a href="#calismalar">Çalışmalar</a>
-      <a href="#iletisim">İletişim</a>
+      <a href="/">Ana Sayfa</a>
+      <a href="/hizmetler">Hizmetler</a>
+      <a href="/neden-biz">Neden Biz</a>
+      <a href="/calismalar">Çalışmalar</a>
+      <a href="/iletisim">İletişim</a>
       <a class="head-wa" href="https://wa.me/905326576271" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-.9L3 21l1.9-4.5a8.4 8.4 0 0 1-.9-4A8.4 8.4 0 0 1 12 4a8.4 8.4 0 0 1 9 7.5z"/></svg>WhatsApp</a>
     </nav>
   </div>
@@ -184,10 +184,10 @@ BLHDR;
       <div>
         <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#fff;margin-bottom:16px">Hizmetler</div>
         <div style="display:flex;flex-direction:column;gap:11px;font-size:14px">
-          <a href="#hizmetler" style="color:#b0b0b0">Elektrik Arıza & Onarım</a>
-          <a href="#hizmetler" style="color:#b0b0b0">Toptan Elektrik Malzemesi</a>
-          <a href="#hizmetler" style="color:#b0b0b0">Dekorasyon & Tadilat</a>
-          <a href="#hizmetler" style="color:#b0b0b0">İnşaat Hizmetleri</a>
+          <a href="/hizmetler" style="color:#b0b0b0">Elektrik Arıza & Onarım</a>
+          <a href="/hizmetler" style="color:#b0b0b0">Toptan Elektrik Malzemesi</a>
+          <a href="/hizmetler" style="color:#b0b0b0">Dekorasyon & Tadilat</a>
+          <a href="/hizmetler" style="color:#b0b0b0">İnşaat Hizmetleri</a>
         </div>
       </div>
       <div>

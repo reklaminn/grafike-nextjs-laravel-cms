@@ -1,10 +1,12 @@
 # Boblanlı Yapı — Tenant Go-Live Runbook
 
 **Branch:** `feat/boblanli-site` (feat/multi-tenant tabanından) · **Tenant:** `boblanliyapi` · **Domain:** boblanliyapi.com (IP 168.231.127.204)
-**Tema:** `boblanli` (antrasit + kırmızı, Space Grotesk/Inter, keskin köşe) · **Modül:** yok (kurumsal tek-sayfa)
+**Tema:** `boblanli` (antrasit + kırmızı, Space Grotesk/Inter, keskin köşe) · **Modül:** yok (kurumsal çok-sayfa)
 
 OtelVatan/Homeland deseni: self-contained chrome + alan-editli FieldChrome bölümler.
-**Tek sayfa** (`home`) — tüm bölümler anchor-nav'lı (#anasayfa/#hizmetler/#neden-biz/#calismalar/#iletisim).
+**Çok sayfa** — menü öğeleri ayrı sayfalar: `home` (zengin landing) · `hizmetler` (4 hizmet + süreç) ·
+`neden-biz` (sayaçlar + avantajlar) · `calismalar` (galeri) · `iletisim` (bilgi + harita + form).
+Alt sayfalar `bl-page-hero` başlık banner'ı ile başlar. Header nav gerçek sayfa linkleri (/hizmetler …).
 
 ## Seeder envanteri (`database/seeders/`)
 | Dosya | DB | Ne yapar |
@@ -53,7 +55,7 @@ docker restart grafike_cms_frontend
 ```
 
 ## Doğrulama
-- `boblanliyapi.com` → tek sayfa: hero (koyu, kırmızı diagonal, tek H1) → güven şeridi → 4 hizmet kartı
+- `boblanliyapi.com` → Ana Sayfa: hero (koyu, kırmızı diagonal, tek H1) → güven şeridi → 4 hizmet kartı
   (hover kalkma + kırmızı şerit) → sayaçlar (viewport'a girince sayar) → 4 avantaj → 4 adım süreç →
   8'li galeri (hover zoom + kırmızı overlay) → iletişim (bilgi + harita) → teklif formu → footer + floating WhatsApp.
 - Header anchor nav smooth-scroll; scroll>40px header küçülür; ≤880px hamburger menü.
