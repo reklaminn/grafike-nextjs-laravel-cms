@@ -119,7 +119,11 @@ input,textarea,select,button{font-family:inherit}
 .site-head{position:sticky;top:0;z-index:80;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid #ededed}
 .head-inner{max-width:1220px;margin:0 auto;padding:15px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px}
 .bl-brand{display:flex;align-items:center;gap:12px}
-.bl-brand__img{display:none;height:48px;width:auto;object-fit:contain}
+.bl-brand__img{display:block;max-height:48px;width:auto;object-fit:contain}
+/* Logo yoksa (src boş) gizle → wordmark kalır; JS/onload gerekmez (CSP-proof). */
+.bl-brand__img[src=""],.bl-brand__img:not([src]){display:none}
+/* Logo (geniş, yazılı) yüklüyse wordmark'ı gizle → çift yazı olmasın (:has destekli tarayıcı). */
+.bl-brand:has(.bl-brand__img[src]:not([src=""])) .bl-brand__txt{display:none}
 .bl-brand__txt{display:flex;flex-direction:column;line-height:1.05}
 .bl-brand__txt b{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;letter-spacing:.04em;color:var(--ink)}
 .bl-brand__txt b i{color:var(--ac);font-style:normal}
@@ -143,7 +147,7 @@ input,textarea,select,button{font-family:inherit}
 <header class="site-head">
   <div class="head-inner" style="position:relative">
     <a class="bl-brand" href="/" aria-label="Boblanlı Yapı ana sayfa">
-      <img src="{{logo_url}}" alt="Boblanlı Yapı" class="bl-brand__img" onload="if(this.naturalWidth>0)this.style.display='block'">
+      <img src="{{logo_url}}" alt="Boblanlı Yapı" class="bl-brand__img">
       <span class="bl-brand__txt"><b>BOBLANLI <i>YAPI</i></b><small>İNŞAAT | CONSTRUCTING</small></span>
     </a>
     <input type="checkbox" id="blNav" class="bl-navtoggle" aria-hidden="true">
