@@ -36,8 +36,17 @@ const nextConfig: NextConfig = {
           // katmanına /tenant-assets'i tanıtıp CMS_API_URL (SSR'ın zaten kullandığı
           // internal Docker bağlantısı) üzerinden Laravel'e proxy'ler — hem 400
           // çözülür hem next/image'in boyutlandırma/WebP optimizasyonu korunur.
+          //
+          // ÖNEMLİ: Next, rewrites destination'ını BUILD-time'da routes-manifest'e
+          // gömer; runtime container env'i (CMS_API_URL=http://app1:80) çok geç
+          // kalır. Tracked .env.local'de CMS_API_URL=http://127.0.0.1:8000 (yerel
+          // dev) olduğu için CMS_API_URL kullanılırsa build 127.0.0.1:8000'i
+          // dondurur → canlıda ECONNREFUSED. Bu yüzden .env.local'in KİRLETMEDİĞİ
+          // ayrı bir değişken (CMS_INTERNAL_URL) kullanıp internal Docker servis
+          // adresini (app1:80) varsayılan yapıyoruz. Yerel dev'de gerekirse
+          // .env.local'e CMS_INTERNAL_URL=http://127.0.0.1:8000 eklenebilir.
           source: "/tenant-assets/:path*",
-          destination: `${process.env.CMS_API_URL ?? "http://app1:80"}/tenant-assets/:path*`,
+          destination: `${process.env.CMS_INTERNAL_URL ?? "http://app1:80"}/tenant-assets/:path*`,
         },
       ],
     };
