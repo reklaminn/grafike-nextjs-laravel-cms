@@ -134,6 +134,13 @@ class BoblanliTenantSeeder extends Seeder
               ],9)]
             : [];
 
+        // Hizmet detay sayfası gövdesi (page-hero + SEO metin + CTA + form).
+        $svcDetail = fn(string $eyebrow, string $title, string $crumb, string $sub, string $body) => array_merge([
+            $this->fieldBlkC('b_ph','bl-page-hero',['eyebrow'=>$eyebrow,'title'=>$title,'crumb'=>$crumb,'subtitle'=>$sub],1),
+            $this->fieldBlkC('b_body','bl-rich-text',['eyebrow'=>'HİZMET KAPSAMI','title'=>$title,'body_html'=>$body,'bg'=>'#ffffff'],2),
+            $this->fieldBlkC('b_cta','bl-cta',['title'=>'Bu Hizmet İçin Ücretsiz Keşif','cta_label'=>'Hemen Arayın','cta_url'=>'tel:+905326576271'],3),
+        ], $formBlk);
+
         $bodyByPage = [
             // Ana Sayfa — zengin landing
             'home' => [
@@ -146,30 +153,42 @@ class BoblanliTenantSeeder extends Seeder
                     'title'=>'Projeniz İçin Ücretsiz Keşif','cta_label'=>'İletişime Geçin','cta_url'=>'/iletisim',
                 ],6),
             ],
-            // Hizmetler — hizmet kartları + süreç
+            // Hizmetler — SEO giriş + tıklanabilir kartlar + süreç
             'hizmetler' => [
                 $this->fieldBlkC('b_ph','bl-page-hero',[
                     'eyebrow'=>'HİZMETLERİMİZ','title'=>'Sunduğumuz Hizmetler','crumb'=>'Hizmetler',
                     'subtitle'=>'Kuşadası ve Aydın genelinde elektrik, tadilat, dekorasyon ve inşaat — tek elden, uçtan uca çözüm.',
                 ],1),
-                $this->fieldBlk('b_hizmet','bl-03-hizmetler',2),
-                $this->fieldBlk('b_surec','bl-05-surec',3),
+                $this->fieldBlkC('b_intro','bl-rich-text',[
+                    'eyebrow'=>'TEK ELDEN ÇÖZÜM','title'=>'Kuşadası ve Aydın\'da Yapı Hizmetleri','bg'=>'#ffffff',
+                    'body_html'=>'<p>Boblanlı Yapı; <strong>Kuşadası ve Aydın genelinde</strong> inşaat, iç dekorasyon, kapsamlı revizyon, elektrik arıza-onarım ve toptan elektrik malzemesi hizmetlerini tek çatı altında sunar. Küçük bir elektrik arızasından anahtar teslim inşaata kadar her ölçekte işi güvenilir işçilik ve şeffaf fiyatlandırma ile tamamlıyoruz.</p><p>Aşağıdaki hizmet alanlarından birine tıklayarak detayları inceleyebilir, ücretsiz keşif için bizimle iletişime geçebilirsiniz.</p>',
+                ],2),
+                $this->fieldBlk('b_hizmet','bl-03-hizmetler',3),
+                $this->fieldBlk('b_surec','bl-05-surec',4),
             ],
-            // Neden Biz — sayaçlar + avantajlar
+            // Neden Biz — sayaçlar + avantajlar + SEO metin
             'neden-biz' => [
                 $this->fieldBlkC('b_ph','bl-page-hero',[
                     'eyebrow'=>'NEDEN BİZ','title'=>'Neden Kuşadası\'nda Boblanlı Yapı?','crumb'=>'Neden Biz',
                     'subtitle'=>'Deneyimli ekip, zamanında teslim, şeffaf fiyat ve garantili işçilik — güveninizin karşılığı.',
                 ],1),
                 $this->fieldBlk('b_neden','bl-04-neden',2),
+                $this->fieldBlkC('b_seo','bl-rich-text',[
+                    'eyebrow'=>'GÜVENİN ADRESİ','title'=>'Kuşadası\'nda Neden Boblanlı Yapı?','bg'=>'#F4F4F4',
+                    'body_html'=>'<p>Kuşadası ve Aydın\'da <strong>inşaat, tadilat ve elektrik</strong> alanında yılların saha tecrübesine sahip bir ekibiz. Her projeye aynı özenle yaklaşıyor; söz verdiğimiz tarihte, eksiksiz ve temiz teslim ediyoruz.</p><p>Sürpriz maliyet çıkarmayan <strong>şeffaf fiyatlandırma</strong>, net keşif ve açık teklif politikamızla güven veriyoruz. İnşaat, tadilat ve elektrik işlerimizde garantili işçilik sunuyor; Kuşadası, Söke, Davutlar ve Aydın genelinde hizmet veriyoruz.</p><h3>Neden Bizi Tercih Etmelisiniz?</h3><ul><li><strong>Deneyimli ekip:</strong> Aydın bölgesinde uzun yıllara dayanan saha tecrübesi.</li><li><strong>Zamanında teslim:</strong> Planlı süreç, gecikmesiz işçilik.</li><li><strong>Şeffaf fiyat:</strong> Net keşif, açık teklif, gizli maliyet yok.</li><li><strong>Garantili işçilik:</strong> Tüm işlerimizde garanti.</li><li><strong>Yerel bilgi:</strong> Kuşadası ve çevresini iyi tanıyan ekip.</li></ul>',
+                ],3),
             ],
-            // Çalışmalar — galeri
+            // Çalışmalar — galeri + SEO metin
             'calismalar' => [
                 $this->fieldBlkC('b_ph','bl-page-hero',[
                     'eyebrow'=>'REFERANSLAR','title'=>'Tamamlanan İşlerimiz','crumb'=>'Çalışmalar',
                     'subtitle'=>'Kuşadası ve çevresinde hayata geçirdiğimiz projelerden bir seçki.',
                 ],1),
                 $this->fieldBlk('b_galeri','bl-06-galeri',2),
+                $this->fieldBlkC('b_seo','bl-rich-text',[
+                    'eyebrow'=>'REFERANSLARIMIZ','title'=>'Kuşadası ve Aydın\'da Tamamladığımız Projeler','bg'=>'#F4F4F4',
+                    'body_html'=>'<p>Kuşadası ve çevresinde <strong>daire tadilatından anahtar teslim inşaata</strong>, elektrik işlerinden mutfak-banyo yenilemeye kadar birçok projeyi başarıyla tamamladık. Her işte kaliteli malzeme, titiz işçilik ve müşteri memnuniyetini önceliğimiz olarak gördük.</p><p>Tamamladığımız işler; iç dekorasyon, banyo revizyonu, iş yeri tadilatı ve aydınlatma projelerinden oluşan geniş bir referans yelpazesini kapsar. Projeniz için örnek çalışmalarımızı inceleyebilir, benzer bir iş için <a href="/iletisim">bizimle iletişime geçebilirsiniz</a>.</p>',
+                ],3),
             ],
             // İletişim — bilgi + harita + form
             'iletisim' => array_merge([
@@ -179,6 +198,28 @@ class BoblanliTenantSeeder extends Seeder
                 ],1),
                 $this->fieldBlk('b_iletisim','bl-07-iletisim',2),
             ], $formBlk),
+
+            // ── Hizmet detay sayfaları (menüde değil; karttan tıklanır) ──
+            'kusadasi-elektrik-ariza-onarim' => $svcDetail(
+                'ELEKTRİK HİZMETİ','Kuşadası Elektrik Arıza ve Onarım','Elektrik Arıza ve Onarım',
+                'Kuşadası ve Aydın\'da ev, ofis ve işyerlerinde hızlı ve garantili elektrik arıza-onarım.',
+                '<p>Boblanlı Yapı olarak <strong>Kuşadası ve Aydın genelinde</strong> ev, ofis ve işyerlerinde profesyonel elektrik arıza tespiti ve onarımı yapıyoruz. Sigorta atması, kaçak akım, pano arızası, priz-anahtar ve aydınlatma sorunlarına hızlı müdahale ederek elektriğinizi en kısa sürede güvenle devreye alıyoruz.</p><p>Deneyimli elektrik ekibimiz arızanın kök nedenini tespit eder ve kalıcı çözüm sunar. Tesisat yenileme, sigorta panosu montajı ve topraklama işlerinde <strong>garantili işçilik</strong> veriyoruz.</p><h3>Elektrik Hizmetlerimiz</h3><ul><li>Elektrik arıza tespiti ve onarımı</li><li>Sigorta panosu montajı ve yenileme</li><li>Kaçak akım ve topraklama kontrolü</li><li>Priz, anahtar ve aydınlatma montajı</li><li>Ev ve işyeri elektrik tesisatı yenileme</li><li>LED ve aydınlatma çözümleri</li></ul><p>Kuşadası, Söke, Davutlar ve Aydın çevresinde elektrik arızalarınız için <a href="tel:+905326576271">bizi arayın</a> ya da WhatsApp\'tan yazın.</p>'
+            ),
+            'toptan-elektrik-malzemesi' => $svcDetail(
+                'TOPTAN SATIŞ','Toptan Elektrik ve Malzeme Satışı','Toptan Elektrik Malzemesi',
+                'Aydın bölgesinde toptan ve perakende elektrik malzemesi; geniş stok, uygun fiyat.',
+                '<p>Aydın bölgesinde <strong>toptan ve perakende elektrik malzemesi</strong> satışında geniş ürün yelpazesi ve uygun fiyat sunuyoruz. Kablo, kablo makarası, pano, sigorta, priz-anahtar, LED ve aydınlatma ürünlerinde stoktan hızlı teslimat sağlıyoruz.</p><p>Müteahhitler, elektrikçiler ve işletmeler için düzenli tedarik ve proje bazlı fiyatlandırma imkanı sunuyoruz.</p><h3>Ürün Gruplarımız</h3><ul><li>Kablo ve kablo makaraları</li><li>Sigorta, pano ve şalt malzemeleri</li><li>Priz, anahtar ve tesisat malzemeleri</li><li>LED, armatür ve aydınlatma ürünleri</li></ul><p>Toptan elektrik malzemesi ihtiyaçlarınız için <a href="tel:+905326576271">bize ulaşın</a>.</p>'
+            ),
+            'kusadasi-dekorasyon-tadilat' => $svcDetail(
+                'TADİLAT & DEKORASYON','Kuşadası Dekorasyon ve Tadilat','Dekorasyon ve Tadilat',
+                'Daire, villa, ofis ve işyerleri için komple tadilat, iç dekorasyon ve anahtar teslim revizyon.',
+                '<p>Daire, villa, ofis ve işyerleriniz için <strong>komple tadilat, iç dekorasyon ve kapsamlı revizyon</strong> hizmeti veriyoruz. Boya-badana, alçıpan, kartonpiyer, zemin döşeme, mutfak ve banyo yenileme işlerini tek elden, planlı bir süreçle yürütüyoruz.</p><p>Anahtar teslim daire tadilatında şeffaf fiyatlandırma ve zamanında teslim önceliğimizdir. Kuşadası ve Aydın genelinde estetik ve fonksiyonel yaşam alanları oluşturuyoruz.</p><h3>Tadilat & Dekorasyon Hizmetlerimiz</h3><ul><li>Komple daire ve ofis tadilatı</li><li>Boya, badana ve alçıpan uygulamaları</li><li>Mutfak ve banyo yenileme</li><li>Zemin döşeme (laminat, parke, seramik)</li><li>Kartonpiyer ve iç dekorasyon</li></ul><p>Tadilat ve dekorasyon projeniz için <a href="tel:+905326576271">ücretsiz keşif</a> talep edin.</p>'
+            ),
+            'kusadasi-aydin-insaat' => $svcDetail(
+                'İNŞAAT','Kuşadası ve Aydın İnşaat Hizmetleri','İnşaat',
+                'Projelendirmeden anahtar teslime konut, villa ve ticari yapı inşaatı.',
+                '<p>Projelendirmeden anahtar teslime kadar <strong>profesyonel inşaat hizmeti</strong> sunuyoruz. Konut, villa ve ticari yapı projelerinde sağlam mühendislik, kaliteli malzeme ve zamanında teslim ile Kuşadası ve Aydın genelinde güvenilir bir çözüm ortağıyız.</p><p>Kaba yapı, ince yapı ve tadilat-güçlendirme işlerinde deneyimli ekibimizle her aşamada yanınızdayız.</p><h3>İnşaat Hizmetlerimiz</h3><ul><li>Anahtar teslim konut ve villa inşaatı</li><li>Ticari ve endüstriyel yapı inşaatı</li><li>Kaba ve ince yapı işleri</li><li>Yapı güçlendirme ve revizyon</li></ul><p>İnşaat projeniz için <a href="tel:+905326576271">bizimle iletişime geçin</a>.</p>'
+            ),
         ];
 
         $pages = [
@@ -187,6 +228,10 @@ class BoblanliTenantSeeder extends Seeder
             ['slug'=>'neden-biz','title'=>'Neden Biz','order'=>3,'menu'=>true],
             ['slug'=>'calismalar','title'=>'Çalışmalar','order'=>4,'menu'=>true],
             ['slug'=>'iletisim','title'=>'İletişim','order'=>5,'menu'=>true],
+            ['slug'=>'kusadasi-elektrik-ariza-onarim','title'=>'Kuşadası Elektrik Arıza ve Onarım','order'=>10,'menu'=>false],
+            ['slug'=>'toptan-elektrik-malzemesi','title'=>'Toptan Elektrik ve Malzeme Satışı','order'=>11,'menu'=>false],
+            ['slug'=>'kusadasi-dekorasyon-tadilat','title'=>'Kuşadası Dekorasyon ve Tadilat','order'=>12,'menu'=>false],
+            ['slug'=>'kusadasi-aydin-insaat','title'=>'Kuşadası ve Aydın İnşaat Hizmetleri','order'=>13,'menu'=>false],
         ];
 
         // Trashed çakışması + tenant açılışından kalan NULL-dil scaffold sayfalarını temizle.
