@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="icon" href="boblanli-ico.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Boblanlı Yapı | Kuşadası İnşaat, Tadilat ve Elektrik Hizmetleri</title>
+<meta name="description" content="Kuşadası ve Aydın'da inşaat, dekorasyon, revizyon ve elektrik arıza-onarım hizmetleri. Boblanlı Yapı ile güvenilir işçilik ve uygun fiyat. ☎ +90 532 657 62 71">
+<meta name="keywords" content="Kuşadası inşaat, Kuşadası elektrikçi, Kuşadası tadilat, Aydın inşaat firması, Kuşadası elektrik arıza, Kuşadası dekorasyon, toptan elektrik malzemesi Aydın, anahtar teslim inşaat Kuşadası">
+<meta property="og:title" content="Boblanlı Yapı | Kuşadası İnşaat, Tadilat ve Elektrik">
+<meta property="og:description" content="Kuşadası ve Aydın'da inşaat, dekorasyon, revizyon ve elektrik hizmetleri. Güvenilir işçilik, zamanında teslim.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="boblanli-logo.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"GeneralContractor","@id":"https://boblanliyapi.com/#business","name":"Boblanlı Yapı","alternateName":"Boblanlı Yapı İnşaat","description":"Kuşadası ve Aydın'da inşaat, iç dekorasyon, kapsamlı revizyon, elektrik arıza-onarım ve toptan elektrik malzemesi hizmetleri sunan güvenilir yapı firması.","url":"https://boblanliyapi.com","telephone":"+905326576271","image":"https://boblanliyapi.com/boblanli-logo.png","logo":"https://boblanliyapi.com/boblanli-logo.png","priceRange":"₺₺","currenciesAccepted":"TRY","paymentAccepted":"Nakit, Kredi Kartı, Havale/EFT","address":{"@type":"PostalAddress","streetAddress":"Türkmen Mahallesi, Bahçearası Sokak No:2 İç Kapı:3","addressLocality":"Kuşadası","addressRegion":"Aydın","postalCode":"09400","addressCountry":"TR"},"geo":{"@type":"GeoCoordinates","latitude":37.8600,"longitude":27.2560},"areaServed":[{"@type":"City","name":"Kuşadası"},{"@type":"AdministrativeArea","name":"Aydın"},{"@type":"City","name":"Söke"},{"@type":"City","name":"Davutlar"}],"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"08:30","closes":"19:00"}],"sameAs":["https://www.instagram.com/tahsinboblanli/"],"contactPoint":{"@type":"ContactPoint","telephone":"+905326576271","contactType":"customer service","availableLanguage":["Turkish"]},"hasOfferCatalog":{"@type":"OfferCatalog","name":"Hizmetlerimiz","itemListElement":[{"@type":"Offer","itemOffered":{"@type":"Service","name":"Elektrik Arıza ve Onarım","description":"Ev, ofis ve işyerlerinde elektrik arıza tespiti, pano tamiri, tesisat yenileme ve aydınlatma hizmetleri."}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Toptan Elektrik ve Malzeme Satışı","description":"Kablo, pano, sigorta, aydınlatma ve tesisat ürünlerinde toptan ve perakende elektrik malzemesi satışı."}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"Dekorasyon ve Geniş Çaplı Revizyon","description":"Daire, ofis ve işyerleri için komple tadilat, iç dekorasyon, mutfak-banyo yenileme ve anahtar teslim revizyon."}},{"@type":"Offer","itemOffered":{"@type":"Service","name":"İnşaat","description":"Projelendirmeden anahtar teslime konut, villa ve ticari yapı inşaatı, kaba ve ince yapı hizmetleri."}}]}}
+</script>
+<style>
+  :root { --ac:#E63329; --ac-d:#c9271f; --ink:#1A1A1A; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; font-family:'Inter',system-ui,sans-serif; color:var(--ink); background:#fff; -webkit-font-smoothing:antialiased; }
+  a { color:var(--ac); text-decoration:none; }
+  a:hover { color:var(--ac-d); }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',sans-serif; margin:0; }
+  p { margin:0; }
+  img { max-width:100%; display:block; }
+  input, textarea, select, button { font-family:inherit; }
+
+  /* scroll reveal */
+  [data-reveal]{ opacity:0; transform:translateY(30px); transition:opacity .7s cubic-bezier(.22,.61,.36,1), transform .7s cubic-bezier(.22,.61,.36,1); }
+  [data-reveal].in{ opacity:1; transform:none; }
+
+  /* header shrink */
+  .site-head{ transition:padding .3s ease, box-shadow .3s ease, background .3s ease; }
+  .site-head.shrink{ box-shadow:0 6px 24px rgba(0,0,0,.10); }
+  .site-head.shrink .head-inner{ padding-top:9px; padding-bottom:9px; }
+
+  /* nav responsive */
+  .desktop-nav{ display:flex; }
+  .menu-btn{ display:none; }
+  .mobile-nav{ display:none; }
+  @media (max-width:880px){
+    .desktop-nav{ display:none; }
+    .menu-btn{ display:inline-flex; }
+    .mobile-nav.open{ display:flex; }
+  }
+
+  /* whatsapp float pulse */
+  @keyframes wa-pulse{ 0%{ box-shadow:0 0 0 0 rgba(230,51,41,.55);} 70%{ box-shadow:0 0 0 16px rgba(230,51,41,0);} 100%{ box-shadow:0 0 0 0 rgba(230,51,41,0);} }
+  .wa-float{ animation:wa-pulse 2.4s infinite; }
+  .wa-float:hover{ transform:scale(1.06); }
+
+  /* service card hover */
+  .svc-card{ transition:transform .28s ease, box-shadow .28s ease; }
+  .svc-card:hover{ transform:translateY(-8px); box-shadow:0 22px 44px rgba(0,0,0,.13); }
+  .svc-card .svc-bar{ transition:height .28s ease; }
+  .svc-card:hover .svc-bar{ height:8px; }
+
+  /* gallery hover */
+  .gal{ position:relative; overflow:hidden; }
+  .gal .gal-img{ transition:transform .5s ease; }
+  .gal:hover .gal-img{ transform:scale(1.08); }
+  .gal .gal-ov{ opacity:0; transition:opacity .35s ease; }
+  .gal:hover .gal-ov{ opacity:1; }
+
+  .btn-slide{ position:relative; overflow:hidden; z-index:0; }
+  .btn-slide>span{ position:relative; z-index:2; }
+  .btn-slide::before{ content:''; position:absolute; inset:0; background:var(--ac-d); transform:translateX(-101%); transition:transform .32s cubic-bezier(.22,.61,.36,1); z-index:1; }
+  .btn-slide:hover::before{ transform:translateX(0); }
+
+  .btn-ghost{ position:relative; overflow:hidden; z-index:0; transition:color .3s ease; }
+  .btn-ghost>span{ position:relative; z-index:2; }
+  .btn-ghost::before{ content:''; position:absolute; inset:0; background:var(--ink); transform:translateY(101%); transition:transform .32s cubic-bezier(.22,.61,.36,1); z-index:1; }
+  .btn-ghost:hover{ color:#fff; }
+  .btn-ghost:hover::before{ transform:translateY(0); }
+
+  .field{ transition:border-color .25s ease, background .25s ease; }
+  .field:focus{ border-color:var(--ac); background:rgba(230,51,41,.04); }
+
+  /* gallery responsive */
+  @media (max-width:760px){
+    .gal-grid{ grid-template-columns:repeat(2,1fr) !important; grid-auto-rows:150px !important; }
+    .gal-grid .gal{ grid-column:span 1 !important; grid-row:span 1 !important; }
+    .gal-grid .gal.big{ grid-column:span 2 !important; }
+  }
+</style>
+</helmet>
+
+<div style="width:100%; overflow-x:hidden; --ac:{{ ac }}; --ac-d:{{ acDark }};">
+
+  <!-- floating whatsapp -->
+  <sc-if value="{{ showWhatsApp }}" hint-placeholder-val="{{ true }}">
+    <a class="wa-float" href="https://wa.me/905326576271" target="_blank" rel="noopener" aria-label="WhatsApp" style="position:fixed; right:22px; bottom:22px; z-index:90; width:58px; height:58px; border-radius:50%; background:var(--ac); color:#fff; display:flex; align-items:center; justify-content:center; transition:transform .25s ease; color:#fff;"><span style="width:28px; height:28px; display:inline-flex;">{{ icoChat }}</span></a>
+  </sc-if>
+
+  <!-- ============ HEADER ============ -->
+  <header class="site-head shrink-target" style="position:sticky; top:0; z-index:80; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #ededed;">
+    <div class="head-inner" style="max-width:1220px; margin:0 auto; padding:15px 26px; display:flex; align-items:center; justify-content:space-between; gap:16px; transition:padding .3s ease;">
+      <a href="#anasayfa" style="display:flex; align-items:center; gap:12px; color:inherit;">
+        <img src="boblanli-ico.png" alt="Boblanlı Yapı" style="width:48px; height:48px; object-fit:contain; display:block;">
+        <div style="line-height:1;">
+          <div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; letter-spacing:0.04em;">BOBLANLI <span style="color:var(--ac);">YAPI</span></div>
+          <div style="font-size:9.5px; font-weight:600; letter-spacing:0.26em; color:#9a9a9a; margin-top:3px;">İNŞAAT | CONSTRUCTING</div>
+        </div>
+      </a>
+
+      <nav class="desktop-nav" style="align-items:center; gap:30px;">
+        <a href="#anasayfa" style="color:var(--ink); font-weight:600; font-size:14.5px;">Anasayfa</a>
+        <a href="#hizmetler" style="color:var(--ink); font-weight:600; font-size:14.5px;">Hizmetler</a>
+        <a href="#neden-biz" style="color:var(--ink); font-weight:600; font-size:14.5px;">Neden Biz</a>
+        <a href="#calismalar" style="color:var(--ink); font-weight:600; font-size:14.5px;">Çalışmalar</a>
+        <a href="#iletisim" style="color:var(--ink); font-weight:600; font-size:14.5px;">İletişim</a>
+        <a class="btn-slide" href="https://wa.me/905326576271" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; gap:8px; background:var(--ac); color:#fff; font-weight:700; font-size:14.5px; padding:11px 19px; white-space:nowrap;"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:18px; height:18px; display:inline-flex;">{{ icoChat }}</span>WhatsApp</span></a>
+      </nav>
+
+      <button class="menu-btn" onClick="{{ toggleMenu }}" aria-label="Menü" style="align-items:center; justify-content:center; width:44px; height:44px; background:var(--ink); color:#fff; border:none; cursor:pointer; font-size:20px;">☰</button>
+    </div>
+
+    <nav class="mobile-nav {{ menuClass }}" style="flex-direction:column; padding:8px 26px 20px; gap:2px; border-top:1px solid #ededed; background:#fff;">
+      <a href="#anasayfa" onClick="{{ closeMenu }}" style="color:var(--ink); font-weight:600; padding:13px 0; border-bottom:1px solid #f2f2f2;">Anasayfa</a>
+      <a href="#hizmetler" onClick="{{ closeMenu }}" style="color:var(--ink); font-weight:600; padding:13px 0; border-bottom:1px solid #f2f2f2;">Hizmetler</a>
+      <a href="#neden-biz" onClick="{{ closeMenu }}" style="color:var(--ink); font-weight:600; padding:13px 0; border-bottom:1px solid #f2f2f2;">Neden Biz</a>
+      <a href="#calismalar" onClick="{{ closeMenu }}" style="color:var(--ink); font-weight:600; padding:13px 0; border-bottom:1px solid #f2f2f2;">Çalışmalar</a>
+      <a href="#iletisim" onClick="{{ closeMenu }}" style="color:var(--ink); font-weight:600; padding:13px 0;">İletişim</a>
+      <a href="https://wa.me/905326576271" target="_blank" rel="noopener" style="margin-top:12px; text-align:center; background:var(--ac); color:#fff; font-weight:700; padding:13px; display:flex; align-items:center; justify-content:center; gap:8px;"><span style="width:18px; height:18px; display:inline-flex;">{{ icoChat }}</span>WhatsApp ile Yazın</a>
+    </nav>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section id="anasayfa" style="position:relative; background:#0d0d0d; color:#fff; overflow:hidden;">
+    <!-- bg image placeholder -->
+    <div style="position:absolute; inset:0; background:repeating-linear-gradient(45deg,#1a1a1a,#1a1a1a 22px,#161616 22px,#161616 44px);"></div>
+    <!-- gradient overlay: dark left -> transparent right -->
+    <div style="position:absolute; inset:0; background:linear-gradient(90deg,#0b0b0bF2 0%,#0b0b0bcc 42%,#0b0b0b55 100%);"></div>
+    <!-- red diagonal slash -->
+    <div style="position:absolute; top:-10%; right:8%; width:3px; height:130%; background:var(--ac); transform:rotate(20deg); opacity:.9;"></div>
+    <div style="position:absolute; top:-10%; right:6%; width:3px; height:130%; background:var(--ac); transform:rotate(20deg); opacity:.35;"></div>
+
+    <div style="position:relative; max-width:1220px; margin:0 auto; padding:clamp(90px,15vh,150px) 26px clamp(70px,11vh,120px); min-height:clamp(560px,88vh,860px); display:flex; flex-direction:column; justify-content:center;">
+      <div data-reveal style="display:inline-flex; align-self:flex-start; align-items:center; gap:9px; border:1px solid rgba(255,255,255,.22); padding:8px 15px; font-size:12.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:26px;">
+        <span style="width:7px; height:7px; background:var(--ac);"></span> Kuşadası · Aydın Bölgesi
+      </div>
+      <h1 data-reveal style="font-size:clamp(2.4rem,6.2vw,5rem); font-weight:700; line-height:0.98; text-transform:uppercase; letter-spacing:-0.01em; transition-delay:.08s; max-width:16ch;">
+        Kuşadası'nda <span style="color:var(--ac);">İnşaat, Tadilat</span> ve <span style="color:var(--ac);">Elektrik</span> Hizmetleri
+      </h1>
+      <p data-reveal style="font-size:clamp(1.02rem,1.7vw,1.25rem); line-height:1.6; color:#cfcfcf; margin-top:26px; max-width:560px; transition-delay:.16s;">
+        Boblanlı Yapı; Kuşadası ve Aydın genelinde inşaat, iç dekorasyon, kapsamlı revizyon ve elektrik arıza-onarım hizmetlerini tek çatı altında sunar. Güvenilir işçilik, zamanında teslim, uygun fiyat.
+      </p>
+      <div data-reveal style="display:flex; flex-wrap:wrap; gap:14px; margin-top:36px; transition-delay:.24s;">
+        <a class="btn-slide" href="tel:+905326576271" style="display:inline-flex; align-items:center; gap:10px; background:var(--ac); color:#fff; font-weight:700; font-size:16px; padding:16px 28px;"><span style="display:inline-flex; align-items:center; gap:10px;"><span style="width:19px; height:19px; display:inline-flex;">{{ icoPhone }}</span>Ücretsiz Keşif İçin Arayın</span></a>
+        <a href="#hizmetler" style="display:inline-flex; align-items:center; gap:10px; background:transparent; color:#fff; font-weight:700; font-size:16px; padding:16px 28px; border:2px solid rgba(255,255,255,.3);" style-hover="border-color:#fff; background:rgba(255,255,255,.08);">Hizmetlerimizi İnceleyin</a>
+      </div>
+    </div>
+
+    <!-- trust strip -->
+    <div style="position:relative; border-top:1px solid rgba(255,255,255,.1); background:rgba(0,0,0,.35);">
+      <div style="max-width:1220px; margin:0 auto; padding:18px 26px; display:flex; flex-wrap:wrap; gap:14px 44px; justify-content:center; font-size:15px; font-weight:600; color:#eaeaea;">
+        <span style="display:inline-flex; align-items:center; gap:9px;"><span style="width:18px; height:18px; display:inline-flex; color:var(--ac);">{{ icoBolt }}</span>Hızlı Müdahale</span>
+        <span style="color:var(--ac);">/</span>
+        <span style="display:inline-flex; align-items:center; gap:9px;"><span style="width:18px; height:18px; display:inline-flex; color:var(--ac);">{{ icoCheck }}</span>Garantili İşçilik</span>
+        <span style="color:var(--ac);">/</span>
+        <span style="display:inline-flex; align-items:center; gap:9px;"><span style="width:18px; height:18px; display:inline-flex; color:var(--ac);">{{ icoPin }}</span>Kuşadası &amp; Çevresi</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HİZMETLER ============ -->
+  <section id="hizmetler" style="background:#fff;">
+    <div style="max-width:1220px; margin:0 auto; padding:clamp(64px,8vw,110px) 26px;">
+      <div data-reveal style="max-width:660px; margin:0 auto 56px; text-align:center;">
+        <div style="display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.2em; color:var(--ac); text-transform:uppercase; margin-bottom:14px;"><span style="width:26px; height:2px; background:var(--ac);"></span> Hizmetlerimiz <span style="width:26px; height:2px; background:var(--ac);"></span></div>
+        <h2 style="font-size:clamp(2rem,4vw,3rem); font-weight:700; text-transform:uppercase; letter-spacing:-0.01em; line-height:1.02;">Sunduğumuz Hizmetler</h2>
+        <p style="font-size:1.15rem; color:#5a5a5a; margin-top:16px;">Tek elden, uçtan uca çözüm.</p>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(255px,1fr)); gap:24px;">
+        <!-- card 1 -->
+        <article data-reveal class="svc-card" style="position:relative; border:1px solid #e9e9e9; background:#fff; padding:34px 28px 32px; display:flex; flex-direction:column; overflow:hidden;">
+          <div class="svc-bar" style="position:absolute; top:0; left:0; width:100%; height:4px; background:var(--ac);"></div>
+          <div style="width:56px; height:56px; color:var(--ac); margin-bottom:22px;">{{ icoBolt }}</div>
+          <h3 style="font-size:1.4rem; font-weight:700; margin-bottom:12px; line-height:1.1;">Kuşadası Elektrik Arıza ve Onarım</h3>
+          <p style="font-size:0.98rem; line-height:1.65; color:#565656;">Kuşadası ve Aydın çevresinde ev, ofis ve işyerlerinde elektrik arıza tespiti ve onarımı yapıyoruz. Sigorta atması, kaçak akım, pano arızası, priz ve aydınlatma sorunlarına hızlı müdahale; tesisat yenileme ve pano montajında garantili işçilik.</p>
+        </article>
+        <!-- card 2 -->
+        <article data-reveal class="svc-card" style="position:relative; border:1px solid #e9e9e9; background:#fff; padding:34px 28px 32px; display:flex; flex-direction:column; overflow:hidden; transition-delay:.06s;">
+          <div class="svc-bar" style="position:absolute; top:0; left:0; width:100%; height:4px; background:var(--ac);"></div>
+          <div style="width:56px; height:56px; color:var(--ac); margin-bottom:22px;">{{ icoBox }}</div>
+          <h3 style="font-size:1.4rem; font-weight:700; margin-bottom:12px; line-height:1.1;">Toptan Elektrik Malzemesi Satışı</h3>
+          <p style="font-size:0.98rem; line-height:1.65; color:#565656;">Kaliteli elektrik malzemelerini toptan ve perakende uygun fiyatlarla temin ediyoruz. Kablo, kablo makarası, pano, sigorta, priz-anahtar, LED ve aydınlatma ürünlerinde geniş stok. Müteahhit ve işletmeler için Aydın bölgesinde hızlı tedarik.</p>
+        </article>
+        <!-- card 3 -->
+        <article data-reveal class="svc-card" style="position:relative; border:1px solid #e9e9e9; background:#fff; padding:34px 28px 32px; display:flex; flex-direction:column; overflow:hidden; transition-delay:.12s;">
+          <div class="svc-bar" style="position:absolute; top:0; left:0; width:100%; height:4px; background:var(--ac);"></div>
+          <div style="width:56px; height:56px; color:var(--ac); margin-bottom:22px;">{{ icoRoller }}</div>
+          <h3 style="font-size:1.4rem; font-weight:700; margin-bottom:12px; line-height:1.1;">Kuşadası Dekorasyon ve Tadilat</h3>
+          <p style="font-size:0.98rem; line-height:1.65; color:#565656;">Daire, villa, ofis ve işyerleriniz için komple tadilat, iç dekorasyon ve kapsamlı revizyon. Boya-badana, alçıpan, zemin döşeme, mutfak ve banyo yenileme, kartonpiyer tek elden. Anahtar teslim daire tadilatında planlı süreç ve şeffaf fiyatlandırma.</p>
+        </article>
+        <!-- card 4 -->
+        <article data-reveal class="svc-card" style="position:relative; border:1px solid #e9e9e9; background:#fff; padding:34px 28px 32px; display:flex; flex-direction:column; overflow:hidden; transition-delay:.18s;">
+          <div class="svc-bar" style="position:absolute; top:0; left:0; width:100%; height:4px; background:var(--ac);"></div>
+          <div style="width:56px; height:56px; color:var(--ac); margin-bottom:22px;">{{ icoBuild }}</div>
+          <h3 style="font-size:1.4rem; font-weight:700; margin-bottom:12px; line-height:1.1;">Kuşadası ve Aydın İnşaat Hizmetleri</h3>
+          <p style="font-size:0.98rem; line-height:1.65; color:#565656;">Projelendirmeden anahtar teslime kadar profesyonel inşaat hizmeti. Konut, villa ve ticari yapı projelerinde sağlam mühendislik, kaliteli malzeme ve zamanında teslim. Kuşadası ve Aydın genelinde kaba-ince yapı ve tadilat-güçlendirme işlerinde deneyimli ekip.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ NEDEN BİZ ============ -->
+  <section id="neden-biz" style="background:#F4F4F4; position:relative;">
+    <div style="max-width:1220px; margin:0 auto; padding:clamp(64px,8vw,110px) 26px;">
+      <div data-reveal style="max-width:660px; margin:0 auto 48px; text-align:center;">
+        <div style="display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.2em; color:var(--ac); text-transform:uppercase; margin-bottom:14px;"><span style="width:26px; height:2px; background:var(--ac);"></span> Neden Boblanlı Yapı? <span style="width:26px; height:2px; background:var(--ac);"></span></div>
+        <h2 style="font-size:clamp(2rem,4vw,3rem); font-weight:700; text-transform:uppercase; letter-spacing:-0.01em; line-height:1.02;">Neden Kuşadası'nda Boblanlı Yapı?</h2>
+      </div>
+
+      <!-- counters -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:1px; background:#e0e0e0; border:1px solid #e0e0e0; margin-bottom:48px;">
+        <div data-reveal style="background:#111; color:#fff; padding:32px 20px; text-align:center;">
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:clamp(2.2rem,4vw,3rem); font-weight:700; color:var(--ac); line-height:1;"><span data-count="150">0</span>+</div>
+          <div style="font-size:14px; font-weight:600; color:#cfcfcf; margin-top:10px; letter-spacing:0.03em;">Tamamlanan Proje</div>
+        </div>
+        <div data-reveal style="background:#111; color:#fff; padding:32px 20px; text-align:center;">
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:clamp(2.2rem,4vw,3rem); font-weight:700; color:var(--ac); line-height:1;"><span data-count="10">0</span>+</div>
+          <div style="font-size:14px; font-weight:600; color:#cfcfcf; margin-top:10px; letter-spacing:0.03em;">Yıl Tecrübe</div>
+        </div>
+        <div data-reveal style="background:#111; color:#fff; padding:32px 20px; text-align:center;">
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:clamp(2.2rem,4vw,3rem); font-weight:700; color:var(--ac); line-height:1;"><span data-count="100">0</span>%</div>
+          <div style="font-size:14px; font-weight:600; color:#cfcfcf; margin-top:10px; letter-spacing:0.03em;">Müşteri Memnuniyeti</div>
+        </div>
+        <div data-reveal style="background:#111; color:#fff; padding:32px 20px; text-align:center;">
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:clamp(2.2rem,4vw,3rem); font-weight:700; color:var(--ac); line-height:1;"><span data-count="4">0</span></div>
+          <div style="font-size:14px; font-weight:600; color:#cfcfcf; margin-top:10px; letter-spacing:0.03em;">Ana Hizmet Alanı</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:24px;">
+        <div data-reveal style="background:#fff; padding:32px 28px; border-left:4px solid var(--ac);">
+          <div style="width:44px; height:44px; color:var(--ac); margin-bottom:16px;">{{ icoTeam }}</div>
+          <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:10px;">Deneyimli Ekip</h3>
+          <p style="font-size:0.97rem; line-height:1.6; color:#565656;">Aydın bölgesinde yılların saha tecrübesine sahip uzman kadro.</p>
+        </div>
+        <div data-reveal style="background:#fff; padding:32px 28px; border-left:4px solid var(--ac); transition-delay:.06s;">
+          <div style="width:44px; height:44px; color:var(--ac); margin-bottom:16px;">{{ icoClock }}</div>
+          <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:10px;">Zamanında Teslim</h3>
+          <p style="font-size:0.97rem; line-height:1.6; color:#565656;">Söz verdiğimiz tarihte, eksiksiz ve temiz teslim.</p>
+        </div>
+        <div data-reveal style="background:#fff; padding:32px 28px; border-left:4px solid var(--ac); transition-delay:.12s;">
+          <div style="width:44px; height:44px; color:var(--ac); margin-bottom:16px;">{{ icoTag }}</div>
+          <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:10px;">Şeffaf Fiyatlandırma</h3>
+          <p style="font-size:0.97rem; line-height:1.6; color:#565656;">Sürpriz maliyet yok; net keşif, açık teklif.</p>
+        </div>
+        <div data-reveal style="background:#fff; padding:32px 28px; border-left:4px solid var(--ac); transition-delay:.18s;">
+          <div style="width:44px; height:44px; color:var(--ac); margin-bottom:16px;">{{ icoShield }}</div>
+          <h3 style="font-size:1.3rem; font-weight:700; margin-bottom:10px;">Garantili İşçilik</h3>
+          <p style="font-size:0.97rem; line-height:1.6; color:#565656;">İnşaat, tadilat ve elektrik işlerinde garanti veriyoruz.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SÜREÇ ============ -->
+  <section id="surec" style="background:#111; color:#fff; position:relative; overflow:hidden;">
+    <div style="position:absolute; top:-8%; left:12%; width:2px; height:120%; background:var(--ac); transform:rotate(20deg); opacity:.25;"></div>
+    <div style="position:relative; max-width:1220px; margin:0 auto; padding:clamp(64px,8vw,110px) 26px;">
+      <div data-reveal style="max-width:660px; margin:0 auto 56px; text-align:center;">
+        <div style="display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.2em; color:var(--ac); text-transform:uppercase; margin-bottom:14px;"><span style="width:26px; height:2px; background:var(--ac);"></span> Sürecimiz <span style="width:26px; height:2px; background:var(--ac);"></span></div>
+        <h2 style="font-size:clamp(2rem,4vw,3rem); font-weight:700; text-transform:uppercase; color:#fff; letter-spacing:-0.01em; line-height:1.02;">Nasıl Çalışıyoruz?</h2>
+      </div>
+
+      <div style="position:relative; display:grid; grid-template-columns:repeat(auto-fit, minmax(210px,1fr)); gap:26px;">
+        <!-- progress line (behind, desktop) -->
+        <div style="position:absolute; top:22px; left:8%; right:8%; height:2px; background:linear-gradient(90deg,var(--ac),rgba(230,51,41,.15)); z-index:0;"></div>
+        <div data-reveal style="position:relative; z-index:1;">
+          <div style="width:44px; height:44px; border-radius:50%; background:var(--ac); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; border:4px solid #111;">01</div>
+          <h3 style="font-size:1.25rem; font-weight:700; margin:20px 0 8px; color:#fff; display:flex; align-items:center; gap:9px;"><span style="width:20px; height:20px; display:inline-flex; color:var(--ac); flex:none;">{{ icoSearch }}</span>Keşif &amp; Görüşme</h3>
+          <p style="font-size:0.95rem; line-height:1.6; color:#a8a8a8;">Yerinde keşif yapar, ihtiyacınızı dinleriz.</p>
+        </div>
+        <div data-reveal style="position:relative; z-index:1; transition-delay:.08s;">
+          <div style="width:44px; height:44px; border-radius:50%; background:var(--ac); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; border:4px solid #111;">02</div>
+          <h3 style="font-size:1.25rem; font-weight:700; margin:20px 0 8px; color:#fff; display:flex; align-items:center; gap:9px;"><span style="width:20px; height:20px; display:inline-flex; color:var(--ac); flex:none;">{{ icoDoc }}</span>Teklif &amp; Planlama</h3>
+          <p style="font-size:0.95rem; line-height:1.6; color:#a8a8a8;">Net teklif ve iş planını birlikte belirleriz.</p>
+        </div>
+        <div data-reveal style="position:relative; z-index:1; transition-delay:.16s;">
+          <div style="width:44px; height:44px; border-radius:50%; background:var(--ac); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; border:4px solid #111;">03</div>
+          <h3 style="font-size:1.25rem; font-weight:700; margin:20px 0 8px; color:#fff; display:flex; align-items:center; gap:9px;"><span style="width:20px; height:20px; display:inline-flex; color:var(--ac); flex:none;">{{ icoHammer }}</span>Uygulama</h3>
+          <p style="font-size:0.95rem; line-height:1.6; color:#a8a8a8;">Titiz işçilikle, plana sadık kalarak uygularız.</p>
+        </div>
+        <div data-reveal style="position:relative; z-index:1; transition-delay:.24s;">
+          <div style="width:44px; height:44px; border-radius:50%; background:var(--ac); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; border:4px solid #111;">04</div>
+          <h3 style="font-size:1.25rem; font-weight:700; margin:20px 0 8px; color:#fff; display:flex; align-items:center; gap:9px;"><span style="width:20px; height:20px; display:inline-flex; color:var(--ac); flex:none;">{{ icoKey }}</span>Teslim &amp; Destek</h3>
+          <p style="font-size:0.95rem; line-height:1.6; color:#a8a8a8;">Eksiksiz teslim eder, sonrasında destek veririz.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GALERİ ============ -->
+  <section id="calismalar" style="background:#fff;">
+    <div style="max-width:1220px; margin:0 auto; padding:clamp(64px,8vw,110px) 26px;">
+      <div data-reveal style="max-width:660px; margin:0 auto 52px; text-align:center;">
+        <div style="display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.2em; color:var(--ac); text-transform:uppercase; margin-bottom:14px;"><span style="width:26px; height:2px; background:var(--ac);"></span> Referanslar <span style="width:26px; height:2px; background:var(--ac);"></span></div>
+        <h2 style="font-size:clamp(2rem,4vw,3rem); font-weight:700; text-transform:uppercase; letter-spacing:-0.01em; line-height:1.02;">Tamamlanan İşlerimiz</h2>
+        <p style="font-size:1.15rem; color:#5a5a5a; margin-top:16px;">Kuşadası ve çevresinde hayata geçirdiğimiz projelerden bir seçki.</p>
+      </div>
+
+      <!-- asymmetric grid -->
+      <div data-reveal class="gal-grid" style="display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:190px; gap:14px;">
+        <figure class="gal big" style="margin:0; grid-column:span 2; grid-row:span 2;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:22px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.3rem;">İnşaat Projesi</figcaption></figure>
+        <figure class="gal big" style="margin:0; grid-column:span 2;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:18px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.15rem;">İç Dekorasyon</figcaption></figure>
+        <figure class="gal" style="margin:0;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:16px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem;">Elektrik İşleri</figcaption></figure>
+        <figure class="gal" style="margin:0;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:16px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem;">Banyo Revizyonu</figcaption></figure>
+        <figure class="gal" style="margin:0;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:16px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem;">Daire Tadilatı</figcaption></figure>
+        <figure class="gal big" style="margin:0; grid-column:span 2;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:18px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.15rem;">Mutfak Yenileme</figcaption></figure>
+        <figure class="gal" style="margin:0;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:16px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem;">İş Yeri Tadilatı</figcaption></figure>
+        <figure class="gal" style="margin:0;"><div class="gal-img" style="width:100%; height:100%; background:repeating-linear-gradient(45deg,#e7e7e7,#e7e7e7 16px,#dedede 16px,#dedede 32px);"></div><figcaption class="gal-ov" style="position:absolute; inset:0; background:linear-gradient(0deg,rgba(230,51,41,.82),rgba(230,51,41,.2)); display:flex; align-items:flex-end; padding:16px; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem;">Aydınlatma</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ İLETİŞİM ============ -->
+  <section id="iletisim" style="background:#111; color:#fff; position:relative; overflow:hidden;">
+    <div style="position:absolute; top:-8%; right:14%; width:2px; height:120%; background:var(--ac); transform:rotate(20deg); opacity:.25;"></div>
+    <div style="position:relative; max-width:1220px; margin:0 auto; padding:clamp(64px,8vw,110px) 26px;">
+      <div data-reveal style="max-width:660px; margin:0 auto 52px; text-align:center;">
+        <div style="display:inline-flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:0.2em; color:var(--ac); text-transform:uppercase; margin-bottom:14px;"><span style="width:26px; height:2px; background:var(--ac);"></span> İletişim <span style="width:26px; height:2px; background:var(--ac);"></span></div>
+        <h2 style="font-size:clamp(2rem,4vw,3rem); font-weight:700; text-transform:uppercase; color:#fff; letter-spacing:-0.01em; line-height:1.02;">Kuşadası İnşaat ve Tadilat İçin Bize Ulaşın</h2>
+        <p style="font-size:1.15rem; color:#b0b0b0; margin-top:16px;">Kuşadası, Aydın'da inşaat, dekorasyon, revizyon veya elektrik hizmeti mi arıyorsunuz? Ücretsiz keşif için bir telefon uzağınızdayız. Türkmen Mahallesi'ndeki ofisimize uğrayın ya da WhatsApp'tan hemen yazın.</p>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px,1fr)); gap:44px; align-items:start;">
+        <div data-reveal style="display:flex; flex-direction:column; gap:22px;">
+          <a href="tel:+905326576271" style="display:flex; align-items:center; gap:16px; color:#fff;">
+            <span style="width:50px; height:50px; flex:none; background:var(--ac); display:flex; align-items:center; justify-content:center; color:#fff;"><span style="width:23px; height:23px; display:inline-flex;">{{ icoPhone }}</span></span>
+            <span><span style="display:block; font-size:12px; color:#9a9a9a; letter-spacing:0.1em;">TELEFON</span><span style="font-weight:700; font-size:1.12rem;">+90 532 657 62 71</span></span>
+          </a>
+          <a href="https://wa.me/905326576271" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:16px; color:#fff;">
+            <span style="width:50px; height:50px; flex:none; background:var(--ac); display:flex; align-items:center; justify-content:center; color:#fff;"><span style="width:23px; height:23px; display:inline-flex;">{{ icoChat }}</span></span>
+            <span><span style="display:block; font-size:12px; color:#9a9a9a; letter-spacing:0.1em;">WHATSAPP</span><span style="font-weight:700; font-size:1.12rem;">+90 532 657 62 71</span></span>
+          </a>
+          <div style="display:flex; align-items:flex-start; gap:16px;">
+            <span style="width:50px; height:50px; flex:none; background:#1c1c1c; border:1px solid #2f2f2f; display:flex; align-items:center; justify-content:center; color:var(--ac);"><span style="width:23px; height:23px; display:inline-flex;">{{ icoPin }}</span></span>
+            <span><span style="display:block; font-size:12px; color:#9a9a9a; letter-spacing:0.1em;">ADRES</span><span style="font-weight:600; font-size:1rem; line-height:1.5; color:#e2e2e2;">Türkmen Mahallesi, Bahçearası Sok. No:2 İç Kapı:3, Kuşadası / Aydın</span></span>
+          </div>
+          <div style="display:flex; gap:26px; flex-wrap:wrap; padding-top:4px;">
+            <a href="https://instagram.com/tahsinboblanli" target="_blank" rel="noopener" style="color:#e2e2e2; font-weight:600; display:inline-flex; align-items:center; gap:9px;"><span style="width:18px; height:18px; display:inline-flex;">{{ icoInsta }}</span>@tahsinboblanli</a>
+            <a href="https://boblanliyapi.com" target="_blank" rel="noopener" style="color:#e2e2e2; font-weight:600; display:inline-flex; align-items:center; gap:9px;"><span style="width:18px; height:18px; display:inline-flex;">{{ icoGlobe }}</span>boblanliyapi.com</a>
+          </div>
+          <div style="margin-top:8px; aspect-ratio:16/9; width:100%; border-radius:14px; overflow:hidden; background:repeating-linear-gradient(45deg,#1c1c1c,#1c1c1c 16px,#171717 16px,#171717 32px); border:1px solid #2a2a2a; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#7a7a7a; gap:6px;">
+            <span style="font-size:26px;">🗺️</span>
+            <span style="font-size:13px; font-weight:600;">GOOGLE MAPS — Harita Alanı</span>
+          </div>
+        </div>
+
+        <form data-reveal onSubmit="{{ onSubmit }}" style="background:#181818; border:1px solid #2a2a2a; border-radius:14px; padding:clamp(24px,3vw,38px); display:flex; flex-direction:column; gap:18px; transition-delay:.08s;">
+          <div>
+            <label style="display:block; font-size:13px; font-weight:600; color:#c8c8c8; margin-bottom:8px;">Ad Soyad</label>
+            <input class="field" type="text" name="ad" placeholder="Adınız ve soyadınız" style="width:100%; padding:14px 15px; background:#111; border:1px solid #333; color:#fff; font-size:15px; border-radius:8px; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:13px; font-weight:600; color:#c8c8c8; margin-bottom:8px;">Telefon</label>
+            <input class="field" type="tel" name="telefon" placeholder="05xx xxx xx xx" style="width:100%; padding:14px 15px; background:#111; border:1px solid #333; color:#fff; font-size:15px; border-radius:8px; outline:none;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:13px; font-weight:600; color:#c8c8c8; margin-bottom:8px;">Hizmet Seçimi</label>
+            <select class="field" name="hizmet" style="width:100%; padding:14px 15px; background:#111; border:1px solid #333; color:#fff; font-size:15px; border-radius:8px; outline:none;">
+              <option>Elektrik Arıza ve Onarım</option>
+              <option>Toptan Elektrik &amp; Malzeme Satışı</option>
+              <option>Dekorasyon ve Revizyon</option>
+              <option>İnşaat</option>
+              <option>Diğer / Emin değilim</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:13px; font-weight:600; color:#c8c8c8; margin-bottom:8px;">Mesajınız</label>
+            <textarea class="field" name="mesaj" rows="4" placeholder="Projeniz hakkında kısaca bilgi verin..." style="width:100%; padding:14px 15px; background:#111; border:1px solid #333; color:#fff; font-size:15px; border-radius:8px; outline:none; resize:vertical;"></textarea>
+          </div>
+          <button class="btn-slide" type="submit" style="background:var(--ac); color:#fff; font-weight:700; font-size:16px; padding:16px; border:none; border-radius:8px; cursor:pointer; margin-top:2px;"><span>{{ submitLabel }}</span></button>
+          <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+            <p style="text-align:center; color:#4ade80; font-weight:600; font-size:14px;">✓ Mesajınız alındı. En kısa sürede size dönüş yapacağız.</p>
+          </sc-if>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer style="background:#1A1A1A; color:#fff;">
+    <div style="max-width:1220px; margin:0 auto; padding:60px 26px 0;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:42px; padding-bottom:46px; border-bottom:1px solid #2c2c2c;">
+        <div>
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+            <div style="width:46px; height:46px; background:#fff; border-radius:6px; display:flex; align-items:center; justify-content:center; padding:5px;">
+              <img src="boblanli-ico.png" alt="Boblanlı Yapı" style="width:100%; height:100%; object-fit:contain; display:block;">
+            </div>
+            <div><div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px;">BOBLANLI <span style="color:var(--ac);">YAPI</span></div><div style="font-size:9px; font-weight:600; letter-spacing:0.22em; color:#8a8a8a;">İNŞAAT | CONSTRUCTING</div></div>
+          </div>
+          <p style="font-size:1.05rem; font-weight:600; color:#d8d8d8; line-height:1.5; max-width:280px;">Güvenle inşa eder, özenle tamamlarız.</p>
+        </div>
+        <div>
+          <h3 style="font-size:12px; letter-spacing:0.14em; color:#8a8a8a; text-transform:uppercase; margin-bottom:16px; font-family:'Inter',sans-serif; font-weight:700;">Hizmetler</h3>
+          <div style="display:flex; flex-direction:column; gap:11px;">
+            <a href="#hizmetler" style="color:#d0d0d0; font-size:15px;">Elektrik Arıza ve Onarım</a>
+            <a href="#hizmetler" style="color:#d0d0d0; font-size:15px;">Toptan Elektrik &amp; Malzeme</a>
+            <a href="#hizmetler" style="color:#d0d0d0; font-size:15px;">Dekorasyon &amp; Revizyon</a>
+            <a href="#hizmetler" style="color:#d0d0d0; font-size:15px;">İnşaat</a>
+          </div>
+        </div>
+        <div>
+          <h3 style="font-size:12px; letter-spacing:0.14em; color:#8a8a8a; text-transform:uppercase; margin-bottom:16px; font-family:'Inter',sans-serif; font-weight:700;">İletişim</h3>
+          <div style="display:flex; flex-direction:column; gap:11px;">
+            <a href="tel:+905326576271" style="color:#d0d0d0; font-size:15px;">+90 532 657 62 71</a>
+            <a href="https://wa.me/905326576271" target="_blank" rel="noopener" style="color:#d0d0d0; font-size:15px;">WhatsApp</a>
+            <span style="color:#d0d0d0; font-size:15px; line-height:1.5;">Türkmen Mah. Bahçearası Sok. No:2, Kuşadası / Aydın</span>
+          </div>
+        </div>
+        <div>
+          <h3 style="font-size:12px; letter-spacing:0.14em; color:#8a8a8a; text-transform:uppercase; margin-bottom:16px; font-family:'Inter',sans-serif; font-weight:700;">Takip Edin</h3>
+          <div style="display:flex; flex-direction:column; gap:11px;">
+            <a href="https://instagram.com/tahsinboblanli" target="_blank" rel="noopener" style="color:#d0d0d0; font-size:15px; display:inline-flex; align-items:center; gap:9px;"><span style="width:17px; height:17px; display:inline-flex;">{{ icoInsta }}</span>Instagram</a>
+            <a href="https://boblanliyapi.com" target="_blank" rel="noopener" style="color:#d0d0d0; font-size:15px; display:inline-flex; align-items:center; gap:9px;"><span style="width:17px; height:17px; display:inline-flex;">{{ icoGlobe }}</span>boblanliyapi.com</a>
+          </div>
+        </div>
+      </div>
+      <div style="padding:22px 0 32px; text-align:center; font-size:13px; color:#7a7a7a;">© 2026 Boblanlı Yapı — Tüm hakları saklıdır.</div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:900},&quot;accentColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#E63329&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Görünüm&quot;},&quot;accentColorDark&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#c9271f&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Görünüm&quot;},&quot;showWhatsApp&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Görünüm&quot;}}">
+class Component extends DCLogic {
+  state = { menuOpen: false, sent: false };
+
+  toggleMenu = () => this.setState(s => ({ menuOpen: !s.menuOpen }));
+  closeMenu = () => this.setState({ menuOpen: false });
+  onSubmit = (e) => { e.preventDefault(); this.setState({ sent: true }); };
+
+  componentDidMount() {
+    try { document.documentElement.lang = 'tr'; } catch (e) {}
+    const root = this.rootEl || document;
+    // scroll reveal
+    const reveals = root.querySelectorAll('[data-reveal]');
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(en => {
+          if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      reveals.forEach(el => io.observe(el));
+      this._io = io;
+    } else {
+      reveals.forEach(el => el.classList.add('in'));
+    }
+    // safety: reveal everything after a moment regardless
+    this._safety = setTimeout(() => reveals.forEach(el => el.classList.add('in')), 2500);
+
+    // counters
+    const counters = root.querySelectorAll('[data-count]');
+    if ('IntersectionObserver' in window) {
+      const cio = new IntersectionObserver((entries) => {
+        entries.forEach(en => {
+          if (en.isIntersecting) { this.runCount(en.target); cio.unobserve(en.target); }
+        });
+      }, { threshold: 0.5 });
+      counters.forEach(el => cio.observe(el));
+      this._cio = cio;
+    }
+
+    // header shrink
+    const head = root.querySelector('.site-head');
+    this._onScroll = () => {
+      if (!head) return;
+      if (window.scrollY > 40) head.classList.add('shrink');
+      else head.classList.remove('shrink');
+    };
+    window.addEventListener('scroll', this._onScroll, { passive: true });
+    this._onScroll();
+  }
+
+  componentWillUnmount() {
+    if (this._io) this._io.disconnect();
+    if (this._cio) this._cio.disconnect();
+    if (this._safety) clearTimeout(this._safety);
+    if (this._onScroll) window.removeEventListener('scroll', this._onScroll);
+  }
+
+  runCount(el) {
+    const target = parseInt(el.getAttribute('data-count'), 10) || 0;
+    const dur = 1400; const start = performance.now();
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased).toString();
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = target.toString();
+    };
+    requestAnimationFrame(tick);
+  }
+
+  icon(paths) {
+    return React.createElement('svg', { width: '100%', height: '100%', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' },
+      paths.map((d, i) => React.createElement('path', { key: i, d })));
+  }
+
+  renderVals() {
+    const ac = this.props.accentColor ?? '#E63329';
+    return {
+      ac,
+      acDark: this.props.accentColorDark ?? '#c9271f',
+      showWhatsApp: this.props.showWhatsApp ?? true,
+      menuClass: this.state.menuOpen ? 'open' : '',
+      toggleMenu: this.toggleMenu,
+      closeMenu: this.closeMenu,
+      onSubmit: this.onSubmit,
+      sent: this.state.sent,
+      submitLabel: this.state.sent ? 'Gönderildi ✓' : 'Teklif İsteyin',
+      icoBolt: this.icon(['M13 2 4.5 13.5H11l-1 8.5L20 10h-6.5L13 2z']),
+      icoBox: this.icon(['M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9z', 'M3 7.5 12 12l9-4.5', 'M12 12v9']),
+      icoRoller: this.icon(['M3 5h13v5H3z', 'M16 7h3.5a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H12v3', 'M9.5 15h5v6h-5z']),
+      icoBuild: this.icon(['M3 21h18', 'M5 21V6l7-3v18', 'M12 21V9l7 2.5V21', 'M8 8v.01', 'M8 12v.01', 'M8 16v.01', 'M15.5 13v.01', 'M15.5 17v.01']),
+      icoTeam: this.icon(['M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z', 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 4a4 4 0 0 1 0 7.75']),
+      icoClock: this.icon(['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M12 7v5l3 2']),
+      icoTag: this.icon(['M20.5 13.5 13 21a2 2 0 0 1-2.83 0L3 13.83V4h9.83l7.67 7.67a2 2 0 0 1 0 1.83z', 'M7.5 7.5h.01']),
+      icoShield: this.icon(['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'M9 12l2 2 4-4']),
+      icoPhone: this.icon(['M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z']),
+      icoChat: this.icon(['M21 11.5a8.4 8.4 0 0 1-9 8.4 8.4 8.4 0 0 1-4-.9L3 21l1.9-4.5a8.4 8.4 0 0 1-.9-4A8.4 8.4 0 0 1 12 4a8.4 8.4 0 0 1 9 7.5z']),
+      icoPin: this.icon(['M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z', 'M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z']),
+      icoCheck: this.icon(['M22 11.5V12a10 10 0 1 1-5.9-9.1', 'M22 4 12 14.1l-3-3']),
+      icoInsta: this.icon(['M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5z', 'M16 11.4A4 4 0 1 1 12.6 8 4 4 0 0 1 16 11.4z', 'M17.5 6.5h.01']),
+      icoGlobe: this.icon(['M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z', 'M2 12h20', 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z']),
+      icoSearch: this.icon(['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z', 'M21 21l-4.3-4.3']),
+      icoDoc: this.icon(['M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z', 'M14 3v6h6', 'M9 13h6', 'M9 17h6']),
+      icoHammer: this.icon(['M15 12l-8.5 8.5a2.1 2.1 0 0 1-3-3L12 9', 'M17.6 6.4 14 10l-2-2 3.6-3.6a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8L18 12l-2-2', 'M12 6l3-3']),
+      icoKey: this.icon(['M14.5 9.5a4.5 4.5 0 1 0-4.9 4.48L9 15l-2 2 1 1-1 1 1 1 2-2 2-2-1.1-1.02A4.5 4.5 0 0 0 14.5 9.5z', 'M16 8.5h.01']),
+    };
+  }
+}
+</script>
+</body>
+</html>
