@@ -144,15 +144,14 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
   const c = (section.content ?? {}) as Record<string, unknown>;
   const wantSlug = str(c, "room_type");
   const eyebrow = str(c, "eyebrow") || "DAİRE DETAYI";
-  const checkinTime = str(c, "checkin_time") || "14:00";
-  const checkoutTime = str(c, "checkout_time") || "12:00";
-  // Konaklama Kuralları — içerikten (house_rules dizisi) düzenlenebilir. Set edilmemişse
-  // eski sabit satırlar fallback (geriye uyumlu: mevcut siteler değişmez). Boş dizi ([])
-  // set edilirse ek kural gösterilmez (yalnız giriş/çıkış satırı).
+  // "Konaklama Kuralları" — öncelik: Konaklama Ayarları (panel/API) > blok içeriği
+  // > sabit varsayılan. Blok fallback (cXxx) burada; API ile birleştirme aşağıda.
   const rulesTitle = str(c, "rules_title") || "Konaklama Kuralları";
-  const houseRules: string[] = Array.isArray((c as Record<string, unknown>).house_rules)
+  const cCheckin = str(c, "checkin_time");
+  const cCheckout = str(c, "checkout_time");
+  const cRules: string[] | null = Array.isArray((c as Record<string, unknown>).house_rules)
     ? ((c as Record<string, unknown>).house_rules as unknown[]).map((r) => String(r)).filter(Boolean)
-    : ["Evcil hayvan kabul edilmemektedir.", "Tüm dairelerimiz sigara içilmeyen alandır."];
+    : null;
 
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -164,6 +163,8 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
   const [checkout, setCheckout] = useState("");
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
+  // Konaklama Ayarları'ndan (API /room-types settings) gelen kural/saat — panelden düzenlenir.
+  const [apiRules, setApiRules] = useState<{ checkin: string; checkout: string; rules: string[] | null }>({ checkin: "", checkout: "", rules: null });
 
   useEffect(() => {
     let alive = true;
@@ -173,6 +174,13 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
         if (!alive) return;
         if (Array.isArray(d?.data)) setRooms(d.data as RoomType[]);
         setEnabled(d?.settings?.availability_enabled !== false); // settings yoksa açık varsay
+        setApiRules({
+          checkin: typeof d?.settings?.checkin_time === "string" ? d.settings.checkin_time : "",
+          checkout: typeof d?.settings?.checkout_time === "string" ? d.settings.checkout_time : "",
+          rules: Array.isArray(d?.settings?.house_rules)
+            ? (d.settings.house_rules as unknown[]).map((x) => String(x)).filter(Boolean)
+            : null,
+        });
         setLoaded(true);
       })
       .catch(() => { if (alive) setLoaded(true); });
@@ -180,6 +188,11 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
   }, []);
 
   const room = rooms.find((r) => r.slug === wantSlug) ?? rooms[0] ?? null;
+
+  // Kurallar/saatler — öncelik: panel (Konaklama Ayarları/API) > blok içeriği > sabit varsayılan.
+  const checkinTime = apiRules.checkin || cCheckin || "14:00";
+  const checkoutTime = apiRules.checkout || cCheckout || "12:00";
+  const houseRules: string[] = apiRules.rules ?? cRules ?? ["Evcil hayvan kabul edilmemektedir.", "Tüm dairelerimiz sigara içilmeyen alandır."];
 
   useEffect(() => {
     // Vitrin modunda müsaitlik HESAPLANMAZ → dolu-gün sorgusu atlanır.
