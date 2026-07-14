@@ -72,9 +72,9 @@ function Counter({ label, value, min, max, onChange }: { label: string; value: n
 }
 
 function RangeCalendar({
-  booked, checkin, checkout, onPick,
+  booked, checkin, checkout, onPick, showBooked = true,
 }: {
-  booked: Set<string>; checkin: string; checkout: string; onPick: (d: string) => void;
+  booked: Set<string>; checkin: string; checkout: string; onPick: (d: string) => void; showBooked?: boolean;
 }) {
   const today = useMemo(() => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }, []);
   const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -133,7 +133,7 @@ function RangeCalendar({
         })}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "10px", paddingTop: "8px", borderTop: `1px solid ${C.border}`, fontSize: "11.5px", color: C.textSoft }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><span style={{ width: "12px", height: "12px", background: "#F3DED2" }} />Dolu</span>
+        {showBooked && <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><span style={{ width: "12px", height: "12px", background: "#F3DED2" }} />Dolu</span>}
         <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><span style={{ width: "12px", height: "12px", background: C.heading }} />Seçili</span>
       </div>
     </div>
@@ -149,6 +149,9 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
 
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Müsaitlik motoru. false = vitrin modu: dolu-gün/fiyat hesabı yapılmaz,
+  // yalnızca tarih aralığı + kişi sayısı seçilir, forma yönlendirilir.
+  const [enabled, setEnabled] = useState(true);
   const [booked, setBooked] = useState<Set<string>>(new Set());
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
@@ -159,7 +162,12 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
     let alive = true;
     fetch("/api/v1/lodging/room-types", { headers: { Accept: "application/json" } })
       .then((r) => r.json())
-      .then((d) => { if (alive) { if (Array.isArray(d?.data)) setRooms(d.data as RoomType[]); setLoaded(true); } })
+      .then((d) => {
+        if (!alive) return;
+        if (Array.isArray(d?.data)) setRooms(d.data as RoomType[]);
+        setEnabled(d?.settings?.availability_enabled !== false); // settings yoksa açık varsay
+        setLoaded(true);
+      })
       .catch(() => { if (alive) setLoaded(true); });
     return () => { alive = false; };
   }, []);
@@ -167,7 +175,8 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
   const room = rooms.find((r) => r.slug === wantSlug) ?? rooms[0] ?? null;
 
   useEffect(() => {
-    if (!room) return;
+    // Vitrin modunda müsaitlik HESAPLANMAZ → dolu-gün sorgusu atlanır.
+    if (!room || !enabled) return;
     let alive = true;
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const url = `/api/v1/lodging/availability?room_type=${encodeURIComponent(room.slug)}&from=${ymd(now)}&to=${ymd(addDays(now, 120))}`;
@@ -176,7 +185,7 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
       .then((d) => { if (alive && Array.isArray(d?.booked)) setBooked(new Set(d.booked as string[])); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [room?.slug]);
+  }, [room?.slug, enabled]);
 
   // Kapasite (doluluk): toplam misafir (yetişkin+çocuk) odanın capacity_max'ını
   // aşamaz. Oda yüklenince fazla geleni kırp (önce çocuk, sonra yetişkin; min 1).
@@ -222,6 +231,7 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
     `/rezervasyon?oda=${encodeURIComponent(room.slug)}` +
     (checkin ? `&giris=${checkin}` : "") + (checkout ? `&cikis=${checkout}` : "") +
     `&yetiskin=${adults}&cocuk=${children}`;
+  const reserveLabel = enabled ? "Müsaitlik & Talep Et" : "Rezervasyon Talebi Oluştur";
   const wa = `https://wa.me/${waNum}?text=${encodeURIComponent(`Merhaba, ${room.name} için müsaitlik ve rezervasyon bilgisi almak istiyorum.`)}`;
 
   return (
@@ -288,7 +298,7 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
                 {!checkin ? "Giriş tarihini seçin" : !checkout ? "Çıkış tarihini seçin" : `${checkin} → ${checkout}`}
               </div>
 
-              <RangeCalendar booked={booked} checkin={checkin} checkout={checkout} onPick={pickDay} />
+              <RangeCalendar booked={booked} checkin={checkin} checkout={checkout} onPick={pickDay} showBooked={enabled} />
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "6px" }}>
                 <Counter label="Yetişkin" value={adults} min={1} max={Math.max(1, room.capacity_max - children)} onChange={setAdults} />
@@ -298,25 +308,29 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
                 Bu daire en fazla <strong>{room.capacity_max} misafir</strong> alır.
               </div>
 
-              {nights > 0 && (
+              {/* Tahmini tutar — yalnızca müsaitlik açıkken (vitrin modunda hesaplama yok) */}
+              {enabled && nights > 0 && (
                 <div style={{ background: C.soft, padding: "12px 14px", marginBottom: "12px", fontSize: "14px", color: C.heading }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}><span>{nights} gece</span><strong>{estTotal !== null ? tl(estTotal) : "—"}</strong></div>
                   <div style={{ fontSize: "11.5px", color: C.textSoft, marginTop: "4px" }}>Tahmini tutar — kesin fiyat için sizinle iletişime geçeceğiz.</div>
                 </div>
               )}
 
-              <div style={{ minHeight: "18px", marginBottom: "12px" }}>
-                {nights > 0 && (rangeHasBooked
-                  ? <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#B4735A" }}>Seçtiğiniz aralıkta dolu gün var. Yine de talep gönderebilirsiniz.</div>
-                  : <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#3B7A57" }}>✓ Seçtiğiniz tarihler müsait görünüyor.</div>)}
-              </div>
+              {/* Müsaitlik durumu — yalnızca müsaitlik açıkken */}
+              {enabled && (
+                <div style={{ minHeight: "18px", marginBottom: "12px" }}>
+                  {nights > 0 && (rangeHasBooked
+                    ? <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#B4735A" }}>Seçtiğiniz aralıkta dolu gün var. Yine de talep gönderebilirsiniz.</div>
+                    : <div style={{ fontSize: "13.5px", fontWeight: 700, color: "#3B7A57" }}>✓ Seçtiğiniz tarihler müsait görünüyor.</div>)}
+                </div>
+              )}
 
               {(checkin || checkout) && (
                 <button type="button" onClick={() => { setCheckin(""); setCheckout(""); }}
                   style={{ background: "none", border: "none", cursor: "pointer", fontSize: "12.5px", fontWeight: 700, color: C.primary, padding: "0 0 12px" }}>Tarihleri temizle</button>
               )}
 
-              <a href={reserveHref} style={{ display: "block", textAlign: "center", background: C.heading, color: "#fff", fontSize: "15px", fontWeight: 700, padding: "15px", marginBottom: "10px", textDecoration: "none" }}>Müsaitlik &amp; Talep Et</a>
+              <a href={reserveHref} style={{ display: "block", textAlign: "center", background: C.heading, color: "#fff", fontSize: "15px", fontWeight: 700, padding: "15px", marginBottom: "10px", textDecoration: "none" }}>{reserveLabel}</a>
               <a href={`tel:+${phone}`} style={{ display: "block", textAlign: "center", background: C.surface, color: C.heading, border: `1px solid ${C.border}`, fontSize: "14px", fontWeight: 700, padding: "13px", marginBottom: "10px", textDecoration: "none" }}>Hemen Ara</a>
               <a href={wa} target="_blank" rel="noopener" style={{ display: "block", textAlign: "center", background: C.wa, color: "#fff", fontSize: "14px", fontWeight: 700, padding: "13px", textDecoration: "none" }}>WhatsApp ile Sor</a>
             </div>

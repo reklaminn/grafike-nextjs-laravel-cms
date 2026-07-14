@@ -46,6 +46,9 @@ export function HotelSearchSection({ section }: Props) {
   const overlap = Number.isFinite(overlapRaw) ? overlapRaw : 0;
 
   const [rooms, setRooms] = useState<RoomType[]>([]);
+  // null = henüz bilinmiyor (yüklenirken gösterme), true = müsaitlik açık,
+  // false = vitrin modu → arama kutusu tamamen gizli.
+  const [enabled, setEnabled] = useState<boolean | null>(null);
   const [roomSlug, setRoomSlug] = useState("");
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
@@ -58,8 +61,13 @@ export function HotelSearchSection({ section }: Props) {
     let alive = true;
     fetch("/api/v1/lodging/room-types", { headers: { Accept: "application/json" } })
       .then((r) => r.json())
-      .then((d) => { if (alive && Array.isArray(d?.data)) setRooms(d.data as RoomType[]); })
-      .catch(() => {});
+      .then((d) => {
+        if (!alive) return;
+        if (Array.isArray(d?.data)) setRooms(d.data as RoomType[]);
+        // settings yoksa (eski API) müsaitlik AÇIK varsay → geriye dönük uyumlu.
+        setEnabled(d?.settings?.availability_enabled !== false);
+      })
+      .catch(() => { if (alive) setEnabled(true); }); // API hatasında mevcut davranışı koru (açık).
     return () => { alive = false; };
   }, []);
 
@@ -138,6 +146,9 @@ export function HotelSearchSection({ section }: Props) {
   }
 
   const atCap = adults + children >= capMax;
+
+  // Vitrin modu (veya henüz yüklenmedi) → arama kutusunu hiç gösterme.
+  if (enabled !== true) return null;
 
   return (
     <section style={{ maxWidth: "1150px", margin: `${overlap ? -overlap : 0}px auto 0`, padding: "0 24px", position: "relative", zIndex: 20 }}>

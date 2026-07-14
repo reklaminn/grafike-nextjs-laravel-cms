@@ -52,6 +52,8 @@ export function ReservationSection({ section }: ReservationSectionProps) {
   const showPicker = str(c, "show_room_picker") !== "0";
 
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+  // Müsaitlik motoru. false = vitrin modu: fiyat/müsaitlik hesabı gizli.
+  const [enabled, setEnabled] = useState(true);
   const [roomSlug, setRoomSlug] = useState(presetRoom);
   const [checkin, setCheckin] = useState("");
   const [checkout, setCheckout] = useState("");
@@ -102,7 +104,9 @@ export function ReservationSection({ section }: ReservationSectionProps) {
     fetch("/api/v1/lodging/room-types", { headers: { Accept: "application/json" } })
       .then((r) => r.json())
       .then((d) => {
-        if (alive && Array.isArray(d?.data)) setRoomTypes(d.data as RoomType[]);
+        if (!alive) return;
+        if (Array.isArray(d?.data)) setRoomTypes(d.data as RoomType[]);
+        setEnabled(d?.settings?.availability_enabled !== false); // settings yoksa açık varsay
       })
       .catch(() => {});
     return () => {
@@ -137,9 +141,10 @@ export function ReservationSection({ section }: ReservationSectionProps) {
   const estTotal = selectedRoom && nights > 0 ? selectedRoom.base_price * nights : null;
 
   // Light availability probe when a specific room + valid range is chosen.
+  // Vitrin modunda (enabled=false) hiç sorgulanmaz.
   useEffect(() => {
     setAvailabilityWarning(null);
-    if (!roomSlug || nights <= 0) return;
+    if (!enabled || !roomSlug || nights <= 0) return;
 
     let alive = true;
     const url = `/api/v1/lodging/availability?room_type=${encodeURIComponent(roomSlug)}&from=${checkin}&to=${checkout}`;
@@ -156,7 +161,7 @@ export function ReservationSection({ section }: ReservationSectionProps) {
     return () => {
       alive = false;
     };
-  }, [roomSlug, checkin, checkout, nights]);
+  }, [roomSlug, checkin, checkout, nights, enabled]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -337,7 +342,7 @@ export function ReservationSection({ section }: ReservationSectionProps) {
             <textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} style={inputStyle} />
           </div>
 
-          {estTotal !== null && (
+          {enabled && estTotal !== null && (
             <div style={{ padding: ".9rem 1.1rem", background: "var(--color-surface, #f9fafb)", borderRadius: "var(--radius-card, .6rem)", fontSize: ".95rem", color: "var(--color-heading, #111827)" }}>
               {nights} gece × {selectedRoom!.name} ≈{" "}
               <strong>
@@ -349,7 +354,7 @@ export function ReservationSection({ section }: ReservationSectionProps) {
             </div>
           )}
 
-          {availabilityWarning && (
+          {enabled && availabilityWarning && (
             <p style={{ fontSize: ".85rem", color: "#b45309", margin: 0 }}>{availabilityWarning}</p>
           )}
           {error && <p style={{ fontSize: ".9rem", color: "#dc2626", margin: 0 }}>{error}</p>}
