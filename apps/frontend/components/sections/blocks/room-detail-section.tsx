@@ -294,6 +294,10 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
               </div>
             </div>
             <div style={{ padding: "18px 20px 22px" }}>
+              {/* Vitrin modu (availability kapalı): takvim + sayaç + rezervasyon
+                  butonu gizli — yalnız Hemen Ara + WhatsApp kalır. */}
+              {enabled && (
+                <>
               <div style={{ fontSize: "12.5px", color: C.textSoft, marginBottom: "8px" }}>
                 {!checkin ? "Giriş tarihini seçin" : !checkout ? "Çıkış tarihini seçin" : `${checkin} → ${checkout}`}
               </div>
@@ -331,6 +335,8 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
               )}
 
               <a href={reserveHref} style={{ display: "block", textAlign: "center", background: C.heading, color: "#fff", fontSize: "15px", fontWeight: 700, padding: "15px", marginBottom: "10px", textDecoration: "none" }}>{reserveLabel}</a>
+                </>
+              )}
               <a href={`tel:+${phone}`} style={{ display: "block", textAlign: "center", background: C.surface, color: C.heading, border: `1px solid ${C.border}`, fontSize: "14px", fontWeight: 700, padding: "13px", marginBottom: "10px", textDecoration: "none" }}>Hemen Ara</a>
               <a href={wa} target="_blank" rel="noopener" style={{ display: "block", textAlign: "center", background: C.wa, color: "#fff", fontSize: "14px", fontWeight: 700, padding: "13px", textDecoration: "none" }}>WhatsApp ile Sor</a>
             </div>
