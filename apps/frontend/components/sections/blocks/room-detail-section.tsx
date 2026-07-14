@@ -146,6 +146,13 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
   const eyebrow = str(c, "eyebrow") || "DAİRE DETAYI";
   const checkinTime = str(c, "checkin_time") || "14:00";
   const checkoutTime = str(c, "checkout_time") || "12:00";
+  // Konaklama Kuralları — içerikten (house_rules dizisi) düzenlenebilir. Set edilmemişse
+  // eski sabit satırlar fallback (geriye uyumlu: mevcut siteler değişmez). Boş dizi ([])
+  // set edilirse ek kural gösterilmez (yalnız giriş/çıkış satırı).
+  const rulesTitle = str(c, "rules_title") || "Konaklama Kuralları";
+  const houseRules: string[] = Array.isArray((c as Record<string, unknown>).house_rules)
+    ? ((c as Record<string, unknown>).house_rules as unknown[]).map((r) => String(r)).filter(Boolean)
+    : ["Evcil hayvan kabul edilmemektedir.", "Tüm dairelerimiz sigara içilmeyen alandır."];
 
   const [rooms, setRooms] = useState<RoomType[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -277,11 +284,10 @@ export function RoomDetailSection({ section }: SectionBlockProps) {
             )}
 
             <div style={{ background: C.heading, color: "rgba(255,255,255,0.85)", padding: "24px 26px" }}>
-              <h3 style={{ fontFamily: C.fontH, fontWeight: 700, fontSize: "20px", color: "#fff", margin: "0 0 14px" }}>Konaklama Kuralları</h3>
+              <h3 style={{ fontFamily: C.fontH, fontWeight: 700, fontSize: "20px", color: "#fff", margin: "0 0 14px" }}>{rulesTitle}</h3>
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "10px", fontSize: "14px" }}>
                 <li>Giriş: {checkinTime} · Çıkış: {checkoutTime}</li>
-                <li>Evcil hayvan kabul edilmemektedir.</li>
-                <li>Tüm dairelerimiz sigara içilmeyen alandır.</li>
+                {houseRules.map((rule, i) => <li key={i}>{rule}</li>)}
               </ul>
             </div>
           </div>
