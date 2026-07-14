@@ -64,7 +64,12 @@ function renderItemTemplate(tpl: string, vars: Record<string, string>): string {
 
 // ── Kaynak → normalize ──────────────────────────────────────────────────────────
 
-function fromRoomTypes(rooms: RoomType[], reserveLabel: string, reserveTarget: string): ListingItem[] {
+function fromRoomTypes(rooms: RoomType[], reserveLabel: string, reserveTarget: string, availabilityEnabled = true): ListingItem[] {
+  // Vitrin modu (availability kapalı) → item_template'te rezervasyon butonları
+  // {{acts_on}} ile gizlenir, tek "Detaylar" butonu {{acts_off}} ile görünür.
+  // Açıkken tam tersi (mevcut davranış birebir korunur).
+  const actsOn  = availabilityEnabled ? "" : "display:none";
+  const actsOff = availabilityEnabled ? "display:none" : "";
   return rooms.map((rt) => {
     const price = formatPrice(rt.base_price, rt.currency ?? "");
     const image = rt.images?.[0] ?? "";
@@ -90,6 +95,7 @@ function fromRoomTypes(rooms: RoomType[], reserveLabel: string, reserveTarget: s
         size_m2: rt.size_m2 != null ? String(rt.size_m2) : "",
         bedrooms: rt.bedrooms != null ? String(rt.bedrooms) : "",
         image, link: reserveHref(reserveTarget, rt.slug), link_label: reserveLabel, date: "",
+        acts_on: actsOn, acts_off: actsOff,
       },
     };
   });
@@ -225,7 +231,8 @@ export async function ListingSection({ section, pageId }: { section: PageSection
   } else if (source === "pages" || source === "alt-sayfalar" || source === "sayfalar") {
     items = pageId ? fromPages(await getChildPages(pageId)) : [];
   } else {
-    items = fromRoomTypes(await getRoomTypes(), reserveLabel, reserveTarget);
+    const rt = await getRoomTypes();
+    items = fromRoomTypes(rt.data, reserveLabel, reserveTarget, rt.availabilityEnabled);
   }
 
   if (limit) items = items.slice(0, limit);

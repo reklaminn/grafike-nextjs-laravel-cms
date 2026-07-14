@@ -261,8 +261,14 @@ export async function getArticles(options: GetArticlesOptions = {}): Promise<Art
  * Fetch the tenant's room/apartment types (Lodging module).
  * Returns [] when the module is disabled (route 404 → fallback) or empty.
  */
-export async function getRoomTypes(options: PreviewOptions = {}): Promise<RoomType[]> {
-  const payload = await fetchJson<{ data: RoomType[] }>(
+export type RoomTypesResult = {
+  data: RoomType[];
+  /** Lodging "Müsaitlik (takvim & fiyat)" ayarı. API settings göndermezse true (geriye uyumlu). */
+  availabilityEnabled: boolean;
+};
+
+export async function getRoomTypes(options: PreviewOptions = {}): Promise<RoomTypesResult> {
+  const payload = await fetchJson<{ data: RoomType[]; settings?: { availability_enabled?: boolean } }>(
     "/api/v1/lodging/room-types",
     { data: [] },
     false,
@@ -270,7 +276,11 @@ export async function getRoomTypes(options: PreviewOptions = {}): Promise<RoomTy
     options,
   );
 
-  return Array.isArray(payload?.data) ? payload.data : [];
+  return {
+    data: Array.isArray(payload?.data) ? payload.data : [],
+    // Vitrin modu: settings yoksa AÇIK varsay (mevcut siteler değişmez).
+    availabilityEnabled: payload?.settings?.availability_enabled !== false,
+  };
 }
 
 /**
