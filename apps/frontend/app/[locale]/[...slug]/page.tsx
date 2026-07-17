@@ -232,24 +232,39 @@ export default async function CatchAllPage({ params, searchParams }: CatchAllPag
         </nav>
       )}
 
-      {/* Cover image */}
+      {/* Cover image — ürünler (portre görsel) için kırpmadan, kare krem kutuda;
+          diğer yazılar (blog) için 16:9 kapak. */}
       {article.cover?.url && (
         <div
-          style={{
-            marginBottom: "2rem",
-            borderRadius: "0.75rem",
-            overflow: "hidden",
-            position: "relative",
-            aspectRatio: "16/9",
-          }}
+          style={
+            articlePage?.slug === "urunler"
+              ? {
+                  marginBottom: "2rem",
+                  borderRadius: "0.75rem",
+                  overflow: "hidden",
+                  position: "relative",
+                  aspectRatio: "1 / 1",
+                  maxWidth: "460px",
+                  marginLeft: "auto",
+                  marginRight: "auto",
+                  background: "var(--color-secondary, #FBF4EE)",
+                }
+              : {
+                  marginBottom: "2rem",
+                  borderRadius: "0.75rem",
+                  overflow: "hidden",
+                  position: "relative",
+                  aspectRatio: "16/9",
+                }
+          }
         >
           <Image
             src={article.cover.url}
             alt={article.cover.alt ?? article.title}
             fill
             priority
-            sizes="(max-width: 780px) 100vw, 780px"
-            style={{ objectFit: "cover" }}
+            sizes={articlePage?.slug === "urunler" ? "460px" : "(max-width: 780px) 100vw, 780px"}
+            style={{ objectFit: articlePage?.slug === "urunler" ? "contain" : "cover" }}
             unoptimized={isLocalMediaPath(article.cover.url)}
           />
         </div>
